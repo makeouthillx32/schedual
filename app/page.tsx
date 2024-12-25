@@ -19,7 +19,7 @@ export default function Page() {
       const data = await response.json();
       console.log("Response Data:", data);
       setSchedule(data.schedule || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching schedule:", err);
       setError(err.message);
       setSchedule(null);

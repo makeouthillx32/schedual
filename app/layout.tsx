@@ -17,9 +17,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <html lang="en">
-      <GeistProvider themes={[Themes.light, Themes.dark]} themeType={themeType}>
-        <CssBaseline />
-        <body>
+      <body>
+        <GeistProvider themeType={themeType}>
+          <CssBaseline />
           <header
             style={{
               padding: "10px",
@@ -55,8 +55,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <p>&copy; {new Date().getFullYear()} Cleaning Schedule App</p>
           </footer>
-        </body>
-      </GeistProvider>
+        </GeistProvider>
+      </body>
     </html>
   );
 };

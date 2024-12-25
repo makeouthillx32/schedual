@@ -1,24 +1,34 @@
-import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
 
-export async function GET(request: Request) {
-  // The `/auth/callback` route is required for the server-side auth flow implemented
-  // by the SSR package. It exchanges an auth code for the user's session.
-  // https://supabase.com/docs/guides/auth/server-side/nextjs
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get("code");
-  const origin = requestUrl.origin;
-  const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString();
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const week = url.searchParams.get("week");
+    const day = url.searchParams.get("day");
 
-  if (code) {
-    const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    if (!week || !day) {
+      return NextResponse.json(
+        { error: "Missing week or day parameters" },
+        { status: 400 }
+      );
+    }
+
+    // Query the database
+    const { data, error } = await supabase
+      .from("Schedule")
+      .select("Businesses (business_name)")
+      .eq("week", week)
+      .eq(day, true);
+
+    if (error) {
+      console.error("Supabase query error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ schedule: data });
+  } catch (error) {
+    console.error("API error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  if (redirectTo) {
-    return NextResponse.redirect(`${origin}${redirectTo}`);
-  }
-
-  // URL to redirect to after sign up process completes
-  return NextResponse.redirect(`${origin}/protected`);
 }

@@ -30,6 +30,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    if (!data || data.length === 0) {
+      return NextResponse.json({ schedule: [] }, { status: 200 });
+    }
+
     return NextResponse.json({ schedule: data });
   } catch (error) {
     console.error("API error:", error);

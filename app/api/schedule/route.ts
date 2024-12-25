@@ -18,20 +18,25 @@ export async function GET(req: Request) {
       );
     }
 
-    // Query the database
+    // Validate day parameter
+    const validDays = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+    if (!validDays.includes(day)) {
+      return NextResponse.json(
+        { error: "Invalid day parameter. Use: monday, tuesday, wednesday, thursday, friday." },
+        { status: 400 }
+      );
+    }
+
+    // Query the database dynamically
     const { data, error } = await supabase
       .from("Schedule")
       .select("Businesses (business_name)")
       .eq("week", week)
-      .eq(day, true);
+      .eq(day, true); // Dynamically use the day parameter
 
     if (error) {
       console.error("Supabase query error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data || data.length === 0) {
-      return NextResponse.json({ schedule: [] }, { status: 200 });
     }
 
     return NextResponse.json({ schedule: data });

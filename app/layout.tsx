@@ -1,7 +1,8 @@
 "use client";
 
-import { GeistProvider, CssBaseline, Themes } from "@geist-ui/core";
+import { GeistProvider, CssBaseline } from "@geist-ui/core";
 import React, { useState } from "react";
+import Nav from "@/components/nav";
 import "./globals.css";
 
 interface LayoutProps {
@@ -20,30 +21,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <body>
         <GeistProvider themeType={themeType}>
           <CssBaseline />
-          <header
-            style={{
-              padding: "10px",
-              background: themeType === "dark" ? "#1e1e1e" : "#f5f5f5",
-              color: themeType === "dark" ? "#fff" : "#000",
-              textAlign: "center",
-            }}
-          >
-            <h1>Cleaning Schedule App</h1>
-            <button
-              onClick={toggleTheme}
-              style={{
-                padding: "10px 20px",
-                margin: "10px",
-                borderRadius: "5px",
-                background: themeType === "dark" ? "#333" : "#ddd",
-                color: themeType === "dark" ? "#fff" : "#000",
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              {themeType === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            </button>
-          </header>
+          <Nav themeType={themeType} toggleTheme={toggleTheme} />
           <main style={{ padding: "20px" }}>{children}</main>
           <footer
             style={{

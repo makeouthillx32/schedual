@@ -1,22 +1,8 @@
 "use client";
 
-import { EnvVars, GeistProvider, CssBaseline, Themes } from "@geist-ui/core";
-import Link from "next/link";
-import "./globals.css";
+import { GeistProvider, CssBaseline, Themes } from "@geist-ui/core";
 import React, { useState } from "react";
-
-const defaultBaseUrl =
-  process.env.NODE_ENV === "production"
-    ? "https://your-production-url.com"
-    : "http://localhost:3000";
-
-export const metadataBase = new URL(defaultBaseUrl);
-
-export const metadata = {
-  title: "Cleaning Schedule App",
-  description: "View and manage weekly cleaning schedules.",
-  metadataBase,
-};
+import "./globals.css";
 
 interface LayoutProps {
   children: React.ReactNode;

@@ -14,31 +14,32 @@ export async function GET(req: Request) {
     const day = url.searchParams.get("day");
 
     if (!week || !day) {
+      console.error("Missing week or day parameters");
       return NextResponse.json(
         { error: "Missing week or day parameters" },
         { status: 400 }
       );
     }
 
-    console.log(`Fetching schedule for Week ${week}, Day ${day}`);
+    console.log(`Query Params: week=${week}, day=${day}`);
 
-    // Adjust the query to match your SQL logic
+    // Call the Supabase function
     const { data, error } = await supabase.rpc("fetch_schedule", {
-      input_week: week,
+      input_week: parseInt(week),
       input_day: day,
     });
 
     if (error) {
-      console.error("Supabase query error:", error);
+      console.error("Supabase RPC Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("Supabase query result:", data);
+    console.log("Supabase Query Result:", data);
 
     // Return the results
     return NextResponse.json({ schedule: data });
   } catch (error) {
-    console.error("API error:", error);
+    console.error("API Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

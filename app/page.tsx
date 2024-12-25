@@ -5,9 +5,7 @@ import { useState } from "react";
 export default function Page() {
   const [week, setWeek] = useState("1");
   const [day, setDay] = useState("monday");
-  const [schedule, setSchedule] = useState<{ business_name: string }[] | null>(
-    null
-  );
+  const [schedule, setSchedule] = useState<{ business_name: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSchedule = async () => {
@@ -70,9 +68,7 @@ export default function Page() {
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <ul>
         {schedule && schedule.length > 0 ? (
-          schedule.map((item, index) => (
-            <li key={index}>{item.business_name}</li>
-          ))
+          schedule.map((item, index) => <li key={index}>{item.business_name}</li>)
         ) : (
           <li>No results found</li>
         )}

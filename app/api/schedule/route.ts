@@ -8,7 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(req: Request) {
   try {
-    // Parse the query parameters
+    // Parse query parameters
     const url = new URL(req.url);
     const week = url.searchParams.get("week");
     const day = url.searchParams.get("day");
@@ -21,9 +21,9 @@ export async function GET(req: Request) {
       );
     }
 
-    console.log(`Query Params: week=${week}, day=${day}`);
+    console.log(`API received: week=${week}, day=${day}`);
 
-    // Call the Supabase function
+    // Use the working Supabase RPC function
     const { data, error } = await supabase.rpc("fetch_schedule", {
       input_week: parseInt(week),
       input_day: day,
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 
     console.log("Supabase Query Result:", data);
 
-    // Return the results
+    // Return the result to the frontend
     return NextResponse.json({ schedule: data });
   } catch (error) {
     console.error("API Error:", error);

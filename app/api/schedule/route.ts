@@ -22,12 +22,11 @@ export async function GET(req: Request) {
 
     console.log(`Fetching schedule for Week ${week}, Day ${day}`);
 
-    // Query the database
-    const { data, error } = await supabase
-      .from("Schedule")
-      .select("Businesses (business_name)")
-      .eq("week", week)
-      .eq(day, true);
+    // Adjust the query to match your SQL logic
+    const { data, error } = await supabase.rpc("fetch_schedule", {
+      input_week: week,
+      input_day: day,
+    });
 
     if (error) {
       console.error("Supabase query error:", error);

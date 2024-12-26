@@ -8,12 +8,12 @@ interface JobSchedule {
   jobs: { job_name: string; member_name: string }[];
 }
 
-// Initialize rotation state
-const memberLastJob: { [key: string]: number } = {};
+// State to track the last assigned job index for each member
+const rotationState: { [key: string]: number } = {};
 
-// Initialize `memberLastJob`
+// Initialize `rotationState`
 members.forEach((member) => {
-  memberLastJob[member.name] = -1; // Start with no job assigned
+  rotationState[member.name] = -1; // Start with no job assigned
 });
 
 export default function Page() {
@@ -22,29 +22,28 @@ export default function Page() {
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const assignMembersToJobs = (jobs: string[]) => {
+  const assignMembersToJobs = (jobs: string[], day: string) => {
     const assignedJobs = jobs.map((job) => {
-      let assignedMember = null;
-
-      // Get available members for the current day
+      // Get members available for the current day
       const availableMembers = members.filter(
         (member) => member[day as keyof typeof member]
       );
 
-      // Rotate members fairly
+      // Find the next member in rotation
       if (availableMembers.length > 0) {
-        // Find the member with the least recent job
-        availableMembers.sort(
-          (a, b) => memberLastJob[a.name] - memberLastJob[b.name]
-        );
-        assignedMember = availableMembers[0].name;
+        const nextMemberIndex =
+          (rotationState[availableMembers[0].name] + 1) % availableMembers.length;
+        const assignedMember = availableMembers[nextMemberIndex].name;
 
-        // Update the member's last job index
-        memberLastJob[assignedMember] =
-          (memberLastJob[assignedMember] + 1) % jobs.length;
+        // Update rotation state
+        availableMembers.forEach((member, index) => {
+          rotationState[member.name] = index;
+        });
+
+        return { job_name: job, member_name: assignedMember };
       }
 
-      return { job_name: job, member_name: assignedMember || "Unassigned" };
+      return { job_name: job, member_name: "Unassigned" };
     });
 
     return assignedJobs;
@@ -73,7 +72,10 @@ export default function Page() {
       // Assign members to jobs for each business
       const updatedSchedule = data.schedule.map((entry: any) => ({
         business_name: entry.business_name,
-        jobs: assignMembersToJobs(["Sweep and Mop", "Vacuum", "Bathrooms and Trash"]),
+        jobs: assignMembersToJobs(
+          ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+          day
+        ),
       }));
 
       setSchedule(updatedSchedule);

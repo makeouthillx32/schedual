@@ -24,29 +24,36 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const assignMembersToJobs = (jobs: string[], day: string) => {
+    console.log("Members Data:", members); // Debugging
     const assignedJobs = jobs.map((job) => {
-      // Get members available for the current day
       const availableMembers = members.filter(
         (member) => member[day as keyof typeof member]
       );
-
-      // Find the next member in rotation
-      if (availableMembers.length > 0) {
-        const nextMemberIndex =
-          (rotationState[job] + 1) % availableMembers.length;
-        const assignedMember = availableMembers[nextMemberIndex].name;
-
-        // Update rotation state
-        rotationState[job] = nextMemberIndex;
-
-        return { job_name: job, member_name: assignedMember };
+  
+      console.log("Available Members for Day:", day, availableMembers); // Debugging
+  
+      if (availableMembers.length === 0) {
+        return { job_name: job, member_name: "No available members" };
       }
-
-      return { job_name: job, member_name: "Unassigned" };
+  
+      const nextMemberIndex =
+        (rotationState[job] + 1) % availableMembers.length;
+      const assignedMember = availableMembers[nextMemberIndex]?.name;
+  
+      if (!assignedMember) {
+        return { job_name: job, member_name: "Unassigned" };
+      }
+  
+      rotationState[job] = nextMemberIndex;
+  
+      return { job_name: job, member_name: assignedMember };
     });
-
+  
+    console.log("Rotation State:", rotationState); // Debugging
+  
     return assignedJobs;
   };
+  
 
   useEffect(() => {
     const today = new Date();

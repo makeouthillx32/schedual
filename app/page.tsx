@@ -150,11 +150,12 @@ export default function Page() {
       {/* Toast Window */}
       {toastInfo && (
         <div
-          className="fixed bottom-5 right-5 p-5 rounded-lg shadow-lg"
+          className="fixed top-5 right-5 p-5 rounded-lg shadow-lg max-w-xs w-full"
           style={{
             backgroundColor: "var(--card)",
             color: "var(--card-foreground)",
             border: "1px solid var(--border)",
+            zIndex: 1000,
           }}
         >
           <button
@@ -164,8 +165,18 @@ export default function Page() {
             X
           </button>
           <h4 className="text-lg font-bold">{toastInfo.business_name}</h4>
-          <p>
-            <strong>Address:</strong> {toastInfo.address}
+          <p className="mt-2">
+            <strong>Address:</strong>{" "}
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                toastInfo.address
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline"
+            >
+              {toastInfo.address}
+            </a>
           </p>
           <p>
             <strong>Before Open:</strong>{" "}

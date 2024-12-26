@@ -23,21 +23,34 @@ export async function GET(req: Request) {
 
     console.log(`API received: week=${week}, day=${day}`);
 
-    // Use the working Supabase RPC function
-    const { data, error } = await supabase.rpc("fetch_schedule", {
-      input_week: parseInt(week),
-      input_day: day,
-    });
+    // Fetch schedule with jobs and members
+    const { data, error } = await supabase
+      .from("Schedule")
+      .select(`
+        Businesses (business_name),
+        Jobs (job_type, Members (member_name))
+      `)
+      .eq("week", parseInt(week))
+      .eq(day, true);
 
     if (error) {
-      console.error("Supabase RPC Error:", error);
+      console.error("Supabase Query Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     console.log("Supabase Query Result:", data);
 
+    // Process the data to match frontend requirements
+    const formattedData = data.map((scheduleEntry: any) => ({
+      business_name: scheduleEntry.Businesses.business_name,
+      jobs: scheduleEntry.Jobs.map((job: any) => ({
+        job_type: job.job_type,
+        member_name: job.Members.member_name,
+      })),
+    }));
+
     // Return the result to the frontend
-    return NextResponse.json({ schedule: data });
+    return NextResponse.json({ schedule: formattedData });
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

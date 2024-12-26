@@ -8,31 +8,38 @@ interface JobSchedule {
   jobs: { job_name: string; member_name: string }[];
 }
 
+// Tracking last job index for each member
+const memberLastJob: { [key: string]: number } = {};
+
+// Initialize memberLastJob
+members.forEach((member) => {
+  memberLastJob[member.name] = -1; // Start with no job assigned
+});
+
 export default function Page() {
   const [week, setWeek] = useState<number>(0); // Default week placeholder
   const [day, setDay] = useState<string>(""); // Default day placeholder
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Member assignment logic to avoid repeats
+  // Member assignment logic to avoid repeats and rotate jobs
   const assignMembersToJobs = (jobs: string[]) => {
-    let memberIndex = 0;
     const assignedJobs = jobs.map((job) => {
       let assignedMember = null;
 
-      // Find the next available member
-      while (!assignedMember && memberIndex < members.length) {
-        const member = members[memberIndex];
-        if (member[day as keyof typeof member]) {
-          assignedMember = member.name;
-          memberIndex++;
-        } else {
-          memberIndex++;
-        }
-      }
+      // Rotate members
+      const availableMembers = members.filter(
+        (member) => member[day as keyof typeof member]
+      );
+      availableMembers.sort(
+        (a, b) => memberLastJob[a.name] - memberLastJob[b.name]
+      );
 
-      // Reset memberIndex if all members are assigned
-      if (memberIndex >= members.length) memberIndex = 0;
+      if (availableMembers.length > 0) {
+        assignedMember = availableMembers[0].name;
+        memberLastJob[assignedMember] =
+          (memberLastJob[assignedMember] + 1) % jobs.length; // Update job index
+      }
 
       return { job_name: job, member_name: assignedMember || "Unassigned" };
     });

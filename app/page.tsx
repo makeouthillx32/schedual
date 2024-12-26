@@ -8,14 +8,6 @@ interface JobSchedule {
   jobs: { job_name: string; member_name: string }[];
 }
 
-// State to track the last assigned job index for each member
-const rotationState: { [key: string]: number } = {};
-
-// Initialize `rotationState`
-members.forEach((member) => {
-  rotationState[member.name] = -1; // Start with no job assigned
-});
-
 export default function Page() {
   const [week, setWeek] = useState<number>(0); // Default week placeholder
   const [day, setDay] = useState<string>(""); // Default day placeholder
@@ -23,48 +15,30 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  let globalRotationIndex = 0; // Global rotation index
+  const assignMembersToJobsRandomly = (jobs: string[], day: string) => {
+    return jobs.map((job) => {
+      // Get members available for the current day
+      const availableMembers = members.filter(
+        (member) => member[day as keyof typeof member]
+      );
 
-const assignMembersToJobs = (jobs: string[], day: string) => {
-  const assignedJobs: { job_name: string; member_name: string }[] = [];
+      if (availableMembers.length === 0) {
+        return { job_name: job, member_name: "No available members" };
+      }
 
-  // Get members available for the current day
-  const availableMembers = members.filter(
-    (member) => member[day as keyof typeof member]
-  );
+      // Assign a random member to the job
+      const randomMember =
+        availableMembers[Math.floor(Math.random() * availableMembers.length)];
 
-  console.log("Available Members for Day:", day, availableMembers); // Debugging
-
-  // Defensive check: Ensure `availableMembers` is not empty
-  if (availableMembers.length === 0) {
-    return jobs.map((job) => ({
-      job_name: job,
-      member_name: "No available members",
-    }));
-  }
-
-  // Assign jobs in global rotation
-  jobs.forEach((job) => {
-    // Assign the job to the current member in global rotation
-    const assignedMember = availableMembers[globalRotationIndex].name;
-
-    // Push the job and assigned member to the result
-    assignedJobs.push({ job_name: job, member_name: assignedMember });
-
-    // Move to the next member in global rotation
-    globalRotationIndex =
-      (globalRotationIndex + 1) % availableMembers.length; // Wrap around
-  });
-
-  console.log("Assigned Jobs:", assignedJobs); // Debugging
-
-  return assignedJobs;
-};
-
+      return { job_name: job, member_name: randomMember.name };
+    });
+  };
 
   useEffect(() => {
     const today = new Date();
-    const currentDay = today.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+    const currentDay = today
+      .toLocaleString("en-US", { weekday: "long" })
+      .toLowerCase();
     const currentWeek = Math.ceil(today.getDate() / 7);
 
     setDay(currentDay);
@@ -86,7 +60,7 @@ const assignMembersToJobs = (jobs: string[], day: string) => {
       // Assign members to jobs for each business
       const updatedSchedule = data.schedule.map((entry: any) => ({
         business_name: entry.business_name,
-        jobs: assignMembersToJobs(
+        jobs: assignMembersToJobsRandomly(
           ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
           day
         ),
@@ -100,6 +74,17 @@ const assignMembersToJobs = (jobs: string[], day: string) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const randomizeAssignments = () => {
+    const randomizedSchedule = schedule.map((entry) => ({
+      business_name: entry.business_name,
+      jobs: assignMembersToJobsRandomly(
+        ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+        day
+      ),
+    }));
+    setSchedule(randomizedSchedule);
   };
 
   useEffect(() => {
@@ -117,6 +102,20 @@ const assignMembersToJobs = (jobs: string[], day: string) => {
       <h2>
         Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
       </h2>
+      <button
+        onClick={randomizeAssignments}
+        style={{
+          marginBottom: "20px",
+          padding: "10px 15px",
+          background: "#0070f3",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        Randomize Assignments
+      </button>
       <h3>Results:</h3>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <div>

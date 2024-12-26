@@ -8,10 +8,10 @@ interface JobSchedule {
   jobs: { job_name: string; member_name: string }[];
 }
 
-// Tracking last job index for each member
+// Initialize rotation state
 const memberLastJob: { [key: string]: number } = {};
 
-// Initialize memberLastJob
+// Initialize `memberLastJob`
 members.forEach((member) => {
   memberLastJob[member.name] = -1; // Start with no job assigned
 });
@@ -22,23 +22,26 @@ export default function Page() {
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Member assignment logic to avoid repeats and rotate jobs
   const assignMembersToJobs = (jobs: string[]) => {
     const assignedJobs = jobs.map((job) => {
       let assignedMember = null;
 
-      // Rotate members
+      // Get available members for the current day
       const availableMembers = members.filter(
         (member) => member[day as keyof typeof member]
       );
-      availableMembers.sort(
-        (a, b) => memberLastJob[a.name] - memberLastJob[b.name]
-      );
 
+      // Rotate members fairly
       if (availableMembers.length > 0) {
+        // Find the member with the least recent job
+        availableMembers.sort(
+          (a, b) => memberLastJob[a.name] - memberLastJob[b.name]
+        );
         assignedMember = availableMembers[0].name;
+
+        // Update the member's last job index
         memberLastJob[assignedMember] =
-          (memberLastJob[assignedMember] + 1) % jobs.length; // Update job index
+          (memberLastJob[assignedMember] + 1) % jobs.length;
       }
 
       return { job_name: job, member_name: assignedMember || "Unassigned" };
@@ -47,7 +50,6 @@ export default function Page() {
     return assignedJobs;
   };
 
-  // Automatically determine the current week and day
   useEffect(() => {
     const today = new Date();
     const currentDay = today.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
@@ -82,7 +84,6 @@ export default function Page() {
     }
   };
 
-  // Fetch schedule whenever week or day changes
   useEffect(() => {
     if (week > 0 && day) {
       fetchSchedule();

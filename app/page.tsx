@@ -21,6 +21,7 @@ export default function Page() {
   const [day, setDay] = useState<string>(""); // Default day placeholder
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const assignMembersToJobs = (jobs: string[], day: string) => {
     const assignedJobs = jobs.map((job) => {
@@ -32,13 +33,11 @@ export default function Page() {
       // Find the next member in rotation
       if (availableMembers.length > 0) {
         const nextMemberIndex =
-          (rotationState[availableMembers[0].name] + 1) % availableMembers.length;
+          (rotationState[job] + 1) % availableMembers.length;
         const assignedMember = availableMembers[nextMemberIndex].name;
 
         // Update rotation state
-        availableMembers.forEach((member, index) => {
-          rotationState[member.name] = index;
-        });
+        rotationState[job] = nextMemberIndex;
 
         return { job_name: job, member_name: assignedMember };
       }
@@ -60,6 +59,7 @@ export default function Page() {
 
   const fetchSchedule = async () => {
     setError(null);
+    setIsLoading(true);
     try {
       console.log(`Fetching schedule for Week ${week}, Day ${day}`);
       const response = await fetch(`/api/schedule?week=${week}&day=${day}`);
@@ -83,6 +83,8 @@ export default function Page() {
       console.error("Error fetching schedule:", err);
       setError(err.message);
       setSchedule([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -91,6 +93,10 @@ export default function Page() {
       fetchSchedule();
     }
   }, [week, day]);
+
+  if (isLoading) {
+    return <p>Loading schedule...</p>;
+  }
 
   return (
     <div style={{ padding: "20px" }}>

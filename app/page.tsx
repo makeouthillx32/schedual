@@ -20,7 +20,6 @@ export default function Page() {
     before_open: boolean;
     address: string;
   } | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const assignRandomJobs = (jobs: string[], availableMembers: typeof members) => {
     const shuffledMembers = [...availableMembers].sort(() => Math.random() - 0.5);
@@ -43,10 +42,6 @@ export default function Page() {
 
     setDay(currentDay);
     setWeek(currentWeek);
-
-    // Simulate a theme toggle based on time for testing
-    const hour = today.getHours();
-    setTheme(hour >= 18 || hour < 6 ? "dark" : "light");
   }, []);
 
   const fetchSchedule = async () => {
@@ -91,33 +86,19 @@ export default function Page() {
     }
   }, [week, day]);
 
-  const backgroundColor = theme === "dark" ? "#121212" : "#f5f5f5";
-  const textColor = theme === "dark" ? "#ffffff" : "#000000";
-
   return (
-    <div
-      style={{
-        padding: "20px",
-        background: backgroundColor,
-        color: textColor,
-        minHeight: "100vh", // Ensure the background covers the entire viewport
-      }}
-    >
-      <h2>
+    <div className="p-5">
+      <h2 className="text-2xl font-bold">
         Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
       </h2>
-      <h3>Results:</h3>
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
+      <h3 className="text-lg font-semibold mt-4">Results:</h3>
+      {error && <p className="text-red-500">Error: {error}</p>}
       <div>
         {schedule.length > 0 ? (
           schedule.map((entry, index) => (
-            <div key={index} style={{ marginBottom: "20px" }}>
+            <div key={index} className="mb-6">
               <h4
-                style={{
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  color: textColor,
-                }}
+                className="underline cursor-pointer"
                 onClick={() =>
                   setToastInfo({
                     business_name: entry.business_name,
@@ -128,7 +109,7 @@ export default function Page() {
               >
                 {entry.business_name}
               </h4>
-              <ul>
+              <ul className="ml-5 list-disc">
                 {entry.jobs.map((job, jobIndex) => (
                   <li key={jobIndex}>
                     {job.job_name} - {job.member_name}
@@ -145,39 +126,20 @@ export default function Page() {
       {/* Toast Window */}
       {toastInfo && (
         <div
+          className="fixed bottom-5 right-5 p-5 rounded-lg shadow-lg"
           style={{
-            position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            padding: "20px",
-            background: theme === "dark" ? "#333333" : "#ffffff",
-            border: theme === "dark" ? "1px solid #444" : "1px solid #ccc",
-            borderRadius: "10px",
-            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.3)",
-            zIndex: 1000,
-            color: theme === "dark" ? "#ffffff" : "#000000",
+            backgroundColor: "var(--card)",
+            color: "var(--card-foreground)",
+            border: "1px solid var(--border)",
           }}
         >
           <button
             onClick={() => setToastInfo(null)}
-            style={{
-              position: "absolute",
-              top: "5px",
-              right: "5px",
-              background: "red",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "50%",
-              width: "20px",
-              height: "20px",
-              cursor: "pointer",
-              textAlign: "center",
-              lineHeight: "20px",
-            }}
+            className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500 text-white text-center flex items-center justify-center"
           >
             X
           </button>
-          <h4>{toastInfo.business_name}</h4>
+          <h4 className="text-lg font-bold">{toastInfo.business_name}</h4>
           <p>
             <strong>Address:</strong> {toastInfo.address}
           </p>

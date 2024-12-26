@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               textAlign: "center",
             }}
           >
-            <p>&copy; {new Date().getFullYear()} Cleaning Schedule App</p>
+            <p>&copy; {new Date().getFullYear()} Powered by unenter</p>
           </footer>
         </GeistProvider>
       </body>

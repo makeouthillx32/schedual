@@ -40,14 +40,22 @@ export async function GET(req: Request) {
 
     console.log("Supabase Query Result:", data);
 
+    // Check if data exists
+    if (!data || data.length === 0) {
+      console.warn("No data returned from Supabase.");
+      return NextResponse.json({ schedule: [] });
+    }
+
     // Process the data to match frontend requirements
     const formattedData = data.map((scheduleEntry: any) => ({
-      business_name: scheduleEntry.Businesses.business_name,
-      jobs: scheduleEntry.Jobs.map((job: any) => ({
-        job_type: job.job_type,
-        member_name: job.Members.member_name,
-      })),
+      business_name: scheduleEntry.Businesses?.business_name || "Unknown",
+      jobs: scheduleEntry.Jobs?.map((job: any) => ({
+        job_type: job.job_type || "Unknown",
+        member_name: job.Members?.member_name || "Unassigned",
+      })) || [],
     }));
+
+    console.log("Formatted Data:", formattedData);
 
     // Return the result to the frontend
     return NextResponse.json({ schedule: formattedData });

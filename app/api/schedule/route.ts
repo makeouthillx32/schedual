@@ -23,42 +23,21 @@ export async function GET(req: Request) {
 
     console.log(`API received: week=${week}, day=${day}`);
 
-    // Fetch schedule with jobs and members
-    const { data, error } = await supabase
-      .from("Schedule")
-      .select(`
-        Businesses (business_name),
-        Jobs (job_type, Members (member_name))
-      `)
-      .eq("week", parseInt(week))
-      .eq(day, true);
+    // Use the working Supabase RPC function
+    const { data, error } = await supabase.rpc("fetch_schedule", {
+      input_week: parseInt(week),
+      input_day: day,
+    });
 
     if (error) {
-      console.error("Supabase Query Error:", error);
+      console.error("Supabase RPC Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     console.log("Supabase Query Result:", data);
 
-    // Check if data exists
-    if (!data || data.length === 0) {
-      console.warn("No data returned from Supabase.");
-      return NextResponse.json({ schedule: [] });
-    }
-
-    // Process the data to match frontend requirements
-    const formattedData = data.map((scheduleEntry: any) => ({
-      business_name: scheduleEntry.Businesses?.business_name || "Unknown",
-      jobs: scheduleEntry.Jobs?.map((job: any) => ({
-        job_type: job.job_type || "Unknown",
-        member_name: job.Members?.member_name || "Unassigned",
-      })) || [],
-    }));
-
-    console.log("Formatted Data:", formattedData);
-
     // Return the result to the frontend
-    return NextResponse.json({ schedule: formattedData });
+    return NextResponse.json({ schedule: data });
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

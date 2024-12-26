@@ -26,7 +26,12 @@ export async function GET(req: Request) {
     // Query the businesses scheduled for this week and day
     const { data: businesses, error } = await supabase
       .from("Schedule")
-      .select("business_id, Businesses!inner(business_name)")
+      .select(
+        `
+        business_id,
+        Businesses!inner(business_name, address, before_open)
+      `
+      )
       .eq(day, true)
       .eq("week", parseInt(week));
 
@@ -39,6 +44,8 @@ export async function GET(req: Request) {
     const jobs = ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"];
     const schedule = businesses.map((entry: any) => ({
       business_name: entry.Businesses.business_name,
+      address: entry.Businesses.address,
+      before_open: entry.Businesses.before_open,
       jobs,
     }));
 

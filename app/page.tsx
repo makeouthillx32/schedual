@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from "react";
 
-interface Job {
+interface JobSchedule {
   business_name: string;
-  job_type: string;
-  member_name: string;
+  jobs: string[];
 }
 
 export default function Page() {
   const [week, setWeek] = useState<number>(0); // Default week placeholder
   const [day, setDay] = useState<string>(""); // Default day placeholder
-  const [schedule, setSchedule] = useState<Job[]>([]);
+  const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Automatically determine the current week and day
@@ -58,13 +57,13 @@ export default function Page() {
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <div>
         {schedule.length > 0 ? (
-          schedule.map((job, index) => (
+          schedule.map((entry, index) => (
             <div key={index} style={{ marginBottom: "20px" }}>
-              <h4>{job.business_name}</h4>
+              <h4>{entry.business_name}</h4>
               <ul>
-                <li>
-                  {job.job_type} - {job.member_name}
-                </li>
+                {entry.jobs.map((job, jobIndex) => (
+                  <li key={jobIndex}>{job}</li>
+                ))}
               </ul>
             </div>
           ))

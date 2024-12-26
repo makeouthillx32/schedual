@@ -19,10 +19,11 @@ export default function Page() {
     business_name: string;
     before_open: boolean;
     address: string;
-  } | null>(null); // Toast state
+  } | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   const assignRandomJobs = (jobs: string[], availableMembers: typeof members) => {
-    const shuffledMembers = [...availableMembers].sort(() => Math.random() - 0.5); // Shuffle members
+    const shuffledMembers = [...availableMembers].sort(() => Math.random() - 0.5);
     const assignedJobs: { job_name: string; member_name: string }[] = [];
 
     let memberIndex = 0; // Ensure all members are used at least once
@@ -42,6 +43,10 @@ export default function Page() {
 
     setDay(currentDay);
     setWeek(currentWeek);
+
+    // Simulate a theme toggle based on time for testing
+    const hour = today.getHours();
+    setTheme(hour >= 18 || hour < 6 ? "dark" : "light");
   }, []);
 
   const fetchSchedule = async () => {
@@ -87,7 +92,13 @@ export default function Page() {
   }, [week, day]);
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div
+      style={{
+        padding: "20px",
+        background: theme === "dark" ? "#121212" : "#f5f5f5",
+        color: theme === "dark" ? "#ffffff" : "#000000",
+      }}
+    >
       <h2>
         Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
       </h2>
@@ -98,7 +109,11 @@ export default function Page() {
           schedule.map((entry, index) => (
             <div key={index} style={{ marginBottom: "20px" }}>
               <h4
-                style={{ cursor: "pointer", color: "blue" }}
+                style={{
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  color: theme === "dark" ? "#ffffff" : "#000000",
+                }}
                 onClick={() =>
                   setToastInfo({
                     business_name: entry.business_name,
@@ -131,11 +146,12 @@ export default function Page() {
             bottom: "20px",
             right: "20px",
             padding: "20px",
-            background: "#fff",
-            border: "1px solid #ccc",
+            background: theme === "dark" ? "#333333" : "#ffffff",
+            border: theme === "dark" ? "1px solid #444" : "1px solid #ccc",
             borderRadius: "10px",
-            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.3)",
             zIndex: 1000,
+            color: theme === "dark" ? "#ffffff" : "#000000",
           }}
         >
           <button
@@ -145,7 +161,7 @@ export default function Page() {
               top: "5px",
               right: "5px",
               background: "red",
-              color: "#fff",
+              color: "#ffffff",
               border: "none",
               borderRadius: "50%",
               width: "20px",

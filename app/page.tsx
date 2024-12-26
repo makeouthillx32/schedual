@@ -35,6 +35,22 @@ export default function Page() {
     return assignedJobs;
   };
 
+  const randomizeSchedule = () => {
+    const availableMembers = members.filter(
+      (member) => member[day as keyof typeof member]
+    );
+
+    const randomizedSchedule = schedule.map((entry) => ({
+      ...entry,
+      jobs: assignRandomJobs(
+        ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+        availableMembers
+      ),
+    }));
+
+    setSchedule(randomizedSchedule);
+  };
+
   useEffect(() => {
     const today = new Date();
     const currentDay = today.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
@@ -122,6 +138,13 @@ export default function Page() {
           <p>No results found</p>
         )}
       </div>
+
+      <button
+        onClick={randomizeSchedule}
+        className="mt-4 p-2 bg-blue-500 text-white rounded"
+      >
+        Randomize Jobs
+      </button>
 
       {/* Toast Window */}
       {toastInfo && (

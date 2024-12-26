@@ -24,32 +24,37 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const assignMembersToJobs = (jobs: string[], day: string) => {
-    console.log("Members Data:", members); // Debugging
-    const assignedJobs = jobs.map((job) => {
-      const availableMembers = members.filter(
-        (member) => member[day as keyof typeof member]
-      );
+    const assignedJobs: { job_name: string; member_name: string }[] = [];
   
-      console.log("Available Members for Day:", day, availableMembers); // Debugging
+    // Get members available for the current day
+    const availableMembers = members.filter(
+      (member) => member[day as keyof typeof member]
+    );
   
-      if (availableMembers.length === 0) {
-        return { job_name: job, member_name: "No available members" };
-      }
+    console.log("Available Members for Day:", day, availableMembers); // Debugging
   
-      const nextMemberIndex =
-        (rotationState[job] + 1) % availableMembers.length;
-      const assignedMember = availableMembers[nextMemberIndex]?.name;
+    // Defensive check: Ensure `availableMembers` is not empty
+    if (availableMembers.length === 0) {
+      return jobs.map((job) => ({
+        job_name: job,
+        member_name: "No available members",
+      }));
+    }
   
-      if (!assignedMember) {
-        return { job_name: job, member_name: "Unassigned" };
-      }
+    let currentRotationIndex = 0;
   
-      rotationState[job] = nextMemberIndex;
+    // Assign jobs in rotation
+    jobs.forEach((job, index) => {
+      const assignedMember = availableMembers[currentRotationIndex].name;
   
-      return { job_name: job, member_name: assignedMember };
+      // Assign the job
+      assignedJobs.push({ job_name: job, member_name: assignedMember });
+  
+      // Update rotation index
+      currentRotationIndex = (currentRotationIndex + 1) % availableMembers.length;
     });
   
-    console.log("Rotation State:", rotationState); // Debugging
+    console.log("Assigned Jobs:", assignedJobs); // Debugging
   
     return assignedJobs;
   };

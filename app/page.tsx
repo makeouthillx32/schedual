@@ -23,43 +23,44 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const assignMembersToJobs = (jobs: string[], day: string) => {
-    const assignedJobs: { job_name: string; member_name: string }[] = [];
-  
-    // Get members available for the current day
-    const availableMembers = members.filter(
-      (member) => member[day as keyof typeof member]
-    );
-  
-    console.log("Available Members for Day:", day, availableMembers); // Debugging
-  
-    // Defensive check: Ensure `availableMembers` is not empty
-    if (availableMembers.length === 0) {
-      return jobs.map((job) => ({
-        job_name: job,
-        member_name: "No available members",
-      }));
-    }
-  
-    let currentRotationIndex = 0; // Start rotation at the first available member
-  
-    // Assign jobs in rotation
-    jobs.forEach((job) => {
-      // Assign the job to the current member in rotation
-      const assignedMember = availableMembers[currentRotationIndex].name;
-  
-      // Push the job and assigned member to the result
-      assignedJobs.push({ job_name: job, member_name: assignedMember });
-  
-      // Move to the next member in rotation
-      currentRotationIndex = (currentRotationIndex + 1) % availableMembers.length;
-    });
-  
-    console.log("Assigned Jobs:", assignedJobs); // Debugging
-  
-    return assignedJobs;
-  };
-  
+  let globalRotationIndex = 0; // Global rotation index
+
+const assignMembersToJobs = (jobs: string[], day: string) => {
+  const assignedJobs: { job_name: string; member_name: string }[] = [];
+
+  // Get members available for the current day
+  const availableMembers = members.filter(
+    (member) => member[day as keyof typeof member]
+  );
+
+  console.log("Available Members for Day:", day, availableMembers); // Debugging
+
+  // Defensive check: Ensure `availableMembers` is not empty
+  if (availableMembers.length === 0) {
+    return jobs.map((job) => ({
+      job_name: job,
+      member_name: "No available members",
+    }));
+  }
+
+  // Assign jobs in global rotation
+  jobs.forEach((job) => {
+    // Assign the job to the current member in global rotation
+    const assignedMember = availableMembers[globalRotationIndex].name;
+
+    // Push the job and assigned member to the result
+    assignedJobs.push({ job_name: job, member_name: assignedMember });
+
+    // Move to the next member in global rotation
+    globalRotationIndex =
+      (globalRotationIndex + 1) % availableMembers.length; // Wrap around
+  });
+
+  console.log("Assigned Jobs:", assignedJobs); // Debugging
+
+  return assignedJobs;
+};
+
 
   useEffect(() => {
     const today = new Date();

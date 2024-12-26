@@ -104,9 +104,17 @@ export default function Page() {
 
   return (
     <div className="p-5">
-      <h2 className="text-2xl font-bold">
-        Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
-      </h2>
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-2xl font-bold">
+          Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
+        </h2>
+        <button
+          onClick={randomizeSchedule}
+          className="p-2 bg-blue-500 text-white rounded"
+        >
+          Randomize Jobs
+        </button>
+      </div>
       <h3 className="text-lg font-semibold mt-4">Results:</h3>
       {error && <p className="text-red-500">Error: {error}</p>}
       <div>
@@ -138,13 +146,6 @@ export default function Page() {
           <p>No results found</p>
         )}
       </div>
-
-      <button
-        onClick={randomizeSchedule}
-        className="mt-4 p-2 bg-blue-500 text-white rounded"
-      >
-        Randomize Jobs
-      </button>
 
       {/* Toast Window */}
       {toastInfo && (

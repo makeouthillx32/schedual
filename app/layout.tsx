@@ -1,7 +1,7 @@
 "use client";
 
 import { GeistProvider, CssBaseline } from "@geist-ui/core";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Nav from "@/components/nav";
 import "./globals.css";
 
@@ -11,9 +11,16 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [themeType, setThemeType] = useState<"dark" | "light">("light");
+  const [day, setDay] = useState<string>("monday"); // Default day
+  const [week, setWeek] = useState<number>(1); // Default week
 
   const toggleTheme = (): void => {
     setThemeType((last) => (last === "light" ? "dark" : "light"));
+  };
+
+  const handleDayChange = (newDay: string, newWeek: number) => {
+    setDay(newDay);
+    setWeek(newWeek);
   };
 
   return (
@@ -21,7 +28,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <body>
         <GeistProvider themeType={themeType}>
           <CssBaseline />
-          <Nav themeType={themeType} toggleTheme={toggleTheme} />
+          <Nav
+            themeType={themeType}
+            toggleTheme={toggleTheme}
+            day={day}
+            week={week}
+            onDayChange={handleDayChange}
+          />
           <main style={{ padding: "20px" }}>{children}</main>
           <footer
             style={{

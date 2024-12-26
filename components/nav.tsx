@@ -68,7 +68,7 @@ const Nav: React.FC<NavProps> = ({ themeType, toggleTheme, day, week, onDayChang
 
       {/* Center Content */}
       <div style={{ textAlign: "center" }}>
-        <h1 style={{ margin: 0 }}>Cleaning Schedule App</h1>
+        <h1 style={{ margin: 0 }}>CMS Schedule App</h1>
         <p>
           Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
         </p>

@@ -6,6 +6,8 @@ import { members } from "../lib/members"; // Import members
 interface JobSchedule {
   business_name: string;
   jobs: { job_name: string; member_name: string }[];
+  before_open: boolean;
+  address: string;
 }
 
 export default function Page() {
@@ -13,17 +15,21 @@ export default function Page() {
   const [day, setDay] = useState<string>(""); // Default day placeholder
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [toastInfo, setToastInfo] = useState<{
+    business_name: string;
+    before_open: boolean;
+    address: string;
+  } | null>(null); // Toast state
 
   const assignRandomJobs = (jobs: string[], availableMembers: typeof members) => {
     const shuffledMembers = [...availableMembers].sort(() => Math.random() - 0.5); // Shuffle members
     const assignedJobs: { job_name: string; member_name: string }[] = [];
 
-    // Ensure all members are assigned jobs at least once before reusing
-    let memberIndex = 0;
+    let memberIndex = 0; // Ensure all members are used at least once
     jobs.forEach((job) => {
       const assignedMember = shuffledMembers[memberIndex];
       assignedJobs.push({ job_name: job, member_name: assignedMember.name });
-      memberIndex = (memberIndex + 1) % shuffledMembers.length; // Loop through members
+      memberIndex = (memberIndex + 1) % shuffledMembers.length; // Wrap around
     });
 
     return assignedJobs;
@@ -58,6 +64,8 @@ export default function Page() {
       // Assign random jobs for each business
       const updatedSchedule = data.schedule.map((entry: any) => ({
         business_name: entry.business_name,
+        before_open: entry.before_open,
+        address: entry.address,
         jobs: assignRandomJobs(
           ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
           availableMembers
@@ -72,23 +80,6 @@ export default function Page() {
     }
   };
 
-  const randomizeAssignments = () => {
-    const availableMembers = members.filter(
-      (member) => member[day as keyof typeof member]
-    );
-    console.log("Randomizing Assignments with Available Members:", availableMembers);
-
-    const randomizedSchedule = schedule.map((entry) => ({
-      business_name: entry.business_name,
-      jobs: assignRandomJobs(
-        ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
-        availableMembers
-      ),
-    }));
-
-    setSchedule(randomizedSchedule);
-  };
-
   useEffect(() => {
     if (week > 0 && day) {
       fetchSchedule();
@@ -100,27 +91,24 @@ export default function Page() {
       <h2>
         Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
       </h2>
-      <button
-        style={{
-          marginBottom: "20px",
-          padding: "10px 20px",
-          background: "#0070f3",
-          color: "#fff",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-        onClick={randomizeAssignments}
-      >
-        Randomize Assignments
-      </button>
       <h3>Results:</h3>
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
       <div>
         {schedule.length > 0 ? (
           schedule.map((entry, index) => (
             <div key={index} style={{ marginBottom: "20px" }}>
-              <h4>{entry.business_name}</h4>
+              <h4
+                style={{ cursor: "pointer", color: "blue" }}
+                onClick={() =>
+                  setToastInfo({
+                    business_name: entry.business_name,
+                    before_open: entry.before_open,
+                    address: entry.address,
+                  })
+                }
+              >
+                {entry.business_name}
+              </h4>
               <ul>
                 {entry.jobs.map((job, jobIndex) => (
                   <li key={jobIndex}>
@@ -134,6 +122,51 @@ export default function Page() {
           <p>No results found</p>
         )}
       </div>
+
+      {/* Toast Window */}
+      {toastInfo && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            padding: "20px",
+            background: "#fff",
+            border: "1px solid #ccc",
+            borderRadius: "10px",
+            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+            zIndex: 1000,
+          }}
+        >
+          <button
+            onClick={() => setToastInfo(null)}
+            style={{
+              position: "absolute",
+              top: "5px",
+              right: "5px",
+              background: "red",
+              color: "#fff",
+              border: "none",
+              borderRadius: "50%",
+              width: "20px",
+              height: "20px",
+              cursor: "pointer",
+              textAlign: "center",
+              lineHeight: "20px",
+            }}
+          >
+            X
+          </button>
+          <h4>{toastInfo.business_name}</h4>
+          <p>
+            <strong>Address:</strong> {toastInfo.address}
+          </p>
+          <p>
+            <strong>Before Open:</strong>{" "}
+            {toastInfo.before_open ? "Yes" : "No"}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

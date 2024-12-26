@@ -23,42 +23,52 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const assignMembersToJobs = (jobs: string[], day: string) => {
-    const assignedJobs: { job_name: string; member_name: string }[] = [];
-  
-    // Get members available for the current day
-    const availableMembers = members.filter(
-      (member) => member[day as keyof typeof member]
-    );
-  
-    console.log("Available Members for Day:", day, availableMembers); // Debugging
-  
-    // Defensive check: Ensure `availableMembers` is not empty
-    if (availableMembers.length === 0) {
-      return jobs.map((job) => ({
-        job_name: job,
-        member_name: "No available members",
-      }));
-    }
-  
-    let currentRotationIndex = 0;
-  
-    // Assign jobs in rotation
-    jobs.forEach((job, index) => {
-      const assignedMember = availableMembers[currentRotationIndex].name;
-  
-      // Assign the job
-      assignedJobs.push({ job_name: job, member_name: assignedMember });
-  
-      // Update rotation index
-      currentRotationIndex = (currentRotationIndex + 1) % availableMembers.length;
-    });
-  
-    console.log("Assigned Jobs:", assignedJobs); // Debugging
-  
-    return assignedJobs;
-  };
-  
+  const rotationState: { [key: string]: number } = {};
+
+// Initialize `rotationState` for all members
+members.forEach((member) => {
+  rotationState[member.name] = -1; // Start with no job assigned
+});
+
+const assignMembersToJobs = (jobs: string[], day: string) => {
+  const assignedJobs: { job_name: string; member_name: string }[] = [];
+
+  // Get members available for the current day
+  const availableMembers = members.filter(
+    (member) => member[day as keyof typeof member]
+  );
+
+  console.log("Available Members for Day:", day, availableMembers); // Debugging
+
+  // Defensive check: Ensure `availableMembers` is not empty
+  if (availableMembers.length === 0) {
+    return jobs.map((job) => ({
+      job_name: job,
+      member_name: "No available members",
+    }));
+  }
+
+  // Assign jobs in rotation using `rotationState`
+  jobs.forEach((job) => {
+    // Find the next member in rotation
+    const nextMemberIndex =
+      (rotationState[availableMembers[0].name] + 1) % availableMembers.length;
+    const assignedMember = availableMembers[nextMemberIndex].name;
+
+    // Assign the job
+    assignedJobs.push({ job_name: job, member_name: assignedMember });
+
+    // Update rotation state for the member
+    rotationState[availableMembers[nextMemberIndex].name] =
+      (rotationState[availableMembers[nextMemberIndex].name] + 1) %
+      availableMembers.length;
+  });
+
+  console.log("Assigned Jobs:", assignedJobs); // Debugging
+
+  return assignedJobs;
+};
+
 
   useEffect(() => {
     const today = new Date();

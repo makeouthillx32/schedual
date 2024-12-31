@@ -110,3 +110,61 @@
 .nav-dropdown {
   transition: max-height 0.3s ease-in-out;
 }
+/* Toggle button */
+.toggle {
+  --size: 2rem;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  color: hsl(240, 100%, 95%);
+  background: var(--foreground);
+  box-shadow: inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0;
+  transition: all 0.5s ease-in-out;
+}
+
+.toggle:checked {
+  transform: scale(0.75);
+  color: hsl(40, 100%, 50%);
+  box-shadow: 
+    inset 0 0 0 var(--size),
+    calc(var(--size) * -0.65) 0 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.65) 0 0 calc(var(--size) * -0.4),
+    0 calc(var(--size) * -0.65) 0 calc(var(--size) * -0.4),
+    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * -0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * -0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4);
+}
+
+/* Background */
+.background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--background);
+  transition: background-color 0.5s;
+}
+
+/* Toggle label (text) */
+.title {
+  display: block;
+  padding-top: 0.5rem;
+  font-size: 1rem;
+  color: var(--foreground);
+  transition: color 0.5s;
+}
+
+.toggle:checked ~ .background {
+  background-color: hsl(240, 100%, 95%);
+}
+
+.toggle:checked ~ .title {
+  color: hsl(40, 100%, 50%);
+}

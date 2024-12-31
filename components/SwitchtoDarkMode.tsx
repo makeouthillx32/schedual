@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 
-interface SwitchToDarkModeProps {
+interface SwitchtoDarkModeProps {
   themeType: "dark" | "light";
   toggleTheme: () => void;
 }
 
-const SwitchToDarkMode: React.FC<SwitchToDarkModeProps> = ({ themeType, toggleTheme }) => {
+const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ themeType, toggleTheme }) => {
   const [isChecked, setIsChecked] = useState(themeType === "dark");
 
   useEffect(() => {
@@ -35,4 +35,4 @@ const SwitchToDarkMode: React.FC<SwitchToDarkModeProps> = ({ themeType, toggleTh
   );
 };
 
-export default SwitchToDarkMode;
+export default SwitchtoDarkMode;

@@ -11,10 +11,11 @@ const Toast: React.FC<ToastProps> = ({ business_name, address, before_open, onCl
   <div
     className="fixed top-5 right-5 p-5 rounded-lg shadow-lg max-w-xs w-full"
     style={{
-      backgroundColor: "var(--card)",
-      color: "var(--card-foreground)",
-      border: "1px solid var(--border)",
+      backgroundColor: "#ffffff", // Solid white background
+      color: "#000000", // Black text for contrast
+      border: "1px solid #ccc", // Subtle border
       zIndex: 1000,
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Light shadow for depth
     }}
   >
     <button

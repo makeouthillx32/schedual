@@ -110,6 +110,7 @@
 .nav-dropdown {
   transition: max-height 0.3s ease-in-out;
 }
+
 /* SwitchtoDarkMode styles */
 .toggle {
   --size: 2rem;

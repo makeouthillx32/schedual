@@ -39,7 +39,6 @@ const DropdownMenuItem = React.forwardRef<
 ));
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
-// Custom component to show current date and time
 const DropdownMenuCurrentDateTime: React.FC = () => {
   const [currentDateTime, setCurrentDateTime] = React.useState(new Date());
 
@@ -60,7 +59,32 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
   );
 };
 
+const CustomDropdown: React.FC = () => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center p-2">
+          <span className="hamburger"></span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuCurrentDateTime />
+        <DropdownMenuItem>
+          <a href="#">Home</a>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <a href="#">Schedule</a>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <a href="#">Settings</a>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 export {
+  CustomDropdown,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,

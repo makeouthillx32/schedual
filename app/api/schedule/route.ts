@@ -23,6 +23,13 @@ export async function GET(req: Request) {
 
     console.log(`API received: week=${week}, day=${day}`);
 
+    // Validate that the week and day are properly parsed
+    const parsedWeek = parseInt(week);
+    if (isNaN(parsedWeek)) {
+      console.error("Invalid week parameter");
+      return NextResponse.json({ error: "Invalid week parameter" }, { status: 400 });
+    }
+
     // Query the businesses scheduled for this week and day
     const { data: businesses, error } = await supabase
       .from("Schedule")
@@ -33,11 +40,19 @@ export async function GET(req: Request) {
       `
       )
       .eq(day, true)
-      .eq("week", parseInt(week));
+      .eq("week", parsedWeek);
 
     if (error) {
       console.error("Supabase Query Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!businesses || businesses.length === 0) {
+      console.warn("No businesses found for the given week and day");
+      return NextResponse.json(
+        { schedule: [], message: "No data found for the given week and day" },
+        { status: 200 }
+      );
     }
 
     // Format the response to include jobs
@@ -54,8 +69,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ schedule });
   } catch (error) {
     console.error("API Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

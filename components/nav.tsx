@@ -18,10 +18,10 @@ const Nav: React.FC<NavProps> = ({ themeType, toggleTheme }) => {
     >
       <h1>CMS Schedule App</h1>
       <div className="flex items-center">
-        {/* Dropdown menu as a component */}
-        <CustomDropdown />
-        {/* Dark mode toggle */}
+        {/* SwitchtoDarkMode on the left */}
         <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
+        {/* Dropdown menu */}
+        <CustomDropdown />
       </div>
     </nav>
   );

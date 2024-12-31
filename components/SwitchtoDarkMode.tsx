@@ -2,25 +2,24 @@
 
 import React, { useEffect, useState } from "react";
 
-const SwitchtoDarkMode: React.FC = () => {
-  const [isChecked, setIsChecked] = useState(false);
+interface SwitchToDarkModeProps {
+  themeType: "dark" | "light";
+  toggleTheme: () => void;
+}
+
+const SwitchToDarkMode: React.FC<SwitchToDarkModeProps> = ({ themeType, toggleTheme }) => {
+  const [isChecked, setIsChecked] = useState(themeType === "dark");
 
   useEffect(() => {
-    const hours = new Date().getHours();
-    const isDaytime = hours > 7 && hours < 20;
-    setIsChecked(isDaytime);
-
-    // Apply the correct theme on component mount
-    document.documentElement.classList.toggle("dark", !isDaytime);
-  }, []);
+    setIsChecked(themeType === "dark");
+  }, [themeType]);
 
   const handleToggle = () => {
-    document.documentElement.classList.toggle("dark", !isChecked);
-    setIsChecked(!isChecked);
+    toggleTheme();
   };
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center">
       <input
         id="toggle"
         className="toggle"
@@ -28,6 +27,7 @@ const SwitchtoDarkMode: React.FC = () => {
         checked={isChecked}
         onChange={handleToggle}
       />
+      <div className="background"></div>
       <label htmlFor="toggle" className="title">
         Toggle dark mode
       </label>
@@ -35,4 +35,4 @@ const SwitchtoDarkMode: React.FC = () => {
   );
 };
 
-export default SwitchtoDarkMode;
+export default SwitchToDarkMode;

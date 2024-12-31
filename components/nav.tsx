@@ -1,7 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCurrentDateTime,
+} from "./ui/dropdown-menu";
 
 interface NavProps {
   themeType: "dark" | "light";
@@ -9,14 +16,6 @@ interface NavProps {
 }
 
 const Nav: React.FC<NavProps> = ({ themeType, toggleTheme }) => {
-  const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <nav
       className={`flex justify-between items-center p-4 ${
@@ -24,8 +23,30 @@ const Nav: React.FC<NavProps> = ({ themeType, toggleTheme }) => {
       }`}
     >
       <h1>CMS Schedule App</h1>
-      <div>
-        <span className="mr-4">{`${currentDateTime.toLocaleDateString()} ${currentDateTime.toLocaleTimeString()}`}</span>
+      <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="p-2 bg-gray-200 dark:bg-gray-800 rounded-md"
+              aria-label="Toggle menu"
+            >
+              <span className="hamburger"></span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {/* Current date and time displayed in the dropdown */}
+            <DropdownMenuCurrentDateTime />
+            <DropdownMenuItem>
+              <a href="#">Home</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <a href="#">Schedule</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <a href="#">Settings</a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
       </div>
     </nav>

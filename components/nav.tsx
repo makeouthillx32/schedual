@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import SwitchToDarkMode from "./SwitchtoDarkMode";
 
 interface NavProps {
   themeType: "dark" | "light";
@@ -68,19 +69,7 @@ const Nav: React.FC<NavProps> = ({ themeType, toggleTheme }) => {
           {currentDateTime.toLocaleDateString()}{" "}
           {currentDateTime.toLocaleTimeString()}
         </span>
-        <button
-          onClick={toggleTheme}
-          style={{
-            padding: "5px 10px",
-            borderRadius: "5px",
-            background: themeType === "dark" ? "#333" : "#ddd",
-            color: themeType === "dark" ? "#fff" : "#000",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          {themeType === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        </button>
+        <SwitchToDarkMode themeType={themeType} toggleTheme={toggleTheme} />
       </div>
     </nav>
   );

@@ -60,25 +60,66 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
 };
 
 const CustomDropdown: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const toggleMenu = () => {
+    setIsOpen((prev) => !prev);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           className="flex items-center justify-center p-2"
           aria-label="Toggle menu"
+          onClick={toggleMenu}
+          style={{
+            position: "relative",
+            width: "30px",
+            height: "24px",
+            cursor: "pointer",
+          }}
         >
-          {/* Hamburger Icon */}
-          <div className="relative w-8 h-6">
-            <span
-              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-0 transition-transform"
-            ></span>
-            <span
-              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-2 transition-transform"
-            ></span>
-            <span
-              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-4 transition-transform"
-            ></span>
-          </div>
+          {/* Animated Hamburger Icon */}
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)", // Theme-dependent color
+              borderRadius: "2px",
+              position: "absolute",
+              top: isOpen ? "10px" : "0",
+              transform: isOpen ? "rotate(45deg)" : "none",
+              transition: "all 0.3s ease",
+            }}
+          ></span>
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)",
+              borderRadius: "2px",
+              position: "absolute",
+              top: "10px",
+              opacity: isOpen ? "0" : "1",
+              transition: "all 0.3s ease",
+            }}
+          ></span>
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)",
+              borderRadius: "2px",
+              position: "absolute",
+              top: isOpen ? "10px" : "20px",
+              transform: isOpen ? "rotate(-45deg)" : "none",
+              transition: "all 0.3s ease",
+            }}
+          ></span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

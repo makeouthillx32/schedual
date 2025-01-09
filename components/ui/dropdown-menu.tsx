@@ -63,8 +63,52 @@ const CustomDropdown: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center p-2">
-          <span className="hamburger"></span>
+        <button
+          className="flex items-center p-2"
+          aria-label="Toggle menu"
+          style={{
+            position: "relative",
+            width: "30px",
+            height: "24px",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)", // Theme-dependent color
+              borderRadius: "2px",
+              position: "absolute",
+              top: "0",
+              transition: "0.3s",
+            }}
+          ></span>
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)",
+              borderRadius: "2px",
+              position: "absolute",
+              top: "10px",
+              transition: "0.3s",
+            }}
+          ></span>
+          <span
+            style={{
+              display: "block",
+              width: "100%",
+              height: "4px",
+              backgroundColor: "var(--foreground, black)",
+              borderRadius: "2px",
+              position: "absolute",
+              top: "20px",
+              transition: "0.3s",
+            }}
+          ></span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

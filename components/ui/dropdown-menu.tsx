@@ -64,51 +64,21 @@ const CustomDropdown: React.FC = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center p-2"
+          className="flex items-center justify-center p-2"
           aria-label="Toggle menu"
-          style={{
-            position: "relative",
-            width: "30px",
-            height: "24px",
-            cursor: "pointer",
-          }}
         >
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground, black)", // Theme-dependent color
-              borderRadius: "2px",
-              position: "absolute",
-              top: "0",
-              transition: "0.3s",
-            }}
-          ></span>
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground, black)",
-              borderRadius: "2px",
-              position: "absolute",
-              top: "10px",
-              transition: "0.3s",
-            }}
-          ></span>
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground, black)",
-              borderRadius: "2px",
-              position: "absolute",
-              top: "20px",
-              transition: "0.3s",
-            }}
-          ></span>
+          {/* Hamburger Icon */}
+          <div className="relative w-8 h-6">
+            <span
+              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-0 transition-transform"
+            ></span>
+            <span
+              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-2 transition-transform"
+            ></span>
+            <span
+              className="block w-full h-1 bg-black dark:bg-white rounded-sm absolute top-4 transition-transform"
+            ></span>
+          </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

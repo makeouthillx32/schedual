@@ -27,7 +27,7 @@ const WeatherWidget: React.FC = () => {
     const fetchWeather = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/weather?location=93555"); // Update the location if needed
+        const res = await fetch("/api/Weather?location=93555"); // Updated to match the API route casing
         if (!res.ok) {
           throw new Error("Failed to fetch weather data.");
         }
@@ -80,6 +80,7 @@ const WeatherWidget: React.FC = () => {
         {weather.location.name}, {weather.location.region}, {weather.location.country}
       </h2>
       <div className="flex items-center space-x-4">
+        {/* Use the condition text to determine the icon */}
         {getWeatherIcon(weather.current.condition.text)}
         <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {weather.current.temp_c}°C
@@ -88,6 +89,12 @@ const WeatherWidget: React.FC = () => {
       <p className="text-sm text-gray-700 dark:text-gray-300">
         {weather.current.condition.text}
       </p>
+      {/* Use the icon field for additional customization */}
+      <img
+        src={`https:${weather.current.condition.icon}`}
+        alt={weather.current.condition.text}
+        className="w-10 h-10"
+      />
     </div>
   );
 };

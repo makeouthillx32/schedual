@@ -59,58 +59,6 @@
   }
 }
 
-/* Hamburger menu animation */
-.hamburger {
-  display: block;
-  width: 25px;
-  height: 3px;
-  background-color: var(--foreground);
-  position: relative;
-  transition: all 0.3s;
-}
-
-.hamburger::before,
-.hamburger::after {
-  content: "";
-  display: block;
-  width: 25px;
-  height: 3px;
-  background-color: var(--foreground);
-  position: absolute;
-  transition: all 0.3s;
-}
-
-.hamburger::before {
-  top: -8px;
-}
-
-.hamburger::after {
-  bottom: -8px;
-}
-
-.hamburger.open {
-  transform: rotate(45deg);
-  background-color: transparent;
-}
-
-.hamburger.open::before {
-  transform: rotate(-90deg) translateX(8px);
-}
-
-.hamburger.open::after {
-  transform: rotate(-90deg) translateX(-8px);
-}
-
-.dark .hamburger,
-.dark .hamburger::before,
-.dark .hamburger::after {
-  background-color: var(--foreground);
-}
-
-.nav-dropdown {
-  transition: max-height 0.3s ease-in-out;
-}
-
 /* SwitchtoDarkMode styles */
 .toggle {
   --size: 2rem;
@@ -144,9 +92,6 @@
     calc(var(--size) * 0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4);
 }
 
-
-
-
 .title {
   --color: hsl(69, 97%, 49%);
   color: var(--color);
@@ -162,6 +107,7 @@
 .toggle:checked ~ .title {
   --color: hsl(40, 100%, 50%);
 }
+
 /* Dropdown styles */
 .dropdown-menu {
   position: absolute;
@@ -220,10 +166,6 @@
 .dropdown-trigger:hover {
   background: var(--muted);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-}
-
-.dropdown-trigger .hamburger {
-  background: var(--foreground);
 }
 
 .dark .dropdown-menu {

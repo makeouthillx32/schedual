@@ -70,7 +70,7 @@ const CustomDropdown: React.FC = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center justify-center p-2"
+          className="flex items-center p-2"
           aria-label="Toggle menu"
           onClick={toggleMenu}
           style={{
@@ -80,51 +80,50 @@ const CustomDropdown: React.FC = () => {
             cursor: "pointer",
           }}
         >
-          {/* Hamburger Icon */}
+          {/* Top bar */}
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen
-                ? "transparent"
-                : "var(--foreground, black)", // Light mode
-              transition: "all 0.3s ease",
+              backgroundColor: "var(--foreground)", // Theme-controlled
               borderRadius: "2px",
               position: "absolute",
-              top: "0",
+              top: isOpen ? "10px" : "0",
+              transform: isOpen ? "rotate(45deg)" : "none",
+              transition: "all 0.3s ease",
             }}
-            className="dark:bg-white" // Dark mode
+            className="dark:bg-white"
           ></span>
+          {/* Middle bar */}
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: "var(--foreground, black)",
-              transition: "all 0.3s ease",
+              backgroundColor: "var(--foreground)",
               borderRadius: "2px",
               position: "absolute",
-              top: isOpen ? "10px" : "10px",
+              top: "10px",
               opacity: isOpen ? 0 : 1,
+              transition: "all 0.3s ease",
             }}
-            className="dark:bg-white" // Dark mode
+            className="dark:bg-white"
           ></span>
+          {/* Bottom bar */}
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen
-                ? "transparent"
-                : "var(--foreground, black)", // Light mode
+              backgroundColor: "var(--foreground)",
               borderRadius: "2px",
               position: "absolute",
-              top: "20px",
+              top: isOpen ? "10px" : "20px",
               transform: isOpen ? "rotate(-45deg)" : "none",
               transition: "all 0.3s ease",
             }}
-            className="dark:bg-white" // Dark mode
+            className="dark:bg-white"
           ></span>
         </button>
       </DropdownMenuTrigger>

@@ -86,7 +86,9 @@ const CustomDropdown: React.FC = () => {
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: "var(--foreground, black)", // Theme-dependent color
+              backgroundColor: isOpen
+                ? "var(--primary-foreground, black)" // Fallback for light/dark mode
+                : "var(--foreground, black)",
               borderRadius: "2px",
               position: "absolute",
               top: isOpen ? "10px" : "0",
@@ -112,7 +114,9 @@ const CustomDropdown: React.FC = () => {
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: "var(--foreground, black)",
+              backgroundColor: isOpen
+                ? "var(--primary-foreground, black)" // Fallback for light/dark mode
+                : "var(--foreground, black)",
               borderRadius: "2px",
               position: "absolute",
               top: isOpen ? "10px" : "20px",

@@ -6,6 +6,7 @@ import { assignRandomJobs } from "@/components/assignRandomJobs";
 import Toast from "@/components/Toast";
 import ScheduleList from "@/components/ScheduleList";
 import RandomizerButton from "@/components/RandomizerButton";
+import WeatherWidget from "@/components/WeatherWidget"; // Import the WeatherWidget
 import { members } from "../lib/members";
 
 interface JobSchedule {
@@ -44,7 +45,9 @@ export default function Page() {
 
   useEffect(() => {
     const today = new Date();
-    const currentDay = today.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+    const currentDay = today
+      .toLocaleString("en-US", { weekday: "long" })
+      .toLowerCase();
     const currentWeek = Math.ceil(today.getDate() / 7);
 
     setDay(currentDay);
@@ -69,7 +72,8 @@ export default function Page() {
 
       setSchedule(updatedSchedule);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
       setError(errorMessage);
     }
   };
@@ -86,8 +90,9 @@ export default function Page() {
         </h2>
         <RandomizerButton onClick={randomizeSchedule} />
       </div>
-      <h3 className="text-lg font-semibold mt-4">Results:</h3>
       {error && <p className="text-red-500">Error: {error}</p>}
+      {/* Replace "Results:" with WeatherWidget */}
+      <WeatherWidget />
       <ScheduleList
         schedule={schedule.map((entry) => ({
           ...entry,

@@ -80,45 +80,51 @@ const CustomDropdown: React.FC = () => {
             cursor: "pointer",
           }}
         >
-          {/* Animated Hamburger Icon */}
+          {/* Hamburger Icon */}
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen ? "#000000" : "#FFFFFF", // Explicit fallback colors
+              backgroundColor: isOpen
+                ? "transparent"
+                : "var(--foreground, black)", // Light mode
+              transition: "all 0.3s ease",
               borderRadius: "2px",
               position: "absolute",
-              top: isOpen ? "10px" : "0",
-              transform: isOpen ? "rotate(45deg)" : "none",
-              transition: "all 0.3s ease",
+              top: "0",
             }}
+            className="dark:bg-white" // Dark mode
           ></span>
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: "#FFFFFF", // Explicit fallback colors
+              backgroundColor: "var(--foreground, black)",
+              transition: "all 0.3s ease",
               borderRadius: "2px",
               position: "absolute",
-              top: "10px",
-              opacity: isOpen ? "0" : "1",
-              transition: "all 0.3s ease",
+              top: isOpen ? "10px" : "10px",
+              opacity: isOpen ? 0 : 1,
             }}
+            className="dark:bg-white" // Dark mode
           ></span>
           <span
             style={{
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen ? "#000000" : "#FFFFFF", // Explicit fallback colors
+              backgroundColor: isOpen
+                ? "transparent"
+                : "var(--foreground, black)", // Light mode
               borderRadius: "2px",
               position: "absolute",
-              top: isOpen ? "10px" : "20px",
+              top: "20px",
               transform: isOpen ? "rotate(-45deg)" : "none",
               transition: "all 0.3s ease",
             }}
+            className="dark:bg-white" // Dark mode
           ></span>
         </button>
       </DropdownMenuTrigger>

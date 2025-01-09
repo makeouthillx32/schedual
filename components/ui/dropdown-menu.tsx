@@ -60,71 +60,19 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
 };
 
 const CustomDropdown: React.FC = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  const toggleMenu = () => {
-    setIsOpen((prev) => !prev);
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center p-2"
+          className="flex items-center justify-center w-8 h-8"
           aria-label="Toggle menu"
-          onClick={toggleMenu}
-          style={{
-            position: "relative",
-            width: "30px",
-            height: "24px",
-            cursor: "pointer",
-          }}
         >
-          {/* Top bar */}
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground)", // Theme-controlled
-              borderRadius: "2px",
-              position: "absolute",
-              top: isOpen ? "10px" : "0",
-              transform: isOpen ? "rotate(45deg)" : "none",
-              transition: "all 0.3s ease",
-            }}
-            className="dark:bg-white"
-          ></span>
-          {/* Middle bar */}
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground)",
-              borderRadius: "2px",
-              position: "absolute",
-              top: "10px",
-              opacity: isOpen ? 0 : 1,
-              transition: "all 0.3s ease",
-            }}
-            className="dark:bg-white"
-          ></span>
-          {/* Bottom bar */}
-          <span
-            style={{
-              display: "block",
-              width: "100%",
-              height: "4px",
-              backgroundColor: "var(--foreground)",
-              borderRadius: "2px",
-              position: "absolute",
-              top: isOpen ? "10px" : "20px",
-              transform: isOpen ? "rotate(-45deg)" : "none",
-              transition: "all 0.3s ease",
-            }}
-            className="dark:bg-white"
-          ></span>
+          {/* Hamburger menu */}
+          <div className="space-y-1.5">
+            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
+            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
+            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
+          </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -151,4 +99,3 @@ export {
   DropdownMenuItem,
   DropdownMenuCurrentDateTime,
 };
-

@@ -86,9 +86,7 @@ const CustomDropdown: React.FC = () => {
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen
-                ? "var(--primary-foreground, black)" // Fallback for light/dark mode
-                : "var(--foreground, black)",
+              backgroundColor: isOpen ? "#000000" : "#FFFFFF", // Explicit fallback colors
               borderRadius: "2px",
               position: "absolute",
               top: isOpen ? "10px" : "0",
@@ -101,7 +99,7 @@ const CustomDropdown: React.FC = () => {
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: "var(--foreground, black)",
+              backgroundColor: "#FFFFFF", // Explicit fallback colors
               borderRadius: "2px",
               position: "absolute",
               top: "10px",
@@ -114,9 +112,7 @@ const CustomDropdown: React.FC = () => {
               display: "block",
               width: "100%",
               height: "4px",
-              backgroundColor: isOpen
-                ? "var(--primary-foreground, black)" // Fallback for light/dark mode
-                : "var(--foreground, black)",
+              backgroundColor: isOpen ? "#000000" : "#FFFFFF", // Explicit fallback colors
               borderRadius: "2px",
               position: "absolute",
               top: isOpen ? "10px" : "20px",

@@ -1,44 +1,118 @@
-import NextLogo from "./next-logo";
-import SupabaseLogo from "./supabase-logo";
+"use client";
 
-export default function Header() {
+import { useState, useEffect } from "react";
+import { fetchSchedule } from "@/components/fetchSchedule";
+import { assignRandomJobs } from "@/components/assignRandomJobs";
+import Toast from "@/components/Toast";
+import ScheduleList from "@/components/ScheduleList";
+import RandomizerButton from "@/components/RandomizerButton";
+import WeatherWidget from "@/components/WeatherWidget";
+import { members } from "../lib/members";
+import { useTheme } from "@/app/provider";
+
+interface JobSchedule {
+  business_name: string;
+  jobs: { job_name: string; member_name: string }[];
+  before_open: boolean;
+  address: string;
+}
+
+const Hero = () => {
+  const [week, setWeek] = useState<number>(0);
+  const [day, setDay] = useState<string>("");
+  const [schedule, setSchedule] = useState<JobSchedule[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [toastInfo, setToastInfo] = useState<{
+    business_name: string;
+    before_open: boolean;
+    address: string;
+  } | null>(null);
+
+  const { themeType } = useTheme();
+
+  const randomizeSchedule = () => {
+    const availableMembers = members.filter(
+      (member) => member[day as keyof typeof member]
+    );
+
+    const randomizedSchedule = schedule.map((entry) => ({
+      ...entry,
+      jobs: assignRandomJobs(
+        ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+        availableMembers
+      ),
+    }));
+
+    setSchedule(randomizedSchedule);
+  };
+
+  useEffect(() => {
+    const today = new Date();
+    const currentDay = today
+      .toLocaleString("en-US", { weekday: "long" })
+      .toLowerCase();
+    const currentWeek = Math.ceil(today.getDate() / 7);
+
+    setDay(currentDay);
+    setWeek(currentWeek);
+  }, []);
+
+  const loadSchedule = async () => {
+    try {
+      const data = await fetchSchedule(week, day);
+      const availableMembers = members.filter(
+        (member) => member[day as keyof typeof member]
+      );
+
+      const updatedSchedule = data.schedule.map((entry: any) => ({
+        ...entry,
+        jobs: assignRandomJobs(
+          ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+          availableMembers
+        ),
+        onClick: () => setToastInfo(entry),
+      }));
+
+      setSchedule(updatedSchedule);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
+      setError(errorMessage);
+    }
+  };
+
+  useEffect(() => {
+    if (week > 0 && day) loadSchedule();
+  }, [week, day]);
+
   return (
-    <div className="flex flex-col gap-16 items-center">
-      <div className="flex gap-8 justify-center items-center">
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <SupabaseLogo />
-        </a>
-        <span className="border-l rotate-45 h-6" />
-        <a href="https://nextjs.org/" target="_blank" rel="noreferrer">
-          <NextLogo />
-        </a>
+    <div
+      className={`p-5 ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
+      <div className="flex justify-between items-center mb-5">
+        <h2 className="text-2xl font-bold">
+          Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
+        </h2>
+        <RandomizerButton onClick={randomizeSchedule} />
       </div>
-      <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
-      <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center">
-        The fastest way to build apps with{" "}
-        <a
-          href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Supabase
-        </a>{" "}
-        and{" "}
-        <a
-          href="https://nextjs.org/"
-          target="_blank"
-          className="font-bold hover:underline"
-          rel="noreferrer"
-        >
-          Next.js
-        </a>
-      </p>
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent my-8" />
+      {error && <p className="text-red-500">Error: {error}</p>}
+      <WeatherWidget />
+      <ScheduleList
+        schedule={schedule.map((entry) => ({
+          ...entry,
+          onClick: () =>
+            setToastInfo({
+              business_name: entry.business_name,
+              before_open: entry.before_open,
+              address: entry.address,
+            }),
+        }))}
+      />
+      {toastInfo && <Toast {...toastInfo} onClose={() => setToastInfo(null)} />}
     </div>
   );
-}
+};
+
+export default Hero;

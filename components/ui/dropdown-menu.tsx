@@ -10,34 +10,50 @@ const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in",
-        className
-      )}
-      {...props}
-    />
-  </DropdownMenuPrimitive.Portal>
-));
+>(({ className, sideOffset = 4, ...props }, ref) => {
+  const { themeType } = useTheme(); // Get the current theme from the provider
+
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        ref={ref}
+        sideOffset={sideOffset}
+        className={cn(
+          `z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in ${
+            themeType === "dark"
+              ? "bg-gray-900 text-white border-gray-700"
+              : "bg-white text-black border-gray-300"
+          }`,
+          className
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  );
+});
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Item
-    ref={ref}
-    className={cn(
-      "flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:bg-accent",
-      className
-    )}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { themeType } = useTheme(); // Get the current theme for item styling
+
+  return (
+    <DropdownMenuPrimitive.Item
+      ref={ref}
+      className={cn(
+        `flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none ${
+          themeType === "dark"
+            ? "focus:bg-gray-800 text-white"
+            : "focus:bg-gray-200 text-black"
+        }`,
+        className
+      )}
+      {...props}
+    />
+  );
+});
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 const DropdownMenuCurrentDateTime: React.FC = () => {
@@ -61,7 +77,7 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
 };
 
 const CustomDropdown: React.FC = () => {
-  const { theme } = useTheme(); // Access the current theme ("light" or "dark")
+  const { themeType } = useTheme(); // Access the current theme ("light" or "dark")
 
   return (
     <DropdownMenu>
@@ -74,17 +90,17 @@ const CustomDropdown: React.FC = () => {
           <div className="space-y-1.5">
             <div
               className={`w-6 h-0.5 ${
-                theme === "dark" ? "bg-white" : "bg-black"
+                themeType === "dark" ? "bg-white" : "bg-black"
               }`}
             ></div>
             <div
               className={`w-6 h-0.5 ${
-                theme === "dark" ? "bg-white" : "bg-black"
+                themeType === "dark" ? "bg-white" : "bg-black"
               }`}
             ></div>
             <div
               className={`w-6 h-0.5 ${
-                theme === "dark" ? "bg-white" : "bg-black"
+                themeType === "dark" ? "bg-white" : "bg-black"
               }`}
             ></div>
           </div>

@@ -1,11 +1,7 @@
 "use client";
 
-import Hero from "@/components/hero2";
+import Hero2 from "@/components/hero2";
 
-export default function Page() {
-  return (
-    <div>
-      <Hero2 />
-    </div>
-  );
+export default function SchedulePage() {
+  return <Hero2 />;
 }

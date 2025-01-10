@@ -17,9 +17,7 @@ const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ themeType, toggleTh
         checked={themeType === "dark"}
         onChange={toggleTheme}
       />
-      <label htmlFor="toggle" className="ml-2">
-        {themeType === "dark" ? "Dark Mode" : "Light Mode"}
-      </label>
+     
     </div>
   );
 };

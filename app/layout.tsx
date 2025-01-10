@@ -1,15 +1,22 @@
 "use client";
 
 import { GeistProvider, CssBaseline } from "@geist-ui/core";
-import React, { useState } from "react";
+import React, { useState, createContext, useContext } from "react";
 import Nav from "@/components/nav";
 import "./globals.css";
 
-interface LayoutProps {
-  children: React.ReactNode;
+// Theme context
+interface ThemeContextType {
+  themeType: "dark" | "light";
+  toggleTheme: () => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const ThemeContext = createContext<ThemeContextType | null>(null);
+
+// ThemeProvider
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [themeType, setThemeType] = useState<"dark" | "light">("light");
 
   const toggleTheme = (): void => {
@@ -17,23 +24,47 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
+    <ThemeContext.Provider value={{ themeType, toggleTheme }}>
+      <GeistProvider themeType={themeType}>
+        <CssBaseline />
+        {children}
+      </GeistProvider>
+    </ThemeContext.Provider>
+  );
+};
+
+// Custom hook to use the theme
+export const useTheme = (): ThemeContextType => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+};
+
+// Layout Component
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  return (
     <html lang="en">
       <body>
-        <GeistProvider themeType={themeType}>
-          <CssBaseline />
-          <Nav themeType={themeType} toggleTheme={toggleTheme} />
+        <ThemeProvider>
+          <Nav />
           <main style={{ padding: "20px" }}>{children}</main>
           <footer
             style={{
               padding: "10px",
-              background: themeType === "dark" ? "#1e1e1e" : "#f5f5f5",
-              color: themeType === "dark" ? "#fff" : "#000",
+              background: "var(--background)", // Utilize theme colors
+              color: "var(--foreground)", // Utilize theme colors
               textAlign: "center",
             }}
           >
             <p>&copy; {new Date().getFullYear()} Powered by unenter</p>
           </footer>
-        </GeistProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

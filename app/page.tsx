@@ -6,8 +6,9 @@ import { assignRandomJobs } from "@/components/assignRandomJobs";
 import Toast from "@/components/Toast";
 import ScheduleList from "@/components/ScheduleList";
 import RandomizerButton from "@/components/RandomizerButton";
-import WeatherWidget from "@/components/WeatherWidget"; // Import the WeatherWidget
+import WeatherWidget from "@/components/WeatherWidget";
 import { members } from "../lib/members";
+import { useTheme } from "@/app/provider";
 
 interface JobSchedule {
   business_name: string;
@@ -26,6 +27,8 @@ export default function Page() {
     before_open: boolean;
     address: string;
   } | null>(null);
+
+  const { themeType } = useTheme(); // Access theme from the context
 
   const randomizeSchedule = () => {
     const availableMembers = members.filter(
@@ -83,7 +86,11 @@ export default function Page() {
   }, [week, day]);
 
   return (
-    <div className="p-5">
+    <div
+      className={`p-5 ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
       <div className="flex justify-between items-center mb-5">
         <h2 className="text-2xl font-bold">
           Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
@@ -91,7 +98,6 @@ export default function Page() {
         <RandomizerButton onClick={randomizeSchedule} />
       </div>
       {error && <p className="text-red-500">Error: {error}</p>}
-      {/* Replace "Results:" with WeatherWidget */}
       <WeatherWidget />
       <ScheduleList
         schedule={schedule.map((entry) => ({

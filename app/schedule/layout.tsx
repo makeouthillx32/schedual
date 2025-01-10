@@ -1,15 +1,14 @@
 "use client";
 
-import { Providers } from "./provider"; // Ensure correct path
+import { Providers } from "@/app/provider"; // Reuse theme provider
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import "./globals.css";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <html lang="en">
       <body>
@@ -23,4 +22,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default ScheduleLayout;

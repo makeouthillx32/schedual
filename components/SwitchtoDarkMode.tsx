@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/app/providers";
+import { useTheme } from "../providers"; // Adjust path relative to the component's location
 
 const SwitchtoDarkMode = () => {
   const { themeType, toggleTheme } = useTheme();

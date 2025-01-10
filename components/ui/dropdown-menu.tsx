@@ -2,31 +2,17 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { useTheme } from "next-themes"; // Using a theme provider
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuContent = DropdownMenuPrimitive.Content;
 
 const CustomDropdown: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = React.useState<boolean>(false);
-
-  // Detect theme (light or dark mode)
-  React.useEffect(() => {
-    const checkTheme = () => {
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setIsDarkMode(isDark);
-    };
-
-    checkTheme(); // Initial check
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", checkTheme);
-
-    return () => {
-      window.matchMedia("(prefers-color-scheme: dark)").removeEventListener("change", checkTheme);
-    };
-  }, []);
+  const { theme } = useTheme(); // Accessing the current theme (light or dark)
 
   // Define dynamic color for the hamburger icon based on the theme
-  const iconColor = isDarkMode ? "#FFFFFF" : "#000000";
+  const iconColor = theme === "dark" ? "bg-white" : "bg-black";
 
   return (
     <DropdownMenu>
@@ -38,31 +24,13 @@ const CustomDropdown: React.FC = () => {
           {/* Hamburger menu */}
           <div className="space-y-1.5">
             <div
-              style={{
-                backgroundColor: iconColor,
-                width: "24px",
-                height: "3px",
-                borderRadius: "2px",
-                transition: "background-color 0.3s ease",
-              }}
+              className={`w-6 h-0.5 rounded ${iconColor} transition-colors`}
             ></div>
             <div
-              style={{
-                backgroundColor: iconColor,
-                width: "24px",
-                height: "3px",
-                borderRadius: "2px",
-                transition: "background-color 0.3s ease",
-              }}
+              className={`w-6 h-0.5 rounded ${iconColor} transition-colors`}
             ></div>
             <div
-              style={{
-                backgroundColor: iconColor,
-                width: "24px",
-                height: "3px",
-                borderRadius: "2px",
-                transition: "background-color 0.3s ease",
-              }}
+              className={`w-6 h-0.5 rounded ${iconColor} transition-colors`}
             ></div>
           </div>
         </button>

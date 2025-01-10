@@ -1,11 +1,13 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/app/provider"; // Correct absolute path to `providers.tsx`/ Correct relative path // Use the correct absolute path // Adjust path relative to the component's location
 
-const SwitchtoDarkMode = () => {
-  const { themeType, toggleTheme } = useTheme();
+interface SwitchtoDarkModeProps {
+  themeType: "dark" | "light";
+  toggleTheme: () => void;
+}
 
+const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ themeType, toggleTheme }) => {
   return (
     <div className="flex items-center">
       <input

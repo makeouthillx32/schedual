@@ -3,7 +3,7 @@
 import React from "react";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "./ui/dropdown-menu";
-import { useTheme } from "@/app/providers"; // Correct absolute path to `providers.tsx`
+import { useTheme } from "@/app/provider"; // Correct absolute path to `providers.tsx`
 
 const Nav: React.FC = () => {
   const { themeType, toggleTheme } = useTheme(); // Access theme state and toggle function

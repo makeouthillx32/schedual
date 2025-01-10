@@ -1,6 +1,6 @@
 "use client";
 
-import { Providers } from "@/app/providers"; // Import the ThemeProvider
+import { Providers } from "@/app/providers"; // Import the Providers
 import Nav from "@/components/nav";
 import "./globals.css";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Providers } from "../providers"; // Adjust path if needed
+import { Providers } from "./providers"; // Adjust path if needed
 import Nav from "@/components/nav";
 import "./globals.css";
 

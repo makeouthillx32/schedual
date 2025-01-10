@@ -2,64 +2,32 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { cn } from "@/lib/utils";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
-const DropdownMenuContent = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in",
-        className
-      )}
-      {...props}
-    />
-  </DropdownMenuPrimitive.Portal>
-));
-DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
-
-const DropdownMenuItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Item
-    ref={ref}
-    className={cn(
-      "flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:bg-accent",
-      className
-    )}
-    {...props}
-  />
-));
-DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
-
-const DropdownMenuCurrentDateTime: React.FC = () => {
-  const [currentDateTime, setCurrentDateTime] = React.useState(new Date());
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentDateTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <DropdownMenuItem>
-      <span className="text-xs">
-        {currentDateTime.toLocaleDateString()}{" "}
-        {currentDateTime.toLocaleTimeString()}
-      </span>
-    </DropdownMenuItem>
-  );
-};
+const DropdownMenuContent = DropdownMenuPrimitive.Content;
 
 const CustomDropdown: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = React.useState<boolean>(false);
+
+  // Detect theme (light or dark mode)
+  React.useEffect(() => {
+    const checkTheme = () => {
+      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setIsDarkMode(isDark);
+    };
+
+    checkTheme(); // Initial check
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", checkTheme);
+
+    return () => {
+      window.matchMedia("(prefers-color-scheme: dark)").removeEventListener("change", checkTheme);
+    };
+  }, []);
+
+  // Define dynamic color for the hamburger icon based on the theme
+  const iconColor = isDarkMode ? "#FFFFFF" : "#000000";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -69,33 +37,54 @@ const CustomDropdown: React.FC = () => {
         >
           {/* Hamburger menu */}
           <div className="space-y-1.5">
-            <div className="w-6 h-0.5 bg-[var(--foreground)]"></div>
-            <div className="w-6 h-0.5 bg-[var(--foreground)]"></div>
-            <div className="w-6 h-0.5 bg-[var(--foreground)]"></div>
+            <div
+              style={{
+                backgroundColor: iconColor,
+                width: "24px",
+                height: "3px",
+                borderRadius: "2px",
+                transition: "background-color 0.3s ease",
+              }}
+            ></div>
+            <div
+              style={{
+                backgroundColor: iconColor,
+                width: "24px",
+                height: "3px",
+                borderRadius: "2px",
+                transition: "background-color 0.3s ease",
+              }}
+            ></div>
+            <div
+              style={{
+                backgroundColor: iconColor,
+                width: "24px",
+                height: "3px",
+                borderRadius: "2px",
+                transition: "background-color 0.3s ease",
+              }}
+            ></div>
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuCurrentDateTime />
-        <DropdownMenuItem>
-          <a href="#">Home</a>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <a href="#">Schedule</a>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <a href="#">Settings</a>
-        </DropdownMenuItem>
+      <DropdownMenuContent
+        className="z-50 min-w-[8rem] rounded-md border bg-white dark:bg-gray-800 p-1 shadow-md"
+        sideOffset={8}
+      >
+        <div className="flex flex-col space-y-1">
+          <DropdownMenuPrimitive.Item className="p-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700">
+            Home
+          </DropdownMenuPrimitive.Item>
+          <DropdownMenuPrimitive.Item className="p-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700">
+            Schedule
+          </DropdownMenuPrimitive.Item>
+          <DropdownMenuPrimitive.Item className="p-2 text-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700">
+            Settings
+          </DropdownMenuPrimitive.Item>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
-export {
-  CustomDropdown,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuCurrentDateTime,
-};
+export { CustomDropdown };

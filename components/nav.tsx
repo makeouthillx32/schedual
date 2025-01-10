@@ -3,13 +3,11 @@
 import React from "react";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "./ui/dropdown-menu";
+import { useTheme } from "@/app/layout";
 
-interface NavProps {
-  themeType: "dark" | "light";
-  toggleTheme: () => void;
-}
+const Nav: React.FC = () => {
+  const { themeType, toggleTheme } = useTheme(); // Access theme state and toggle function
 
-const Nav: React.FC<NavProps> = ({ themeType, toggleTheme }) => {
   return (
     <nav
       className={`flex justify-between items-center p-4 ${

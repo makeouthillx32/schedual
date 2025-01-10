@@ -1,6 +1,6 @@
 "use client";
 
-import { ThemeProvider } from "./provider";
+import { Providers } from "@/app/providers"; // Import the ThemeProvider
 import Nav from "@/components/nav";
 import "./globals.css";
 
@@ -12,18 +12,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <html lang="en">
       <body>
-        <ThemeProvider>
+        <Providers>
           <Nav />
-          <main style={{ padding: "20px" }}>{children}</main>
-          <footer
-            style={{
-              padding: "10px",
-              textAlign: "center",
-            }}
-          >
-            <p>&copy; {new Date().getFullYear()} Powered by unenter</p>
-          </footer>
-        </ThemeProvider>
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

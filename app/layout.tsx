@@ -1,7 +1,8 @@
 "use client";
 
-import { Providers } from "./provider"; // Adjust path if needed
+import { Providers } from "./provider"; // Ensure correct path
 import Nav from "@/components/nav";
+import Footer from "@/components/footer";
 import "./globals.css";
 
 interface LayoutProps {
@@ -15,6 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Providers>
           <Nav />
           <main>{children}</main>
+          <Footer />
         </Providers>
       </body>
     </html>

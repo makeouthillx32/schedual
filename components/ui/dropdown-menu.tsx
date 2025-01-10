@@ -69,9 +69,9 @@ const CustomDropdown: React.FC = () => {
         >
           {/* Hamburger menu */}
           <div className="space-y-1.5">
-            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
-            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
-            <div className="w-6 h-0.5 bg-black dark:bg-white"></div>
+            <div className="w-6 h-0.5 bg-foreground"></div>
+            <div className="w-6 h-0.5 bg-foreground"></div>
+            <div className="w-6 h-0.5 bg-foreground"></div>
           </div>
         </button>
       </DropdownMenuTrigger>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import WeekList from "@/components/WeekList"; // Import WeekList
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { Providers } from "@/app/provider"; // Import Providers
+import { Providers, useTheme } from "@/app/provider"; // Import Providers and useTheme
 
 interface Job {
   job_name: string;
@@ -22,6 +22,7 @@ interface GroupedSchedule {
 }
 
 const Hero2: React.FC = () => {
+  const { themeType } = useTheme(); // Access the theme from the provider
   const [week, setWeek] = useState<number>(1); // Default to Week 1
   const [schedule, setSchedule] = useState<GroupedSchedule>({}); // Grouped schedule data
   const [loading, setLoading] = useState<boolean>(false); // Loading state
@@ -60,7 +61,11 @@ const Hero2: React.FC = () => {
 
   return (
     <Providers>
-      <div className="p-5">
+      <div
+        className={`p-5 ${
+          themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+        }`}
+      >
         {/* Week Selection */}
         <div className="flex flex-col mb-5 space-y-4">
           <div>
@@ -68,7 +73,9 @@ const Hero2: React.FC = () => {
             <select
               value={week}
               onChange={(e) => setWeek(Number(e.target.value))}
-              className="p-2 border rounded"
+              className={`p-2 border rounded ${
+                themeType === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-black"
+              }`}
             >
               <option value={1}>Week 1</option>
               <option value={2}>Week 2</option>

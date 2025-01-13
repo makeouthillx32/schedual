@@ -2,12 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { assignRandomJobs } from "@/components/assignRandomJobs";
-import Toast from "@/components/Toast";
 import ScheduleList from "@/components/ScheduleList";
-import RandomizerButton from "@/components/RandomizerButton";
 import WeatherWidget from "@/components/WeatherWidget";
-import { members } from "@/lib/members";
 
 const Hero2: React.FC = () => {
   const [week, setWeek] = useState(1);
@@ -20,7 +16,6 @@ const Hero2: React.FC = () => {
       const data = await fetchSchedule(week, day);
       setSchedule(data.schedule);
     } catch (err) {
-      // Explicitly cast `err` to `Error`
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch schedule.";
       setError(errorMessage);
@@ -33,31 +28,37 @@ const Hero2: React.FC = () => {
 
   return (
     <div className="p-5">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <label>
-            Select Week:
-            <select
-              value={week}
-              onChange={(e) => setWeek(Number(e.target.value))}
-            >
-              <option value={1}>Week 1</option>
-              <option value={2}>Week 2</option>
-              <option value={3}>Week 3</option>
-              <option value={4}>Week 4</option>
-            </select>
-          </label>
-          <label>
-            Select Day:
-            <select value={day} onChange={(e) => setDay(e.target.value)}>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-            </select>
-          </label>
-        </div>
+      <div className="flex flex-col gap-3 mb-5">
+        <label>
+          Select Week:
+          <select
+            value={week}
+            onChange={(e) => setWeek(Number(e.target.value))}
+            className="border rounded px-2 py-1"
+          >
+            {[1, 2, 3, 4].map((week) => (
+              <option key={week} value={week}>
+                Week {week}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Select Day:
+          <select
+            value={day}
+            onChange={(e) => setDay(e.target.value)}
+            className="border rounded px-2 py-1"
+          >
+            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
+              (day) => (
+                <option key={day} value={day}>
+                  {day}
+                </option>
+              )
+            )}
+          </select>
+        </label>
       </div>
       {error && <p className="text-red-500">{error}</p>}
       <WeatherWidget />

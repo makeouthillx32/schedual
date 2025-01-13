@@ -4,26 +4,14 @@ import { Providers } from "./provider"; // Ensure correct path
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import "./globals.css";
-import { useEffect } from "react";
-import { useTheme } from "./provider";
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { themeType } = useTheme(); // Access theme type from provider
+interface LayoutProps {
+  children: React.ReactNode;
+}
 
-  useEffect(() => {
-    // Dynamically update the theme-color meta tag
-    const metaThemeColor = document.querySelector("meta[name='theme-color']");
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", themeType === "dark" ? "#111827" : "#ffffff");
-    }
-  }, [themeType]);
-
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <html lang="en" data-theme={themeType}>
-      <head>
-        {/* Initial meta tag */}
-        <meta name="theme-color" content="#ffffff" />
-      </head>
+    <html lang="en">
       <body>
         <Providers>
           <Nav />

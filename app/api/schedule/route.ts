@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
     console.log(`API received: week=${week}, day=${day}`);
 
-    // Validate that the week and day are properly parsed
+    // Validate week as an integer
     const parsedWeek = parseInt(week);
     if (isNaN(parsedWeek)) {
       console.error("Invalid week parameter");
@@ -69,7 +69,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ schedule });
   } catch (error) {
     console.error("API Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

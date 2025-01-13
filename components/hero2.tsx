@@ -1,116 +1,89 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "@/app/provider"; // Ensures theme consistency
+import ScheduleList from "@/components/ScheduleList";
+import { fetchSchedule } from "@/components/fetchSchedule";
+import { Providers } from "@/app/provider"; // Import your Providers
+
+interface Job {
+  job_name: string;
+  member_name: string;
+}
+
+interface ScheduleItem {
+  business_name: string;
+  jobs: Job[];
+  before_open: boolean;
+  address: string;
+}
 
 const Hero2: React.FC = () => {
   const [week, setWeek] = useState<number>(1);
   const [day, setDay] = useState<string>("Monday");
-  const [schedule, setSchedule] = useState<
-    { business_name: string; address: string; before_open: boolean; jobs: string[] }[]
-  >([]);
+  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const { themeType } = useTheme();
-
-  // Fetch schedule from the new API route
-  const fetchSchedule = async (week: number, day: string) => {
+  const loadSchedule = async () => {
     try {
-      const res = await fetch(`/api/schedule/route2?week=${week}&day=${day}`);
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
-      }
-      const data = await res.json();
-      if (data.schedule.length === 0) {
-        setError("No schedule available for the selected day.");
-      } else {
-        setError(null); // Clear previous errors
-      }
-      return data;
+      const data = await fetchSchedule(week, day);
+      setSchedule(data.schedule || []);
+      setError(null); // Clear previous error
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
-      throw new Error(errorMessage);
+        err instanceof Error ? err.message : "Failed to fetch schedule.";
+      setError(errorMessage);
     }
   };
 
   useEffect(() => {
-    const loadSchedule = async () => {
-      try {
-        const data = await fetchSchedule(week, day);
-        setSchedule(data.schedule);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch schedule.");
-      }
-    };
-
     loadSchedule();
   }, [week, day]);
 
   return (
-    <div
-      className={`p-5 ${
-        themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
-      }`}
-    >
-      <h2 className="text-2xl font-bold mb-4">CMS Schedule App</h2>
-      <div className="flex gap-4 mb-5">
-        <div>
-          <label className="block text-sm font-medium mb-1">Select Week:</label>
-          <select
-            value={week}
-            onChange={(e) => setWeek(Number(e.target.value))}
-            className="border rounded p-2"
-          >
-            <option value={1}>Week 1</option>
-            <option value={2}>Week 2</option>
-            <option value={3}>Week 3</option>
-            <option value={4}>Week 4</option>
-          </select>
+    <Providers>
+      <div className="p-5">
+        <div className="flex flex-col mb-5 space-y-4">
+          <div>
+            <label className="block mb-2 font-bold">Select Week:</label>
+            <select
+              value={week}
+              onChange={(e) => setWeek(Number(e.target.value))}
+              className="p-2 border rounded"
+            >
+              <option value={1}>Week 1</option>
+              <option value={2}>Week 2</option>
+              <option value={3}>Week 3</option>
+              <option value={4}>Week 4</option>
+            </select>
+          </div>
+          <div>
+            <label className="block mb-2 font-bold">Select Day:</label>
+            <select
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              className="p-2 border rounded"
+            >
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Select Day:</label>
-          <select
-            value={day}
-            onChange={(e) => setDay(e.target.value)}
-            className="border rounded p-2"
-          >
-            <option value="Monday">Monday</option>
-            <option value="Tuesday">Tuesday</option>
-            <option value="Wednesday">Wednesday</option>
-            <option value="Thursday">Thursday</option>
-            <option value="Friday">Friday</option>
-          </select>
-        </div>
-      </div>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Schedule:</h3>
-        {schedule.length > 0 ? (
-          <ul className="space-y-4">
-            {schedule.map((entry, index) => (
-              <li key={index} className="border rounded p-4">
-                <h4 className="font-bold text-lg">{entry.business_name}</h4>
-                <p>{entry.address}</p>
-                <p>
-                  <strong>Before Open:</strong>{" "}
-                  {entry.before_open ? "Yes" : "No"}
-                </p>
-                <ul className="mt-2">
-                  {entry.jobs.map((job, idx) => (
-                    <li key={idx} className="list-disc ml-5">
-                      {job}
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+
+        {error ? (
+          <p className="text-red-500">Error: {error}</p>
         ) : (
-          <p>No data available for the selected week and day.</p>
+          <ScheduleList
+            schedule={schedule.map((item) => ({
+              ...item,
+              onClick: () => console.log(`Clicked on ${item.business_name}`),
+            }))}
+          />
         )}
       </div>
-    </div>
+    </Providers>
   );
 };
 

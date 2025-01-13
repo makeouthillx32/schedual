@@ -22,7 +22,7 @@ interface GroupedSchedule {
 }
 
 const Hero2: React.FC = () => {
-  const { themeType } = useTheme(); // Access the theme from the provider
+  const { themeType } = useTheme(); // Access theme context
   const [week, setWeek] = useState<number>(1); // Default to Week 1
   const [schedule, setSchedule] = useState<GroupedSchedule>({}); // Grouped schedule data
   const [loading, setLoading] = useState<boolean>(false); // Loading state
@@ -81,6 +81,7 @@ const Hero2: React.FC = () => {
               <option value={2}>Week 2</option>
               <option value={3}>Week 3</option>
               <option value={4}>Week 4</option>
+              <option value={5}>Week 5</option> {/* Added Week 5 */}
             </select>
           </div>
         </div>

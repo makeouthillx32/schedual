@@ -1,17 +1,21 @@
 "use client";
 
-import { Providers } from "./provider"; // Ensure correct path
+import { Providers } from "./provider"; // Path to your provider
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import "./globals.css";
 
-interface LayoutProps {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+}) {
   return (
     <html lang="en">
+      <head>
+        {/* Initial theme-color */}
+        <meta name="theme-color" id="theme-color-meta" content="#ffffff" />
+      </head>
       <body>
         <Providers>
           <Nav />
@@ -21,6 +25,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </body>
     </html>
   );
-};
-
-export default Layout;
+}

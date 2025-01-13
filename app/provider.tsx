@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 const ThemeContext = createContext<any | null>(null);
 
@@ -10,6 +10,11 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
   const toggleTheme = () => {
     setThemeType((prev) => (prev === "light" ? "dark" : "light"));
   };
+
+  useEffect(() => {
+    // Update the `data-theme` attribute on the `html` element when the theme changes
+    document.documentElement.setAttribute("data-theme", themeType);
+  }, [themeType]);
 
   return (
     <ThemeContext.Provider value={{ themeType, toggleTheme }}>

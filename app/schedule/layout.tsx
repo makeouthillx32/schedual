@@ -3,7 +3,7 @@
 import { Providers } from "@/app/provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import "@/app/globals.css"; // Correct absolute path to your CSS
+import "@/app/globals.css";
 
 interface LayoutProps {
   children: React.ReactNode;

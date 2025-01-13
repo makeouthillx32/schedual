@@ -20,7 +20,10 @@ const Hero2: React.FC = () => {
       const data = await fetchSchedule(week, day);
       setSchedule(data.schedule);
     } catch (err) {
-      setError(err.message || "Failed to fetch schedule.");
+      // Explicitly cast `err` to `Error`
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch schedule.";
+      setError(errorMessage);
     }
   };
 

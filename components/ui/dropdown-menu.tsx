@@ -79,9 +79,12 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
 
 const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme(); // Access the current theme ("light" or "dark")
+  const [open, setOpen] = React.useState(false); // State to control menu open/close
+
+  const handleMenuClick = () => setOpen(false); // Close menu on selection
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
           className="flex items-center justify-center w-8 h-8"
@@ -109,13 +112,13 @@ const CustomDropdown: React.FC = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuCurrentDateTime />
-        <DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href="/">Home</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href="/schedule">Schedule</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href="/settings">Settings</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

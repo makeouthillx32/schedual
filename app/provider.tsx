@@ -12,7 +12,13 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   useEffect(() => {
-    // Update the `data-theme` attribute on the `html` element when the theme changes
+    // Update the `theme-color` meta tag dynamically
+    const metaThemeColor = document.querySelector("meta[name='theme-color']");
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", themeType === "dark" ? "#111827" : "#ffffff");
+    }
+
+    // Update the `data-theme` attribute for CSS
     document.documentElement.setAttribute("data-theme", themeType);
   }, [themeType]);
 

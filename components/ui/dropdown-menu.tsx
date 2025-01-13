@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import Link from "next/link"; // Import Link for Next.js routing
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider"; // Import the theme hook
 
@@ -109,13 +110,13 @@ const CustomDropdown: React.FC = () => {
       <DropdownMenuContent>
         <DropdownMenuCurrentDateTime />
         <DropdownMenuItem>
-          <a href="#">Home</a>
+          <Link href="/">Home</Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <a href="#">Schedule</a>
+          <Link href="/schedule">Schedule</Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
-          <a href="#">Settings</a>
+          <Link href="/settings">Settings</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

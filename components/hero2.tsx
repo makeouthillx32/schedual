@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ScheduleList from "@/components/ScheduleList";
+import WeekList from "@/components/WeekList"; // Import WeekList
+import ScheduleList from "@/components/ScheduleList"; // Import ScheduleList for daily view
 import { fetchSchedule } from "@/components/fetchSchedule";
 
 interface Job {
@@ -20,20 +21,21 @@ const Hero2: React.FC = () => {
   const [week, setWeek] = useState<number>(1); // Default to Week 1
   const [day, setDay] = useState<string>("monday"); // Default to Monday in lowercase
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]); // Schedule data
+  const [viewType, setViewType] = useState<"daily" | "weekly">("daily"); // Toggle between daily and weekly view
   const [error, setError] = useState<string | null>(null); // Error state
 
   const loadSchedule = async () => {
-    console.log("Fetching schedule with:", { week, day }); // Log parameters for debugging
+    console.log("Fetching schedule with:", { week, day }); // Debugging log
     try {
-      const data = await fetchSchedule(week, day); // Fetch schedule data
-      console.log("API Response:", data); // Log API response
-      setSchedule(data.schedule || []); // Update state with the schedule
+      const data = await fetchSchedule(week, day); // Fetch data
+      console.log("API Response:", data); // Debug API response
+      setSchedule(data.schedule || []); // Set schedule data
       setError(null); // Clear error
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch schedule.";
-      console.error("Error fetching schedule:", errorMessage); // Log error
-      setError(errorMessage); // Update error state
+      console.error("Error fetching schedule:", errorMessage); // Log errors
+      setError(errorMessage); // Set error state
     }
   };
 
@@ -43,7 +45,7 @@ const Hero2: React.FC = () => {
 
   return (
     <div className="p-5">
-      {/* Week Selection */}
+      {/* Week and Day Selection */}
       <div className="flex flex-col mb-5 space-y-4">
         <div>
           <label className="block mb-2 font-bold">Select Week:</label>
@@ -59,28 +61,49 @@ const Hero2: React.FC = () => {
           </select>
         </div>
 
-        {/* Day Selection */}
+        {/* Toggle View */}
         <div>
-          <label className="block mb-2 font-bold">Select Day:</label>
+          <label className="block mb-2 font-bold">View Type:</label>
           <select
-            value={day}
-            onChange={(e) => setDay(e.target.value.toLowerCase())} // Ensure lowercase for API
+            value={viewType}
+            onChange={(e) => setViewType(e.target.value as "daily" | "weekly")}
             className="p-2 border rounded"
           >
-            <option value="monday">Monday</option>
-            <option value="tuesday">Tuesday</option>
-            <option value="wednesday">Wednesday</option>
-            <option value="thursday">Thursday</option>
-            <option value="friday">Friday</option>
+            <option value="daily">Daily View</option>
+            <option value="weekly">Weekly View</option>
           </select>
         </div>
+
+        {viewType === "daily" && (
+          <div>
+            <label className="block mb-2 font-bold">Select Day:</label>
+            <select
+              value={day}
+              onChange={(e) => setDay(e.target.value.toLowerCase())} // Ensure lowercase for API
+              className="p-2 border rounded"
+            >
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Error Message or Schedule List */}
+      {/* Error or Schedule Display */}
       {error ? (
         <p className="text-red-500">Error: {error}</p>
-      ) : (
+      ) : viewType === "daily" ? (
         <ScheduleList
+          schedule={schedule.map((item) => ({
+            ...item,
+            onClick: () => console.log(`Clicked on ${item.business_name}`),
+          }))}
+        />
+      ) : (
+        <WeekList
           schedule={schedule.map((item) => ({
             ...item,
             onClick: () => console.log(`Clicked on ${item.business_name}`),

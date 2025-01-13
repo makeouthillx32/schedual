@@ -16,26 +16,30 @@ interface ScheduleItem {
   address: string;
 }
 
+interface GroupedSchedule {
+  [day: string]: ScheduleItem[];
+}
+
 const Hero2: React.FC = () => {
   const [week, setWeek] = useState<number>(1); // Default to Week 1
-  const [schedule, setSchedule] = useState<ScheduleItem[]>([]); // Schedule data
+  const [schedule, setSchedule] = useState<GroupedSchedule>({}); // Grouped schedule data
   const [error, setError] = useState<string | null>(null); // Error state
 
-  const days = ["monday", "tuesday", "wednesday", "thursday", "friday"]; // Days of the week
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]; // Days of the week
 
   const loadWeeklySchedule = async () => {
     console.log("Fetching schedule for week:", week); // Debugging log
     try {
-      const allDaysSchedules: ScheduleItem[] = [];
+      const groupedSchedules: GroupedSchedule = {};
 
       // Fetch schedules for all days of the week
       for (const day of days) {
-        const data = await fetchSchedule(week, day); // Fetch schedule for each day
+        const data = await fetchSchedule(week, day.toLowerCase()); // Fetch schedule for each day
         console.log(`API Response for ${day}:`, data); // Debug API response
-        allDaysSchedules.push(...(data.schedule || [])); // Merge schedules
+        groupedSchedules[day] = data.schedule || []; // Group schedules by day
       }
 
-      setSchedule(allDaysSchedules); // Set combined schedule data
+      setSchedule(groupedSchedules); // Set grouped schedule data
       setError(null); // Clear error
     } catch (err) {
       const errorMessage =
@@ -72,12 +76,7 @@ const Hero2: React.FC = () => {
       {error ? (
         <p className="text-red-500">Error: {error}</p>
       ) : (
-        <WeekList
-          schedule={schedule.map((item) => ({
-            ...item,
-            onClick: () => console.log(`Clicked on ${item.business_name}`),
-          }))}
-        />
+        <WeekList groupedSchedule={schedule} />
       )}
     </div>
   );

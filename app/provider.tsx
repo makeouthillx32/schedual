@@ -1,41 +1,26 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { setCookie, getCookie } from "@/lib/cookieUtils"; // Ensure this points to the correct cookies utility path.
+import React from "react";
+import { CustomDropdown } from "./ui/dropdown-menu";
+import { useTheme } from "@/app/provider"; // Use the existing Providers without changing anything
 
-interface ThemeContextType {
-  themeType: "light" | "dark";
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
-};
-
-export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    const savedTheme = getCookie("theme"); // Load the saved theme from cookies.
-    return savedTheme === "dark" ? "dark" : "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", themeType === "dark");
-    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // Save the theme in cookies for 1 year.
-  }, [themeType]);
-
-  const toggleTheme = () => {
-    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
-  };
+const Nav: React.FC = () => {
+  const { themeType } = useTheme(); // Get the current theme (dark or light)
 
   return (
-    <ThemeContext.Provider value={{ themeType, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <nav
+      className="flex justify-between items-center p-4"
+      style={{
+        backgroundColor: "var(--background)", // Dynamic background from global.css
+        color: "var(--foreground)", // Dynamic foreground from global.css
+      }}
+    >
+      <h1 className="text-lg font-bold">CMS Schedule App</h1>
+      <div className="relative z-10">
+        <CustomDropdown />
+      </div>
+    </nav>
   );
 };
+
+export default Nav;

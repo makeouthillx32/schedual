@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/app/provider";
+import { useTheme } from "@/app/provider"; // Reintroduce the useTheme hook
 
 const SwitchtoDarkMode: React.FC = () => {
   const { themeType, toggleTheme } = useTheme();
@@ -15,9 +15,6 @@ const SwitchtoDarkMode: React.FC = () => {
         checked={themeType === "dark"}
         onChange={toggleTheme}
       />
-      <label htmlFor="toggle" className="sr-only">
-        Toggle Dark Mode
-      </label>
     </div>
   );
 };

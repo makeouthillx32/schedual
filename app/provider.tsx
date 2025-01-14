@@ -1,37 +1,36 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { setCookie, getCookie } from "@/lib/cookieUtils";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
-const ThemeContext = createContext<any | null>(null);
+interface ThemeContextType {
+  themeType: "light" | "dark";
+  toggleTheme: () => void;
+}
 
-export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    // Retrieve the saved theme synchronously from cookies
-    if (typeof window !== "undefined") {
-      return (getCookie("theme") as "light" | "dark") || "light";
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [themeType, setThemeType] = useState<"light" | "dark">("light");
+
+  // Load theme from local storage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setThemeType(savedTheme);
+      document.documentElement.classList.add(savedTheme);
     }
-    return "light"; // Fallback during SSR
-  });
+  }, []);
 
+  // Toggle theme and save to local storage
   const toggleTheme = () => {
     const newTheme = themeType === "light" ? "dark" : "light";
     setThemeType(newTheme);
-    setCookie("theme", newTheme); // Save the new theme to cookies
+    localStorage.setItem("theme", newTheme);
+
+    // Update the document class
+    document.documentElement.classList.remove(themeType);
+    document.documentElement.classList.add(newTheme);
   };
-
-  useEffect(() => {
-    // Apply the theme to the document early
-    document.documentElement.setAttribute("data-theme", themeType);
-  }, [themeType]);
-
-  useEffect(() => {
-    // Ensure the saved theme from cookies is applied on mount
-    const savedTheme = getCookie("theme") as "light" | "dark";
-    if (savedTheme && savedTheme !== themeType) {
-      setThemeType(savedTheme); // Sync state with cookie value
-    }
-  }, []);
 
   return (
     <ThemeContext.Provider value={{ themeType, toggleTheme }}>

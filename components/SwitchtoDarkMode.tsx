@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface SwitchtoDarkModeProps {
   themeType: "dark" | "light";
@@ -8,16 +8,26 @@ interface SwitchtoDarkModeProps {
 }
 
 const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ themeType, toggleTheme }) => {
-  const iconClass = themeType === "dark" ? "toggle moon" : "toggle";
+  const [checked, setChecked] = useState(themeType === "dark");
+
+  useEffect(() => {
+    // Ensure the toggle reflects the current themeType when it changes
+    setChecked(themeType === "dark");
+  }, [themeType]);
+
+  const handleToggle = () => {
+    toggleTheme();
+    setChecked((prev) => !prev);
+  };
 
   return (
     <div className="flex items-center">
       <input
         id="toggle"
-        className={iconClass}
+        className="toggle"
         type="checkbox"
-        checked={themeType === "dark"}
-        onChange={toggleTheme}
+        checked={checked}
+        onChange={handleToggle}
       />
     </div>
   );

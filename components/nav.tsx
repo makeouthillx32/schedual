@@ -6,13 +6,17 @@ import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/ui/dropdown-menu";
 
 const Nav: React.FC = () => {
-  const { toggleTheme } = useTheme(); // No need for themeType here
+  const { themeType, toggleTheme } = useTheme(); // Access theme context
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-background text-foreground transition-colors">
+    <nav
+      className={`flex justify-between items-center p-4 transition-colors ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
+      }`}
+    >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
       <div className="flex items-center gap-4">
-        {/* Pass toggleTheme to SwitchtoDarkMode */}
+        {/* Theme toggle */}
         <SwitchtoDarkMode toggleTheme={toggleTheme} />
         {/* Dropdown menu */}
         <div className="relative z-10">

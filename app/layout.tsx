@@ -1,11 +1,11 @@
 "use client";
 
-import { Providers } from "./provider"; // Lowercase 'p'
+import { Providers } from "./provider"; // Correct import for Providers
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import "./globals.css";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { setCookie, getCookie } from "@/lib/cookieUtils";
 
 export default function RootLayout({
@@ -14,7 +14,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     // Save the current path as the last visited page (client-side only)
@@ -27,17 +26,16 @@ export default function RootLayout({
     // Handle redirection to the last saved page
     if (typeof window !== "undefined") {
       const lastPage = getCookie("lastPage");
-      if (lastPage && lastPage !== pathname && !isRedirecting) {
-        setIsRedirecting(true); // Avoid multiple redirects
+      if (lastPage && lastPage !== pathname) {
         window.location.href = lastPage; // Redirect to the saved page
       }
     }
-  }, [pathname, isRedirecting]);
+  }, [pathname]);
 
   return (
     <html lang="en">
-      {/* Dynamically handle theme in the Providers */}
       <body>
+        {/* Wrap application in Providers to ensure context and theme are loaded */}
         <Providers>
           <Nav />
           <main>{children}</main>

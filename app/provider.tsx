@@ -20,24 +20,22 @@ export const useTheme = () => {
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    const savedTheme = getCookie("theme"); // Load saved theme from cookies
-    return savedTheme === "dark" ? "dark" : "light";
+    if (typeof window !== "undefined") {
+      const savedTheme = getCookie("theme"); // Only run on the client
+      return savedTheme === "dark" ? "dark" : "light";
+    }
+    return "light"; // Default to light mode during SSR
   });
 
   useEffect(() => {
-    // Apply theme to the HTML element
-    document.documentElement.setAttribute("data-theme", themeType);
-
-    // Update the cookie with the current theme
-    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // 1-year expiration
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", themeType); // Only run on the client
+      setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
+    }
   }, [themeType]);
 
   const toggleTheme = () => {
-    setThemeType((prev) => {
-      const newTheme = prev === "light" ? "dark" : "light";
-      setCookie("theme", newTheme, { path: "/", maxAge: 31536000 }); // Ensure cookie is updated
-      return newTheme;
-    });
+    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
   };
 
   return (

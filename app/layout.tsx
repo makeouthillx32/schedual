@@ -13,18 +13,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname(); // Get the current path
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Save the current path as the last visited page
-    setCookie("lastPage", pathname);
+    // This logic will only run on the client
+    if (typeof document !== "undefined") {
+      setCookie("lastPage", pathname); // Save the last visited page
+    }
   }, [pathname]);
 
   useEffect(() => {
-    // Redirect to the last visited page on load
-    const lastPage = getCookie("lastPage");
-    if (lastPage && pathname === "/") {
-      window.location.href = lastPage; // Redirect to the last visited page
+    if (typeof window !== "undefined") {
+      const lastPage = getCookie("lastPage");
+      if (lastPage && pathname === "/") {
+        window.location.href = lastPage; // Redirect to the last visited page
+      }
     }
   }, []);
 

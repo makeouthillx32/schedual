@@ -1,7 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { setCookie, getCookie } from "@/lib/cookieUtils";
+
+interface ThemeContextType {
+  themeType: "light" | "dark";
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+};
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">(() => {
@@ -9,7 +24,7 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
       const savedTheme = getCookie("theme");
       return savedTheme === "dark" ? "dark" : "light";
     }
-    return "light"; // Default to light during SSR
+    return "light"; // Default during SSR
   });
 
   useEffect(() => {
@@ -24,8 +39,8 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
   };
 
   return (
-    <div>
+    <ThemeContext.Provider value={{ themeType, toggleTheme }}>
       {children}
-    </div>
+    </ThemeContext.Provider>
   );
 };

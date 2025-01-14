@@ -7,18 +7,25 @@ const ThemeContext = createContext<any | null>(null);
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    // Load theme from cookies or default to "light"
-    return (getCookie("theme") as "light" | "dark") || "light";
+    // Ensure the function runs only on the client
+    if (typeof window !== "undefined") {
+      return (getCookie("theme") as "light" | "dark") || "light";
+    }
+    return "light";
   });
 
   const toggleTheme = () => {
     const newTheme = themeType === "light" ? "dark" : "light";
     setThemeType(newTheme);
-    setCookie("theme", newTheme); // Save theme to cookies
+    if (typeof document !== "undefined") {
+      setCookie("theme", newTheme); // Save the theme to cookies
+    }
   };
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", themeType);
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", themeType);
+    }
   }, [themeType]);
 
   return (

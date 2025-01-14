@@ -6,7 +6,7 @@ import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/ui/dropdown-menu";
 
 const Nav: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme(); // Access theme state and toggle function
+  const { themeType, toggleTheme } = useTheme(); // Access theme context
 
   return (
     <nav

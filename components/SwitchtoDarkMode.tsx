@@ -8,16 +8,17 @@ interface SwitchtoDarkModeProps {
 }
 
 const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ themeType, toggleTheme }) => {
+  const iconClass = themeType === "dark" ? "toggle moon" : "toggle";
+
   return (
     <div className="flex items-center">
       <input
         id="toggle"
-        className="toggle"
+        className={iconClass}
         type="checkbox"
         checked={themeType === "dark"}
         onChange={toggleTheme}
       />
-     
     </div>
   );
 };

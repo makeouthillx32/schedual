@@ -13,26 +13,20 @@
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  color: hsl(0, 0%, 0%);
-  background: var(--foreground);
-  box-shadow: inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0;
+  background: radial-gradient(circle, #ffa500 50%, transparent 51%);
   transition: all 0.5s ease-in-out;
   position: relative;
+  box-shadow: 0 0 10px #ffa500;
+}
+
+.toggle.moon {
+  background: radial-gradient(circle at 30% 30%, #000 50%, #fff 51%);
+  box-shadow: none;
 }
 
 .toggle:checked {
   transform: scale(0.75);
-  color: hsl(40, 100%, 50%);
-  box-shadow: 
-    inset 0 0 0 var(--size),
-    calc(var(--size) * -0.65) 0 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.65) 0 0 calc(var(--size) * -0.4),
-    0 calc(var(--size) * -0.65) 0 calc(var(--size) * -0.4),
-    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * -0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * -0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4);
+  transition: all 0.5s ease-in-out;
 }
 
 .title {

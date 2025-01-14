@@ -20,15 +20,13 @@ export const useTheme = () => {
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    const savedTheme = typeof document !== "undefined" ? getCookie("theme") : null;
+    const savedTheme = getCookie("theme"); // Load saved theme from cookies
     return savedTheme === "dark" ? "dark" : "light";
   });
 
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", themeType === "dark");
-      setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
-    }
+    document.documentElement.setAttribute("data-theme", themeType); // Set theme on <html>
+    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // Save theme in cookies
   }, [themeType]);
 
   const toggleTheme = () => {

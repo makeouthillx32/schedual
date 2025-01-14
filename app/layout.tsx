@@ -7,14 +7,16 @@ import "./globals.css";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { setCookie, getCookie } from "@/lib/cookieUtils";
+import { useTheme } from "./provider"; // Import theme context
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname(); // Get the current path
-  const [isRedirecting, setIsRedirecting] = useState(false); // Prevent double renders
+  const { themeType } = useTheme(); // Access themeType for the theme
+  const pathname = usePathname();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     // Save the current path as the last visited page
@@ -36,7 +38,7 @@ export default function RootLayout({
   }, [pathname, isRedirecting]);
 
   return (
-    <html lang="en">
+    <html lang="en" data-theme={themeType}> {/* Dynamically set theme */}
       <body>
         <Providers>
           <Nav />

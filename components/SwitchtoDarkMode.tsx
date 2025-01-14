@@ -13,7 +13,7 @@ const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ toggleTheme }) => {
         id="toggle"
         className="toggle"
         type="checkbox"
-        onChange={toggleTheme}
+        onChange={toggleTheme} // Call toggleTheme on change
       />
     </div>
   );

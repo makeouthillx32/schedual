@@ -1,24 +1,23 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { setCookie, getCookie } from "@/lib/cookieUtils";
 
 const ThemeContext = createContext<any | null>(null);
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeType, setThemeType] = useState<"light" | "dark">("light");
+  const [themeType, setThemeType] = useState<"light" | "dark">(() => {
+    // Load theme from cookies or default to "light"
+    return (getCookie("theme") as "light" | "dark") || "light";
+  });
 
   const toggleTheme = () => {
-    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
+    const newTheme = themeType === "light" ? "dark" : "light";
+    setThemeType(newTheme);
+    setCookie("theme", newTheme); // Save theme to cookies
   };
 
   useEffect(() => {
-    // Update the `theme-color` meta tag dynamically
-    const metaThemeColor = document.querySelector("meta[name='theme-color']");
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute("content", themeType === "dark" ? "#111827" : "#ffffff");
-    }
-
-    // Update the `data-theme` attribute for CSS
     document.documentElement.setAttribute("data-theme", themeType);
   }, [themeType]);
 

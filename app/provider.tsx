@@ -25,12 +25,19 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
   });
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", themeType); // Set theme on <html>
-    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // Save theme in cookies
+    // Apply theme to the HTML element
+    document.documentElement.setAttribute("data-theme", themeType);
+
+    // Update the cookie with the current theme
+    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // 1-year expiration
   }, [themeType]);
 
   const toggleTheme = () => {
-    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
+    setThemeType((prev) => {
+      const newTheme = prev === "light" ? "dark" : "light";
+      setCookie("theme", newTheme, { path: "/", maxAge: 31536000 }); // Ensure cookie is updated
+      return newTheme;
+    });
   };
 
   return (

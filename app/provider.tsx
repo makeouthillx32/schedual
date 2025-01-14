@@ -27,15 +27,21 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
     return "light"; // Default during SSR
   });
 
+  // Sync `data-theme` attribute whenever `themeType` changes
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.setAttribute("data-theme", themeType);
-      setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // 1-year expiration
     }
   }, [themeType]);
 
+  // Immediately update both theme state and cookie
   const toggleTheme = () => {
-    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
+    const newTheme = themeType === "light" ? "dark" : "light";
+    setThemeType(newTheme); // Update the state
+    setCookie("theme", newTheme, { path: "/", maxAge: 31536000 }); // Update the cookie immediately
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", newTheme); // Sync immediately
+    }
   };
 
   return (

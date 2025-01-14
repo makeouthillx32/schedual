@@ -6,7 +6,7 @@ import { CustomDropdown } from "./ui/dropdown-menu";
 import { useTheme } from "@/app/provider";
 
 const Nav: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme(); // Access theme context
+  const { themeType } = useTheme(); // Only get themeType for styling purposes
 
   return (
     <nav
@@ -18,7 +18,7 @@ const Nav: React.FC = () => {
     >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
       <div className="flex items-center gap-4">
-        <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
+        <SwitchtoDarkMode /> {/* No need to pass props, uses useTheme internally */}
         <div className="relative z-10">
           <CustomDropdown />
         </div>

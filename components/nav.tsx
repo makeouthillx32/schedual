@@ -1,36 +1,29 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { useTheme } from "@/app/provider";
-import { getCookie, setCookie } from "@/lib/cookieUtils"; // Ensure this utility works
+import SwitchtoDarkMode from "./SwitchtoDarkMode";
+import { CustomDropdown } from "@/components/ui/dropdown-menu"; // Corrected path
 
 const Nav: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme(); // Access theme context
-
-  // Sync cookies with the current theme
-  useEffect(() => {
-    const savedTheme = getCookie("theme");
-    if (savedTheme && savedTheme !== themeType) {
-      toggleTheme(); // Sync theme on initial load
-    }
-  }, []); // Run only on the first render
-
-  useEffect(() => {
-    setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // Save theme to cookies
-  }, [themeType]);
+  const { themeType, toggleTheme } = useTheme(); // Access themeType and toggleTheme
 
   return (
     <nav
       className="flex justify-between items-center p-4"
       style={{
-        backgroundColor: "var(--background)", // Dynamically styled by global CSS
-        color: "var(--foreground)", // Dynamically styled by global CSS
+        backgroundColor: "var(--background)", // Dynamic background
+        color: "var(--foreground)", // Dynamic foreground
       }}
     >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
-      <div className="relative z-10">
-        {/* Dropdown menu placeholder */}
-        <button>Menu</button>
+      <div className="flex items-center gap-4">
+        {/* Add SwitchtoDarkMode for testing */}
+        <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
+        <div className="relative z-10">
+          {/* Dropdown menu */}
+          <CustomDropdown />
+        </div>
       </div>
     </nav>
   );

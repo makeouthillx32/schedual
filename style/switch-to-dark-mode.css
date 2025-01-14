@@ -14,25 +14,24 @@
   height: var(--size);
   border-radius: 50%;
   color: hsl(0, 0%, 0%);
-  background: var(--foreground); /* Dynamically set based on theme */
-  box-shadow: inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0;
+  background: var(--background); /* Default: Light mode shows the moon */
+  box-shadow: 
+    inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0,
+    calc(var(--size) * -0.4) calc(var(--size) * -0.4) 0 calc(var(--size) * -0.3);
   transition: all 0.5s ease-in-out;
   position: relative;
 }
 
+/* Sun for dark mode */
 .toggle:checked {
   transform: scale(0.75);
-  color: hsl(40, 100%, 50%);
+  background: var(--foreground); /* Dark mode shows the sun */
   box-shadow: 
     inset 0 0 0 var(--size),
     calc(var(--size) * -0.65) 0 0 calc(var(--size) * -0.4),
     calc(var(--size) * 0.65) 0 0 calc(var(--size) * -0.4),
     0 calc(var(--size) * -0.65) 0 calc(var(--size) * -0.4),
-    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * -0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * -0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4);
+    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4);
 }
 
 .title {

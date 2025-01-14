@@ -1,19 +1,19 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/app/provider";
 
-const SwitchtoDarkMode: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme();
+interface SwitchtoDarkModeProps {
+  toggleTheme: () => void; // Define the toggleTheme prop
+}
 
+const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ toggleTheme }) => {
   return (
     <div className="flex items-center">
       <input
         id="toggle"
         className="toggle"
         type="checkbox"
-        checked={themeType === "dark"}
-        onChange={toggleTheme}
+        onChange={toggleTheme} // Trigger the theme toggle function
       />
     </div>
   );

@@ -6,19 +6,19 @@ import { CustomDropdown } from "./ui/dropdown-menu";
 import { useTheme } from "@/app/provider";
 
 const Nav: React.FC = () => {
-  const { themeType } = useTheme(); // Access themeType from provider
+  const { themeType, toggleTheme } = useTheme(); // Access theme context
 
   return (
     <nav
       className="flex justify-between items-center p-4"
       style={{
-        backgroundColor: "var(--background)", // Use dynamic background color
-        color: "var(--foreground)", // Use dynamic foreground color
+        backgroundColor: "var(--background)", // Dynamic background
+        color: "var(--foreground)", // Dynamic foreground
       }}
     >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
       <div className="flex items-center gap-4">
-        <SwitchtoDarkMode themeType={themeType} />
+        <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
         <div className="relative z-10">
           <CustomDropdown />
         </div>

@@ -4,20 +4,15 @@ import React from "react";
 import { useTheme } from "@/app/provider";
 
 const Footer: React.FC = () => {
-  const { themeType } = useTheme(); // Access themeType from provider
+  const { themeType } = useTheme();
 
   return (
     <footer
-      className="py-4 text-center"
-      style={{
-        backgroundColor: "var(--background)", // Use dynamic background color
-        color: "var(--foreground)", // Use dynamic foreground color
-      }}
+      className={`p-4 text-center ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
+      }`}
     >
-      <p>
-        Powered by <span className="font-bold">Unenter</span>
-      </p>
-      <p>&copy; {new Date().getFullYear()}</p>
+      <p>Powered by Unenter</p>
     </footer>
   );
 };

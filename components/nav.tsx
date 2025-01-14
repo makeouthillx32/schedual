@@ -1,28 +1,20 @@
 "use client";
 
 import React from "react";
+import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
-import { CustomDropdown } from "./ui/dropdown-menu";
-import { useTheme } from "@/app/provider"; // Import the useTheme hook
 
 const Nav: React.FC = () => {
-  const { themeType } = useTheme(); // Access themeType from the context
+  const { themeType } = useTheme();
 
   return (
     <nav
-      className="flex justify-between items-center p-4"
-      style={{
-        backgroundColor: "var(--background)", // Dynamic background
-        color: "var(--foreground)", // Dynamic foreground
-      }}
+      className={`flex justify-between items-center p-4 ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
+      }`}
     >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
-      <div className="flex items-center gap-4">
-        <SwitchtoDarkMode />
-        <div className="relative z-10">
-          <CustomDropdown />
-        </div>
-      </div>
+      <SwitchtoDarkMode />
     </nav>
   );
 };

@@ -7,7 +7,7 @@ const ThemeContext = createContext<any | null>(null);
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    // Load theme from cookies or default to "light"
+    // Retrieve the saved theme synchronously from cookies
     if (typeof window !== "undefined") {
       return (getCookie("theme") as "light" | "dark") || "light";
     }
@@ -17,13 +17,21 @@ export const Providers: React.FC<{ children: React.ReactNode }> = ({ children })
   const toggleTheme = () => {
     const newTheme = themeType === "light" ? "dark" : "light";
     setThemeType(newTheme);
-    setCookie("theme", newTheme); // Save theme to cookies
+    setCookie("theme", newTheme); // Save the new theme to cookies
   };
 
   useEffect(() => {
-    // Apply the saved theme to the document
+    // Apply the theme to the document early
     document.documentElement.setAttribute("data-theme", themeType);
   }, [themeType]);
+
+  useEffect(() => {
+    // Ensure the saved theme from cookies is applied on mount
+    const savedTheme = getCookie("theme") as "light" | "dark";
+    if (savedTheme && savedTheme !== themeType) {
+      setThemeType(savedTheme); // Sync state with cookie value
+    }
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ themeType, toggleTheme }}>

@@ -1,9 +1,13 @@
 export const setCookie = (name: string, value: string, options?: { path?: string; maxAge?: number }) => {
-  let cookieString = `${name}=${value}; path=${options?.path || "/"};`;
+  let cookieString = `${name}=${value};`;
+  if (options?.path) {
+    cookieString += ` path=${options.path};`;
+  }
   if (options?.maxAge) {
     cookieString += ` max-age=${options.maxAge};`;
   }
   document.cookie = cookieString;
+  console.log(`Cookie written: ${cookieString}`); // Debugging log
 };
 
 export const getCookie = (name: string): string | null => {

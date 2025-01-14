@@ -2,9 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base toggle styles */
+/* SwitchtoDarkMode styles */
 .toggle {
   --size: 2rem;
+
   appearance: none;
   outline: none;
   cursor: pointer;
@@ -12,20 +13,40 @@
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  background: var(--foreground); /* Moon for light mode */
+  color: hsl(0, 0%, 0%);
+  background: var(--foreground); /* Dynamically set based on theme */
+  box-shadow: inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0;
+  transition: all 0.5s ease-in-out;
   position: relative;
-  transition: all 0.3s ease-in-out;
-  box-shadow: inset calc(var(--size) * 0.25) calc(var(--size) * -0.25) 0;
 }
 
-/* Sun for dark mode */
 .toggle:checked {
-  background: var(--background); /* Sun for dark mode */
   transform: scale(0.75);
+  color: hsl(40, 100%, 50%);
   box-shadow: 
-    0 0 0 var(--size),
-    calc(var(--size) * -0.3) 0 0 calc(var(--size) * -0.5),
-    calc(var(--size) * 0.3) 0 0 calc(var(--size) * -0.5),
-    0 calc(var(--size) * -0.3) 0 calc(var(--size) * -0.5),
-    0 calc(var(--size) * 0.3) 0 calc(var(--size) * -0.5);
+    inset 0 0 0 var(--size),
+    calc(var(--size) * -0.65) 0 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.65) 0 0 calc(var(--size) * -0.4),
+    0 calc(var(--size) * -0.65) 0 calc(var(--size) * -0.4),
+    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * -0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * -0.45) calc(var(--size) * 0.45) 0 calc(var(--size) * -0.4),
+    calc(var(--size) * 0.45) calc(var(--size) * -0.45) 0 calc(var(--size) * -0.4);
+}
+
+.title {
+  --color: hsl(69, 97%, 49%);
+  color: var(--color);
+  z-index: 1;
+  cursor: pointer;
+  display: block;
+  margin-top: 0.5rem;
+  transition: color 0.5s ease-in-out;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.toggle:checked ~ .title {
+  --color: hsl(40, 100%, 50%);
 }

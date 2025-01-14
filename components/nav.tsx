@@ -12,10 +12,9 @@ const Nav: React.FC = () => {
     <nav className="flex justify-between items-center p-4 bg-background text-foreground">
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
       <div className="flex items-center gap-4">
-        {/* Switch to Dark Mode toggle */}
+        {/* Pass props to SwitchtoDarkMode */}
         <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
         <div className="relative z-10">
-          {/* Dropdown menu */}
           <CustomDropdown />
         </div>
       </div>

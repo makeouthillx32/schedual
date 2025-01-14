@@ -3,10 +3,10 @@
 import React from "react";
 import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
-import { CustomDropdown } from "@/components/ui/dropdown-menu"; // Corrected path
+import { CustomDropdown } from "@/components/ui/dropdown-menu"; // Correct path
 
 const Nav: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme(); // Access themeType and toggleTheme
+  const { themeType } = useTheme(); // Access themeType only for dynamic styles
 
   return (
     <nav
@@ -18,8 +18,8 @@ const Nav: React.FC = () => {
     >
       <h1 className="text-lg font-bold">CMS Schedule App</h1>
       <div className="flex items-center gap-4">
-        {/* Add SwitchtoDarkMode for testing */}
-        <SwitchtoDarkMode themeType={themeType} toggleTheme={toggleTheme} />
+        {/* SwitchtoDarkMode handles its own theme logic */}
+        <SwitchtoDarkMode />
         <div className="relative z-10">
           {/* Dropdown menu */}
           <CustomDropdown />

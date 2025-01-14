@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Toggle base styles */
+/* Base toggle styles */
 .toggle {
   --size: 2rem;
   appearance: none;
@@ -12,29 +12,20 @@
   width: var(--size);
   height: var(--size);
   border-radius: 50%;
-  background: var(--foreground); /* Use theme's foreground color */
+  background: var(--foreground); /* Moon for light mode */
   position: relative;
   transition: all 0.3s ease-in-out;
-  box-shadow: inset calc(var(--size) * 0.33) calc(var(--size) * -0.25) 0;
+  box-shadow: inset calc(var(--size) * 0.25) calc(var(--size) * -0.25) 0;
 }
 
-/* Dark mode (moon) */
+/* Sun for dark mode */
 .toggle:checked {
-  background: var(--background); /* Theme's background */
+  background: var(--background); /* Sun for dark mode */
   transform: scale(0.75);
   box-shadow: 
-    inset 0 0 0 var(--size),
-    calc(var(--size) * -0.65) 0 0 calc(var(--size) * -0.4),
-    calc(var(--size) * 0.65) 0 0 calc(var(--size) * -0.4),
-    0 calc(var(--size) * -0.65) 0 calc(var(--size) * -0.4),
-    0 calc(var(--size) * 0.65) 0 calc(var(--size) * -0.4);
-}
-
-/* Optional title styling */
-.title {
-  color: var(--foreground);
-  margin-top: 0.5rem;
-  text-align: center;
-  font-size: 1rem;
-  transition: color 0.3s ease-in-out;
+    0 0 0 var(--size),
+    calc(var(--size) * -0.3) 0 0 calc(var(--size) * -0.5),
+    calc(var(--size) * 0.3) 0 0 calc(var(--size) * -0.5),
+    0 calc(var(--size) * -0.3) 0 calc(var(--size) * -0.5),
+    0 calc(var(--size) * 0.3) 0 calc(var(--size) * -0.5);
 }

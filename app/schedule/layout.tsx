@@ -1,18 +1,18 @@
 "use client";
 
-import "@/app/globals.css"; // Correct path for global styles
-import { Providers } from "@/app/provider"; // Correct provider import
+import { Providers } from "@/app/provider"; // Ensure correct path
+import "@/app/globals.css";
 
-interface LayoutProps {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
-
-const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
+}) {
   return (
     <Providers>
-      <div>{children}</div> {/* Ensure the theme context propagates */}
+      <html lang="en">
+        <body>{children}</body>
+      </html>
     </Providers>
   );
-};
-
-export default ScheduleLayout;
+}

@@ -19,17 +19,21 @@ export const useTheme = () => {
 };
 
 export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeType, setThemeType] = useState<"light" | "dark">(() => {
-    // Safely initialize the state with the cookie value or fallback to "light"
-    const savedTheme = getCookie("theme");
-    return savedTheme === "dark" ? "dark" : "light";
-  });
+  const [themeType, setThemeType] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    if (typeof document !== "undefined" && themeType) {
-      // Ensure `themeType` is defined before setting the attribute
+    // Ensure this runs only on the client
+    if (typeof window !== "undefined") {
+      const savedTheme = getCookie("theme") || "light"; // Fallback to "light"
+      document.documentElement.setAttribute("data-theme", savedTheme);
+      setThemeType(savedTheme as "light" | "dark");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
       document.documentElement.setAttribute("data-theme", themeType);
-      setCookie("theme", themeType, { path: "/", maxAge: 31536000 }); // Save theme in cookie
+      setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
     }
   }, [themeType]);
 

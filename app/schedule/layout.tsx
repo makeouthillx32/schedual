@@ -1,14 +1,7 @@
 "use client";
 
-import "@/app/globals.css"; // Correct absolute path to CSS
+import Hero2 from "@/components/hero2";
 
-interface LayoutProps {
-  children: React.ReactNode;
+export default function SchedulePage() {
+  return <Hero2 />;
 }
-
-const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
-  console.log("Schedule Layout Rendered");
-  return <>{children}</>; // Simply render children without wrapping anything
-};
-
-export default ScheduleLayout;

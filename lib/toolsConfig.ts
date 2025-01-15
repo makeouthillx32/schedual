@@ -4,7 +4,7 @@ export const tools = [
   {
     name: "Timesheet Calculator",
     path: "/Tools/timesheet-calculator",
-    component: TimesheetCalculator, // Import directly from components
+    component: TimesheetCalculator,
   },
-  
+  // Add placeholders for other tools
 ];

@@ -1,25 +1,32 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { Providers } from "@/app/provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import { Providers } from "@/app/provider"; // Ensure this path matches your project structure
+import "./globals.css";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const ToolsLayout: React.FC<LayoutProps> = ({ children }) => {
+const RootLayout: React.FC<LayoutProps> = ({ children }) => {
+  const pathname = usePathname();
+
+  // Exclude Nav and Footer for Tools pages
+  const excludeGlobalLayout = pathname?.startsWith("/Tools");
+
   return (
     <html lang="en">
       <body>
         <Providers>
-          <Nav pageTitle="tools" />
+          {!excludeGlobalLayout && <Nav />}
           <main>{children}</main>
-          <Footer />
+          {!excludeGlobalLayout && <Footer />}
         </Providers>
       </body>
     </html>
   );
 };
 
-export default ToolsLayout;
+export default RootLayout;

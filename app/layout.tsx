@@ -16,6 +16,9 @@ export default function RootLayout({
   const pathname = usePathname();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
+  // Exclude Nav and Footer for /Tools pages
+  const excludeGlobalLayout = pathname?.startsWith("/Tools");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCookie("lastPage", pathname);
@@ -36,9 +39,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Nav />
+          {/* Conditionally render Nav and Footer */}
+          {!excludeGlobalLayout && <Nav />}
           <main>{children}</main>
-          <Footer />
+          {!excludeGlobalLayout && <Footer />}
         </Providers>
       </body>
     </html>

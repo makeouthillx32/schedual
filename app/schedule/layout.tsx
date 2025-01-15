@@ -1,7 +1,7 @@
 "use client";
 
-import "@/app/globals.css"; // Correct absolute path to CSS
-import { Providers } from "@/app/provider"; // Ensure Providers wrap for theming
+import "@/app/globals.css"; // Correct path for global styles
+import { Providers } from "@/app/provider"; // Correct provider import
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ interface LayoutProps {
 const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <Providers>
-      {children}
+      <div>{children}</div> {/* Ensure the theme context propagates */}
     </Providers>
   );
 };

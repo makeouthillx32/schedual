@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import WeekList from "@/components/WeekList"; // Import WeekList
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { Providers, useTheme } from "@/app/provider"; // Import Providers and useTheme
+import { useTheme } from "@/app/provider"; // Import useTheme
 
 interface Job {
   job_name: string;
@@ -60,42 +60,44 @@ const Hero2: React.FC = () => {
   }, [week]);
 
   return (
-    <Providers>
-      <div
-        className={`p-5 ${
-          themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
-        }`}
-      >
-        {/* Week Selection */}
-        <div className="flex flex-col mb-5 space-y-4">
-          <div>
-            <label className="block mb-2 font-bold">Select Week:</label>
-            <select
-              value={week}
-              onChange={(e) => setWeek(Number(e.target.value))}
-              className={`p-2 border rounded ${
-                themeType === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-black"
-              }`}
-            >
-              <option value={1}>Week 1</option>
-              <option value={2}>Week 2</option>
-              <option value={3}>Week 3</option>
-              <option value={4}>Week 4</option>
-              <option value={5}>Week 5</option> {/* Added Week 5 */}
-            </select>
-          </div>
+    <div
+      className={`p-5 ${
+        themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
+      {/* Week Selection */}
+      <div className="flex flex-col mb-5 space-y-4">
+        <div>
+          <label htmlFor="week-selector" className="block mb-2 font-bold">
+            Select Week:
+          </label>
+          <select
+            id="week-selector" // Accessibility improvement
+            title="Week Selector" // Add title for accessibility
+            value={week}
+            onChange={(e) => setWeek(Number(e.target.value))}
+            className={`p-2 border rounded ${
+              themeType === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-black"
+            }`}
+          >
+            <option value={1}>Week 1</option>
+            <option value={2}>Week 2</option>
+            <option value={3}>Week 3</option>
+            <option value={4}>Week 4</option>
+            <option value={5}>Week 5</option> {/* Added Week 5 */}
+          </select>
         </div>
-
-        {/* Conditional Rendering */}
-        {loading ? (
-          <div className="text-center">Loading schedule...</div>
-        ) : error ? (
-          <p className="text-red-500">Error: {error}</p>
-        ) : (
-          <WeekList groupedSchedule={schedule} />
-        )}
       </div>
-    </Providers>
+
+      {/* Conditional Rendering */}
+      {loading ? (
+        <div className="text-center">Loading schedule...</div>
+      ) : error ? (
+        <p className="text-red-500">Error: {error}</p>
+      ) : (
+        <WeekList groupedSchedule={schedule} />
+      )}
+    </div>
   );
 };
 

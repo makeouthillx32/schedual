@@ -4,29 +4,18 @@ import { usePathname } from "next/navigation";
 import { Providers } from "@/app/provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import "@/globals.css";
+import "../globals.css"; // Correct relative path from `/Tools` to `/globals.css`
 
-interface LayoutProps {
+interface ToolsLayoutProps {
   children: React.ReactNode;
 }
 
-const RootLayout: React.FC<LayoutProps> = ({ children }) => {
-  const pathname = usePathname();
-
-  // Exclude Nav and Footer for Tools pages
-  const excludeGlobalLayout = pathname?.startsWith("/Tools");
-
+const ToolsLayout: React.FC<ToolsLayoutProps> = ({ children }) => {
   return (
-    <html lang="en">
-      <body>
-        <Providers>
-          {!excludeGlobalLayout && <Nav />}
-          <main>{children}</main>
-          {!excludeGlobalLayout && <Footer />}
-        </Providers>
-      </body>
-    </html>
+    <div>
+      {children}
+    </div>
   );
 };
 
-export default RootLayout;
+export default ToolsLayout;

@@ -61,7 +61,19 @@ html[data-theme="dark"] {
   --chart-5: hsl(340, 75%, 55%);
 }
 
-/* Avoid styling dropdown menus globally */
+/* Ensure overflow area matches the theme */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Form and input styling */
 input,
 textarea {
   background-color: var(--input);

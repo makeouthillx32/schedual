@@ -1,21 +1,28 @@
 "use client";
 
+import React from "react";
 import { notFound } from "next/navigation";
-import TimesheetCalculator from "@/components/tools/timesheet-calculator";
-import Tool1 from "@/components/tools/tool-1";
-import Tool2 from "@/components/tools/tool-2";
+import dynamic from "next/dynamic";
+import { use } from "react";
 
-const toolsMap: Record<string, React.FC> = {
-  "timesheet-calculator": TimesheetCalculator,
-  "tool-1": Tool1,
-  "tool-2": Tool2,
+// Map of tools
+const toolsMap: Record<string, React.ComponentType> = {
+  "timesheet-calculator": dynamic(() =>
+    import("@/components/tools/timesheet-calculator")
+  ),
+  "tool-1": dynamic(() => import("@/components/tools/tool-1")),
+  "tool-2": dynamic(() => import("@/components/tools/tool-2")),
 };
 
-const ToolPage = ({ params }: { params: { tool: string } }) => {
-  const ToolComponent = toolsMap[params.tool];
+const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {
+  // Unwrap the `params` Promise
+  const resolvedParams = use(params);
+  const { tool } = resolvedParams;
+
+  const ToolComponent = toolsMap[tool];
 
   if (!ToolComponent) {
-    notFound(); // Show 404 if tool does not exist
+    notFound(); // Show 404 if the tool doesn't exist
     return null;
   }
 

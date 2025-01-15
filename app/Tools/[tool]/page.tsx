@@ -34,3 +34,4 @@ const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {
 };
 
 export default ToolPage;
+

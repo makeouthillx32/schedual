@@ -1,14 +1,22 @@
 "use client";
 
-import "@/app/globals.css"; // Correct absolute path to CSS
+import Nav from "@/components/nav";
+import Footer from "@/components/footer";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
-  console.log("Schedule Layout Rendered");
-  return <>{children}</>; // Simply render children without wrapping anything
+const ToolsLayout: React.FC<LayoutProps> = ({ children }) => {
+  return (
+    <html lang="en">
+      <body>
+        <Nav pageTitle="tools" />
+        <main>{children}</main>
+        <Footer />
+      </body>
+    </html>
+  );
 };
 
-export default ScheduleLayout;
+export default ToolsLayout;

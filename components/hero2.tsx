@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import WeekList from "@/components/WeekList"; // Import WeekList
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { useTheme } from "@/app/provider"; // Import useTheme to access theme context
+import { useTheme } from "@/app/provider"; // Import useTheme directly
 
 interface Job {
   job_name: string;
@@ -73,7 +73,9 @@ const Hero2: React.FC = () => {
             value={week}
             onChange={(e) => setWeek(Number(e.target.value))}
             className={`p-2 border rounded ${
-              themeType === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-black"
+              themeType === "dark"
+                ? "bg-gray-800 text-white"
+                : "bg-gray-100 text-black"
             }`}
           >
             <option value={1}>Week 1</option>

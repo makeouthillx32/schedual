@@ -1,18 +1,14 @@
 "use client";
 
-import { Providers } from "@/app/provider"; // Ensure correct path
-import "@/app/globals.css";
+import "@/app/globals.css"; // Correct absolute path to CSS
 
-export default function RootLayout({
-  children,
-}: {
+interface LayoutProps {
   children: React.ReactNode;
-}) {
-  return (
-    <Providers>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </Providers>
-  );
 }
+
+const ScheduleLayout: React.FC<LayoutProps> = ({ children }) => {
+  console.log("Schedule Layout Rendered");
+  return <>{children}</>; // Simply render children without wrapping anything
+};
+
+export default ScheduleLayout;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import WeekList from "@/components/WeekList"; // Import WeekList
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { useTheme } from "@/app/provider"; // Import useTheme directly
+import { useTheme } from "@/app/provider"; // Use theme context directly
 
 interface Job {
   job_name: string;
@@ -63,7 +63,7 @@ const Hero2: React.FC = () => {
     <div
       className={`p-5 ${
         themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
-      }`}
+      } transition-all duration-300`}
     >
       {/* Week Selection */}
       <div className="flex flex-col mb-5 space-y-4">

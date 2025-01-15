@@ -4,14 +4,13 @@ import React from "react";
 import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/ui/dropdown-menu";
-import { usePathname } from "next/navigation"; // Import for detecting the current route
 
-const Nav: React.FC = () => {
-  const { themeType, toggleTheme } = useTheme();
-  const pathname = usePathname(); // Get the current path
+interface NavProps {
+  pageTitle?: string; // Optional pageTitle prop
+}
 
-  // Check if the current path is under /Tools
-  const isToolsPage = pathname.startsWith("/Tools");
+const Nav: React.FC<NavProps> = ({ pageTitle }) => {
+  const { themeType, toggleTheme } = useTheme(); // Access theme context
 
   return (
     <nav
@@ -21,7 +20,7 @@ const Nav: React.FC = () => {
     >
       <h1 className="text-lg font-bold">
         CMS Schedule App
-        {isToolsPage && <span className="ml-2 text-lg font-bold">tools</span>}
+        {pageTitle && <span className="ml-2 text-lg font-bold">{pageTitle}</span>}
       </h1>
       <div className="flex items-center gap-4">
         {/* Theme toggle */}

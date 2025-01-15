@@ -11,9 +11,16 @@ interface ToolsLayoutProps {
 }
 
 const ToolsLayout: React.FC<ToolsLayoutProps> = ({ children }) => {
+  const pathname = usePathname();
+
+  // Check if the current path is in /Tools
+  const pageTitle = pathname?.startsWith("/Tools") ? "tools" : undefined;
+
   return (
     <div>
-      {children}
+      <Nav pageTitle={pageTitle} /> {/* Dynamically add pageTitle for Tools */}
+      <main>{children}</main>
+      <Footer />
     </div>
   );
 };

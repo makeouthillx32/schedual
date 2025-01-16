@@ -1,4 +1,5 @@
 import TimesheetCalculator from "@/components/tools/timesheet-calculator";
+import PunchCardMaker from "@/components/tools/PunchCardMaker";
 
 export const tools = [
   {
@@ -6,5 +7,9 @@ export const tools = [
     path: "/Tools/timesheet-calculator",
     component: TimesheetCalculator,
   },
-  // Add placeholders for other tools
+  {
+    name: "Punch Card Maker",
+    path: "/Tools/punch-card-maker",
+    component: PunchCardMaker,
+  },
 ];

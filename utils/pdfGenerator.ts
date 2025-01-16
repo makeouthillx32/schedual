@@ -3,8 +3,8 @@ import html2canvas from "html2canvas";
 
 export async function generatePDF(selectedTemplate: string) {
   const element = document.querySelector(".grid"); // Target punch card grid
-  if (!element) {
-    console.error("Punch card grid not found.");
+  if (!element || !(element instanceof HTMLElement)) {
+    console.error("Punch card grid not found or not a valid HTML element.");
     return;
   }
 
@@ -20,4 +20,4 @@ export async function generatePDF(selectedTemplate: string) {
 
   pdf.addImage(imgData, "PNG", 0.5, 0.5, 7.5, 10);
   pdf.save(`PunchCards-${selectedTemplate}.pdf`);
-} 
+}

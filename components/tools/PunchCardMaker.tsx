@@ -5,6 +5,7 @@ import PunchCardGrid from "../PunchCardGrid";
 import DownloadPDF from "../DownloadPDF";
 import { Providers, useTheme } from "@/app/provider";
 
+// Available punch card templates
 const templates = ["1.png", "2.png", "3.png", "4.png", "5.png"];
 
 const PunchCardMaker: React.FC = () => {
@@ -22,6 +23,7 @@ const PunchCardMaker: React.FC = () => {
       >
         <h1 className="text-2xl font-bold mb-4">Punch Card Maker</h1>
 
+        {/* Template Selection Dropdown */}
         <div className="mb-4">
           <label className="block mb-2 font-bold">Select Template:</label>
           <select
@@ -29,14 +31,15 @@ const PunchCardMaker: React.FC = () => {
             onChange={(e) => setSelectedTemplate(e.target.value)}
             className="p-2 border rounded w-full text-black"
           >
-            {templates.map((template) => (
-              <option key={template} value={template}>
-                {template}
+            {templates.map((template, index) => (
+              <option key={index} value={template}>
+                Template {index + 1}
               </option>
             ))}
           </select>
         </div>
 
+        {/* Number of Punch Cards */}
         <div className="mb-4">
           <label className="block mb-2 font-bold">Number of Punch Cards:</label>
           <input
@@ -48,6 +51,7 @@ const PunchCardMaker: React.FC = () => {
           />
         </div>
 
+        {/* Generate Punch Cards Button */}
         <button
           className="p-3 bg-blue-600 text-white rounded"
           onClick={() => setGenerated(true)}
@@ -55,8 +59,11 @@ const PunchCardMaker: React.FC = () => {
           Generate Punch Cards
         </button>
 
+        {/* Display Generated Punch Cards */}
         {generated && <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />}
-        {generated && <DownloadPDF />}
+        
+        {/* PDF Download Button */}
+        {generated && <DownloadPDF selectedTemplate={selectedTemplate} />}
       </div>
     </Providers>
   );

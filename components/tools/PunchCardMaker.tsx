@@ -32,14 +32,15 @@ const PunchCardMaker = () => {
         <option value="template5.png">Template 5</option>
       </select>
 
-      {/* Template Preview */}
+      {/* Template Preview - Fixed */}
       <h2 className="text-lg font-semibold mt-4">Selected Template Preview</h2>
-      <div className="border p-4 shadow-lg rounded-lg w-[500px] h-[300px] flex justify-center items-center">
+      <div className="border p-4 shadow-lg rounded-lg flex justify-center items-center w-full max-w-lg mx-auto">
         <Image
           src={`/images/${selectedTemplate}`} // ✅ Ensure correct path
           alt="Selected Punch Card Template"
-          width={500}
-          height={300}
+          width={300}  // ✅ Prevents oversizing
+          height={200} // ✅ Prevents oversizing
+          objectFit="contain" // ✅ Prevents stretching
           className="rounded-lg"
         />
       </div>

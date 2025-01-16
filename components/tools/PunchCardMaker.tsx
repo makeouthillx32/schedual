@@ -1,88 +1,63 @@
 "use client";
 
 import React, { useState } from "react";
-import PunchCardGrid from "../PunchCardGrid";
-import DownloadPDF from "../DownloadPDF";
-import { Providers, useTheme } from "@/app/provider";
-import Image from "next/image";
+import PunchCardGrid from "@/components/PunchCardGrid";
+import DownloadPDF from "@/components/DownloadPDF";
 
-// Available punch card templates
-const templates = ["1.png", "2.png", "3.png", "4.png", "5.png"];
-
-const PunchCardMaker: React.FC = () => {
-  const [numPunchCards, setNumPunchCards] = useState<number>(5);
+const PunchCardMaker = () => {
+  const [selectedTemplate, setSelectedTemplate] = useState("template1.png");
+  const [numPunchCards, setNumPunchCards] = useState(5);
   const [generated, setGenerated] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>(templates[0]); // Default template
-  const { themeType } = useTheme();
+
+  const handleGenerate = () => {
+    setGenerated(true);
+  };
 
   return (
-    <Providers>
-      <div
-        className={`p-6 min-h-screen ${
-          themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
-        }`}
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Punch Card Maker</h1>
+
+      {/* Template Selection */}
+      <label className="block font-semibold">Select Template:</label>
+      <select
+        className="border p-2 mb-4"
+        value={selectedTemplate}
+        onChange={(e) => setSelectedTemplate(e.target.value)}
       >
-        <h1 className="text-2xl font-bold mb-4">Punch Card Maker</h1>
+        <option value="template1.png">Template 1</option>
+        <option value="template2.png">Template 2</option>
+        <option value="template3.png">Template 3</option>
+        <option value="template4.png">Template 4</option>
+        <option value="template5.png">Template 5</option>
+      </select>
 
-        {/* Template Selection Dropdown */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold">Select Template:</label>
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            className="p-2 border rounded w-full text-black"
-          >
-            {templates.map((template, index) => (
-              <option key={index} value={template}>
-                Template {index + 1}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Number of Punch Cards Input */}
+      <label className="block font-semibold">Number of Punch Cards:</label>
+      <input
+        type="number"
+        className="border p-2 mb-4 w-full"
+        value={numPunchCards}
+        onChange={(e) => setNumPunchCards(parseInt(e.target.value, 10))}
+      />
 
-        {/* Live Preview of Selected Template */}
-        <div className="flex flex-col items-center mb-4">
-          <h3 className="text-lg font-semibold mb-2">Selected Template Preview</h3>
-          <div className="border p-2 shadow-lg bg-white">
-            <Image
-              src={`/images/${selectedTemplate}`} // Corrected image path
-              alt="Selected Punch Card Template"
-              width={400}
-              height={250}
-              className="rounded-lg"
-              onError={() => console.error(`Failed to load image: /images/${selectedTemplate}`)}
-              priority
-            />
-          </div>
-        </div>
+      {/* Generate Button */}
+      <button
+        className="p-3 bg-blue-600 text-white rounded"
+        onClick={handleGenerate}
+      >
+        Generate Punch Cards
+      </button>
 
-        {/* Number of Punch Cards */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold">Number of Punch Cards:</label>
-          <input
-            type="number"
-            value={numPunchCards}
-            onChange={(e) => setNumPunchCards(Number(e.target.value))}
-            className="p-2 border rounded w-full text-black"
-            min={1}
-          />
-        </div>
+      {/* Render Punch Cards Grid when Generated */}
+      {generated && (
+        <>
+          <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />
 
-        {/* Generate Punch Cards Button */}
-        <button
-          className="p-3 bg-blue-600 text-white rounded"
-          onClick={() => setGenerated(true)}
-        >
-          Generate Punch Cards
-        </button>
-
-        {/* Display Generated Punch Cards */}
-        {generated && <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />}
-        
-        {/* PDF Download Button */}
-        {generated && <DownloadPDF selectedTemplate={selectedTemplate} />}
-      </div>
-    </Providers>
+          {/* ✅ FIX: Pass `numPunchCards` correctly to `DownloadPDF` */}
+          <DownloadPDF selectedTemplate={selectedTemplate} numPunchCards={numPunchCards} />
+        </>
+      )}
+    </div>
   );
 };
 

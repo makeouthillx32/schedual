@@ -11,7 +11,7 @@ const DownloadPDF: React.FC<DownloadPDFProps> = ({ selectedTemplate }) => {
   return (
     <button
       className="mt-6 p-3 bg-green-600 text-white rounded"
-      onClick={() => generatePDF(selectedTemplate)} // Pass selectedTemplate explicitly
+      onClick={() => generatePDF(selectedTemplate)} // Ensure the correct template is used
     >
       Download as PDF
     </button>

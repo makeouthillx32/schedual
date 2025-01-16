@@ -10,19 +10,22 @@ interface PunchCardGridProps {
 
 const PunchCardGrid: React.FC<PunchCardGridProps> = ({ numPunchCards, selectedTemplate }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-      {Array.from({ length: numPunchCards }, (_, index) => (
-        <div key={index} className="p-4 border bg-white shadow-md">
-          <Image
-            src={`/images/${selectedTemplate}`} // Use selected template
-            alt={`Punch Card ${index + 1}`}
-            width={400}
-            height={300}
-            className="w-full"
-          />
-          <p className="text-center font-bold mt-2">Card #{index + 1}</p>
+    <div className="flex justify-center mt-6">
+      <div className="border p-4 shadow-md bg-white max-w-[816px] w-full">
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: numPunchCards }, (_, index) => (
+            <div key={index} className="border p-2 bg-gray-100 flex justify-center items-center">
+              <Image
+                src={`/images/${selectedTemplate}`}
+                alt={`Punch Card ${index + 1}`}
+                width={400}
+                height={250}
+                className="rounded-lg"
+              />
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 };

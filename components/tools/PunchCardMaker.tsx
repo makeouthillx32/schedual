@@ -38,6 +38,14 @@ const PunchCardMaker: React.FC = () => {
         <option value="4.png">Template 4</option>
       </select>
 
+      {/* Live Template Preview */}
+      <div className="mt-4">
+        <h2 className="text-lg font-semibold">Selected Template Preview</h2>
+        <div className="border p-2 rounded shadow-md bg-white">
+          <img src={`/templates/${selectedTemplate}`} alt="Selected Template" className="max-w-full h-auto" />
+        </div>
+      </div>
+
       {/* Number of Punch Cards Input */}
       <label className="text-lg font-semibold mt-4 mb-2">Number of Punch Cards:</label>
       <input

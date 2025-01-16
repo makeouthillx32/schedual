@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-export async function generatePDF() {
+export async function generatePDF(selectedTemplate: string) {
   const element = document.querySelector(".grid"); // Target punch card grid
   if (!element) {
     console.error("Punch card grid not found.");
@@ -18,6 +18,6 @@ export async function generatePDF() {
     format: [8.5, 11],
   });
 
-  pdf.addImage(imgData, "PNG", 0.5, 0.5, 7.5, 10); // Position images properly
-  pdf.save("PunchCards.pdf");
+  pdf.addImage(imgData, "PNG", 0.5, 0.5, 7.5, 10);
+  pdf.save(`PunchCards-${selectedTemplate}.pdf`);
 }

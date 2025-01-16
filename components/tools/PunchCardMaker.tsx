@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import PunchCardGrid from "@/components/PunchCardGrid";
 import DownloadPDF from "@/components/DownloadPDF";
 
@@ -31,8 +32,20 @@ const PunchCardMaker = () => {
         <option value="template5.png">Template 5</option>
       </select>
 
+      {/* Template Preview */}
+      <h2 className="text-lg font-semibold mt-4">Selected Template Preview</h2>
+      <div className="border p-4 shadow-lg rounded-lg w-[500px] h-[300px] flex justify-center items-center">
+        <Image
+          src={`/images/${selectedTemplate}`} // ✅ Ensure correct path
+          alt="Selected Punch Card Template"
+          width={500}
+          height={300}
+          className="rounded-lg"
+        />
+      </div>
+
       {/* Number of Punch Cards Input */}
-      <label className="block font-semibold">Number of Punch Cards:</label>
+      <label className="block font-semibold mt-4">Number of Punch Cards:</label>
       <input
         type="number"
         className="border p-2 mb-4 w-full"
@@ -52,8 +65,6 @@ const PunchCardMaker = () => {
       {generated && (
         <>
           <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />
-
-          {/* ✅ FIX: Pass `numPunchCards` correctly to `DownloadPDF` */}
           <DownloadPDF selectedTemplate={selectedTemplate} numPunchCards={numPunchCards} />
         </>
       )}

@@ -20,4 +20,4 @@ export async function generatePDF(selectedTemplate: string) {
 
   pdf.addImage(imgData, "PNG", 0.5, 0.5, 7.5, 10);
   pdf.save(`PunchCards-${selectedTemplate}.pdf`);
-}
+} 

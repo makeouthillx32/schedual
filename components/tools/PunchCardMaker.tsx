@@ -42,7 +42,12 @@ const PunchCardMaker: React.FC = () => {
       <div className="mt-4">
         <h2 className="text-lg font-semibold">Selected Template Preview</h2>
         <div className="border p-2 rounded shadow-md bg-white">
-          <img src={`/templates/${selectedTemplate}`} alt="Selected Template" className="max-w-full h-auto" />
+          <img 
+            src={`/${selectedTemplate}`} 
+            alt="Selected Template" 
+            className="max-w-full h-auto" 
+            onError={(e) => (e.currentTarget.src = "/fallback.png")} 
+          />
         </div>
       </div>
 

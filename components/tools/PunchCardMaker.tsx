@@ -8,21 +8,18 @@ const PunchCardMaker: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState("1.png");
   const [numPunchCards, setNumPunchCards] = useState(5);
   const [generated, setGenerated] = useState(false);
-  const [punchCards, setPunchCards] = useState<string[]>([]);
   const [sheets, setSheets] = useState<string[]>([]);
 
-  // Function to handle template change
+  // Handle template change
   const handleTemplateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTemplate(event.target.value);
   };
 
-  // Function to generate punch cards
+  // Handle punch card generation
   const handleGenerate = () => {
-    const newPunchCards = Array.from({ length: numPunchCards }, (_, i) => `/punchcards/${selectedTemplate}`);
-    setPunchCards(newPunchCards);
     setGenerated(true);
 
-    // Simulate sheet generation (2 columns, 5 rows per sheet)
+    // Simulate generating sheets (each sheet contains up to 10 punch cards)
     const sheetCount = Math.ceil(numPunchCards / 10);
     const newSheets = Array.from({ length: sheetCount }, (_, i) => `/sheets/sheet_${i + 1}.png`);
     setSheets(newSheets);
@@ -56,7 +53,7 @@ const PunchCardMaker: React.FC = () => {
       </button>
 
       {/* Grid for Generated Sheets */}
-      {generated && <PunchCardGrid punchCards={punchCards} sheets={sheets} />}
+      {generated && <PunchCardGrid sheets={sheets} />}
 
       {/* PDF Download Button */}
       {generated && <DownloadPDF sheets={sheets} />}

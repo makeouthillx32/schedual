@@ -6,7 +6,8 @@ import PunchCardGrid from "@/components/PunchCardGrid";
 import DownloadPDF from "@/components/DownloadPDF";
 
 const PunchCardMaker = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState("template1.png");
+  const [selectedTemplate, setSelectedTemplate] = useState("1"); // Default to "1"
+
   const [numPunchCards, setNumPunchCards] = useState(5);
   const [generated, setGenerated] = useState(false);
 
@@ -25,23 +26,23 @@ const PunchCardMaker = () => {
         value={selectedTemplate}
         onChange={(e) => setSelectedTemplate(e.target.value)}
       >
-        <option value="1.png">Template 1</option>
-        <option value="2.png">Template 2</option>
-        <option value="3.png">Template 3</option>
-        <option value="4.png">Template 4</option>
-        <option value="5.png">Template 5</option>
+        <option value="1">Template 1</option>
+        <option value="2">Template 2</option>
+        <option value="3">Template 3</option>
+        <option value="4">Template 4</option>
       </select>
 
-      {/* Template Preview - Fixed */}
+      {/* Template Preview */}
       <h2 className="text-lg font-semibold mt-4">Selected Template Preview</h2>
       <div className="border p-4 shadow-lg rounded-lg flex justify-center items-center w-full max-w-lg mx-auto">
         <Image
-          src={`/images/${selectedTemplate}`} // ✅ Ensure correct path
+          src={`/images/${selectedTemplate}.png`} // ✅ Ensures correct image path
           alt="Selected Punch Card Template"
-          width={300}  // ✅ Prevents oversizing
-          height={200} // ✅ Prevents oversizing
-          objectFit="contain" // ✅ Prevents stretching
-          className="rounded-lg"
+          width={500}
+          height={300}
+          className="rounded-lg object-contain"
+          priority={true} // Ensures fast loading
+          onError={() => console.error("Image failed to load:", selectedTemplate)}
         />
       </div>
 

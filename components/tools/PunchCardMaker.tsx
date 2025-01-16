@@ -25,11 +25,11 @@ const PunchCardMaker = () => {
         value={selectedTemplate}
         onChange={(e) => setSelectedTemplate(e.target.value)}
       >
-        <option value="template1.png">Template 1</option>
-        <option value="template2.png">Template 2</option>
-        <option value="template3.png">Template 3</option>
-        <option value="template4.png">Template 4</option>
-        <option value="template5.png">Template 5</option>
+        <option value="1.png">Template 1</option>
+        <option value="2.png">Template 2</option>
+        <option value="3.png">Template 3</option>
+        <option value="4.png">Template 4</option>
+        <option value="5.png">Template 5</option>
       </select>
 
       {/* Template Preview - Fixed */}

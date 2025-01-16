@@ -2,17 +2,26 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import PunchCardGrid from "@/components/PunchCardGrid";
+import SheetGrid from "@/components/PunchCardGrid";
 import DownloadPDF from "@/components/DownloadPDF";
 
 const PunchCardMaker = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState("1"); // Default to "1"
-
+  const [selectedTemplate, setSelectedTemplate] = useState("1"); // Default template
   const [numPunchCards, setNumPunchCards] = useState(5);
   const [generated, setGenerated] = useState(false);
+  const [sheets, setSheets] = useState<string[]>([]); // Store generated sheets
 
   const handleGenerate = () => {
-    setGenerated(true);
+    setGenerated(false); // Prevent instant update
+    const totalSheets = Math.ceil(numPunchCards / 10); // Max 10 per sheet
+    const generatedSheets = [];
+
+    for (let i = 0; i < totalSheets; i++) {
+      generatedSheets.push(`/sheets/sheet_${i + 1}.png`); // Placeholder sheet name
+    }
+
+    setSheets(generatedSheets);
+    setGenerated(true); // Now display generated sheets
   };
 
   return (
@@ -36,13 +45,12 @@ const PunchCardMaker = () => {
       <h2 className="text-lg font-semibold mt-4">Selected Template Preview</h2>
       <div className="border p-4 shadow-lg rounded-lg flex justify-center items-center w-full max-w-lg mx-auto">
         <Image
-          src={`/images/${selectedTemplate}.png`} // ✅ Ensures correct image path
+          src={`/images/${selectedTemplate}.png`} // ✅ Corrected path
           alt="Selected Punch Card Template"
           width={500}
           height={300}
           className="rounded-lg object-contain"
-          priority={true} // Ensures fast loading
-          onError={() => console.error("Image failed to load:", selectedTemplate)}
+          priority={true}
         />
       </div>
 
@@ -63,13 +71,11 @@ const PunchCardMaker = () => {
         Generate Punch Cards
       </button>
 
-      {/* Render Punch Cards Grid when Generated */}
-      {generated && (
-        <>
-          <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />
-          <DownloadPDF selectedTemplate={selectedTemplate} numPunchCards={numPunchCards} />
-        </>
-      )}
+      {/* Render Sheets Grid when Generated */}
+      {generated && <SheetGrid sheets={sheets} />}
+
+      {/* PDF Download */}
+      {generated && <DownloadPDF sheets={sheets} />}
     </div>
   );
 };

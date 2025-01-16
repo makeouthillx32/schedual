@@ -10,6 +10,9 @@ const toolsMap: Record<string, React.ComponentType> = {
   "timesheet-calculator": dynamic(() =>
     import("@/components/tools/timesheet-calculator")
   ),
+  "punch-card-maker": dynamic(() =>
+    import("@/components/tools/PunchCardMaker")
+  ),
   "tool-1": dynamic(() => import("@/components/tools/tool-1")),
   "tool-2": dynamic(() => import("@/components/tools/tool-2")),
 };
@@ -34,4 +37,3 @@ const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {
 };
 
 export default ToolPage;
-

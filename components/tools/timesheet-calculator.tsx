@@ -1,87 +1,203 @@
-"use client";
-
 import React, { useState } from "react";
-import PunchCardGrid from "../PunchCardGrid";
-import DownloadPDF from "../DownloadPDF";
-import { Providers, useTheme } from "@/app/provider";
-import Image from "next/image";
+import "./../../style/TSC.css"; // Adjust the relative path based on your file structure
 
-// Available punch card templates
-const templates = ["1.png", "2.png", "3.png", "4.png", "5.png"];
+interface RowData {
+  starthour: number;
+  startminute: number;
+  startampm: string;
+  endhour: number;
+  endminute: number;
+  endampm: string;
+  breaktime: number;
+}
 
-const PunchCardMaker: React.FC = () => {
-  const [numPunchCards, setNumPunchCards] = useState<number>(5);
-  const [generated, setGenerated] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>(templates[0]); // Default template
-  const { themeType } = useTheme();
+const TimeSheetCalculator: React.FC = () => {
+  const [rows, setRows] = useState<RowData[]>([
+    {
+      starthour: 6,
+      startminute: 0,
+      startampm: "AM",
+      endhour: 3,
+      endminute: 0,
+      endampm: "PM",
+      breaktime: 0,
+    },
+  ]);
+
+  const convertTo24Hour = (hour: number, ampm: string): number => {
+    if (ampm === "PM" && hour !== 12) return hour + 12;
+    if (ampm === "AM" && hour === 12) return 0;
+    return hour;
+  };
+
+  const calculateTotal = (row: RowData): number => {
+    const startHour = convertTo24Hour(row.starthour, row.startampm);
+    const endHour = convertTo24Hour(row.endhour, row.endampm);
+    const totalMinutes =
+      endHour * 60 +
+      row.endminute -
+      (startHour * 60 + row.startminute) -
+      row.breaktime;
+    return totalMinutes > 0 ? totalMinutes / 60 : 0;
+  };
+
+  const handleRowChange = <T extends keyof RowData>(
+    index: number,
+    field: T,
+    value: RowData[T]
+  ) => {
+    const updatedRows = [...rows];
+    updatedRows[index][field] = value;
+    setRows(updatedRows);
+  };
+
+  const addRow = () => {
+    setRows([
+      ...rows,
+      {
+        starthour: 6,
+        startminute: 0,
+        startampm: "AM",
+        endhour: 3,
+        endminute: 0,
+        endampm: "PM",
+        breaktime: 0,
+      },
+    ]);
+  };
 
   return (
-    <Providers>
-      <div
-        className={`p-6 min-h-screen ${
-          themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
-        }`}
-      >
-        <h1 className="text-2xl font-bold mb-4">Punch Card Maker</h1>
-
-        {/* Template Selection Dropdown */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold">Select Template:</label>
-          <select
-            value={selectedTemplate}
-            onChange={(e) => setSelectedTemplate(e.target.value)}
-            className="p-2 border rounded w-full text-black"
-          >
-            {templates.map((template, index) => (
-              <option key={index} value={template}>
-                Template {index + 1}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Live Preview of Selected Template */}
-        <div className="flex flex-col items-center mb-4">
-          <h3 className="text-lg font-semibold mb-2">Selected Template Preview</h3>
-          <div className="border p-2 shadow-lg">
-            <Image
-              src={`/images/${selectedTemplate}`} // Dynamically show selected template
-              alt="Selected Punch Card Template"
-              width={400}
-              height={250}
-              className="rounded-lg"
-            />
-          </div>
-        </div>
-
-        {/* Number of Punch Cards */}
-        <div className="mb-4">
-          <label className="block mb-2 font-bold">Number of Punch Cards:</label>
-          <input
-            type="number"
-            value={numPunchCards}
-            onChange={(e) => setNumPunchCards(Number(e.target.value))}
-            className="p-2 border rounded w-full text-black"
-            min={1}
-          />
-        </div>
-
-        {/* Generate Punch Cards Button */}
-        <button
-          className="p-3 bg-blue-600 text-white rounded"
-          onClick={() => setGenerated(true)}
-        >
-          Generate Punch Cards
-        </button>
-
-        {/* Display Generated Punch Cards */}
-        {generated && <PunchCardGrid numPunchCards={numPunchCards} selectedTemplate={selectedTemplate} />}
-        
-        {/* PDF Download Button */}
-        {generated && <DownloadPDF selectedTemplate={selectedTemplate} />}
-      </div>
-    </Providers>
+    <div>
+      <h1>How much do you earn?</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Break Time</th>
+            <th>Total (Hours)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={index}>
+              <td>{index + 1}</td>
+              <td>
+                <select
+                  aria-label={`Start Hour for Day ${index + 1}`}
+                  value={row.starthour}
+                  onChange={(e) =>
+                    handleRowChange(index, "starthour", parseInt(e.target.value))
+                  }
+                >
+                  {[...Array(12)].map((_, i) => (
+                    <option key={i} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+                :
+                <select
+                  aria-label={`Start Minute for Day ${index + 1}`}
+                  value={row.startminute}
+                  onChange={(e) =>
+                    handleRowChange(
+                      index,
+                      "startminute",
+                      parseInt(e.target.value)
+                    )
+                  }
+                >
+                  <option value={0}>00</option>
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={45}>45</option>
+                </select>
+                <select
+                  aria-label={`AM/PM for Start Time of Day ${index + 1}`}
+                  value={row.startampm}
+                  onChange={(e) =>
+                    handleRowChange(index, "startampm", e.target.value)
+                  }
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  aria-label={`End Hour for Day ${index + 1}`}
+                  value={row.endhour}
+                  onChange={(e) =>
+                    handleRowChange(index, "endhour", parseInt(e.target.value))
+                  }
+                >
+                  {[...Array(12)].map((_, i) => (
+                    <option key={i} value={i + 1}>
+                      {i + 1}
+                    </option>
+                  ))}
+                </select>
+                :
+                <select
+                  aria-label={`End Minute for Day ${index + 1}`}
+                  value={row.endminute}
+                  onChange={(e) =>
+                    handleRowChange(
+                      index,
+                      "endminute",
+                      parseInt(e.target.value)
+                    )
+                  }
+                >
+                  <option value={0}>00</option>
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={45}>45</option>
+                </select>
+                <select
+                  aria-label={`AM/PM for End Time of Day ${index + 1}`}
+                  value={row.endampm}
+                  onChange={(e) =>
+                    handleRowChange(index, "endampm", e.target.value)
+                  }
+                >
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </td>
+              <td>
+                <select
+                  aria-label={`Break Time for Day ${index + 1}`}
+                  value={row.breaktime}
+                  onChange={(e) =>
+                    handleRowChange(
+                      index,
+                      "breaktime",
+                      parseInt(e.target.value)
+                    )
+                  }
+                >
+                  <option value={0}>00</option>
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={45}>45</option>
+                  <option value={60}>60</option>
+                </select>
+              </td>
+              <td>{calculateTotal(row).toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <button onClick={addRow}>Add Row</button>
+      <p>
+        Total Hours:{" "}
+        {rows.reduce((sum, row) => sum + calculateTotal(row), 0).toFixed(2)}
+      </p>
+    </div>
   );
 };
 
-export default PunchCardMaker;
+export default TimeSheetCalculator;

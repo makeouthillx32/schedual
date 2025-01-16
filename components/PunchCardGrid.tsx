@@ -15,7 +15,7 @@ const PunchCardGrid: React.FC<PunchCardGridProps> = ({
   return (
     <div className="flex justify-center mt-6">
       <div className="border p-4 shadow-md bg-white max-w-[816px] w-full">
-        {/* Ensure grid fits punch cards properly */}
+        {/* Grid for punch cards */}
         <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: numPunchCards }, (_, index) => (
             <div
@@ -23,7 +23,7 @@ const PunchCardGrid: React.FC<PunchCardGridProps> = ({
               className="relative w-[384px] h-[240px] border shadow-lg overflow-hidden flex justify-center items-center"
             >
               <Image
-                src={`/images/${selectedTemplate}`} // ✅ Fix image path
+                src={`/images/${selectedTemplate}.png`} // ✅ Corrected path
                 alt={`Punch Card ${index + 1}`}
                 width={384}
                 height={240}

@@ -1,80 +1,64 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import SheetGrid from "@/components/PunchCardGrid";
+import PunchCardGrid from "@/components/PunchCardGrid";
 import DownloadPDF from "@/components/DownloadPDF";
 
-const PunchCardMaker = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState("1"); // Default template
+const PunchCardMaker: React.FC = () => {
+  const [selectedTemplate, setSelectedTemplate] = useState("1.png");
   const [numPunchCards, setNumPunchCards] = useState(5);
   const [generated, setGenerated] = useState(false);
-  const [sheets, setSheets] = useState<string[]>([]); // Store generated sheets
+  const [punchCards, setPunchCards] = useState<string[]>([]);
+  const [sheets, setSheets] = useState<string[]>([]);
 
+  // Function to handle template change
+  const handleTemplateChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTemplate(event.target.value);
+  };
+
+  // Function to generate punch cards
   const handleGenerate = () => {
-    setGenerated(false); // Prevent instant update
-    const totalSheets = Math.ceil(numPunchCards / 10); // Max 10 per sheet
-    const generatedSheets = [];
+    const newPunchCards = Array.from({ length: numPunchCards }, (_, i) => `/punchcards/${selectedTemplate}`);
+    setPunchCards(newPunchCards);
+    setGenerated(true);
 
-    for (let i = 0; i < totalSheets; i++) {
-      generatedSheets.push(`/sheets/sheet_${i + 1}.png`); // Placeholder sheet name
-    }
-
-    setSheets(generatedSheets);
-    setGenerated(true); // Now display generated sheets
+    // Simulate sheet generation (2 columns, 5 rows per sheet)
+    const sheetCount = Math.ceil(numPunchCards / 10);
+    const newSheets = Array.from({ length: sheetCount }, (_, i) => `/sheets/sheet_${i + 1}.png`);
+    setSheets(newSheets);
   };
 
   return (
-    <div className="p-6">
+    <div className="flex flex-col items-center p-6">
       <h1 className="text-2xl font-bold mb-4">Punch Card Maker</h1>
 
-      {/* Template Selection */}
-      <label className="block font-semibold">Select Template:</label>
-      <select
-        className="border p-2 mb-4"
-        value={selectedTemplate}
-        onChange={(e) => setSelectedTemplate(e.target.value)}
-      >
-        <option value="1">Template 1</option>
-        <option value="2">Template 2</option>
-        <option value="3">Template 3</option>
-        <option value="4">Template 4</option>
+      {/* Template Selector */}
+      <label className="text-lg font-semibold mb-2">Select Template:</label>
+      <select className="p-2 border rounded" value={selectedTemplate} onChange={handleTemplateChange}>
+        <option value="1.png">Template 1</option>
+        <option value="2.png">Template 2</option>
+        <option value="3.png">Template 3</option>
+        <option value="4.png">Template 4</option>
       </select>
 
-      {/* Template Preview */}
-      <h2 className="text-lg font-semibold mt-4">Selected Template Preview</h2>
-      <div className="border p-4 shadow-lg rounded-lg flex justify-center items-center w-full max-w-lg mx-auto">
-        <Image
-          src={`/images/${selectedTemplate}.png`} // ✅ Corrected path
-          alt="Selected Punch Card Template"
-          width={500}
-          height={300}
-          className="rounded-lg object-contain"
-          priority={true}
-        />
-      </div>
-
       {/* Number of Punch Cards Input */}
-      <label className="block font-semibold mt-4">Number of Punch Cards:</label>
+      <label className="text-lg font-semibold mt-4 mb-2">Number of Punch Cards:</label>
       <input
         type="number"
-        className="border p-2 mb-4 w-full"
+        className="p-2 border rounded w-20 text-center"
         value={numPunchCards}
-        onChange={(e) => setNumPunchCards(parseInt(e.target.value, 10))}
+        onChange={(e) => setNumPunchCards(Number(e.target.value))}
       />
 
       {/* Generate Button */}
-      <button
-        className="p-3 bg-blue-600 text-white rounded"
-        onClick={handleGenerate}
-      >
+      <button className="mt-4 p-3 bg-blue-600 text-white rounded" onClick={handleGenerate}>
         Generate Punch Cards
       </button>
 
-      {/* Render Sheets Grid when Generated */}
-      {generated && <SheetGrid sheets={sheets} />}
+      {/* Grid for Generated Sheets */}
+      {generated && <PunchCardGrid punchCards={punchCards} sheets={sheets} />}
 
-      {/* PDF Download */}
+      {/* PDF Download Button */}
       {generated && <DownloadPDF sheets={sheets} />}
     </div>
   );

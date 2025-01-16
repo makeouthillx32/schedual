@@ -5,6 +5,7 @@
 /* Import specific component styles */
 @import "@/style/nav.css"; /* Styles for the navigation bar */
 @import "@/style/switch-to-dark-mode.css"; /* Styles for the dark mode toggle */
+@import "@/styleswitch-to-dark-mode.css";
 
 :root {
   --background: hsl(0, 0%, 100%);

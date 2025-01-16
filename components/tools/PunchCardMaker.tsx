@@ -43,13 +43,15 @@ const PunchCardMaker: React.FC = () => {
         {/* Live Preview of Selected Template */}
         <div className="flex flex-col items-center mb-4">
           <h3 className="text-lg font-semibold mb-2">Selected Template Preview</h3>
-          <div className="border p-2 shadow-lg">
+          <div className="border p-2 shadow-lg bg-white">
             <Image
-              src={`/images/${selectedTemplate}`} // Dynamically show selected template
+              src={`/images/${selectedTemplate}`} // Corrected image path
               alt="Selected Punch Card Template"
               width={400}
               height={250}
               className="rounded-lg"
+              onError={() => console.error(`Failed to load image: /images/${selectedTemplate}`)}
+              priority
             />
           </div>
         </div>

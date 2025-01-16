@@ -12,14 +12,18 @@ const PunchCardGrid: React.FC<PunchCardGridProps> = ({ numPunchCards, selectedTe
   return (
     <div className="flex justify-center mt-6">
       <div className="border p-4 shadow-md bg-white max-w-[816px] w-full">
+        {/* Ensure grid fits punch cards properly */}
         <div className="grid grid-cols-2 gap-4">
           {Array.from({ length: numPunchCards }, (_, index) => (
-            <div key={index} className="border p-2 bg-gray-100 flex justify-center items-center">
+            <div
+              key={index}
+              className="relative w-[384px] h-[240px] border shadow-lg overflow-hidden"
+            >
               <Image
                 src={`/images/${selectedTemplate}`}
                 alt={`Punch Card ${index + 1}`}
-                width={400}
-                height={250}
+                layout="fill" // Make the image fill the div
+                objectFit="cover" // Ensure it stretches to fit
                 className="rounded-lg"
               />
             </div>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import PunchCardGrid from "../PunchCardGrid";
 import DownloadPDF from "../DownloadPDF";
 import { Providers, useTheme } from "@/app/provider";
+import Image from "next/image";
 
 // Available punch card templates
 const templates = ["1.png", "2.png", "3.png", "4.png", "5.png"];
@@ -37,6 +38,20 @@ const PunchCardMaker: React.FC = () => {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Live Preview of Selected Template */}
+        <div className="flex flex-col items-center mb-4">
+          <h3 className="text-lg font-semibold mb-2">Selected Template Preview</h3>
+          <div className="border p-2 shadow-lg">
+            <Image
+              src={`/images/${selectedTemplate}`} // Dynamically show selected template
+              alt="Selected Punch Card Template"
+              width={400}
+              height={250}
+              className="rounded-lg"
+            />
+          </div>
         </div>
 
         {/* Number of Punch Cards */}

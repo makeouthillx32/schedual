@@ -7,21 +7,20 @@ interface Section {
   Section_Name: string;
 }
 
-interface Product {
-  Product_ID: number;
-  Item: string;
-  Price: number;
+interface Subcategory {
+  Subcategory_ID: number;
+  Subcategory_Name: string;
 }
 
 export default function CatalogPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [loadingSections, setLoadingSections] = useState<boolean>(true);
-  const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
+  const [loadingSubcategories, setLoadingSubcategories] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch sections and remove duplicates
+  // ✅ Fetch unique sections
   useEffect(() => {
     async function fetchSections() {
       try {
@@ -29,6 +28,8 @@ export default function CatalogPage() {
         if (!res.ok) throw new Error("Failed to load sections");
 
         const data: Section[] = await res.json();
+
+        console.log("API Sections Response:", data); // 🔍 Debug log
 
         // ✅ Ensure only unique sections are stored
         const uniqueSections = Array.from(
@@ -46,26 +47,29 @@ export default function CatalogPage() {
     fetchSections();
   }, []);
 
-  // ✅ Fetch products when a section is selected
+  // ✅ Fetch subcategories when a section is selected
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchSubcategories() {
       if (!selectedSection) return;
 
-      setLoadingProducts(true);
+      setLoadingSubcategories(true);
       try {
-        const res = await fetch(`/api/catalog?sectionId=${selectedSection}`);
-        if (!res.ok) throw new Error("Failed to load products");
+        const res = await fetch(`/api/catalog?getSubcategories=true&sectionId=${selectedSection}`);
+        if (!res.ok) throw new Error("Failed to load subcategories");
 
-        const data: Product[] = await res.json();
-        setProducts(data);
+        const data: Subcategory[] = await res.json();
+
+        console.log("API Subcategories Response:", data); // 🔍 Debug log
+
+        setSubcategories(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
-        setLoadingProducts(false);
+        setLoadingSubcategories(false);
       }
     }
 
-    fetchProducts();
+    fetchSubcategories();
   }, [selectedSection]);
 
   return (
@@ -75,7 +79,7 @@ export default function CatalogPage() {
 
       {/* Section Selector */}
       <div className="mb-6">
-        <label className="block font-semibold mb-2">Select a Category:</label>
+        <label className="block font-semibold mb-2">Select a Section:</label>
         {loadingSections ? (
           <p>Loading sections...</p>
         ) : (
@@ -94,23 +98,19 @@ export default function CatalogPage() {
         )}
       </div>
 
-      {/* Display Products */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Products</h2>
-        {loadingProducts ? (
-          <p>Loading products...</p>
-        ) : products.length === 0 ? (
-          <p className="text-gray-500">No products found for this section.</p>
-        ) : (
-          <ul className="border-t">
-            {products.map((product) => (
-              <li key={product.Product_ID} className="py-3 border-b">
-                <strong>{product.Item}</strong> - ${product.Price}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* Display Subcategory Count */}
+      {selectedSection && (
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Subcategories</h2>
+          {loadingSubcategories ? (
+            <p>Loading subcategories...</p>
+          ) : (
+            <p className="text-gray-700">
+              This section has <strong>{subcategories.length}</strong> subcategories.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

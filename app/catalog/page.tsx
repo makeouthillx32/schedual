@@ -29,7 +29,10 @@ export default function CatalogPage() {
         if (!res.ok) throw new Error("Failed to load sections");
 
         const data = await res.json();
-        setSections(data);
+        
+        // Remove duplicate sections by using a Map
+        const uniqueSections = Array.from(new Map(data.map(item => [item.Section_ID, item])).values());
+        setSections(uniqueSections);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {

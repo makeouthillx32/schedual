@@ -11,17 +11,25 @@ export async function GET(req: Request) {
 
     console.log("Received API Request:", { sectionId, subcategoryId, getSections, getSubcategories });
 
-    // Fetch all sections
+    // ✅ Fetch unique sections only
     if (getSections) {
-      const { data, error } = await supabase.from("Sections").select("*");
+      const { data, error } = await supabase
+        .from("Sections") // ✅ Fetch directly from Sections table to avoid duplication
+        .select("Section_ID, Section_Name")
+        .order("Section_Name", { ascending: true });
+
       if (error) {
         console.error("Supabase Error (Sections):", error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
-      return NextResponse.json(data, { status: 200 });
+
+      // ✅ Remove duplicates just in case
+      const uniqueSections = Array.from(new Map(data.map((s) => [s.Section_ID, s])).values());
+
+      return NextResponse.json(uniqueSections, { status: 200 });
     }
 
-    // Fetch all subcategories within a section
+    // ✅ Fetch all subcategories within a section
     if (getSubcategories && sectionId) {
       const { data, error } = await supabase
         .from("Sections")
@@ -35,7 +43,7 @@ export async function GET(req: Request) {
       return NextResponse.json(data, { status: 200 });
     }
 
-    // Fetch products, optionally filtered by section or subcategory
+    // ✅ Fetch products, optionally filtered by section or subcategory
     let query = supabase
       .from("Products")
       .select("Product_ID, Item, Price, Section_ID, Subcategory_ID");

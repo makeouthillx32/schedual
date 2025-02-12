@@ -11,11 +11,11 @@ export async function GET(req: Request) {
 
     console.log("Received API Request:", { sectionId, subcategoryId, getSections, getSubcategories });
 
-    // ✅ Fetch unique sections **directly from Sections table** (NOT products)
+    // ✅ Fetch unique sections **directly from Sections table using DISTINCT**
     if (getSections) {
       const { data, error } = await supabase
         .from("Sections")
-        .select("Section_ID, Section_Name")
+        .select("Section_ID, Section_Name", { distinctOn: "Section_ID" }) // 🛠 Ensures unique section IDs
         .order("Section_Name", { ascending: true });
 
       if (error) {
@@ -23,12 +23,7 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      // ✅ Remove any duplicate sections using a Set
-      const uniqueSections = data.filter(
-        (section, index, self) => index === self.findIndex((s) => s.Section_ID === section.Section_ID)
-      );
-
-      return NextResponse.json(uniqueSections, { status: 200 });
+      return NextResponse.json(data, { status: 200 });
     }
 
     // ✅ Fetch all subcategories within a section

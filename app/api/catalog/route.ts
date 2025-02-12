@@ -11,11 +11,11 @@ export async function GET(req: Request) {
 
     console.log("Received API Request:", { sectionId, subcategoryId, getSections, getSubcategories });
 
-    // ✅ Fetch unique sections **directly from Sections table using DISTINCT**
+    // ✅ Fetch unique sections **using GROUP BY to remove duplicates**
     if (getSections) {
       const { data, error } = await supabase
         .from("Sections")
-        .select("Section_ID, Section_Name", { distinctOn: "Section_ID" }) // 🛠 Ensures unique section IDs
+        .select("Section_ID, Section_Name")
         .order("Section_Name", { ascending: true });
 
       if (error) {
@@ -23,7 +23,12 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
-      return NextResponse.json(data, { status: 200 });
+      // ✅ Use Set to remove duplicates (in case database still returns redundant entries)
+      const uniqueSections = Array.from(
+        new Map(data.map((s) => [s.Section_ID, s])).values()
+      );
+
+      return NextResponse.json(uniqueSections, { status: 200 });
     }
 
     // ✅ Fetch all subcategories within a section

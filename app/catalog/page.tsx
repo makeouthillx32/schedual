@@ -28,10 +28,11 @@ export default function CatalogPage() {
         const res = await fetch("/api/catalog?getSections=true");
         if (!res.ok) throw new Error("Failed to load sections");
 
-        const data = await res.json();
-        
-        // Remove duplicate sections by using a Map
-        const uniqueSections = Array.from(new Map(data.map(item => [item.Section_ID, item])).values());
+        const data: Section[] = await res.json(); // ✅ Fix: Explicitly define `data` as an array of `Section`
+
+        // ✅ Remove duplicate sections using a Map
+        const uniqueSections = Array.from(new Map(data.map((item) => [item.Section_ID, item])).values());
+
         setSections(uniqueSections);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -53,7 +54,7 @@ export default function CatalogPage() {
         const res = await fetch(`/api/catalog?sectionId=${selectedSection}`);
         if (!res.ok) throw new Error("Failed to load products");
 
-        const data = await res.json();
+        const data: Product[] = await res.json(); // ✅ Fix: Explicitly define `data` as an array of `Product`
         setProducts(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");

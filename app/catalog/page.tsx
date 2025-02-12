@@ -21,7 +21,7 @@ export default function CatalogPage() {
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch sections from API (no extra filtering needed now)
+  // ✅ Fetch sections and remove duplicates
   useEffect(() => {
     async function fetchSections() {
       try {
@@ -29,7 +29,13 @@ export default function CatalogPage() {
         if (!res.ok) throw new Error("Failed to load sections");
 
         const data: Section[] = await res.json();
-        setSections(data);
+
+        // ✅ Ensure only unique sections are stored
+        const uniqueSections = Array.from(
+          new Map(data.map((s) => [s.Section_ID, s])).values()
+        );
+
+        setSections(uniqueSections);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {

@@ -11,6 +11,7 @@ interface Product {
   Product_ID: number;
   Item: string;
   Price: number;
+  Section_ID: number;
 }
 
 export default function CatalogPage() {
@@ -21,17 +22,19 @@ export default function CatalogPage() {
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all sections from API
+  // ✅ Fetch all sections from API and remove duplicates
   useEffect(() => {
     async function fetchSections() {
       try {
         const res = await fetch("/api/catalog?getSections=true");
         if (!res.ok) throw new Error("Failed to load sections");
 
-        const data: Section[] = await res.json(); // ✅ Fix: Explicitly define `data` as an array of `Section`
+        const data: Section[] = await res.json();
 
-        // ✅ Remove duplicate sections using a Map
-        const uniqueSections = Array.from(new Map(data.map((item) => [item.Section_ID, item])).values());
+        // ✅ Ensure only unique sections are added
+        const uniqueSections = Array.from(
+          new Map(data.map((section) => [section.Section_ID, section])).values()
+        );
 
         setSections(uniqueSections);
       } catch (err) {
@@ -44,7 +47,7 @@ export default function CatalogPage() {
     fetchSections();
   }, []);
 
-  // Fetch products when a section is selected
+  // ✅ Fetch products when a section is selected
   useEffect(() => {
     async function fetchProducts() {
       if (!selectedSection) return;
@@ -54,7 +57,7 @@ export default function CatalogPage() {
         const res = await fetch(`/api/catalog?sectionId=${selectedSection}`);
         if (!res.ok) throw new Error("Failed to load products");
 
-        const data: Product[] = await res.json(); // ✅ Fix: Explicitly define `data` as an array of `Product`
+        const data: Product[] = await res.json();
         setProducts(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");

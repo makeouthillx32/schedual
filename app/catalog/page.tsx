@@ -11,7 +11,6 @@ interface Product {
   Product_ID: number;
   Item: string;
   Price: number;
-  Section_ID: number;
 }
 
 export default function CatalogPage() {
@@ -22,7 +21,7 @@ export default function CatalogPage() {
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch all sections from API and remove duplicates
+  // ✅ Fetch sections from API (no extra filtering needed now)
   useEffect(() => {
     async function fetchSections() {
       try {
@@ -30,13 +29,7 @@ export default function CatalogPage() {
         if (!res.ok) throw new Error("Failed to load sections");
 
         const data: Section[] = await res.json();
-
-        // ✅ Ensure only unique sections are added
-        const uniqueSections = Array.from(
-          new Map(data.map((section) => [section.Section_ID, section])).values()
-        );
-
-        setSections(uniqueSections);
+        setSections(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {

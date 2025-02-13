@@ -1,115 +1,115 @@
 "use client";
-
 import { useState, useEffect } from "react";
 
-interface Section {
-  Section_ID: number;
-  Section_Name: string;
-}
-
-interface Subcategory {
-  Subcategory_ID: number;
-  Subcategory_Name: string;
-}
-
 export default function CatalogPage() {
-  const [sections, setSections] = useState<Section[]>([]);
-  const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [loadingSections, setLoadingSections] = useState<boolean>(true);
-  const [loadingSubcategories, setLoadingSubcategories] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sections, setSections] = useState([]);
+  const [subsections, setSubsections] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [selectedSection, setSelectedSection] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // ✅ Fetch unique sections
   useEffect(() => {
-    async function fetchSections() {
+    // Fetch all Main Sections
+    const fetchSections = async () => {
       try {
-        const res = await fetch("/api/catalog?getSections=true");
-        if (!res.ok) throw new Error("Failed to load sections");
-
-        const data: Section[] = await res.json();
-
-        console.log("API Sections Response:", data); // 🔍 Debug log
-
-        // ✅ Ensure only unique sections are stored
-        const uniqueSections = Array.from(
-          new Map(data.map((s) => [s.Section_ID, s])).values()
-        );
-
-        setSections(uniqueSections);
+        const response = await fetch(`/api/catalog?getSections=true`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to fetch sections");
+        setSections(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoadingSections(false);
+        setError(err.message);
       }
-    }
+    };
 
     fetchSections();
   }, []);
 
-  // ✅ Fetch subcategories when a section is selected
   useEffect(() => {
-    async function fetchSubcategories() {
-      if (!selectedSection) return;
+    // Fetch Subsections + Products when a Section is selected
+    if (!selectedSection) return;
 
-      setLoadingSubcategories(true);
+    const fetchSubsectionsAndProducts = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/catalog?getSubcategories=true&sectionId=${selectedSection}`);
-        if (!res.ok) throw new Error("Failed to load subcategories");
+        const [subsectionsRes, productsRes] = await Promise.all([
+          fetch(`/api/catalog?getSubsections=true&sectionId=${selectedSection}`),
+          fetch(`/api/catalog?getProductsBySection=true&sectionId=${selectedSection}`)
+        ]);
 
-        const data: Subcategory[] = await res.json();
+        const subsectionsData = await subsectionsRes.json();
+        const productsData = await productsRes.json();
 
-        console.log("API Subcategories Response:", data); // 🔍 Debug log
+        if (!subsectionsRes.ok) throw new Error(subsectionsData.error || "Failed to fetch subsections");
+        if (!productsRes.ok) throw new Error(productsData.error || "Failed to fetch products");
 
-        setSubcategories(data);
+        setSubsections(subsectionsData);
+        setProducts(productsData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err.message);
       } finally {
-        setLoadingSubcategories(false);
+        setLoading(false);
       }
-    }
+    };
 
-    fetchSubcategories();
+    fetchSubsectionsAndProducts();
   }, [selectedSection]);
 
   return (
-    <div>
-      {/* Display error if any */}
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">Product Catalog</h1>
+
+      {/* Display Errors */}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Section Selector */}
-      <div className="mb-6">
-        <label className="block font-semibold mb-2">Select a Section:</label>
-        {loadingSections ? (
-          <p>Loading sections...</p>
-        ) : (
-          <select
-            className="p-2 border rounded w-full"
-            value={selectedSection || ""}
-            onChange={(e) => setSelectedSection(Number(e.target.value))}
-          >
-            <option value="">-- Select --</option>
-            {sections.map((section) => (
-              <option key={section.Section_ID} value={section.Section_ID}>
-                {section.Section_Name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      {/* Main Section Selector */}
+      <label className="block font-semibold mb-1">Select a Section:</label>
+      <select
+        className="w-full p-2 border rounded mb-4"
+        value={selectedSection}
+        onChange={(e) => {
+          setSelectedSection(e.target.value);
+          setSubsections([]);
+          setProducts([]);
+        }}
+      >
+        <option value="">-- Select Section --</option>
+        {sections.map((section) => (
+          <option key={section.Section_ID} value={section.Section_ID}>
+            {section.Section_Name}
+          </option>
+        ))}
+      </select>
 
-      {/* Display Subcategory Count */}
+      {/* Subsections & Products (Displays Automatically) */}
       {selectedSection && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Subcategories</h2>
-          {loadingSubcategories ? (
-            <p>Loading subcategories...</p>
+        <>
+          <h2 className="text-2xl font-semibold mt-4 mb-2">Subsections:</h2>
+          {loading ? (
+            <p>Loading subsections and products...</p>
           ) : (
-            <p className="text-gray-700">
-              This section has <strong>{subcategories.length}</strong> subcategories.
-            </p>
+            <div>
+              {subsections.length > 0 ? (
+                subsections.map((sub) => (
+                  <div key={sub.Subsection_ID} className="mb-4 p-4 border rounded">
+                    <h3 className="text-lg font-semibold">{sub.Subsection_Name}</h3>
+                    <ul className="mt-2">
+                      {products
+                        .filter((product) => product.Subsection_ID === sub.Subsection_ID)
+                        .map((product) => (
+                          <li key={product.Product_ID} className="border-b py-2">
+                            <strong>{product.Item}</strong> - ${product.Price.toFixed(2)}
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                ))
+              ) : (
+                <p>No subsections available for this section.</p>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

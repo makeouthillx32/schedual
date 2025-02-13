@@ -18,7 +18,10 @@ export async function POST(req: Request) {
       .eq("Subsection_ID", Sub_Section_ID)
       .single();
 
-    if (subsectionError || !subsection) {
+    if (subsectionError) {
+      return NextResponse.json({ error: subsectionError.message }, { status: 400 });
+    }
+    if (!subsection) {
       return NextResponse.json({ error: "Invalid subsection ID" }, { status: 400 });
     }
 
@@ -29,6 +32,7 @@ export async function POST(req: Request) {
       .select(); // Fetch the inserted row
 
     if (error) {
+      console.error("Supabase Insert Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -57,6 +61,7 @@ export async function GET(req: Request) {
       .eq("Sub_Section_ID", subsectionId);
 
     if (error) {
+      console.error("Supabase Fetch Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

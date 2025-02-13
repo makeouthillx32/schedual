@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 
 export default function ProductCatalog() {
   const [sections, setSections] = useState([]);
-  const [selectedSection, setSelectedSection] = useState(null);
+  const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [subsections, setSubsections] = useState([]);
   const [products, setProducts] = useState([]);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchSections() {
@@ -17,7 +17,7 @@ export default function ProductCatalog() {
         const data = await res.json();
         setSections(data);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
       }
     }
 
@@ -25,18 +25,17 @@ export default function ProductCatalog() {
   }, []);
 
   async function handleSectionChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const sectionId = event.target.value;
+    const sectionId = event.target.value ? parseInt(event.target.value, 10) : null;
     setSelectedSection(sectionId);
     setProducts([]); // Reset products when switching sections
 
     try {
-      // Fetch subsections for the selected section
       const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${sectionId}`);
       if (!res.ok) throw new Error("Failed to fetch subsections");
       const subsectionData = await res.json();
       setSubsections(subsectionData);
 
-      // Fetch all products for this section by retrieving all its subsections' products
+      // Fetch all products related to this section
       let allProducts = [];
       for (const subsection of subsectionData) {
         const productRes = await fetch(`/api/catalog?getProducts=true&subsectionId=${subsection.Subsection_ID}`);
@@ -47,7 +46,7 @@ export default function ProductCatalog() {
       }
       setProducts(allProducts);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
     }
   }
 

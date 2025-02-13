@@ -1,12 +1,12 @@
 import ProductCatalog from "./catalog";
-import Provider from "@/app/provider"; // Ensure this path is correct
+import { Providers } from "@/app/provider"; // ✅ Correct import
 
 export default function Page() {
   return (
-    <Provider>
+    <Providers>
       <main className="p-6">
         <ProductCatalog />
       </main>
-    </Provider>
+    </Providers>
   );
 }

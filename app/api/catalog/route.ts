@@ -18,7 +18,10 @@ export async function GET(req: Request) {
     // **Fetch All Main Sections**
     if (getSections) {
       const { data, error } = await supabase.from("Main_Sections").select("*");
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error("Error fetching sections:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
       return NextResponse.json(data, { status: 200 });
     }
 
@@ -29,7 +32,10 @@ export async function GET(req: Request) {
         .select("*")
         .eq("Parent_Section_ID", sectionId);
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error("Error fetching subsections:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
       return NextResponse.json(data, { status: 200 });
     }
 
@@ -38,9 +44,12 @@ export async function GET(req: Request) {
       const { data, error } = await supabase
         .from("Products")
         .select("*")
-        .eq("Subsection_ID", subsectionId);
+        .eq("Sub_Section_ID", subsectionId); // Fixed column name
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error("Error fetching products:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
       return NextResponse.json(data, { status: 200 });
     }
 
@@ -53,12 +62,15 @@ export async function GET(req: Request) {
           Sub_Sections (
             Subsection_ID, Subsection_Name,
             Products (
-              Product_ID, Product_Name, Price
+              Product_ID, Product_Name, Price, Sub_Section_ID
             )
           )
         `);
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error("Error fetching full tree:", error.message);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
       return NextResponse.json(data, { status: 200 });
     }
 

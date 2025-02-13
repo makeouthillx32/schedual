@@ -2,11 +2,30 @@
 
 import { useState, useEffect } from "react";
 
+// Define types for sections, subsections, and products
+type Section = {
+  Section_ID: number;
+  Section_Name: string;
+};
+
+type Subsection = {
+  Subsection_ID: number;
+  Subsection_Name: string;
+  Parent_Section_ID: number;
+};
+
+type Product = {
+  Product_ID: number;
+  Product_Name: string;
+  Price: number;
+  Subsection_ID: number;
+};
+
 export default function ProductCatalog() {
-  const [sections, setSections] = useState([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [subsections, setSubsections] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [subsections, setSubsections] = useState<Subsection[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -14,7 +33,7 @@ export default function ProductCatalog() {
       try {
         const res = await fetch("/api/catalog?getSections=true");
         if (!res.ok) throw new Error("Failed to fetch sections");
-        const data = await res.json();
+        const data: Section[] = await res.json();
         setSections(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An unknown error occurred");
@@ -32,15 +51,15 @@ export default function ProductCatalog() {
     try {
       const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${sectionId}`);
       if (!res.ok) throw new Error("Failed to fetch subsections");
-      const subsectionData = await res.json();
+      const subsectionData: Subsection[] = await res.json();
       setSubsections(subsectionData);
 
       // Fetch all products related to this section
-      let allProducts = [];
+      let allProducts: Product[] = []; // ✅ Explicitly set type
       for (const subsection of subsectionData) {
         const productRes = await fetch(`/api/catalog?getProducts=true&subsectionId=${subsection.Subsection_ID}`);
         if (productRes.ok) {
-          const productData = await productRes.json();
+          const productData: Product[] = await productRes.json();
           allProducts = [...allProducts, ...productData];
         }
       }

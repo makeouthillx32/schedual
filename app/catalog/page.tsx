@@ -18,7 +18,7 @@ export default function CatalogPage() {
         if (!response.ok) throw new Error(data.error || "Failed to fetch sections");
         setSections(data);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
       }
     };
 
@@ -46,7 +46,7 @@ export default function CatalogPage() {
         setSubsections(subsectionsData);
         setProducts(productsData);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
       } finally {
         setLoading(false);
       }

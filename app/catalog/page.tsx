@@ -1,97 +1,69 @@
 "use client";
+
 import { useState, useEffect } from "react";
 
-// Explicitly define the data types
-type Section = {
-  Section_ID: number;
-  Section_Name: string;
-};
-
-type Subsection = {
-  Subsection_ID: number;
-  Subsection_Name: string;
-  Parent_Section_ID: number;
-};
-
-type Product = {
-  Product_ID: number;
-  Item: string;
-  Price: number;
-  Subsection_ID: number;
-};
-
-export default function CatalogPage() {
-  const [sections, setSections] = useState<Section[]>([]);
-  const [subsections, setSubsections] = useState<Subsection[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedSection, setSelectedSection] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function ProductCatalog() {
+  const [sections, setSections] = useState([]);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [subsections, setSubsections] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSections = async () => {
+    async function fetchSections() {
       try {
-        const response = await fetch(`/api/catalog?getSections=true`);
-        if (!response.ok) throw new Error("Failed to fetch sections");
-
-        const data: Section[] = await response.json();
+        const res = await fetch("/api/catalog?getSections=true");
+        if (!res.ok) throw new Error("Failed to fetch sections");
+        const data = await res.json();
         setSections(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        setError(err.message);
       }
-    };
+    }
 
     fetchSections();
   }, []);
 
-  useEffect(() => {
-    if (selectedSection === null) return;
+  async function handleSectionChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const sectionId = event.target.value;
+    setSelectedSection(sectionId);
+    setProducts([]); // Reset products when switching sections
 
-    const fetchSubsectionsAndProducts = async () => {
-      setLoading(true);
-      try {
-        const [subsectionsRes, productsRes] = await Promise.all([
-          fetch(`/api/catalog?getSubsections=true&sectionId=${selectedSection}`),
-          fetch(`/api/catalog?getProductsBySection=true&sectionId=${selectedSection}`)
-        ]);
+    try {
+      // Fetch subsections for the selected section
+      const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${sectionId}`);
+      if (!res.ok) throw new Error("Failed to fetch subsections");
+      const subsectionData = await res.json();
+      setSubsections(subsectionData);
 
-        if (!subsectionsRes.ok) throw new Error("Failed to fetch subsections");
-        if (!productsRes.ok) throw new Error("Failed to fetch products");
-
-        const subsectionsData: Subsection[] = await subsectionsRes.json();
-        const productsData: Product[] = await productsRes.json();
-
-        setSubsections(subsectionsData);
-        setProducts(productsData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-      } finally {
-        setLoading(false);
+      // Fetch all products for this section by retrieving all its subsections' products
+      let allProducts = [];
+      for (const subsection of subsectionData) {
+        const productRes = await fetch(`/api/catalog?getProducts=true&subsectionId=${subsection.Subsection_ID}`);
+        if (productRes.ok) {
+          const productData = await productRes.json();
+          allProducts = [...allProducts, ...productData];
+        }
       }
-    };
-
-    fetchSubsectionsAndProducts();
-  }, [selectedSection]);
+      setProducts(allProducts);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Product Catalog</h1>
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+      <h1 className="text-3xl font-bold text-center mb-4">Product Catalog</h1>
 
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-red-500 text-center">Error: {error}</p>}
 
-      {/* Section Selector */}
-      <label className="block font-semibold mb-1">Select a Section:</label>
+      <label className="block text-lg font-semibold">Select a Section:</label>
       <select
-        className="w-full p-2 border rounded mb-4"
-        value={selectedSection ?? ""}
-        onChange={(e) => {
-          const selectedValue = e.target.value ? parseInt(e.target.value, 10) : null;
-          setSelectedSection(selectedValue);
-          setSubsections([]);
-          setProducts([]);
-        }}
+        className="w-full p-2 border rounded-md mt-2"
+        onChange={handleSectionChange}
+        defaultValue=""
       >
-        <option value="">-- Select Section --</option>
+        <option value="" disabled>-- Select Section --</option>
         {sections.map((section) => (
           <option key={section.Section_ID} value={section.Section_ID}>
             {section.Section_Name}
@@ -99,35 +71,28 @@ export default function CatalogPage() {
         ))}
       </select>
 
-      {/* Subsections & Products */}
-      {selectedSection !== null && (
-        <>
-          <h2 className="text-2xl font-semibold mt-4 mb-2">Subsections:</h2>
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <div>
-              {subsections.length > 0 ? (
-                subsections.map((sub) => (
-                  <div key={sub.Subsection_ID} className="mb-4 p-4 border rounded">
-                    <h3 className="text-lg font-semibold">{sub.Subsection_Name}</h3>
-                    <ul className="mt-2">
-                      {products
-                        .filter((product) => product.Subsection_ID === sub.Subsection_ID)
-                        .map((product) => (
-                          <li key={product.Product_ID} className="border-b py-2">
-                            <strong>{product.Item}</strong> - ${product.Price.toFixed(2)}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                ))
-              ) : (
-                <p>No subsections available for this section.</p>
-              )}
-            </div>
-          )}
-        </>
+      <h2 className="text-xl font-semibold mt-4">Subsections:</h2>
+      {subsections.length === 0 ? (
+        <p className="text-gray-600">No subsections available for this section.</p>
+      ) : (
+        <ul className="list-disc list-inside">
+          {subsections.map((subsection) => (
+            <li key={subsection.Subsection_ID}>{subsection.Subsection_Name}</li>
+          ))}
+        </ul>
+      )}
+
+      <h2 className="text-xl font-semibold mt-4">Products:</h2>
+      {products.length === 0 ? (
+        <p className="text-gray-600">No products available for this section.</p>
+      ) : (
+        <ul className="list-disc list-inside">
+          {products.map((product) => (
+            <li key={product.Product_ID}>
+              {product.Product_Name} - ${product.Price.toFixed(2)}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

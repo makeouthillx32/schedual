@@ -1,21 +1,40 @@
 "use client";
 import { useState, useEffect } from "react";
 
+// Explicitly define the data types
+type Section = {
+  Section_ID: number;
+  Section_Name: string;
+};
+
+type Subsection = {
+  Subsection_ID: number;
+  Subsection_Name: string;
+  Parent_Section_ID: number;
+};
+
+type Product = {
+  Product_ID: number;
+  Item: string;
+  Price: number;
+  Subsection_ID: number;
+};
+
 export default function CatalogPage() {
-  const [sections, setSections] = useState([]);
-  const [subsections, setSubsections] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [selectedSection, setSelectedSection] = useState("");
+  const [sections, setSections] = useState<Section[]>([]);
+  const [subsections, setSubsections] = useState<Subsection[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch all Main Sections
     const fetchSections = async () => {
       try {
         const response = await fetch(`/api/catalog?getSections=true`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to fetch sections");
+        if (!response.ok) throw new Error("Failed to fetch sections");
+
+        const data: Section[] = await response.json();
         setSections(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An unknown error occurred");
@@ -26,8 +45,7 @@ export default function CatalogPage() {
   }, []);
 
   useEffect(() => {
-    // Fetch Subsections + Products when a Section is selected
-    if (!selectedSection) return;
+    if (selectedSection === null) return;
 
     const fetchSubsectionsAndProducts = async () => {
       setLoading(true);
@@ -37,11 +55,11 @@ export default function CatalogPage() {
           fetch(`/api/catalog?getProductsBySection=true&sectionId=${selectedSection}`)
         ]);
 
-        const subsectionsData = await subsectionsRes.json();
-        const productsData = await productsRes.json();
+        if (!subsectionsRes.ok) throw new Error("Failed to fetch subsections");
+        if (!productsRes.ok) throw new Error("Failed to fetch products");
 
-        if (!subsectionsRes.ok) throw new Error(subsectionsData.error || "Failed to fetch subsections");
-        if (!productsRes.ok) throw new Error(productsData.error || "Failed to fetch products");
+        const subsectionsData: Subsection[] = await subsectionsRes.json();
+        const productsData: Product[] = await productsRes.json();
 
         setSubsections(subsectionsData);
         setProducts(productsData);
@@ -59,16 +77,16 @@ export default function CatalogPage() {
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-4">Product Catalog</h1>
 
-      {/* Display Errors */}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Main Section Selector */}
+      {/* Section Selector */}
       <label className="block font-semibold mb-1">Select a Section:</label>
       <select
         className="w-full p-2 border rounded mb-4"
-        value={selectedSection}
+        value={selectedSection ?? ""}
         onChange={(e) => {
-          setSelectedSection(e.target.value);
+          const selectedValue = e.target.value ? parseInt(e.target.value, 10) : null;
+          setSelectedSection(selectedValue);
           setSubsections([]);
           setProducts([]);
         }}
@@ -81,12 +99,12 @@ export default function CatalogPage() {
         ))}
       </select>
 
-      {/* Subsections & Products (Displays Automatically) */}
-      {selectedSection && (
+      {/* Subsections & Products */}
+      {selectedSection !== null && (
         <>
           <h2 className="text-2xl font-semibold mt-4 mb-2">Subsections:</h2>
           {loading ? (
-            <p>Loading subsections and products...</p>
+            <p>Loading...</p>
           ) : (
             <div>
               {subsections.length > 0 ? (

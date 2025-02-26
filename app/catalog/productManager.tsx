@@ -43,7 +43,7 @@ export default function ProductManager() {
   // ✅ Fetch subsections when a section is selected
   useEffect(() => {
     if (!selectedSection) {
-      setSubsections([]); 
+      setSubsections([]);
       return;
     }
 
@@ -70,13 +70,14 @@ export default function ProductManager() {
       return;
     }
 
+    console.log("🔍 Selected Sub_Section_ID:", selectedSubsection); // Debugging log
     const payload = {
       Product_Name: productName,
       Price: parseFloat(price),
-      Sub_Section_ID: selectedSubsection, 
+      Sub_Section_ID: selectedSubsection, // ✅ Correct field name
     };
 
-    console.log("📩 Sending Payload to API:", payload);
+    console.log("📩 Sending Payload to API:", payload); // Debugging log
 
     try {
       const response = await fetch("/api/products", {
@@ -86,7 +87,7 @@ export default function ProductManager() {
       });
 
       const data = await response.json();
-      console.log("📩 API Response:", data); 
+      console.log("📩 API Response:", data); // Debugging log
 
       if (response.ok) {
         setMessage(`✅ Product added: ${data.product.Product_Name}`);
@@ -129,7 +130,11 @@ export default function ProductManager() {
           <select
             className="w-full p-2 border rounded-md mt-2"
             value={selectedSubsection ?? ""}
-            onChange={(e) => setSelectedSubsection(e.target.value ? parseInt(e.target.value, 10) : null)}
+            onChange={(e) => {
+              const selectedId = parseInt(e.target.value, 10);
+              console.log("🔄 Selected Subsection ID:", selectedId); // Debugging log
+              setSelectedSubsection(selectedId);
+            }}
           >
             <option value="" disabled>-- Select Subsection --</option>
             {subsections.map((sub) => (

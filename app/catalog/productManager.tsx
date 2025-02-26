@@ -57,29 +57,40 @@ export default function ProductManager() {
   }, [selectedSection]);
 
   async function handleAddProduct() {
-    if (!selectedSubsection || !productName || !price) {
-      setMessage("All fields are required.");
+    if (!selectedSubsection || !productName.trim() || !price.trim()) {
+      setMessage("❌ All fields are required.");
       return;
     }
 
-    const response = await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        Product_Name: productName,
-        Price: parseFloat(price),
-        Sub_Section_ID: selectedSubsection,
-      }),
-    });
+    // ✅ Ensuring correct data format
+    const payload = {
+      Product_Name: productName,
+      Price: parseFloat(price),
+      Subsection_ID: selectedSubsection, // FIXED: Matches API field name
+    };
 
-    const data = await response.json();
-    if (response.ok) {
-      setMessage(`✅ Product added: ${data.product.Product_Name}`);
-      setProductName("");
-      setPrice("");
-      setSelectedSubsection(null);
-    } else {
-      setMessage(`❌ Error: ${data.error}`);
+    console.log("📩 Sending Payload to API:", payload); // 🔥 Debugging log
+
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      console.log("📩 API Response:", data); // 🔥 Debugging log
+
+      if (response.ok) {
+        setMessage(`✅ Product added: ${data.product.Product_Name}`);
+        setProductName("");
+        setPrice("");
+        setSelectedSubsection(null);
+      } else {
+        setMessage(`❌ Error: ${data.error}`);
+      }
+    } catch (error) {
+      setMessage("❌ Failed to add product. Try again.");
     }
   }
 

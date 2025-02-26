@@ -1,68 +1,47 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 
-// ✅ Handle POST request to add a new product
+// ✅ Handle POST request to add a new subsection
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("📩 Received Payload from Frontend:", body);
+    console.log("📩 Received Payload for Subsection:", body);
 
-    let { Product_Name, Price, Sub_Section_ID } = body;
+    let { Subsection_Name, Parent_Section_ID } = body;
 
     // ✅ Ensure required fields exist
-    if (!Product_Name || !Price || !Sub_Section_ID) {
-      console.error("❌ Missing fields:", { Product_Name, Price, Sub_Section_ID });
+    if (!Subsection_Name || !Parent_Section_ID) {
+      console.error("❌ Missing fields:", { Subsection_Name, Parent_Section_ID });
       return NextResponse.json(
-        { error: "Missing required fields", received: { Product_Name, Price, Sub_Section_ID } },
+        { error: "Missing required fields", received: { Subsection_Name, Parent_Section_ID } },
         { status: 400 }
       );
     }
 
-    // ✅ Convert `Price` to a valid number
-    Price = parseFloat(Price);
-    if (isNaN(Price) || Price <= 0) {
-      console.error("❌ Invalid Price:", Price);
-      return NextResponse.json({ error: "Invalid Price value" }, { status: 400 });
+    // ✅ Convert `Parent_Section_ID` to an integer
+    Parent_Section_ID = parseInt(Parent_Section_ID, 10);
+    if (isNaN(Parent_Section_ID)) {
+      console.error("❌ Invalid Parent_Section_ID:", Parent_Section_ID);
+      return NextResponse.json({ error: "Invalid Parent_Section_ID format" }, { status: 400 });
     }
 
-    // ✅ Convert `Sub_Section_ID` to an integer
-    Sub_Section_ID = parseInt(Sub_Section_ID, 10);
-    if (isNaN(Sub_Section_ID)) {
-      console.error("❌ Invalid Sub_Section_ID:", Sub_Section_ID);
-      return NextResponse.json({ error: "Invalid Sub_Section_ID format" }, { status: 400 });
-    }
-
-    // ✅ Verify if `Sub_Section_ID` exists
-    console.log("🔍 Checking if Sub_Section_ID exists:", Sub_Section_ID);
-
-    const { data: subsection, error: subsectionError } = await supabase
-      .from("Sub_Sections")
-      .select("Subsection_ID")
-      .eq("Subsection_ID", Sub_Section_ID)
-      .single();
-
-    if (subsectionError || !subsection) {
-      console.error("❌ Invalid Sub_Section_ID:", Sub_Section_ID);
-      return NextResponse.json({ error: `Invalid Sub_Section_ID: ${Sub_Section_ID}` }, { status: 400 });
-    }
-
-    // ✅ Insert product into `Products`
-    console.log("📩 Inserting product:", { Product_Name, Price, Sub_Section_ID });
+    // ✅ Insert new subsection into `Sub_Sections`
+    console.log("📩 Inserting Subsection:", { Subsection_Name, Parent_Section_ID });
 
     const { data, error } = await supabase
-      .from("Products")
-      .insert([{ Product_Name, Price, Sub_Section_ID }])
-      .select("Product_ID, Product_Name, Price, Sub_Section_ID");
+      .from("Sub_Sections")
+      .insert([{ Subsection_Name, Parent_Section_ID }])
+      .select("Subsection_ID, Subsection_Name, Parent_Section_ID");
 
     if (error) {
       console.error("❌ Supabase Insert Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ Product Inserted Successfully:", data[0]);
+    console.log("✅ Subsection Inserted Successfully:", data[0]);
 
     return NextResponse.json(
-      { message: "✅ Product added successfully", product: data[0] },
+      { message: "✅ Subsection added successfully", subsection: data[0] },
       { status: 201 }
     );
   } catch (err) {
@@ -71,37 +50,37 @@ export async function POST(req: Request) {
   }
 }
 
-// ✅ Handle GET request to fetch products by subsection
+// ✅ Handle GET request to fetch subsections by parent section
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const subsectionId = searchParams.get("subsectionId");
+    const sectionId = searchParams.get("sectionId");
 
-    if (!subsectionId) {
-      return NextResponse.json({ error: "Subsection ID is required" }, { status: 400 });
+    if (!sectionId) {
+      return NextResponse.json({ error: "Section ID is required" }, { status: 400 });
     }
 
-    // ✅ Convert `subsectionId` to integer
-    const validSubsectionId = parseInt(subsectionId, 10);
-    if (isNaN(validSubsectionId)) {
-      console.error("❌ Invalid Subsection ID:", subsectionId);
-      return NextResponse.json({ error: "Invalid Subsection ID format" }, { status: 400 });
+    // ✅ Convert `sectionId` to integer
+    const validSectionId = parseInt(sectionId, 10);
+    if (isNaN(validSectionId)) {
+      console.error("❌ Invalid Section ID:", sectionId);
+      return NextResponse.json({ error: "Invalid Section ID format" }, { status: 400 });
     }
 
-    // ✅ Fetch products by subsection
-    console.log(`🔍 Fetching products for Subsection_ID: ${validSubsectionId}`);
+    // ✅ Fetch subsections by section
+    console.log(`🔍 Fetching subsections for Parent_Section_ID: ${validSectionId}`);
 
     const { data, error } = await supabase
-      .from("Products")
-      .select("Product_ID, Product_Name, Price, Sub_Section_ID")
-      .eq("Sub_Section_ID", validSubsectionId);
+      .from("Sub_Sections")
+      .select("Subsection_ID, Subsection_Name, Parent_Section_ID")
+      .eq("Parent_Section_ID", validSectionId);
 
     if (error) {
       console.error("❌ Supabase Fetch Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(`✅ Fetched ${data.length} products for Subsection ID: ${validSubsectionId}`);
+    console.log(`✅ Fetched ${data.length} subsections for Section ID: ${validSectionId}`);
 
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
@@ -110,21 +89,28 @@ export async function GET(req: Request) {
   }
 }
 
-// ✅ Handle DELETE request to remove a product
+// ✅ Handle DELETE request to remove a subsection
 export async function DELETE(req: Request) {
   try {
-    const { productId } = await req.json();
-    console.log("🗑 Received delete request for product ID:", productId);
+    const { subsectionId } = await req.json();
+    console.log("🗑 Received delete request for Subsection ID:", subsectionId);
 
-    if (!productId) {
-      return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+    if (!subsectionId) {
+      return NextResponse.json({ error: "Subsection ID is required" }, { status: 400 });
     }
 
-    // ✅ Delete product
+    // ✅ Convert `subsectionId` to an integer
+    const validSubsectionId = parseInt(subsectionId, 10);
+    if (isNaN(validSubsectionId)) {
+      console.error("❌ Invalid Subsection ID:", subsectionId);
+      return NextResponse.json({ error: "Invalid Subsection ID format" }, { status: 400 });
+    }
+
+    // ✅ Delete subsection
     const { data, error } = await supabase
-      .from("Products")
+      .from("Sub_Sections")
       .delete()
-      .eq("Product_ID", productId)
+      .eq("Subsection_ID", validSubsectionId)
       .select()
       .single();
 
@@ -133,10 +119,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ Product Deleted:", data);
+    console.log("✅ Subsection Deleted:", data);
 
     return NextResponse.json(
-      { message: "✅ Product deleted successfully", deletedProduct: data },
+      { message: "✅ Subsection deleted successfully", deletedSubsection: data },
       { status: 200 }
     );
   } catch (err) {

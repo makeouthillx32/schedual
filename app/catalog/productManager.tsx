@@ -73,7 +73,7 @@ export default function ProductManager() {
     const payload = {
       Product_Name: productName,
       Price: parseFloat(price),
-      Subsection_ID: selectedSubsection, 
+      Sub_Section_ID: selectedSubsection, 
     };
 
     console.log("📩 Sending Payload to API:", payload);

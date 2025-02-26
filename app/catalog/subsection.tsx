@@ -70,6 +70,7 @@ export default function SubsectionManager() {
     }
 
     const payload = {
+      action: "addSubsection", // 👈 Identifies the operation for the API
       Subsection_Name: newSubsectionName.trim(),
       Parent_Section_ID: selectedSection,
     };
@@ -77,7 +78,7 @@ export default function SubsectionManager() {
     console.log("📩 Sending Payload to API:", payload);
 
     try {
-      const response = await fetch("/api/subsections", {
+      const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -102,11 +103,16 @@ export default function SubsectionManager() {
   async function handleRemoveSubsection(subsectionId: number) {
     console.log("🗑 Deleting subsection with ID:", subsectionId);
 
+    const payload = {
+      action: "removeSubsection", // 👈 Identifies the operation for the API
+      subsectionId: subsectionId,
+    };
+
     try {
-      const response = await fetch("/api/subsections", {
+      const response = await fetch("/api/products", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subsectionId }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();

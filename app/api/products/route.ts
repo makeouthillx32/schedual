@@ -7,26 +7,19 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("📩 Received Payload:", body);
 
-    const { Product_Name, Price, Sub_Section_ID } = body; // ✅ Fix casing
+    // ✅ Ensure correct field names match Supabase DB
+    const { Product_Name, Price, Sub_Section_ID } = body; 
 
     // ✅ Validate required fields
-    const missingFields = [];
-    if (!Product_Name) missingFields.push("Product_Name");
-    if (!Price) missingFields.push("Price");
-    if (!Sub_Section_ID) missingFields.push("Sub_Section_ID");
-
-    if (missingFields.length > 0) {
-      console.error("❌ Missing fields:", missingFields);
-      return NextResponse.json(
-        { error: "Missing required fields", missing: missingFields, received: body },
-        { status: 400 }
-      );
+    if (!Product_Name || !Price || !Sub_Section_ID) {
+      console.error("❌ Missing required fields:", { Product_Name, Price, Sub_Section_ID });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // ✅ Verify if Sub_Section_ID exists
+    // ✅ Check if the provided Sub_Section_ID exists
     const { data: subsection, error: subsectionError } = await supabase
       .from("Sub_Sections")
-      .select("Sub_Section_ID")
+      .select("Sub_Section_ID") // ✅ Ensure correct field name
       .eq("Sub_Section_ID", Sub_Section_ID)
       .single();
 
@@ -35,11 +28,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid Sub_Section_ID" }, { status: 400 });
     }
 
-    // ✅ Insert product (AUTO-GENERATING Product_ID)
+    // ✅ Insert product into database
     const { data, error } = await supabase
       .from("Products")
-      .insert([{ Product_Name, Price, Sub_Section_ID }]) // ✅ Correct casing
-      .select("Product_ID, Product_Name, Price, Sub_Section_ID");
+      .insert([{ Product_Name, Price, Sub_Section_ID }]) // ✅ Ensure correct casing
+      .select("Product_ID, Product_Name, Price, Sub_Section_ID"); // ✅ Ensure correct fields
 
     if (error) {
       console.error("❌ Supabase Insert Error:", error);
@@ -48,10 +41,8 @@ export async function POST(req: Request) {
 
     console.log("✅ Product Inserted:", data[0]);
 
-    return NextResponse.json(
-      { message: "✅ Product added successfully", product: data[0] },
-      { status: 201 }
-    );
+    return NextResponse.json({ message: "✅ Product added successfully", product: data[0] }, { status: 201 });
+
   } catch (err) {
     console.error("❌ API Error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -71,7 +62,7 @@ export async function GET(req: Request) {
     // ✅ Fetch products by subsection
     const { data, error } = await supabase
       .from("Products")
-      .select("Product_ID, Product_Name, Price, Sub_Section_ID") // ✅ Fixed casing
+      .select("Product_ID, Product_Name, Price, Sub_Section_ID") // ✅ Ensure correct casing
       .eq("Sub_Section_ID", subsectionId);
 
     if (error) {

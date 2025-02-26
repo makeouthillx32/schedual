@@ -5,40 +5,53 @@ import { supabase } from "@/lib/supabaseClient";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("📩 Received Payload:", body);
+    console.log("📩 Received Payload from Frontend:", body); // Debugging incoming data
 
-    const { Product_Name, Price, Sub_Section_ID } = body; // ✅ Fix casing
+    let { Product_Name, Price, Sub_Section_ID } = body;
 
-    // ✅ Validate required fields
-    const missingFields = [];
-    if (!Product_Name) missingFields.push("Product_Name");
-    if (!Price) missingFields.push("Price");
-    if (!Sub_Section_ID) missingFields.push("Sub_Section_ID");
-
-    if (missingFields.length > 0) {
-      console.error("❌ Missing fields:", missingFields);
+    // ✅ Ensure required fields exist
+    if (!Product_Name || !Price || !Sub_Section_ID) {
+      console.error("❌ Missing fields:", { Product_Name, Price, Sub_Section_ID });
       return NextResponse.json(
-        { error: "Missing required fields", missing: missingFields, received: body },
+        { error: "Missing required fields", received: { Product_Name, Price, Sub_Section_ID } },
         { status: 400 }
       );
     }
 
-    // ✅ Verify if Sub_Section_ID exists
+    // ✅ Convert `Price` to a valid number
+    Price = parseFloat(Price);
+    if (isNaN(Price) || Price <= 0) {
+      console.error("❌ Invalid Price:", Price);
+      return NextResponse.json({ error: "Invalid Price value" }, { status: 400 });
+    }
+
+    // ✅ Convert `Sub_Section_ID` to an integer
+    Sub_Section_ID = parseInt(Sub_Section_ID, 10);
+    if (isNaN(Sub_Section_ID)) {
+      console.error("❌ Invalid Sub_Section_ID:", Sub_Section_ID);
+      return NextResponse.json({ error: "Invalid Sub_Section_ID format" }, { status: 400 });
+    }
+
+    // ✅ Verify if `Sub_Section_ID` exists in `Sub_Sections` table
+    console.log("🔍 Checking if Sub_Section_ID exists:", Sub_Section_ID);
+
     const { data: subsection, error: subsectionError } = await supabase
       .from("Sub_Sections")
-      .select("Sub_Section_ID")
-      .eq("Sub_Section_ID", Sub_Section_ID)
+      .select("Subsection_ID")
+      .eq("Subsection_ID", Sub_Section_ID)
       .single();
 
     if (subsectionError || !subsection) {
       console.error("❌ Invalid Sub_Section_ID:", Sub_Section_ID);
-      return NextResponse.json({ error: "Invalid Sub_Section_ID" }, { status: 400 });
+      return NextResponse.json({ error: `Invalid Sub_Section_ID: ${Sub_Section_ID}` }, { status: 400 });
     }
 
-    // ✅ Insert product (AUTO-GENERATING Product_ID)
+    // ✅ Insert product into `Products` table
+    console.log("📩 Inserting product:", { Product_Name, Price, Sub_Section_ID });
+
     const { data, error } = await supabase
       .from("Products")
-      .insert([{ Product_Name, Price, Sub_Section_ID }]) // ✅ Correct casing
+      .insert([{ Product_Name, Price, Sub_Section_ID }])
       .select("Product_ID, Product_Name, Price, Sub_Section_ID");
 
     if (error) {
@@ -46,7 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("✅ Product Inserted:", data[0]);
+    console.log("✅ Product Inserted Successfully:", data[0]);
 
     return NextResponse.json(
       { message: "✅ Product added successfully", product: data[0] },
@@ -68,18 +81,27 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Subsection ID is required" }, { status: 400 });
     }
 
+    // ✅ Convert `subsectionId` to integer
+    const validSubsectionId = parseInt(subsectionId, 10);
+    if (isNaN(validSubsectionId)) {
+      console.error("❌ Invalid Subsection ID:", subsectionId);
+      return NextResponse.json({ error: "Invalid Subsection ID format" }, { status: 400 });
+    }
+
     // ✅ Fetch products by subsection
+    console.log(`🔍 Fetching products for Subsection_ID: ${validSubsectionId}`);
+
     const { data, error } = await supabase
       .from("Products")
-      .select("Product_ID, Product_Name, Price, Sub_Section_ID") // ✅ Fixed casing
-      .eq("Sub_Section_ID", subsectionId);
+      .select("Product_ID, Product_Name, Price, Sub_Section_ID")
+      .eq("Sub_Section_ID", validSubsectionId);
 
     if (error) {
       console.error("❌ Supabase Fetch Error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(`✅ Fetched ${data.length} products for Subsection ID: ${subsectionId}`);
+    console.log(`✅ Fetched ${data.length} products for Subsection ID: ${validSubsectionId}`);
 
     return NextResponse.json(data, { status: 200 });
   } catch (err) {

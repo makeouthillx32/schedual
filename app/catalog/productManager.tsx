@@ -13,7 +13,7 @@ type Subsection = {
   Parent_Section_ID: number;
 };
 
-export default function ProductManager() {
+export default function ProjectManager() {
   const [sections, setSections] = useState<Section[]>([]);
   const [subsections, setSubsections] = useState<Subsection[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
@@ -109,7 +109,7 @@ export default function ProductManager() {
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Product Manager</h1>
+      <h1 className="text-2xl font-bold mb-4">Project Manager</h1>
 
       {message && <p className="mb-4 text-red-500">{message}</p>}
 
@@ -129,7 +129,7 @@ export default function ProductManager() {
       </select>
 
       {/* ✅ Select Subsection (Appears after selecting a section) */}
-      {selectedSection && (
+      {subsections.length > 0 ? (
         <>
           <label className="block text-lg font-semibold mt-4">Select a Subsection:</label>
           <select
@@ -145,6 +145,8 @@ export default function ProductManager() {
             ))}
           </select>
         </>
+      ) : (
+        <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
       )}
 
       {/* ✅ Product Input Fields */}

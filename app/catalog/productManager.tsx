@@ -26,12 +26,15 @@ export default function ProductManager() {
   useEffect(() => {
     async function fetchSections() {
       try {
+        console.log("📩 Fetching sections...");
         const res = await fetch("/api/catalog?getSections=true");
         if (!res.ok) throw new Error("Failed to fetch sections");
         const data: Section[] = await res.json();
+        console.log("✅ Sections Fetched:", data);
         setSections(data);
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "An unknown error occurred");
+        console.error("❌ Section Fetch Error:", err);
       }
     }
     fetchSections();
@@ -43,13 +46,22 @@ export default function ProductManager() {
 
     async function fetchSubsections() {
       try {
+        console.log(`📩 Fetching subsections for Section_ID: ${selectedSection}`);
         const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${selectedSection}`);
-        if (!res.ok) throw new Error("Failed to fetch subsections");
+        if (!res.ok) throw new Error(`Failed to fetch subsections (Status: ${res.status})`);
+
         const data: Subsection[] = await res.json();
+        console.log("✅ Subsections Fetched:", data);
+
+        if (data.length === 0) {
+          console.warn("⚠️ No subsections found for this section.");
+        }
+
         setSubsections(data);
         setSelectedSubsection(null); // Reset subsection selection
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "An unknown error occurred");
+        console.error("❌ Subsection Fetch Error:", err);
       }
     }
 

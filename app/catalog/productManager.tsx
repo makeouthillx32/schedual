@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 
+// ✅ Define Types
 type Section = {
   Section_ID: number;
   Section_Name: string;
 };
 
 type Subsection = {
-  Sub_Section_ID: number;
-  Sub_Section_Name: string;
+  Subsection_ID: number;
+  Subsection_Name: string;
   Parent_Section_ID: number;
 };
 
-export default function ProjectManager() {
+export default function ProductManager() {
   const [sections, setSections] = useState<Section[]>([]);
   const [subsections, setSubsections] = useState<Subsection[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
@@ -22,7 +23,7 @@ export default function ProjectManager() {
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
 
-  // ✅ Fetch sections when component loads
+  // ✅ Fetch sections on load
   useEffect(() => {
     async function fetchSections() {
       try {
@@ -33,7 +34,6 @@ export default function ProjectManager() {
         console.log("✅ Sections Fetched:", data);
         setSections(data);
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("❌ Section Fetch Error:", err);
       }
     }
@@ -43,7 +43,7 @@ export default function ProjectManager() {
   // ✅ Fetch subsections when a section is selected
   useEffect(() => {
     if (!selectedSection) {
-      setSubsections([]); // ✅ Reset subsections if no section is selected
+      setSubsections([]); 
       return;
     }
 
@@ -51,19 +51,11 @@ export default function ProjectManager() {
       try {
         console.log(`📩 Fetching subsections for Section_ID: ${selectedSection}`);
         const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${selectedSection}`);
-        if (!res.ok) throw new Error(`Failed to fetch subsections (Status: ${res.status})`);
-
+        if (!res.ok) throw new Error("Failed to fetch subsections");
         const data: Subsection[] = await res.json();
         console.log("✅ Subsections Fetched:", data);
-
-        if (data.length === 0) {
-          console.warn("⚠️ No subsections found for this section.");
-        }
-
         setSubsections(data);
-        setSelectedSubsection(null); // ✅ Reset subsection selection when switching sections
       } catch (err) {
-        setMessage(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("❌ Subsection Fetch Error:", err);
       }
     }
@@ -78,11 +70,10 @@ export default function ProjectManager() {
       return;
     }
 
-    // ✅ Ensure correct field names match Supabase API
     const payload = {
       Product_Name: productName,
       Price: parseFloat(price),
-      Sub_Section_ID: selectedSubsection, // ✅ Fixed: Correct field name
+      Subsection_ID: selectedSubsection, 
     };
 
     console.log("📩 Sending Payload to API:", payload);
@@ -95,7 +86,7 @@ export default function ProjectManager() {
       });
 
       const data = await response.json();
-      console.log("📩 API Response:", data); // ✅ Debugging log
+      console.log("📩 API Response:", data); 
 
       if (response.ok) {
         setMessage(`✅ Product added: ${data.product.Product_Name}`);
@@ -111,8 +102,8 @@ export default function ProjectManager() {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Project Manager</h1>
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+      <h1 className="text-3xl font-bold text-center mb-4">Product Manager</h1>
 
       {message && <p className="mb-4 text-red-500">{message}</p>}
 
@@ -131,7 +122,7 @@ export default function ProjectManager() {
         ))}
       </select>
 
-      {/* ✅ Select Subsection (Appears after selecting a section) */}
+      {/* ✅ Select Subsection */}
       {subsections.length > 0 ? (
         <>
           <label className="block text-lg font-semibold mt-4">Select a Subsection:</label>
@@ -142,14 +133,14 @@ export default function ProjectManager() {
           >
             <option value="" disabled>-- Select Subsection --</option>
             {subsections.map((sub) => (
-              <option key={sub.Sub_Section_ID} value={sub.Sub_Section_ID}>
-                {sub.Sub_Section_Name}
+              <option key={`sub_${sub.Subsection_ID}`} value={sub.Subsection_ID}>
+                {sub.Subsection_Name || "⚠️ Undefined Name"}
               </option>
             ))}
           </select>
         </>
       ) : (
-        <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
+        selectedSection && <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
       )}
 
       {/* ✅ Product Input Fields */}

@@ -7,13 +7,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("📩 Received Payload:", body);
 
-    const { Product_Name, Price, Subsection_ID } = body;
+    const { Product_Name, Price, Sub_Section_ID } = body; // ✅ Fix casing
 
     // ✅ Validate required fields
     const missingFields = [];
     if (!Product_Name) missingFields.push("Product_Name");
     if (!Price) missingFields.push("Price");
-    if (!Subsection_ID) missingFields.push("Subsection_ID");
+    if (!Sub_Section_ID) missingFields.push("Sub_Section_ID");
 
     if (missingFields.length > 0) {
       console.error("❌ Missing fields:", missingFields);
@@ -23,23 +23,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Verify if Subsection_ID exists
+    // ✅ Verify if Sub_Section_ID exists
     const { data: subsection, error: subsectionError } = await supabase
       .from("Sub_Sections")
-      .select("Subsection_ID")
-      .eq("Subsection_ID", Subsection_ID)
+      .select("Sub_Section_ID")
+      .eq("Sub_Section_ID", Sub_Section_ID)
       .single();
 
     if (subsectionError || !subsection) {
-      console.error("❌ Invalid Subsection_ID:", Subsection_ID);
-      return NextResponse.json({ error: "Invalid Subsection_ID" }, { status: 400 });
+      console.error("❌ Invalid Sub_Section_ID:", Sub_Section_ID);
+      return NextResponse.json({ error: "Invalid Sub_Section_ID" }, { status: 400 });
     }
 
-    // ✅ Insert product (Auto-generating Product_ID)
+    // ✅ Insert product (AUTO-GENERATING Product_ID)
     const { data, error } = await supabase
       .from("Products")
-      .insert([{ Product_Name, Price, Subsection_ID }])
-      .select("Product_ID, Product_Name, Price, Subsection_ID");
+      .insert([{ Product_Name, Price, Sub_Section_ID }]) // ✅ Correct casing
+      .select("Product_ID, Product_Name, Price, Sub_Section_ID");
 
     if (error) {
       console.error("❌ Supabase Insert Error:", error);
@@ -71,8 +71,8 @@ export async function GET(req: Request) {
     // ✅ Fetch products by subsection
     const { data, error } = await supabase
       .from("Products")
-      .select("Product_ID, Product_Name, Price, Subsection_ID")
-      .eq("Subsection_ID", subsectionId);
+      .select("Product_ID, Product_Name, Price, Sub_Section_ID") // ✅ Fixed casing
+      .eq("Sub_Section_ID", subsectionId);
 
     if (error) {
       console.error("❌ Supabase Fetch Error:", error);

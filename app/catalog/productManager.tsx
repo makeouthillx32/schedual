@@ -42,7 +42,10 @@ export default function ProjectManager() {
 
   // ✅ Fetch subsections when a section is selected
   useEffect(() => {
-    if (!selectedSection) return;
+    if (!selectedSection) {
+      setSubsections([]); // ✅ Reset subsections if no section is selected
+      return;
+    }
 
     async function fetchSubsections() {
       try {
@@ -58,7 +61,7 @@ export default function ProjectManager() {
         }
 
         setSubsections(data);
-        setSelectedSubsection(null); // Reset subsection selection
+        setSelectedSubsection(null); // ✅ Reset subsection selection when switching sections
       } catch (err) {
         setMessage(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("❌ Subsection Fetch Error:", err);
@@ -180,4 +183,4 @@ export default function ProjectManager() {
       )}
     </div>
   );
-} 
+}

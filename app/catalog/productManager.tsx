@@ -13,7 +13,7 @@ type Subsection = {
   Parent_Section_ID: number;
 };
 
-export default function ProductManager() {
+export default function ProjectManager() {
   const [sections, setSections] = useState<Section[]>([]);
   const [subsections, setSubsections] = useState<Subsection[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
@@ -22,57 +22,70 @@ export default function ProductManager() {
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
 
-  /** ✅ Fetch Sections **/
+  // ✅ Fetch sections when component loads
   useEffect(() => {
     async function fetchSections() {
       try {
+        console.log("📩 Fetching sections...");
         const res = await fetch("/api/catalog?getSections=true");
         if (!res.ok) throw new Error("Failed to fetch sections");
         const data: Section[] = await res.json();
+        console.log("✅ Sections Fetched:", data);
         setSections(data);
       } catch (err) {
+        setMessage(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("❌ Section Fetch Error:", err);
-        setMessage("❌ Failed to load sections.");
       }
     }
     fetchSections();
   }, []);
 
-  /** ✅ Fetch Subsections when Section is selected **/
+  // ✅ Fetch subsections when a section is selected
   useEffect(() => {
     if (!selectedSection) {
-      setSubsections([]); // Reset subsections if no section is selected
+      setSubsections([]); // ✅ Reset subsections if no section is selected
       return;
     }
 
     async function fetchSubsections() {
       try {
+        console.log(`📩 Fetching subsections for Section_ID: ${selectedSection}`);
         const res = await fetch(`/api/catalog?getSubsections=true&sectionId=${selectedSection}`);
-        if (!res.ok) throw new Error("Failed to fetch subsections");
+        if (!res.ok) throw new Error(`Failed to fetch subsections (Status: ${res.status})`);
+
         const data: Subsection[] = await res.json();
+        console.log("✅ Subsections Fetched:", data);
+
+        if (data.length === 0) {
+          console.warn("⚠️ No subsections found for this section.");
+        }
+
         setSubsections(data);
-        setSelectedSubsection(null); // Reset selected subsection
+        setSelectedSubsection(null); // ✅ Reset subsection selection when switching sections
       } catch (err) {
+        setMessage(err instanceof Error ? err.message : "An unknown error occurred");
         console.error("❌ Subsection Fetch Error:", err);
-        setMessage("❌ Failed to load subsections.");
       }
     }
 
     fetchSubsections();
   }, [selectedSection]);
 
-  /** ✅ Handle Product Addition **/
+  // ✅ Handle adding a product
   async function handleAddProduct() {
     if (!selectedSubsection || !productName.trim() || !price.trim()) {
       setMessage("❌ All fields are required.");
       return;
     }
 
+    // ✅ Ensure correct field names match Supabase API
     const payload = {
-      Product_Name: productName.trim(),
+      Product_Name: productName,
       Price: parseFloat(price),
-      Sub_Section_ID: selectedSubsection,
+      Sub_Section_ID: selectedSubsection, // ✅ Fixed: Correct field name
     };
+
+    console.log("📩 Sending Payload to API:", payload);
 
     try {
       const response = await fetch("/api/products", {
@@ -82,15 +95,16 @@ export default function ProductManager() {
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        setMessage(`❌ Error: ${data.error}`);
-        return;
-      }
+      console.log("📩 API Response:", data); // ✅ Debugging log
 
-      setMessage(`✅ Product added: ${data.product.Product_Name}`);
-      setProductName("");
-      setPrice("");
-      setSelectedSubsection(null);
+      if (response.ok) {
+        setMessage(`✅ Product added: ${data.product.Product_Name}`);
+        setProductName("");
+        setPrice("");
+        setSelectedSubsection(null);
+      } else {
+        setMessage(`❌ Error: ${data.error}`);
+      }
     } catch (error) {
       setMessage("❌ Failed to add product. Try again.");
     }
@@ -98,7 +112,7 @@ export default function ProductManager() {
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Product Manager</h1>
+      <h1 className="text-2xl font-bold mb-4">Project Manager</h1>
 
       {message && <p className="mb-4 text-red-500">{message}</p>}
 
@@ -117,7 +131,7 @@ export default function ProductManager() {
         ))}
       </select>
 
-      {/* ✅ Select Subsection */}
+      {/* ✅ Select Subsection (Appears after selecting a section) */}
       {subsections.length > 0 ? (
         <>
           <label className="block text-lg font-semibold mt-4">Select a Subsection:</label>
@@ -135,7 +149,7 @@ export default function ProductManager() {
           </select>
         </>
       ) : (
-        selectedSection && <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
+        <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
       )}
 
       {/* ✅ Product Input Fields */}

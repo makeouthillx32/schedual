@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    console.log("📩 Received Payload from Frontend:", body); // Debugging incoming data
+    console.log("📩 Received Payload from Frontend:", body);
 
     let { Product_Name, Price, Sub_Section_ID } = body;
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid Sub_Section_ID format" }, { status: 400 });
     }
 
-    // ✅ Verify if `Sub_Section_ID` exists in `Sub_Sections` table
+    // ✅ Verify if `Sub_Section_ID` exists
     console.log("🔍 Checking if Sub_Section_ID exists:", Sub_Section_ID);
 
     const { data: subsection, error: subsectionError } = await supabase
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Invalid Sub_Section_ID: ${Sub_Section_ID}` }, { status: 400 });
     }
 
-    // ✅ Insert product into `Products` table
+    // ✅ Insert product into `Products`
     console.log("📩 Inserting product:", { Product_Name, Price, Sub_Section_ID });
 
     const { data, error } = await supabase
@@ -104,6 +104,41 @@ export async function GET(req: Request) {
     console.log(`✅ Fetched ${data.length} products for Subsection ID: ${validSubsectionId}`);
 
     return NextResponse.json(data, { status: 200 });
+  } catch (err) {
+    console.error("❌ API Error:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// ✅ Handle DELETE request to remove a product
+export async function DELETE(req: Request) {
+  try {
+    const { productId } = await req.json();
+    console.log("🗑 Received delete request for product ID:", productId);
+
+    if (!productId) {
+      return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+    }
+
+    // ✅ Delete product
+    const { data, error } = await supabase
+      .from("Products")
+      .delete()
+      .eq("Product_ID", productId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Supabase Delete Error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    console.log("✅ Product Deleted:", data);
+
+    return NextResponse.json(
+      { message: "✅ Product deleted successfully", deletedProduct: data },
+      { status: 200 }
+    );
   } catch (err) {
     console.error("❌ API Error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

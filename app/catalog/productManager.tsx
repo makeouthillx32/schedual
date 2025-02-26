@@ -8,8 +8,8 @@ type Section = {
 };
 
 type Subsection = {
-  Subsection_ID: number;
-  Subsection_Name: string;
+  Sub_Section_ID: number;
+  Sub_Section_Name: string;
   Parent_Section_ID: number;
 };
 
@@ -22,7 +22,7 @@ export default function ProductManager() {
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
 
-  // Fetch sections when component loads
+  // ✅ Fetch sections when component loads
   useEffect(() => {
     async function fetchSections() {
       try {
@@ -37,7 +37,7 @@ export default function ProductManager() {
     fetchSections();
   }, []);
 
-  // Fetch subsections when a section is selected
+  // ✅ Fetch subsections when a section is selected
   useEffect(() => {
     if (!selectedSection) return;
 
@@ -56,20 +56,21 @@ export default function ProductManager() {
     fetchSubsections();
   }, [selectedSection]);
 
+  // ✅ Handle adding a product
   async function handleAddProduct() {
     if (!selectedSubsection || !productName.trim() || !price.trim()) {
       setMessage("❌ All fields are required.");
       return;
     }
 
-    // ✅ Ensuring correct data format
+    // ✅ Ensure correct field names match Supabase API
     const payload = {
       Product_Name: productName,
       Price: parseFloat(price),
-      Subsection_ID: selectedSubsection, // FIXED: Matches API field name
+      Sub_Section_ID: selectedSubsection, // ✅ Fixed: Correct field name
     };
 
-    console.log("📩 Sending Payload to API:", payload); // 🔥 Debugging log
+    console.log("📩 Sending Payload to API:", payload);
 
     try {
       const response = await fetch("/api/products", {
@@ -79,7 +80,7 @@ export default function ProductManager() {
       });
 
       const data = await response.json();
-      console.log("📩 API Response:", data); // 🔥 Debugging log
+      console.log("📩 API Response:", data); // ✅ Debugging log
 
       if (response.ok) {
         setMessage(`✅ Product added: ${data.product.Product_Name}`);
@@ -100,7 +101,7 @@ export default function ProductManager() {
 
       {message && <p className="mb-4 text-red-500">{message}</p>}
 
-      {/* Select Section */}
+      {/* ✅ Select Section */}
       <label className="block text-lg font-semibold">Select a Section:</label>
       <select
         className="w-full p-2 border rounded-md mt-2"
@@ -115,7 +116,7 @@ export default function ProductManager() {
         ))}
       </select>
 
-      {/* Select Subsection (Appears after selecting a section) */}
+      {/* ✅ Select Subsection (Appears after selecting a section) */}
       {selectedSection && (
         <>
           <label className="block text-lg font-semibold mt-4">Select a Subsection:</label>
@@ -126,15 +127,15 @@ export default function ProductManager() {
           >
             <option value="" disabled>-- Select Subsection --</option>
             {subsections.map((sub) => (
-              <option key={sub.Subsection_ID} value={sub.Subsection_ID}>
-                {sub.Subsection_Name}
+              <option key={sub.Sub_Section_ID} value={sub.Sub_Section_ID}>
+                {sub.Sub_Section_Name}
               </option>
             ))}
           </select>
         </>
       )}
 
-      {/* Product Input Fields */}
+      {/* ✅ Product Input Fields */}
       {selectedSubsection && (
         <>
           <label className="block text-lg font-semibold mt-4">Product Name:</label>

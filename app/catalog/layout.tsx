@@ -1,38 +1,39 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
-import { Providers, useTheme } from "@/app/provider"; // Correctly using your provider
-import "@/app/globals.css"; // Using your actual Tailwind setup
+import { ReactNode, useEffect, useState } from "react";
+import Nav from "@/components/nav";
+import Footer from "@/components/footer";
+import "@/app/globals.css";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
-export default function CatalogLayout({ children }: LayoutProps) {
-  return (
-    <Providers>
-      <ThemedCatalogLayout>{children}</ThemedCatalogLayout>
-    </Providers>
-  );
-}
+export default function Layout({ children }: LayoutProps) {
+  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
-const ThemedCatalogLayout: React.FC<LayoutProps> = ({ children }) => {
-  const { themeType } = useTheme();
-
-  // Apply dark mode styles from globals.css
+  // Load the theme from localStorage or system preferences
   useEffect(() => {
-    if (themeType === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    const storedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setTheme(storedTheme ? (storedTheme as "light" | "dark") : systemPrefersDark ? "dark" : "light");
+  }, []);
+
+  // Apply the theme class to <html> tag immediately
+  useEffect(() => {
+    if (theme) {
+      document.documentElement.classList.toggle("dark", theme === "dark");
     }
-  }, [themeType]);
+  }, [theme]);
+
+  // Prevent rendering until theme is determined
+  if (!theme) return null;
 
   return (
-    <div className="min-h-screen p-5 bg-background text-foreground">
-      <main className="max-w-4xl mx-auto p-6 rounded shadow bg-card text-card-foreground">
-        {children}
-      </main>
+    <div className="bg-background text-foreground min-h-screen flex flex-col">
+      <Nav />
+      <main className="flex-1">{children}</main>
+      <Footer />
     </div>
   );
-};
+}

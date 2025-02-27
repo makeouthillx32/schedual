@@ -1,38 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import Products from "./products"; // Import the combined Products component
-import SubsectionManager from "./subsection"; // Import the Subsection Manager component
-import SectionManager from "./section"; //Import the Section Manager component
+import { useTheme } from "@/app/provider"; // Import theme context
+import Products from "./products"; 
+import SubsectionManager from "./subsection"; 
+import SectionManager from "./section"; 
 
 export default function ProductManager() {
+  const { themeType } = useTheme(); // Get the current theme
+
   const [showProducts, setShowProducts] = useState(false);
   const [showSubsectionManager, setShowSubsectionManager] = useState(false);
   const [showSectionManager, setShowSectionManager] = useState(false);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div
+      className={`max-w-2xl mx-auto p-6 rounded-lg shadow 
+      bg-card text-card-foreground`}
+    >
       <h1 className="text-3xl font-bold text-center mb-4">Product Manager</h1>
 
-      {/* ✅ Toggle Product Management (Add & Remove) */}
+      {/* ✅ Toggle Product Management */}
       <button
-        className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-700 mb-2"
+        className={`w-full p-2 rounded mb-2 
+          ${showProducts ? "bg-blue-700" : "bg-blue-500"} 
+          text-white hover:bg-blue-600`}
         onClick={() => setShowProducts(!showProducts)}
       >
         {showProducts ? "Close Product Management" : "Manage Products"}
       </button>
 
-      {/* ✅ Toggle Subsection Manager Component */}
+      {/* ✅ Toggle Subsection Manager */}
       <button
-        className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-700 mb-2"
+        className={`w-full p-2 rounded mb-2 
+          ${showSubsectionManager ? "bg-green-700" : "bg-green-500"} 
+          text-white hover:bg-green-600`}
         onClick={() => setShowSubsectionManager(!showSubsectionManager)}
       >
         {showSubsectionManager ? "Close Subsection Manager" : "Manage Subsections"}
       </button>
 
-      {/* ✅ Toggle Section Manager Component */}
+      {/* ✅ Toggle Section Manager */}
       <button
-        className="w-full p-2 bg-purple-500 text-white rounded hover:bg-purple-700"
+        className={`w-full p-2 rounded 
+          ${showSectionManager ? "bg-purple-700" : "bg-purple-500"} 
+          text-white hover:bg-purple-600`}
         onClick={() => setShowSectionManager(!showSectionManager)}
       >
         {showSectionManager ? "Close Section Manager" : "Manage Sections"}

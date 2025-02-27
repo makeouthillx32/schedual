@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Products from "./products"; // Import the combined Products component
 import SubsectionManager from "./subsection"; // Import the Subsection Manager component
-//import SectionManager from "./section"; Import the Section Manager component
+import SectionManager from "./section"; //Import the Section Manager component
 
 export default function ProductManager() {
   const [showProducts, setShowProducts] = useState(false);

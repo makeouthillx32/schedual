@@ -1,8 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import Nav from "@/components/nav";
-import Footer from "@/components/footer";
 import "@/app/globals.css";
 
 interface LayoutProps {
@@ -26,14 +24,8 @@ export default function Layout({ children }: LayoutProps) {
     }
   }, [theme]);
 
-  // Prevent rendering until theme is determined
+  // Prevent rendering until theme is determined to avoid hydration issues
   if (!theme) return null;
 
-  return (
-    <div className="bg-background text-foreground min-h-screen flex flex-col">
-      <Nav />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
-  );
+  return <div className="bg-background text-foreground">{children}</div>;
 }

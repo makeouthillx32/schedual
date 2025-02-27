@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaTrash } from "react-icons/fa"; // Trash icon for delete button
+import { useTheme } from "@/app/provider"; // Import theme context
+import { FaTrash } from "react-icons/fa"; 
 
 // ✅ Define Types
 type Section = {
@@ -10,6 +11,7 @@ type Section = {
 };
 
 export default function SectionManager() {
+  const { themeType } = useTheme(); // Use the theme context
   const [sections, setSections] = useState<Section[]>([]);
   const [newSectionName, setNewSectionName] = useState("");
   const [message, setMessage] = useState("");
@@ -38,10 +40,7 @@ export default function SectionManager() {
       return;
     }
 
-    const payload = {
-      action: "addSection",
-      Section_Name: newSectionName.trim(),
-    };
+    const payload = { action: "addSection", Section_Name: newSectionName.trim() };
 
     console.log("📩 Sending Payload to API:", payload);
 
@@ -71,10 +70,7 @@ export default function SectionManager() {
   async function handleRemoveSection(sectionId: number) {
     console.log("🗑 Deleting section with ID:", sectionId);
 
-    const payload = {
-      action: "removeSection",
-      sectionId: sectionId,
-    };
+    const payload = { action: "removeSection", sectionId };
 
     try {
       const response = await fetch("/api/products", {
@@ -88,7 +84,7 @@ export default function SectionManager() {
 
       if (response.ok) {
         setMessage(`✅ Section removed.`);
-        setSections(sections.filter(sec => sec.Section_ID !== sectionId)); // Remove from UI
+        setSections(sections.filter((sec) => sec.Section_ID !== sectionId)); // Remove from UI
       } else {
         setMessage(`❌ Error: ${data.error}`);
       }
@@ -98,16 +94,21 @@ export default function SectionManager() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div className="max-w-2xl mx-auto p-6 rounded-lg shadow bg-card text-card-foreground">
       <h1 className="text-3xl font-bold text-center mb-4">Section Manager</h1>
 
-      {message && <p className="mb-4 text-red-500">{message}</p>}
+      {message && (
+        <p className="mb-4 text-red-500 text-card-foreground">{message}</p>
+      )}
 
       {/* ✅ Display Sections */}
       {sections.length > 0 ? (
         <ul className="mt-4 list-disc list-inside">
           {sections.map((sec) => (
-            <li key={`sec_${sec.Section_ID}`} className="flex justify-between items-center">
+            <li
+              key={`sec_${sec.Section_ID}`}
+              className="flex justify-between items-center"
+            >
               <span>{sec.Section_Name}</span>
               <button
                 onClick={() => handleRemoveSection(sec.Section_ID)}
@@ -120,14 +121,14 @@ export default function SectionManager() {
           ))}
         </ul>
       ) : (
-        <p className="text-gray-600 mt-4">⚠️ No sections found.</p>
+        <p className="text-muted-foreground mt-4">⚠️ No sections found.</p>
       )}
 
       {/* ✅ Add Section */}
       <>
         <label className="block text-lg font-semibold mt-4">New Section Name:</label>
         <input
-          className="w-full p-2 border rounded mt-2"
+          className="w-full p-2 border rounded mt-2 bg-background text-foreground"
           type="text"
           placeholder="Enter section name"
           value={newSectionName}

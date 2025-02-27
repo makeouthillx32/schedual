@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTheme } from "@/app/provider"; // Importing the theme context
 
 // Define types for sections, subsections, and products
 type Section = {
@@ -22,6 +23,8 @@ type Product = {
 };
 
 export default function ProductCatalog() {
+  const { themeType } = useTheme(); // Use the theme hook
+
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [subsections, setSubsections] = useState<Subsection[]>([]);
@@ -54,8 +57,7 @@ export default function ProductCatalog() {
       const subsectionData: Subsection[] = await res.json();
       setSubsections(subsectionData);
 
-      // Fetch all products related to this section
-      let allProducts: Product[] = []; // ✅ Explicitly set type
+      let allProducts: Product[] = [];
       for (const subsection of subsectionData) {
         const productRes = await fetch(`/api/catalog?getProducts=true&subsectionId=${subsection.Subsection_ID}`);
         if (productRes.ok) {
@@ -70,14 +72,17 @@ export default function ProductCatalog() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div
+      className={`max-w-2xl mx-auto p-6 rounded-lg shadow 
+      bg-card text-card-foreground`}
+    >
       <h1 className="text-3xl font-bold text-center mb-4">Product Catalog</h1>
 
       {error && <p className="text-red-500 text-center">Error: {error}</p>}
 
       <label className="block text-lg font-semibold">Select a Section:</label>
       <select
-        className="w-full p-2 border rounded-md mt-2"
+        className="w-full p-2 border rounded-md mt-2 bg-background text-foreground"
         onChange={handleSectionChange}
         defaultValue=""
       >
@@ -91,7 +96,7 @@ export default function ProductCatalog() {
 
       <h2 className="text-xl font-semibold mt-4">Subsections:</h2>
       {subsections.length === 0 ? (
-        <p className="text-gray-600">No subsections available for this section.</p>
+        <p className="text-muted-foreground">No subsections available for this section.</p>
       ) : (
         <ul className="list-disc list-inside">
           {subsections.map((subsection) => (
@@ -102,7 +107,7 @@ export default function ProductCatalog() {
 
       <h2 className="text-xl font-semibold mt-4">Products:</h2>
       {products.length === 0 ? (
-        <p className="text-gray-600">No products available for this section.</p>
+        <p className="text-muted-foreground">No products available for this section.</p>
       ) : (
         <ul className="list-disc list-inside">
           {products.map((product) => (

@@ -205,19 +205,21 @@ export default function Products() {
       
       {/* Status message */}
       {message && (
-        <div className={`p-3 mb-4 rounded-md ${message.includes("✅") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+        <div className={`p-3 mb-4 rounded-md 
+          ${message.includes("✅") ? "bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-300" 
+          : "bg-red-100 dark:bg-red-700 text-red-800 dark:text-red-300"}`}>
           {message}
         </div>
       )}
 
       {/* ✅ Selection controls */}
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+      <div className="bg-card text-card-foreground p-4 rounded-lg shadow-md mb-6">
         <div className="grid md:grid-cols-2 gap-4">
           {/* ✅ Select Section */}
           <div>
             <label className="block text-lg font-semibold mb-2">Section:</label>
             <select
-              className="w-full p-2 border rounded-md bg-background text-foreground"
+              className="w-full p-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground"
               value={selectedSection ?? ""}
               onChange={(e) => setSelectedSection(e.target.value ? parseInt(e.target.value, 10) : null)}
               disabled={loading}
@@ -284,7 +286,7 @@ export default function Products() {
 
       {/* ✅ Add product form */}
       {mode === "add" && selectedSubsection && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md mb-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <FaPlus className="mr-2 text-blue-500" /> Add New Product
           </h2>
@@ -335,7 +337,7 @@ export default function Products() {
 
       {/* ✅ Product List with Remove Buttons */}
       {selectedSubsection && mode === "view" && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
+        <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <FaEdit className="mr-2 text-blue-500" /> Products in Subsection
           </h2>
@@ -348,10 +350,10 @@ export default function Products() {
                 <li key={product.Product_ID} className="py-3 flex justify-between items-center">
                   <div>
                     <span className="font-medium">{product.Product_Name}</span>
-                    <span className="ml-2 text-gray-600">${product.Price.toFixed(2)}</span>
+                    <span className="ml-2 text-muted-foreground">${product.Price.toFixed(2)}</span>
                   </div>
                   <button
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-700 dark:text-red-400 rounded-full transition-colors"
+                    className="p-2 text-red-500 dark:text-red-400 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-700 rounded-full transition-colors"
                     onClick={() => handleRemoveProduct(product.Product_ID)}
                     disabled={loading}
                     title="Remove Product"
@@ -362,7 +364,8 @@ export default function Products() {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No products found in this subsection.</p>
+            <p className="text-muted-foreground">No products found in this subsection.</p>
+
           )}
         </div>
       )}

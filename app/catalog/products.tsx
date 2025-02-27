@@ -200,7 +200,7 @@ export default function Products() {
   }, [message]);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 bg-card text-card-foreground">
       <h1 className="text-3xl font-bold mb-6">Product Management</h1>
       
       {/* Status message */}
@@ -217,7 +217,7 @@ export default function Products() {
           <div>
             <label className="block text-lg font-semibold mb-2">Section:</label>
             <select
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border rounded-md bg-background text-foreground"
               value={selectedSection ?? ""}
               onChange={(e) => setSelectedSection(e.target.value ? parseInt(e.target.value, 10) : null)}
               disabled={loading}
@@ -235,7 +235,7 @@ export default function Products() {
           <div>
             <label className="block text-lg font-semibold mb-2">Subsection:</label>
             <select
-              className="w-full p-2 border rounded-md"
+              className="w-full p-2 border rounded-md bg-background text-foreground"
               value={selectedSubsection ?? ""}
               onChange={(e) => setSelectedSubsection(e.target.value ? parseInt(e.target.value, 10) : null)}
               disabled={loading || subsections.length === 0}
@@ -268,7 +268,7 @@ export default function Products() {
             </button>
           ) : (
             <button
-              className="flex items-center bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+            className="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
               onClick={() => {
                 setMode("view");
                 setProductName("");
@@ -351,7 +351,7 @@ export default function Products() {
                     <span className="ml-2 text-gray-600">${product.Price.toFixed(2)}</span>
                   </div>
                   <button
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition-colors"
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-700 dark:text-red-400 rounded-full transition-colors"
                     onClick={() => handleRemoveProduct(product.Product_ID)}
                     disabled={loading}
                     title="Remove Product"

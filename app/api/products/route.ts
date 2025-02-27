@@ -1,14 +1,69 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 
-// ✅ Handle POST request to add a new product or subsection
+// ✅ Handle POST request to add a new product, subsection, or section
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     console.log("📩 Received Payload:", body);
 
+    // ✅ Add a new section
+    if (body.Section_Name) {
+      let { Section_Name } = body;
+
+      const { data, error } = await supabase
+        .from("Main_Sections")
+        .insert([{ Section_Name }])
+        .select("Section_ID, Section_Name");
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        { message: "✅ Section added successfully", section: data[0] },
+        { status: 201 }
+      );
+    }
+
+    // ✅ Add a new subsection
+    if (body.Subsection_Name && body.Parent_Section_ID) {
+      let { Subsection_Name, Parent_Section_ID } = body;
+
+      Parent_Section_ID = parseInt(Parent_Section_ID, 10);
+      if (isNaN(Parent_Section_ID)) {
+        return NextResponse.json({ error: "Invalid Parent_Section_ID format" }, { status: 400 });
+      }
+
+      // ✅ Verify section exists
+      const { data: section, error: sectionError } = await supabase
+        .from("Main_Sections")
+        .select("Section_ID")
+        .eq("Section_ID", Parent_Section_ID)
+        .single();
+
+      if (sectionError || !section) {
+        return NextResponse.json({ error: `Invalid Parent_Section_ID: ${Parent_Section_ID}` }, { status: 400 });
+      }
+
+      // ✅ Insert subsection
+      const { data, error } = await supabase
+        .from("Sub_Sections")
+        .insert([{ Subsection_Name, Parent_Section_ID }])
+        .select("Subsection_ID, Subsection_Name, Parent_Section_ID");
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        { message: "✅ Subsection added successfully", subsection: data[0] },
+        { status: 201 }
+      );
+    }
+
+    // ✅ Add a new product
     if (body.Product_Name && body.Price && body.Sub_Section_ID) {
-      // ✅ Add a new product
       let { Product_Name, Price, Sub_Section_ID } = body;
 
       // ✅ Ensure correct data types
@@ -42,42 +97,6 @@ export async function POST(req: Request) {
 
       return NextResponse.json(
         { message: "✅ Product added successfully", product: data[0] },
-        { status: 201 }
-      );
-    }
-
-    if (body.Subsection_Name && body.Parent_Section_ID) {
-      // ✅ Add a new subsection
-      let { Subsection_Name, Parent_Section_ID } = body;
-
-      Parent_Section_ID = parseInt(Parent_Section_ID, 10);
-      if (isNaN(Parent_Section_ID)) {
-        return NextResponse.json({ error: "Invalid Parent_Section_ID format" }, { status: 400 });
-      }
-
-      // ✅ Verify if the section exists
-      const { data: section, error: sectionError } = await supabase
-        .from("Main_Sections")
-        .select("Section_ID")
-        .eq("Section_ID", Parent_Section_ID)
-        .single();
-
-      if (sectionError || !section) {
-        return NextResponse.json({ error: `Invalid Parent_Section_ID: ${Parent_Section_ID}` }, { status: 400 });
-      }
-
-      // ✅ Insert subsection
-      const { data, error } = await supabase
-        .from("Sub_Sections")
-        .insert([{ Subsection_Name, Parent_Section_ID }])
-        .select("Subsection_ID, Subsection_Name, Parent_Section_ID");
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      return NextResponse.json(
-        { message: "✅ Subsection added successfully", subsection: data[0] },
         { status: 201 }
       );
     }
@@ -118,11 +137,13 @@ export async function GET(req: Request) {
   }
 }
 
-// ✅ Handle DELETE request to remove a product or subsection
+// ✅ Handle DELETE request to remove a product, subsection, or section
 export async function DELETE(req: Request) {
   try {
-    const { productId, subsectionId } = await req.json();
+    const body = await req.json();
+    const { productId, subsectionId, sectionId } = body;
 
+    // ✅ Delete a product
     if (productId) {
       console.log("🗑 Deleting Product ID:", productId);
 
@@ -143,6 +164,7 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // ✅ Delete a subsection
     if (subsectionId) {
       console.log("🗑 Deleting Subsection ID:", subsectionId);
 
@@ -156,7 +178,6 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: countError.message }, { status: 500 });
       }
 
-      // ✅ Fix: Ensure `count` is never null
       if ((count ?? 0) > 0) {
         return NextResponse.json(
           { error: "Cannot delete subsection with existing products" },
@@ -164,6 +185,7 @@ export async function DELETE(req: Request) {
         );
       }
 
+      // ✅ Delete subsection
       const { data, error } = await supabase
         .from("Sub_Sections")
         .delete()
@@ -177,6 +199,45 @@ export async function DELETE(req: Request) {
 
       return NextResponse.json(
         { message: "✅ Subsection deleted successfully", deletedSubsection: data },
+        { status: 200 }
+      );
+    }
+
+    // ✅ Delete a section
+    if (sectionId) {
+      console.log("🗑 Deleting Section ID:", sectionId);
+
+      // ✅ Prevent deletion if section has subsections
+      const { count, error: countError } = await supabase
+        .from("Sub_Sections")
+        .select("*", { count: "exact", head: true })
+        .eq("Parent_Section_ID", sectionId);
+
+      if (countError) {
+        return NextResponse.json({ error: countError.message }, { status: 500 });
+      }
+
+      if ((count ?? 0) > 0) {
+        return NextResponse.json(
+          { error: "Cannot delete section with existing subsections" },
+          { status: 400 }
+        );
+      }
+
+      // ✅ Delete section
+      const { data, error } = await supabase
+        .from("Main_Sections")
+        .delete()
+        .eq("Section_ID", sectionId)
+        .select()
+        .single();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json(
+        { message: "✅ Section deleted successfully", deletedSection: data },
         { status: 200 }
       );
     }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaTrash } from "react-icons/fa"; // Trash icon for delete button
+import { useTheme } from "@/app/provider"; // Import theme context
+import { FaTrash } from "react-icons/fa"; 
 
 // ✅ Define Types
 type Section = {
@@ -16,6 +17,8 @@ type Subsection = {
 };
 
 export default function SubsectionManager() {
+  const { themeType } = useTheme(); // Get the current theme
+
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSection, setSelectedSection] = useState<number | null>(null);
   const [subsections, setSubsections] = useState<Subsection[]>([]);
@@ -70,7 +73,7 @@ export default function SubsectionManager() {
     }
 
     const payload = {
-      action: "addSubsection", // 👈 Identifies the operation for the API
+      action: "addSubsection",
       Subsection_Name: newSubsectionName.trim(),
       Parent_Section_ID: selectedSection,
     };
@@ -103,10 +106,7 @@ export default function SubsectionManager() {
   async function handleRemoveSubsection(subsectionId: number) {
     console.log("🗑 Deleting subsection with ID:", subsectionId);
 
-    const payload = {
-      action: "removeSubsection", // 👈 Identifies the operation for the API
-      subsectionId: subsectionId,
-    };
+    const payload = { action: "removeSubsection", subsectionId };
 
     try {
       const response = await fetch("/api/products", {
@@ -120,7 +120,7 @@ export default function SubsectionManager() {
 
       if (response.ok) {
         setMessage(`✅ Subsection removed.`);
-        setSubsections(subsections.filter(sub => sub.Subsection_ID !== subsectionId)); // Remove from UI
+        setSubsections(subsections.filter((sub) => sub.Subsection_ID !== subsectionId));
       } else {
         setMessage(`❌ Error: ${data.error}`);
       }
@@ -130,15 +130,17 @@ export default function SubsectionManager() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg">
+    <div className="max-w-2xl mx-auto p-6 rounded-lg shadow bg-card text-card-foreground">
       <h1 className="text-3xl font-bold text-center mb-4">Subsection Manager</h1>
 
-      {message && <p className="mb-4 text-red-500">{message}</p>}
+      {message && (
+        <p className="mb-4 text-red-500 text-card-foreground">{message}</p>
+      )}
 
       {/* ✅ Select Section */}
       <label className="block text-lg font-semibold">Select a Section:</label>
       <select
-        className="w-full p-2 border rounded-md mt-2"
+        className="w-full p-2 border rounded-md mt-2 bg-background text-foreground"
         value={selectedSection ?? ""}
         onChange={(e) => setSelectedSection(e.target.value ? parseInt(e.target.value, 10) : null)}
       >
@@ -155,10 +157,10 @@ export default function SubsectionManager() {
         <ul className="mt-4 list-disc list-inside">
           {subsections.map((sub) => (
             <li key={`sub_${sub.Subsection_ID}`} className="flex justify-between items-center">
-              <span>{sub.Subsection_Name}</span>
+              <span className="text-card-foreground">{sub.Subsection_Name}</span>
               <button
                 onClick={() => handleRemoveSubsection(sub.Subsection_ID)}
-                className="text-red-500 hover:text-red-700 ml-2"
+                className="text-red-400 hover:text-red-600 ml-2"
                 title="Remove Subsection"
               >
                 <FaTrash />
@@ -167,15 +169,21 @@ export default function SubsectionManager() {
           ))}
         </ul>
       ) : (
-        selectedSection && <p className="text-gray-600 mt-4">⚠️ No subsections found for this section.</p>
+        selectedSection && (
+          <p className="text-muted-foreground mt-4">
+            ⚠️ No subsections found for this section.
+          </p>
+        )
       )}
 
       {/* ✅ Add Subsection */}
       {selectedSection && (
         <>
-          <label className="block text-lg font-semibold mt-4">New Subsection Name:</label>
+          <label className="block text-lg font-semibold mt-4">
+            New Subsection Name:
+          </label>
           <input
-            className="w-full p-2 border rounded mt-2"
+            className="w-full p-2 border rounded mt-2 bg-background text-foreground"
             type="text"
             placeholder="Enter subsection name"
             value={newSubsectionName}

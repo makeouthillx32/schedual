@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { Session, createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import { SessionContextProvider } from "@supabase/auth-helpers-react";
 import { setCookie, getCookie } from "@/lib/cookieUtils";
 
 interface ThemeContextType {
@@ -18,32 +20,36 @@ export const useTheme = () => {
   return context;
 };
 
-export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const Providers: React.FC<{
+  children: React.ReactNode;
+  session?: Session | null;
+}> = ({ children, session }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">("light");
 
+  // Theme logic
   useEffect(() => {
-    // Ensure this runs only on the client
-    if (typeof window !== "undefined") {
-      const savedTheme = getCookie("theme") || "light"; // Fallback to "light"
-      document.documentElement.setAttribute("data-theme", savedTheme);
-      setThemeType(savedTheme as "light" | "dark");
-    }
+    const savedTheme = getCookie("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    setThemeType(savedTheme as "light" | "dark");
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.setAttribute("data-theme", themeType);
-      setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
-    }
+    document.documentElement.setAttribute("data-theme", themeType);
+    setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
   }, [themeType]);
 
   const toggleTheme = () => {
     setThemeType((prev) => (prev === "light" ? "dark" : "light"));
   };
 
+  // Supabase client
+  const supabase = createBrowserClient();
+
   return (
-    <ThemeContext.Provider value={{ themeType, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <SessionContextProvider supabaseClient={supabase} initialSession={session}>
+      <ThemeContext.Provider value={{ themeType, toggleTheme }}>
+        {children}
+      </ThemeContext.Provider>
+    </SessionContextProvider>
   );
 };

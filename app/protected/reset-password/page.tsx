@@ -1,22 +1,37 @@
-import dynamic from "next/dynamic";
-import { redirect } from "next/navigation";
-import { getServerSession } from "@/app/auth/session";
-import { InfoIcon } from "lucide-react";
+// app/protected/reset-password/page.tsx
+"use client";
 
-// dynamically load FetchDataSteps to avoid hydration mismatch
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+import { redirect } from "next/navigation";
+import { InfoIcon } from "lucide-react";
+import { getServerSession } from "@/app/auth/session";
+
 const FetchDataSteps = dynamic(() => import("@/components/tutorial/fetch-data-steps"), {
   ssr: false,
 });
 
-export default async function ProtectedPage() {
-  const supabase = await getServerSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default function ProtectedPage() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!user) {
-    redirect("/sign-in");
-  }
+  useEffect(() => {
+    (async () => {
+      const supabase = await getServerSession();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        redirect("/sign-in");
+      } else {
+        setUser(user);
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading || !user) return null;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-12">

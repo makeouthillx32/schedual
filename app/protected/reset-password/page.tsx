@@ -1,8 +1,9 @@
-// app/protected/reset-password/page.tsx
+// ❌ DO NOT include: "use client"
+
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/app/auth/session";
 import { InfoIcon } from "lucide-react";
-import FetchStepsClient from "@/components/profile/FetchStepsClient";
+import FetchStepsClient from "@/components/profile/FetchStepsClient"; // your dynamic component
 
 export default async function ProtectedPage() {
   const supabase = await getServerSession();

@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 
 // GET /api/profile - fetch the current user's profile
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient(); // ✅ FIXED
+
   const {
     data: { user },
     error: userError,
@@ -29,7 +30,8 @@ export async function GET() {
 
 // PUT /api/profile - update current user's profile
 export async function PUT(req: Request) {
-  const supabase = createClient();
+  const supabase = await createClient(); // ✅ FIXED
+
   const {
     data: { user },
     error: userError,

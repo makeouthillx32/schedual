@@ -2,10 +2,8 @@ import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
 
-// Explicitly define the type of the loaded component
 type DynamicComponent = FC<{}>;
 
-// Cast every dynamic import to DynamicComponent to avoid Promise type confusion
 const settingsMap: Record<string, DynamicComponent> = {
   catalog: dynamic(() => import("@/components/settings/catalog-settings")) as DynamicComponent,
   profile: dynamic(() => import("@/components/settings/profile-settings")) as DynamicComponent,
@@ -13,13 +11,15 @@ const settingsMap: Record<string, DynamicComponent> = {
   "CMS/schedule": dynamic(() => import("@/components/settings/cms-settings")) as DynamicComponent,
 };
 
-// Explicit function signature with no PageProps constraint
-export default function SettingsPage({
-  params,
-}: {
-  params: { setting: string[] };
-}) {
-  const settingKey = params.setting.join("/");
+export default function SettingsPage(props: any) {
+  const settingArray = props?.params?.setting;
+
+  if (!Array.isArray(settingArray)) {
+    notFound();
+    return null;
+  }
+
+  const settingKey = settingArray.join("/");
   const SettingsComponent = settingsMap[settingKey];
 
   if (!SettingsComponent) {

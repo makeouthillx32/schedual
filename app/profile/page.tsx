@@ -1,24 +1,18 @@
-import { redirect } from "next/navigation";
-import { getServerSession } from "@/app/auth/session";
+import { getUserProfile } from "@/lib/getUserProfile";
+import ProfileCard from "@/components/profile/ProfileCard";
+import AvatarUpload from "@/components/profile/AvatarUpload";
 
 export default async function ProfilePage() {
-  const supabase = getServerSession();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const profile = await getUserProfile();
 
-  if (!user) {
-    return redirect("/sign-in");
+  if (!profile) {
+    return <p className="text-center p-10">Not logged in.</p>;
   }
 
   return (
-    <div className="p-8 max-w-xl mx-auto space-y-4">
-      <h1 className="text-3xl font-bold">Your Profile</h1>
-      <p className="text-gray-500">Welcome back, {user.email}!</p>
-
-      <pre className="text-xs bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-x-auto">
-        {JSON.stringify(user, null, 2)}
-      </pre>
+    <div className="p-10 max-w-4xl mx-auto">
+      <ProfileCard profile={profile} />
+      <AvatarUpload userId={profile.id} />
     </div>
   );
 }

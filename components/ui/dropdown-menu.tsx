@@ -5,6 +5,8 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import Link from "next/link"; // Import Link for Next.js routing
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider"; // Import the theme hook
+import { usePathname } from "next/navigation";
+
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -36,21 +38,26 @@ DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, ...props }, ref) => {
-  const { themeType } = useTheme(); // Get the current theme for item styling
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    variant?: "default" | "danger";
+  }
+>(({ className, variant = "default", ...props }, ref) => {
+  const { themeType } = useTheme();
+
+  const baseStyle = `flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none`;
+  const colorStyle =
+    variant === "danger"
+      ? themeType === "dark"
+        ? "text-red-500 hover:bg-red-900"
+        : "text-red-600 hover:bg-red-100"
+      : themeType === "dark"
+      ? "text-white focus:bg-gray-800"
+      : "text-black focus:bg-gray-200";
 
   return (
     <DropdownMenuPrimitive.Item
       ref={ref}
-      className={cn(
-        `flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none ${
-          themeType === "dark"
-            ? "focus:bg-gray-800 text-white"
-            : "focus:bg-gray-200 text-black"
-        }`,
-        className
-      )}
+      className={cn(baseStyle, colorStyle, className)}
       {...props}
     />
   );
@@ -78,10 +85,18 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
 };
 
 const CustomDropdown: React.FC = () => {
-  const { themeType } = useTheme(); // Access the current theme ("light" or "dark")
-  const [open, setOpen] = React.useState(false); // State to control menu open/close
+  const { themeType } = useTheme();
+  const [open, setOpen] = React.useState(false);
+  const pathname = usePathname();
 
-  const handleMenuClick = () => setOpen(false); // Close menu on selection
+  const activePage = pathname.split("/")[1] || "home";
+  const settingsLink = `/settings/${activePage}`;
+
+  const handleMenuClick = () => setOpen(false);
+
+  const handleLogout = () => {
+    window.location.href = "/auth/logout";
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -90,7 +105,6 @@ const CustomDropdown: React.FC = () => {
           className="flex items-center justify-center w-8 h-8"
           aria-label="Toggle menu"
         >
-          {/* Hamburger menu */}
           <div className="space-y-1.5">
             <div
               className={`w-6 h-0.5 ${
@@ -116,15 +130,20 @@ const CustomDropdown: React.FC = () => {
           <Link href="/">Home</Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href="/schedule">Schedule</Link>
+          <Link href="CMS/schedule">Schedule</Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href="/settings">Settings</Link>
+          <Link href={settingsLink}>Settings</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="danger" onSelect={handleLogout}>
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
+
+
 
 export {
   CustomDropdown,

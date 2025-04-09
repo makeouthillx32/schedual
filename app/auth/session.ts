@@ -1,7 +1,10 @@
 // app/auth/session.ts
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from "next/headers";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
-export const getServerSession = () => {
+export function getServerSession() {
   return createServerComponentClient({ cookies });
-};
+}
+
+
+

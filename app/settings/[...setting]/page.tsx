@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
+import { Metadata } from "next";
 
 // Settings component map
 const settingsMap: Record<string, React.ComponentType<any>> = {
@@ -9,12 +10,14 @@ const settingsMap: Record<string, React.ComponentType<any>> = {
   "CMS/schedule": dynamic(() => import("@/app/CMS/schedule/page")),
 };
 
-export default function SettingsPage({
-  params,
-}: {
-  params: { setting: string[] };
-}) {
-  const settingKey = params.setting.join("/"); // supports CMS/schedule, etc.
+interface SettingsPageProps {
+  params: {
+    setting: string[];
+  };
+}
+
+export default function SettingsPage({ params }: SettingsPageProps) {
+  const settingKey = params.setting.join("/"); // supports CMS/schedule
   const SettingsComponent = settingsMap[settingKey];
 
   if (!SettingsComponent) {

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const FetchDataSteps = dynamic(() => import("./fetch-data-steps"), {
+const FetchDataSteps = dynamic(() => import("../tutorial/fetch-data-steps"), {
   ssr: false,
 });
 

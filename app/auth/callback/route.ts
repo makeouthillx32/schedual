@@ -6,15 +6,14 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const week = url.searchParams.get("week");
     const day = url.searchParams.get("day");
+    const redirectTo = url.searchParams.get("redirect_to") || "/protected";
 
+    // If this is a Supabase auth redirect (no schedule params), redirect to protected
     if (!week || !day) {
-      return NextResponse.json(
-        { error: "Missing week or day parameters" },
-        { status: 400 }
-      );
+      return NextResponse.redirect(new URL(redirectTo, process.env.NEXT_PUBLIC_SITE_URL));
     }
 
-    // Query the database
+    // Otherwise, treat it like your schedule query
     const { data, error } = await supabase
       .from("Schedule")
       .select("Businesses (business_name)")

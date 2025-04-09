@@ -5,10 +5,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
 export default function SessionBar() {
-  const { data: session } = useSession();
+  const session = useSession(); // ✅ Fixed
   const router = useRouter();
 
-  if (!session?.user) return null;
+  if (!session || !session.user) return null; // ✅ Safer null check
 
   return (
     <div className="bg-green-100 text-green-900 p-4 rounded flex justify-between items-center mb-4">

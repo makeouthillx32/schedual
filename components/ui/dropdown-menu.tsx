@@ -78,7 +78,8 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
   return (
     <DropdownMenuItem>
       <span className="text-xs">
-        {currentDateTime.toLocaleDateString()} {currentDateTime.toLocaleTimeString()}
+        {currentDateTime.toLocaleDateString()}{" "}
+        {currentDateTime.toLocaleTimeString()}
       </span>
     </DropdownMenuItem>
   );
@@ -88,17 +89,22 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
+
+  // Dynamic session so sign-in and log-out appear instantly
   const supabase = useSupabaseClient();
   const [session, setSession] = React.useState<Session | null>(null);
 
   React.useEffect(() => {
+    // Function to fetch current session
     const fetchSession = async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
     };
 
+    // Initial fetch
     fetchSession();
 
+    // Check if we have ?refresh=true in URL
     const params = new URLSearchParams(window.location.search);
     if (params.get("refresh") === "true") {
       fetchSession().then(() => {
@@ -108,11 +114,13 @@ const CustomDropdown: React.FC = () => {
       });
     }
 
+    // Listen for auth changes (login, logout, token refresh)
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchSession();
     });
 
     return () => {
+      // Cleanup the subscription on unmount
       listener?.subscription.unsubscribe();
     };
   }, [supabase]);
@@ -133,9 +141,21 @@ const CustomDropdown: React.FC = () => {
           aria-label="Toggle menu"
         >
           <div className="space-y-1.5">
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
           </div>
         </button>
       </DropdownMenuTrigger>
@@ -150,16 +170,22 @@ const CustomDropdown: React.FC = () => {
         <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href={settingsLink}>Settings</Link>
         </DropdownMenuItem>
+
+        {/* Show Profile if user is logged in */}
         {session?.user?.id && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href={`/profile/${session.user.id}`}>Profile</Link>
           </DropdownMenuItem>
         )}
+
+        {/* Show Sign in if user is NOT logged in */}
         {!session && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href="/sign-in">Sign in</Link>
           </DropdownMenuItem>
         )}
+
+        {/* Show Log out if user is logged in */}
         {session && (
           <DropdownMenuItem variant="danger" onSelect={handleLogout}>
             Log out

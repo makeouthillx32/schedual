@@ -38,7 +38,7 @@ export const signUpAction = async (formData: FormData) => {
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const supabase = await createClient(); // ✅ FIXED
+  const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -46,7 +46,16 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  return redirect("/CMS");
+  const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
+  const lastPage = lastPageCookie?.value || "/";
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  const redirectUrl = new URL(lastPage, baseUrl);
+  redirectUrl.searchParams.set("refresh", "true");
+
+  return redirect(redirectUrl.toString());
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

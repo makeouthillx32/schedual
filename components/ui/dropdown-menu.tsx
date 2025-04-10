@@ -89,6 +89,16 @@ const CustomDropdown: React.FC = () => {
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
   const session = useSession(); // track the logged-in user
+  const supabase = useSupabaseClient();
+  React.useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("refresh") === "true") {
+    supabase.auth.getSession().then(() => {
+      params.delete("refresh");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, "", newUrl);
+    };
+
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;

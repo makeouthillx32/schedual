@@ -6,7 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
-import { useSession } from "@supabase/auth-helpers-react";
+import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -88,12 +88,6 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
-  const session = useSession(); // track the logged-in user
-  const supabase = useSupabaseClient();
-  const CustomDropdown: React.FC = () => {
-  const { themeType } = useTheme();
-  const [open, setOpen] = React.useState(false);
-  const pathname = usePathname();
   const session = useSession();
   const supabase = useSupabaseClient();
 
@@ -124,21 +118,9 @@ const CustomDropdown: React.FC = () => {
           aria-label="Toggle menu"
         >
           <div className="space-y-1.5">
-            <div
-              className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
-            ></div>
-            <div
-              className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
-            ></div>
-            <div
-              className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
-            ></div>
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
           </div>
         </button>
       </DropdownMenuTrigger>
@@ -148,27 +130,21 @@ const CustomDropdown: React.FC = () => {
           <Link href="/">Home</Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href="CMS/schedule">Schedule</Link>
+          <Link href="/CMS/schedule">Schedule</Link>
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href={settingsLink}>Settings</Link>
         </DropdownMenuItem>
-
-        {/* Show Profile if user is logged in */}
         {session?.user?.id && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href={`/profile/${session.user.id}`}>Profile</Link>
           </DropdownMenuItem>
         )}
-
-        {/* Show Sign in if user is NOT logged in */}
         {!session && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href="/sign-in">Sign in</Link>
           </DropdownMenuItem>
         )}
-
-        {/* Show Log out if user is logged in */}
         {session && (
           <DropdownMenuItem variant="danger" onSelect={handleLogout}>
             Log out

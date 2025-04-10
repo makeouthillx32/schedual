@@ -4,11 +4,13 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   const supabase = createServerActionClient({ cookies });
+  const cookieStore = cookies();
 
   await supabase.auth.signOut();
 
-  // ✅ fallback to localhost if env is missing
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  // Try to get last visited page from cookies
+  const lastPage = cookieStore.get("lastPage")?.value || "/";
 
-  return NextResponse.redirect(new URL("/", baseUrl));
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  return NextResponse.redirect(new URL(lastPage, baseUrl));
 }

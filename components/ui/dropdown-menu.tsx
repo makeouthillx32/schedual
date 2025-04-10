@@ -88,7 +88,7 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
-  const session = useSession(); // ✅ Track the logged-in user
+  const session = useSession(); // track the logged-in user
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;
@@ -136,14 +136,21 @@ const CustomDropdown: React.FC = () => {
           <Link href={settingsLink}>Settings</Link>
         </DropdownMenuItem>
 
-        {/* ✅ Show "Profile" if logged in */}
+        {/* Show Profile if user is logged in */}
         {session?.user?.id && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href={`/profile/${session.user.id}`}>Profile</Link>
           </DropdownMenuItem>
         )}
 
-        {/* ✅ Show "Log out" if logged in */}
+        {/* Show Sign in if user is NOT logged in */}
+        {!session && (
+          <DropdownMenuItem onSelect={handleMenuClick}>
+            <Link href="/sign-in">Sign in</Link>
+          </DropdownMenuItem>
+        )}
+
+        {/* Show Log out if user is logged in */}
         {session && (
           <DropdownMenuItem variant="danger" onSelect={handleLogout}>
             Log out

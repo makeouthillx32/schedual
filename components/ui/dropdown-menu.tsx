@@ -108,7 +108,6 @@ const CustomDropdown: React.FC = () => {
     }
   }, [supabase]);
 
-
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;
 

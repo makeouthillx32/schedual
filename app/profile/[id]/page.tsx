@@ -1,8 +1,11 @@
-// app/profile/[id]/page.tsx
 import { getUserProfileById } from "@/lib/getUserProfile";
 import ProfileCard from "@/components/profile/ProfileCard";
 
-export default async function ProfilePage({ params }: { params: { id: string } }) {
+type Props = {
+  params: { id: string };
+};
+
+export default async function ProfilePage({ params }: Props) {
   const profile = await getUserProfileById(params.id);
 
   if (!profile) {

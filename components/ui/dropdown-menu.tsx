@@ -88,19 +88,34 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
-  const session = useSession();
   const supabase = useSupabaseClient();
+const [session, setSession] = React.useState<Session | null>(null);
 
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("refresh") === "true") {
-      supabase.auth.getSession().then(() => {
-        params.delete("refresh");
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      });
-    }
-  }, [supabase]);
+React.useEffect(() => {
+  const fetchSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session);
+  };
+
+  fetchSession();
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("refresh") === "true") {
+    fetchSession().then(() => {
+      params.delete("refresh");
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, "", newUrl);
+    });
+  }
+
+  const { data: listener } = supabase.auth.onAuthStateChange(() => {
+    fetchSession();
+  });
+
+  return () => {
+    listener?.subscription.unsubscribe();
+  };
+}, [supabase]);
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;

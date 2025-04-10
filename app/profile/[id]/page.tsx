@@ -1,15 +1,14 @@
 // app/profile/[id]/page.tsx
-import { getUserProfileById } from "@/lib/getUserProfile";
 import ProfileCard from "@/components/profile/ProfileCard";
 
-export default async function Page({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const profile = await getUserProfileById(params.id);
+export default async function ProfilePage({ params }: { params: { id: string } }) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/profile?id=${params.id}`, {
+    cache: "no-store",
+  });
 
-  if (!profile) {
+  const profile = await res.json();
+
+  if (!res.ok || profile.error) {
     return <div className="p-10 text-center">User not found</div>;
   }
 

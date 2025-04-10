@@ -6,7 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import type { Session } from "@supabase/auth-helpers-nextjs";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
@@ -78,8 +78,7 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
   return (
     <DropdownMenuItem>
       <span className="text-xs">
-        {currentDateTime.toLocaleDateString()}{" "}
-        {currentDateTime.toLocaleTimeString()}
+        {currentDateTime.toLocaleDateString()} {currentDateTime.toLocaleTimeString()}
       </span>
     </DropdownMenuItem>
   );
@@ -90,33 +89,33 @@ const CustomDropdown: React.FC = () => {
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
   const supabase = useSupabaseClient();
-const [session, setSession] = React.useState<Session | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
 
-React.useEffect(() => {
-  const fetchSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    setSession(data.session);
-  };
+  React.useEffect(() => {
+    const fetchSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    };
 
-  fetchSession();
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("refresh") === "true") {
-    fetchSession().then(() => {
-      params.delete("refresh");
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState({}, "", newUrl);
-    });
-  }
-
-  const { data: listener } = supabase.auth.onAuthStateChange(() => {
     fetchSession();
-  });
 
-  return () => {
-    listener?.subscription.unsubscribe();
-  };
-}, [supabase]);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("refresh") === "true") {
+      fetchSession().then(() => {
+        params.delete("refresh");
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+      });
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      fetchSession();
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;

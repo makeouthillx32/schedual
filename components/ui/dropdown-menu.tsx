@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
 import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import type { Session } from "@supabase/auth-helpers-nextjs";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;

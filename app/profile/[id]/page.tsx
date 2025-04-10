@@ -1,12 +1,8 @@
 import { getUserProfileById } from "@/lib/getUserProfile";
 import ProfileCard from "@/components/profile/ProfileCard";
 
-type Props = {
-  params: { id: string };
-};
-
-export default async function ProfilePage({ params }: Props) {
-  const profile = await getUserProfileById(params.id);
+export default async function ProfilePage(props: { params: { id: string } }) {
+  const profile = await getUserProfileById(props.params.id);
 
   if (!profile) {
     return <div className="p-10 text-center">User not found</div>;

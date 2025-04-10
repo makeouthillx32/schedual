@@ -47,16 +47,19 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
+  // Get last visited page from cookies
+  const store = await cookies();
+  const allCookies = store.getAll();
   const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
-  const lastPage = lastPageCookie?.value || "/";
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
-  const redirectUrl = new URL(lastPage, baseUrl);
-  redirectUrl.searchParams.set("refresh", "true");
+  let lastPage = lastPageCookie?.value || "/CMS";
 
-  return redirect(redirectUrl.toString());
+  // Prevent redirecting back to auth pages
+  if (["/sign-in", "/sign-up", "/forgot-password"].includes(lastPage)) {
+    lastPage = "/CMS";
+  }
+
+  return redirect(lastPage);
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

@@ -1,3 +1,4 @@
+// app/profile/[id]/page.tsx
 import { getUserProfileById } from "@/lib/getUserProfile";
 import ProfileCard from "@/components/profile/ProfileCard";
 

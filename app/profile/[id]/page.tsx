@@ -1,11 +1,8 @@
 // app/profile/[id]/page.tsx
+import type { PageProps } from "next";
 import ProfileCard from "@/components/profile/ProfileCard";
 
-type Props = {
-  params: { id: string };
-};
-
-export default async function ProfilePage({ params }: Props) {
+export default async function ProfilePage({ params }: PageProps<{ id: string }>) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/profile?id=${params.id}`, {
     cache: "no-store",
   });

@@ -1,5 +1,5 @@
 // app/profile/[id]/page.tsx
-import { getUserProfileById } from "@/lib/getUserProfile"; // you'll write this helper
+import { getUserProfileById } from "@/lib/getUserProfile";
 import ProfileCard from "@/components/profile/ProfileCard";
 
 export default async function ProfilePage({ params }: { params: { id: string } }) {

@@ -3,12 +3,14 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
 export async function GET() {
-  const cookieStore = await cookies(); // ✅ Await the cookies() call
-  const supabase = createServerActionClient({ cookies: () => cookieStore });
+  // ✅ Pass the built-in `cookies` function directly to createServerActionClient
+  const supabase = createServerActionClient({ cookies });
 
+  // Now sign out
   await supabase.auth.signOut();
 
-  // ✅ Try to get last visited page from cookies
+  // Then read the store after
+  const cookieStore = cookies(); // This is the actual cookies store
   const lastPage = cookieStore.get("lastPage")?.value || "/";
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";

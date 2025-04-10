@@ -97,7 +97,7 @@ const CustomDropdown: React.FC = () => {
       params.delete("refresh");
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       window.history.replaceState({}, "", newUrl);
-    };
+    });
 
 
   const activePage = pathname.split("/")[1] || "home";

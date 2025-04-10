@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import Link from "next/link"; // Import Link for Next.js routing
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/app/provider"; // Import the theme hook
+import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
-
+import { useSession } from "@supabase/auth-helpers-react";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -14,7 +14,7 @@ const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => {
-  const { themeType } = useTheme(); // Get the current theme from the provider
+  const { themeType } = useTheme();
 
   return (
     <DropdownMenuPrimitive.Portal>
@@ -88,12 +88,12 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
+  const session = useSession(); // ✅ Get the session here
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;
 
   const handleMenuClick = () => setOpen(false);
-
   const handleLogout = () => {
     window.location.href = "/auth/logout";
   };
@@ -135,15 +135,24 @@ const CustomDropdown: React.FC = () => {
         <DropdownMenuItem onSelect={handleMenuClick}>
           <Link href={settingsLink}>Settings</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem variant="danger" onSelect={handleLogout}>
-          Log out
-        </DropdownMenuItem>
+
+        {/* ✅ Profile shown only when logged in */}
+        {session && (
+          <DropdownMenuItem onSelect={handleMenuClick}>
+            <Link href="/profile">Profile</Link>
+          </DropdownMenuItem>
+        )}
+
+        {/* ✅ Log out shown only when logged in */}
+        {session && (
+          <DropdownMenuItem variant="danger" onSelect={handleLogout}>
+            Log out
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
-
-
 
 export {
   CustomDropdown,

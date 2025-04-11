@@ -1,6 +1,6 @@
-import dynamic from "next/dynamic";
+"use client"; // ← ✅ Make this a client component
 
-const SignInForm = dynamic(() => import("@/components/SignInForm"), { ssr: false });
+import SignInForm from "@/components/SignInForm";
 
 export default function SignInPage() {
   return <SignInForm />;

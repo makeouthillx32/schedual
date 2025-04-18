@@ -1,26 +1,30 @@
-// app/auth/login/route.ts
 import { NextResponse } from "next/server";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { cookies, headers } from "next/headers";
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
+  const formData = await req.formData();
+  const email = formData.get("email")?.toString();
+  const password = formData.get("password")?.toString();
   const supabase = createServerActionClient({ cookies });
-
-  // Parse query params
-  const url = new URL(req.url);
-  const email = url.searchParams.get("email") || "";
-  const password = url.searchParams.get("password") || "";
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    const origin = headers().get("origin") || process.env.NEXT_PUBLIC_SITE_URL!;
-    return NextResponse.redirect(new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, origin));
+    const h = await headers(); // ✅ await the headers
+    const origin = h.get("origin") || process.env.NEXT_PUBLIC_SITE_URL!;
+    return NextResponse.redirect(
+      new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, origin)
+    );
   }
 
   const store = await cookies();
-  const lastPage = store.getAll().find((c) => c.name === "lastPage")?.value || "/CMS";
+  const allCookies = store.getAll();
+  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
+  const lastPage = lastPageCookie?.value || "/CMS";
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
-  return NextResponse.redirect(new URL(lastPage, baseUrl));
+  const h = await headers();
+  const origin = h.get("origin") || process.env.NEXT_PUBLIC_SITE_URL!;
+
+  return NextResponse.redirect(new URL(`${lastPage}?refresh=true`, origin));
 }

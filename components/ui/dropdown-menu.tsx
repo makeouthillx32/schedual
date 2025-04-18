@@ -167,7 +167,7 @@ const CustomDropdown: React.FC = () => {
         )}
         {!session && (
           <DropdownMenuItem asChild>
-            <Link href="/sign-in" onClick={handleMenuClick} className="w-full">
+            <Link href="/sign-in" onClick={handleMenuClick} className="w-full text-blue-600 dark:text-blue-400 font-semibold">
               Sign in
             </Link>
           </DropdownMenuItem>

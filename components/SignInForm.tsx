@@ -29,10 +29,15 @@ export default function SignInForm() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
+        autoComplete="on"
         className="w-full max-w-sm bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md space-y-5"
       >
         <h1 className="text-2xl font-semibold text-center text-black dark:text-white">Sign in</h1>
         <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
           className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -40,8 +45,11 @@ export default function SignInForm() {
           required
         />
         <input
-          className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          id="password"
+          name="password"
           type="password"
+          autoComplete="current-password"
+          className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"

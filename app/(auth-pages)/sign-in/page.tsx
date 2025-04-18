@@ -10,8 +10,10 @@ const SignInForm = dynamic(() => import("@/components/SignInForm"), {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SignInForm />
-    </Suspense>
+    <div className="min-h-screen w-full flex items-center justify-center bg-white dark:bg-black transition-colors">
+      <Suspense fallback={<div>Loading...</div>}>
+        <SignInForm />
+      </Suspense>
+    </div>
   );
 }

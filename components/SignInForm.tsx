@@ -31,7 +31,7 @@ export default function SignInForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="h-screen flex items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
         autoComplete="on"
@@ -39,27 +39,37 @@ export default function SignInForm() {
       >
         <h1 className="text-2xl font-semibold text-center text-black dark:text-white">Sign in</h1>
 
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          ref={emailRef}
-          placeholder="Email"
-          className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <div>
+          <label htmlFor="email" className="block text-sm mb-1 text-black dark:text-white">
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            ref={emailRef}
+            placeholder="you@example.com"
+            className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
 
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          ref={passwordRef}
-          placeholder="Password"
-          className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        />
+        <div>
+          <label htmlFor="password" className="block text-sm mb-1 text-black dark:text-white">
+            Password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            ref={passwordRef}
+            placeholder="••••••••"
+            className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
 
         <div className="text-right">
           <Link
@@ -80,7 +90,7 @@ export default function SignInForm() {
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
         <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-          Don't have an account?{" "}
+          Don’t have an account?{" "}
           <Link href="/sign-up" className="text-blue-600 hover:underline dark:text-blue-400">
             Sign up
           </Link>

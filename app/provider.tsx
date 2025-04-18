@@ -47,7 +47,6 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   const { supabaseClient, session } = useSessionContext();
   const user = session?.user || null;
 
-  // 1) signIn
   async function signIn(email: string, password: string) {
     const { error } = await supabaseClient.auth.signInWithPassword({
       email,
@@ -58,7 +57,6 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // 2) signOut
   async function signOut() {
     const { error } = await supabaseClient.auth.signOut();
     if (error) {
@@ -79,17 +77,20 @@ export const Providers: React.FC<{
   children: React.ReactNode;
   session?: Session | null;
 }> = ({ children, session }) => {
-  // -- THEME LOGIC --
   const [themeType, setThemeType] = useState<"light" | "dark">("light");
 
   useEffect(() => {
     const savedTheme = getCookie("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
+    const html = document.documentElement;
+    html.classList.remove("light", "dark");
+    html.classList.add(savedTheme);
     setThemeType(savedTheme as "light" | "dark");
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", themeType);
+    const html = document.documentElement;
+    html.classList.remove("light", "dark");
+    html.classList.add(themeType);
     setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
   }, [themeType]);
 
@@ -97,7 +98,6 @@ export const Providers: React.FC<{
     setThemeType((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  // Create the supabase browser client for the SessionContextProvider
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!

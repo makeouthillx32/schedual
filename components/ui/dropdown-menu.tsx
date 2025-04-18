@@ -143,28 +143,35 @@ const CustomDropdown: React.FC = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuCurrentDateTime />
-        <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href="/">Home</Link>
+        <DropdownMenuItem asChild>
+          <Link href="/" onClick={handleMenuClick} className="w-full">
+            Home
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href="/CMS/schedule">Schedule</Link>
+        <DropdownMenuItem asChild>
+          <Link href="/CMS/schedule" onClick={handleMenuClick} className="w-full">
+            Schedule
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleMenuClick}>
-          <Link href={settingsLink}>Settings</Link>
+        <DropdownMenuItem asChild>
+          <Link href={settingsLink} onClick={handleMenuClick} className="w-full">
+            Settings
+          </Link>
         </DropdownMenuItem>
-
         {session?.user?.id && (
-          <DropdownMenuItem onSelect={handleMenuClick}>
-            <Link href={`/profile/${session.user.id}`}>Profile</Link>
+          <DropdownMenuItem asChild>
+            <Link href={`/profile/${session.user.id}`} onClick={handleMenuClick} className="w-full">
+              Profile
+            </Link>
           </DropdownMenuItem>
         )}
-
         {!session && (
-          <DropdownMenuItem onSelect={handleMenuClick}>
-            <Link href="/sign-in">Sign in</Link>
+          <DropdownMenuItem asChild>
+            <Link href="/sign-in" onClick={handleMenuClick} className="w-full">
+              Sign in
+            </Link>
           </DropdownMenuItem>
         )}
-
         {session && (
           <DropdownMenuItem variant="danger" onSelect={handleLogout}>
             Log out

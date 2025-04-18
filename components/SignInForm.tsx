@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useRef, useState } from "react";
+import Link from "next/link";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -61,12 +62,12 @@ export default function SignInForm() {
         />
 
         <div className="text-right">
-          <a
+          <Link
             href="/forgot-password"
             className="text-sm text-blue-600 hover:underline dark:text-blue-400"
           >
             Forgot your password?
-          </a>
+          </Link>
         </div>
 
         <button
@@ -77,6 +78,13 @@ export default function SignInForm() {
         </button>
 
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+
+        <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+          Don't have an account?{" "}
+          <Link href="/sign-up" className="text-blue-600 hover:underline dark:text-blue-400">
+            Sign up
+          </Link>
+        </p>
       </form>
     </div>
   );

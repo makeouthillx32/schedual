@@ -59,7 +59,7 @@ export const signInAction = async (formData: FormData) => {
     lastPage = "/CMS";
   }
 
-  return redirect(lastPage);
+  return redirect(`${lastPage}?refresh=true`);
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {

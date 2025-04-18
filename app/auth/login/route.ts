@@ -1,38 +1,26 @@
 // app/auth/login/route.ts
-
 import { NextResponse } from "next/server";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { cookies, headers } from "next/headers";
 
-export async function POST(request: Request) {
-  const formData = await request.formData();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
+export async function GET(req: Request) {
   const supabase = createServerActionClient({ cookies });
+
+  // Parse query params
+  const url = new URL(req.url);
+  const email = url.searchParams.get("email") || "";
+  const password = url.searchParams.get("password") || "";
+
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    const encoded = encodeURIComponent(error.message);
-    const headerStore = await headers();
-    return NextResponse.redirect(new URL(`/sign-in?error=${encoded}`, headerStore.get("origin")!));
+    const origin = headers().get("origin") || process.env.NEXT_PUBLIC_SITE_URL!;
+    return NextResponse.redirect(new URL(`/sign-in?error=${encodeURIComponent(error.message)}`, origin));
   }
 
-  // Read last page from cookie (fallback to /CMS)
   const store = await cookies();
-  const allCookies = store.getAll();
-  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
-  let lastPage = lastPageCookie?.value || "/CMS";
+  const lastPage = store.getAll().find((c) => c.name === "lastPage")?.value || "/CMS";
 
-  // Avoid redirecting back to auth pages
-  if (["/sign-in", "/sign-up", "/forgot-password"].includes(lastPage)) {
-    lastPage = "/CMS";
-  }
-
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") || "https://yourdomain.com"; // fallback in case origin is null
-  const redirectUrl = new URL(lastPage, origin);
-  redirectUrl.searchParams.set("refresh", "true");
-
-  return NextResponse.redirect(redirectUrl);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  return NextResponse.redirect(new URL(lastPage, baseUrl));
 }

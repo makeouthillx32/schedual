@@ -1,20 +1,17 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
-import SignInForm from "@/components/SignInForm";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+
+// Lazy load SignInForm since it uses useSearchParams()
+const SignInForm = dynamic(() => import("@/components/SignInForm"), {
+  ssr: false,
+});
 
 export default function SignInPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (searchParams.get("refresh") === "true") {
-      router.refresh();
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [searchParams, router]);
-
-  return <SignInForm />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInForm />
+    </Suspense>
+  );
 }

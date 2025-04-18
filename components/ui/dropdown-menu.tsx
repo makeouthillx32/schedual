@@ -181,7 +181,14 @@ const CustomDropdown: React.FC = () => {
         {/* Show Sign in if user is NOT logged in */}
         {!session && (
           <DropdownMenuItem onSelect={handleMenuClick}>
-            <Link href="/sign-in">Sign in</Link>
+            <Link href="/auth/login">Sign in</Link> {/* ✅ updated */}
+          </DropdownMenuItem>
+        )}
+
+        {/* Show Log out if user is logged in */}
+        {session && (
+          <DropdownMenuItem variant="danger" onSelect={handleLogout}>
+            Log out
           </DropdownMenuItem>
         )}
 

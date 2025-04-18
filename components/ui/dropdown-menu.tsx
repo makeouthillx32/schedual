@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from "react";
@@ -25,11 +23,11 @@ const DropdownMenuContent = React.forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in ${
+          `z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in ${
             themeType === "dark"
               ? "bg-gray-900 text-white border-gray-700"
               : "bg-white text-black border-gray-300"
-          },
+          }`,
           className
         )}
         {...props}
@@ -47,7 +45,7 @@ const DropdownMenuItem = React.forwardRef<
 >(({ className, variant = "default", ...props }, ref) => {
   const { themeType } = useTheme();
 
-  const baseStyle = flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none;
+  const baseStyle = `flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none`;
   const colorStyle =
     variant === "danger"
       ? themeType === "dark"
@@ -92,43 +90,37 @@ const CustomDropdown: React.FC = () => {
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
 
-  // Dynamic session so sign-in and log-out appear instantly
   const supabase = useSupabaseClient();
   const [session, setSession] = React.useState<Session | null>(null);
 
   React.useEffect(() => {
-    // Function to fetch current session
     const fetchSession = async () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
     };
 
-    // Initial fetch
     fetchSession();
 
-    // Check if we have ?refresh=true in URL
     const params = new URLSearchParams(window.location.search);
     if (params.get("refresh") === "true") {
       fetchSession().then(() => {
         params.delete("refresh");
-        const newUrl = ${window.location.pathname}?${params.toString()};
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.replaceState({}, "", newUrl);
       });
     }
 
-    // Listen for auth changes (login, logout, token refresh)
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchSession();
     });
 
     return () => {
-      // Cleanup the subscription on unmount
       listener?.subscription.unsubscribe();
     };
   }, [supabase]);
 
   const activePage = pathname.split("/")[1] || "home";
-  const settingsLink = /settings/${activePage};
+  const settingsLink = `/settings/${activePage}`;
 
   const handleMenuClick = () => setOpen(false);
   const handleLogout = () => {
@@ -143,21 +135,9 @@ const CustomDropdown: React.FC = () => {
           aria-label="Toggle menu"
         >
           <div className="space-y-1.5">
-            <div
-              className={w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }}
-            />
-            <div
-              className={w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }}
-            />
-            <div
-              className={w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }}
-            />
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
           </div>
         </button>
       </DropdownMenuTrigger>
@@ -173,21 +153,18 @@ const CustomDropdown: React.FC = () => {
           <Link href={settingsLink}>Settings</Link>
         </DropdownMenuItem>
 
-        {/* Show Profile if user is logged in */}
         {session?.user?.id && (
           <DropdownMenuItem onSelect={handleMenuClick}>
-            <Link href={/profile/${session.user.id}}>Profile</Link>
+            <Link href={`/profile/${session.user.id}`}>Profile</Link>
           </DropdownMenuItem>
         )}
 
-        {/* Show Sign in if user is NOT logged in */}
         {!session && (
           <DropdownMenuItem onSelect={handleMenuClick}>
             <Link href="/sign-in">Sign in</Link>
           </DropdownMenuItem>
         )}
 
-        {/* Show Log out if user is logged in */}
         {session && (
           <DropdownMenuItem variant="danger" onSelect={handleLogout}>
             Log out

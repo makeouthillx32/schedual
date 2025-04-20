@@ -7,6 +7,15 @@
 @import "@/style/switch-to-dark-mode.css"; /* Styles for the dark mode toggle */
 @import "@/style/TSC.css";
 
+
+html:not(.dark) {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(0, 0%, 3.9%);
+}
+html.dark {
+  --background: hsl(0, 0%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+}
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(0, 0%, 3.9%);

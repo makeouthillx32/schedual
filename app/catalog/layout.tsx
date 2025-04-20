@@ -1,19 +1,6 @@
-"use client";
+// app/catalog/layout.tsx
+import type { ReactNode } from "react";
 
-import { useTheme } from "@/app/provider";
-import { ReactNode } from "react";
-import "@/app/globals.css";
-
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export default function Layout({ children }: LayoutProps) {
-  const { themeType } = useTheme();
-
-  return (
-    <div className="bg-background text-foreground">
-      {children}
-    </div>
-  );
+export default function CatalogLayout({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

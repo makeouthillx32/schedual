@@ -1,7 +1,23 @@
-import Nav from "@/components/nav";
-import Footer from "@/components/footer";
+/* app/settings/layout.tsx
+   ─────────────────────── */
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+import type { ReactNode } from "react";
+import { cookies } from "next/headers";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+
+import { Providers } from "@/app/provider";
+
+export default async function SettingsLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Fetch the current session on the server
+  const supabase = createServerComponentClient({ cookies });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Only wrap children – Nav / Footer still come from the root layout
+  return <Providers session={session}>{children}</Providers>;
 }
-

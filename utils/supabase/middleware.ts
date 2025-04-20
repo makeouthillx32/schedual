@@ -1,62 +1,52 @@
-import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export const updateSession = async (request: NextRequest) => {
-  // This `try/catch` block is only here for the interactive tutorial.
-  // Feel free to remove once you have Supabase connected.
-  try {
-    // Create an unmodified response
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+export async function middleware(req: NextRequest) {
+  /* ---------- 1. make a mutable response wrapper ---------- */
+  let res = NextResponse.next({ request: { headers: req.headers } });
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value),
-            );
-            response = NextResponse.next({
-              request,
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options),
-            );
-          },
+  /* ---------- 2. Supabase client that can read / set cookies ---------- */
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookies) => {
+          // update request + response cookies so SSR stays in sync
+          cookies.forEach(({ name, value }) => req.cookies.set(name, value));
+          res = NextResponse.next({ request: { headers: req.headers } });
+          cookies.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options),
+          );
         },
       },
-    );
+    },
+  );
 
-    // This will refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const user = await supabase.auth.getUser();
+  /* ---------- 3. fetch session ---------- */
+  const {
+    data: { user },
+  } = await supabase.auth.getUser(); // { user: null } if not signed‑in
 
-    // protected routes
-    if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
-    }
+  /* ---------- 4. paths that MUST be signed‑in ---------- */
+  const protectedPrefixes = ["/protected", "/settings"]; // <‑‑ added “/settings”
+  const isProtected = protectedPrefixes.some(
+    (prefix) =>
+      req.nextUrl.pathname === prefix ||
+      req.nextUrl.pathname.startsWith(`${prefix}/`),
+  );
 
-    if (request.nextUrl.pathname === "/" && !user.error) {
-      return NextResponse.redirect(new URL("/protected", request.url));
-    }
-
-    return response;
-  } catch (e) {
-    // If you are here, a Supabase client could not be created!
-    // This is likely because you have not set up environment variables.
-    // Check out http://localhost:3000 for Next Steps.
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+  if (isProtected && !user) {
+    // send unauthenticated users to sign‑in
+    return NextResponse.redirect(new URL("/sign-in", req.url));
   }
+
+  return res;
+}
+
+/* ---------- 5. run for every route except static assets ---------- */
+export const config = {
+  matcher:
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
 };

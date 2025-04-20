@@ -2,61 +2,107 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { toast } from "react-hot-toast";
 
+/** ─────────────────────────────────────────
+ *  Supabase set‑up
+ *  ───────────────────────────────────────── */
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
+/** columns that represent days (lower‑case DB) */
+const days = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+] as const;
+
+type DayKey = (typeof days)[number];
+
+type ScheduleRow = {
+  id: number;
+  week: number;
+  business_id: number;
+} & Record<DayKey, boolean>;
 
 export default function CMSSettings() {
-  const [businesses, setBusinesses] = useState<any[]>([]);
+  /* ─────────── state ─────────── */
+  const [businesses, setBusinesses] = useState<
+    { id: number; business_name: string }[]
+  >([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [schedule, setSchedule] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<ScheduleRow[]>([]);
   const [loading, setLoading] = useState(false);
 
+  /* ─────────── fetch businesses on mount ─────────── */
   useEffect(() => {
-    const fetchBusinesses = async () => {
-      const { data, error } = await supabase.from("Businesses").select("id, business_name");
+    (async () => {
+      const { data, error } = await supabase
+        .from("Businesses")
+        .select("id, business_name")
+        .order("business_name");
+      if (error) toast.error(error.message);
       if (data) setBusinesses(data);
-    };
-    fetchBusinesses();
+    })();
   }, []);
 
+  /* ─────────── load schedule for selected business ─────────── */
   const fetchSchedule = async (businessId: number) => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("Schedule")
-      .select("id, week, monday, tuesday, wednesday, thursday, friday")
+      .select(
+        "id, week, business_id, monday, tuesday, wednesday, thursday, friday"
+      )
       .eq("business_id", businessId)
       .order("week");
-    setSchedule(data || []);
+
+    if (error) toast.error(error.message);
+    setSchedule((data as ScheduleRow[]) || []);
     setLoading(false);
   };
 
-  const toggleDay = (weekIndex: number, day: string) => {
-    setSchedule((prev) => {
-      const newSchedule = [...prev];
-      newSchedule[weekIndex][day] = !newSchedule[weekIndex][day];
-      return newSchedule;
-    });
+  /* ─────────── toggle helper ───────────
+   *  Each week can have MULTIPLE cleaning days.
+   *  Toggling a checkbox simply flips its boolean.
+   *  ───────────────────────────────────────── */
+  const toggleDay = (weekIndex: number, day: DayKey) => {
+    setSchedule((prev) =>
+      prev.map((row, i) =>
+        i === weekIndex ? { ...row, [day]: !row[day] } : row
+      )
+    );
   };
 
+  /* ─────────── persist edits ─────────── */
   const saveChanges = async () => {
     setLoading(true);
-    for (const entry of schedule) {
-      const { id, ...fields } = entry;
-      await supabase.from("Schedule").update(fields).eq("id", id);
-    }
+
+    const updates = schedule.map(async (row) => {
+      const { id, ...fields } = row;
+      const updatePayload: Partial<ScheduleRow> = {};
+      days.forEach((d) => (updatePayload[d] = fields[d]));
+      return supabase.from("Schedule").update(updatePayload).eq("id", id);
+    });
+
+    const results = await Promise.all(updates);
+    const error = results.find((r) => r.error)?.error;
+    if (error) toast.error(error.message);
+    else toast.success("Schedule updated!");
+
     setLoading(false);
-    alert("Schedule updated!");
   };
 
+  /* ─────────── UI ─────────── */
   return (
     <div className="p-4">
       <h2 className="text-xl font-bold mb-4">CMS Cleaning Schedule Settings</h2>
 
+      {/* selector */}
       <select
         className="mb-4 border p-2"
         onChange={(e) => {
@@ -78,31 +124,44 @@ export default function CMSSettings() {
 
       {loading && <p>Loading...</p>}
 
-      {schedule.map((weekData, index) => (
-        <div key={weekData.id} className="border rounded p-3 mb-4">
-          <h3 className="font-semibold mb-2">Week {weekData.week}</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {days.map((day) => (
-              <label key={day} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={weekData[day]}
-                  onChange={() => toggleDay(index, day)}
-                />
-                <span className="capitalize">{day}</span>
-              </label>
-            ))}
+      <div className="flex flex-col gap-4">
+        {schedule.map((weekData, index) => (
+          <div
+            key={weekData.id}
+            className="border rounded p-4 shadow-sm bg-white dark:bg-gray-800"
+          >
+            <h3 className="font-semibold mb-2 text-lg text-blue-600">
+              Week {weekData.week}
+            </h3>
+            <div className="flex flex-wrap gap-4">
+              {days.map((day) => (
+                <label
+                  key={day}
+                  className="flex items-center gap-2 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={weekData[day]}
+                    onChange={() => toggleDay(index, day)}
+                    className="accent-blue-600 w-4 h-4"
+                  />
+                  <span className="capitalize text-sm text-gray-700 dark:text-gray-200">
+                    {day}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
-      {selectedId && (
+      {selectedId && schedule.length > 0 && (
         <button
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="mt-6 px-6 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 disabled:opacity-50"
           onClick={saveChanges}
           disabled={loading}
         >
-          {loading ? "Saving..." : "Save Changes"}
+          {loading ? "Saving…" : "Save Changes"}
         </button>
       )}
     </div>

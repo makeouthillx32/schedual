@@ -35,7 +35,8 @@
   --chart-5: hsl(27, 87%, 67%);
 }
 
-html[data-theme="dark"] {
+html.dark {
+
   --background: hsl(0, 0%, 3.9%);
   --foreground: hsl(0, 0%, 98%);
   --card: hsl(0, 0%, 3.9%);

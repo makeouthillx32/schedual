@@ -6,7 +6,7 @@ import Footer from "@/components/footer";
 import "./globals.css";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { setCookie, getCookie } from "@/lib/cookieUtils";
+import { setCookie } from "@/lib/cookieUtils";
 
 export default function RootLayout({
   children,
@@ -15,17 +15,14 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
 
-  // Exclude Nav and Footer for /Tools pages
-  const excludeGlobalLayout = pathname?.startsWith("/Tools");
+  // Hide layout on homepage and /Tools
+  const excludeGlobalLayout = pathname === "/" || pathname?.startsWith("/Tools");
 
-  // Save last visited page in a cookie
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCookie("lastPage", pathname);
     }
   }, [pathname]);
-
-  // Removed the forced redirect code — it can block session recognition
 
   return (
     <html lang="en">

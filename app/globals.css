@@ -117,3 +117,25 @@ select:focus {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px var(--ring);
 }
+
+/* ========== Homepage Theme Overrides ========== */
+.home-page {
+  --home-primary: #004f9f;
+  --home-light: #d9e9ff;
+  --home-dark: #003470;
+  --home-background: #f8f9fa;
+  --home-text: #1a1a1a;
+
+  background-color: var(--home-background);
+  color: var(--home-text);
+}
+
+.home-page a {
+  color: var(--home-primary);
+}
+
+.home-page h1,
+.home-page h2,
+.home-page h3 {
+  color: var(--home-dark);
+}

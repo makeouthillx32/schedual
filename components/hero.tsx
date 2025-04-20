@@ -60,6 +60,13 @@ const Hero = () => {
   const loadSchedule = async () => {
     try {
       const data = await fetchSchedule(week, day);
+
+      if (!data.schedule || data.schedule.length === 0) {
+        setError("No businesses to clean today. Have a good day off!");
+        setSchedule([]);
+        return;
+      }
+
       const availableMembers = members.filter(
         (member) => member[day as keyof typeof member]
       );
@@ -74,10 +81,10 @@ const Hero = () => {
       }));
 
       setSchedule(updatedSchedule);
+      setError(null);
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
-      setError(errorMessage);
+      setError("No businesses to clean today. Have a good day off!");
+      setSchedule([]);
     }
   };
 
@@ -97,20 +104,31 @@ const Hero = () => {
         </h2>
         <RandomizerButton onClick={randomizeSchedule} />
       </div>
-      {error && <p className="text-red-500">Error: {error}</p>}
+
       <WeatherWidget />
-      <ScheduleList
-        schedule={schedule.map((entry) => ({
-          ...entry,
-          onClick: () =>
-            setToastInfo({
-              business_name: entry.business_name,
-              before_open: entry.before_open,
-              address: entry.address,
-            }),
-        }))}
-      />
-      {toastInfo && <Toast {...toastInfo} onClose={() => setToastInfo(null)} />}
+
+      {error ? (
+        <p className="text-green-500 text-center text-lg font-semibold mt-4">
+          {error}
+        </p>
+      ) : (
+        <>
+          <ScheduleList
+            schedule={schedule.map((entry) => ({
+              ...entry,
+              onClick: () =>
+                setToastInfo({
+                  business_name: entry.business_name,
+                  before_open: entry.before_open,
+                  address: entry.address,
+                }),
+            }))}
+          />
+          {toastInfo && (
+            <Toast {...toastInfo} onClose={() => setToastInfo(null)} />
+          )}
+        </>
+      )}
     </div>
   );
 };

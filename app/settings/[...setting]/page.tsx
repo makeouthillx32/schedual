@@ -4,13 +4,17 @@ import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
 
-type DynamicComponent = FC<{}>;
-const settingsMap: Record<string, DynamicComponent> = {
-  catalog:  dynamic(() => import("@/components/settings/catalog-settings")),
-  profile:  dynamic(() => import("@/components/settings/profile-settings")),
-  CMS:      dynamic(() => import("@/components/settings/cms-settings")),
-  "CMS/schedule": dynamic(() => import("@/components/settings/cms-settings")),
+type DynComp = FC<{}>;
+
+const settingsMap: Record<string, DynComp> = {
+  catalog: dynamic(() => import("@/components/settings/catalog-settings")) as DynComp,
+  profile: dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
+  CMS: dynamic(() => import("@/components/settings/cms-settings")) as DynComp,
+  "CMS/schedule": dynamic(
+    () => import("@/components/settings/cms-settings")
+  ) as DynComp,
 };
+
 
 export default async function SettingsPage(
   /* 1️⃣  params is now a Promise */

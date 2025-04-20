@@ -2,10 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
-  /* ---------- 1. make a mutable response wrapper ---------- */
+  /* 1. create a mutable response wrapper */
   let res = NextResponse.next({ request: { headers: req.headers } });
 
-  /* ---------- 2. Supabase client that can read / set cookies ---------- */
+  /* 2. supabase client able to read / write cookies */
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,7 +13,7 @@ export async function middleware(req: NextRequest) {
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll: (cookies) => {
-          // update request + response cookies so SSR stays in sync
+          // keep request + response cookies in‑sync
           cookies.forEach(({ name, value }) => req.cookies.set(name, value));
           res = NextResponse.next({ request: { headers: req.headers } });
           cookies.forEach(({ name, value, options }) =>
@@ -24,28 +24,32 @@ export async function middleware(req: NextRequest) {
     },
   );
 
-  /* ---------- 3. fetch session ---------- */
+  /* 3. fetch current session (null if signed‑out) */
   const {
-    data: { user },
-  } = await supabase.auth.getUser(); // { user: null } if not signed‑in
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  /* ---------- 4. paths that MUST be signed‑in ---------- */
-  const protectedPrefixes = ["/protected", "/settings"]; // <‑‑ added “/settings”
+  /* 4. protect these route prefixes */
+  const protectedPrefixes = ["/protected", "/settings"];
   const isProtected = protectedPrefixes.some(
     (prefix) =>
       req.nextUrl.pathname === prefix ||
       req.nextUrl.pathname.startsWith(`${prefix}/`),
   );
 
-  if (isProtected && !user) {
-    // send unauthenticated users to sign‑in
-    return NextResponse.redirect(new URL("/sign-in", req.url));
+  if (isProtected && !session) {
+    // remember where user wanted to go
+    const target =
+      req.nextUrl.pathname + (req.nextUrl.search ? req.nextUrl.search : "");
+    return NextResponse.redirect(
+      new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url),
+    );
   }
 
   return res;
 }
 
-/* ---------- 5. run for every route except static assets ---------- */
+/* 5. run for every route except static assets */
 export const config = {
   matcher:
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

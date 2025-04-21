@@ -6,11 +6,11 @@ import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/ui/dropdown-menu";
 
 interface NavProps {
-  pageTitle?: string; // Optional pageTitle prop
+  pageTitle?: string;
 }
 
 const Nav: React.FC<NavProps> = ({ pageTitle }) => {
-  const { themeType, toggleTheme } = useTheme(); // Access theme context
+  const { themeType } = useTheme(); // toggleTheme is no longer needed
 
   return (
     <nav
@@ -24,7 +24,7 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
       </h1>
       <div className="flex items-center gap-4">
         {/* Theme toggle */}
-        <SwitchtoDarkMode toggleTheme={toggleTheme} />
+        <SwitchtoDarkMode />
         {/* Dropdown menu */}
         <div className="relative z-10">
           <CustomDropdown />

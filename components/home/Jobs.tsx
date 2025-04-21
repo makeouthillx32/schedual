@@ -6,7 +6,7 @@ export default function ActionDayPage() {
   return (
     <div className="space-y-8">
       <p className="text-center">
-        Action Day Gala information will be displayed here.
+        Autism Day Camp information will be displayed here.
       </p>
     </div>
   );

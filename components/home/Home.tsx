@@ -34,7 +34,7 @@ export default function Home() {
             <a href="#" onClick={navigateTo("about")} className="hover:underline">About Us</a>
             <a href="#" onClick={navigateTo("board")} className="hover:underline">Board of Directors</a>
             <a href="#" onClick={navigateTo("title9")} className="hover:underline">Title 9 Information</a>
-            <a href="#" onClick={navigateTo("action")} className="hover:underline">Action Day Gala</a>
+            <a href="#" onClick={navigateTo("action")} className="hover:underline">Autism Day Camp</a>
             <a href="#" onClick={navigateTo("jobs")} className="hover:underline">Jobs</a>
           </nav>
           <button
@@ -50,7 +50,7 @@ export default function Home() {
               <a href="#" onClick={navigateTo("about")} className="px-4 py-2 hover:bg-gray-100">About Us</a>
               <a href="#" onClick={navigateTo("board")} className="px-4 py-2 hover:bg-gray-100">Board of Directors</a>
               <a href="#" onClick={navigateTo("title9")} className="px-4 py-2 hover:bg-gray-100">Title 9 Information</a>
-              <a href="#" onClick={navigateTo("action")} className="px-4 py-2 hover:bg-gray-100">Action Day Gala</a>
+              <a href="#" onClick={navigateTo("action")} className="px-4 py-2 hover:bg-gray-100">Autism Day Camp</a>
               <a href="#" onClick={navigateTo("jobs")} className="px-4 py-2 hover:bg-gray-100">Jobs</a>
             </div>
           </div>
@@ -67,7 +67,7 @@ export default function Home() {
               : currentPage === "title9"
               ? "Title 9 Information"
               : currentPage === "action"
-              ? "Action Day Gala"
+              ? "Autism Day Camp"
               : currentPage === "jobs"
               ? "Jobs"
               : ""}

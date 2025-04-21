@@ -16,13 +16,19 @@ export default function RootLayout({
   const pathname = usePathname();
 
   // Hide layout on homepage and /Tools
-  const excludeGlobalLayout = pathname === "/" || pathname?.startsWith("/Tools");
+  const excludeGlobalLayout =
+    pathname === "/" || pathname?.startsWith("/Tools");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const excluded = ["/sign-in", "/sign-up", "/auth/callback"];
-      if (!excluded.includes(pathname)) {
-        setCookie("lastPage", pathname);
+      /* ▸ don’t record auth‑related pages as “lastPage” */
+      const isAuthPage =
+        pathname === "/sign-in" ||
+        pathname === "/sign-up" ||
+        pathname.startsWith("/auth");
+
+      if (!isAuthPage) {
+        setCookie("lastPage", pathname, { path: "/" });
       }
     }
   }, [pathname]);

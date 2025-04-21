@@ -1,36 +1,34 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
-export default function OAuthCallbackPage() {
+export default function OAuthCallback() {
   const supabase = useSupabaseClient();
-  const router   = useRouter();
 
   useEffect(() => {
     (async () => {
-      // 1 · store the session tokens in localStorage
-      await supabase.auth.getSession();
+      /* 1 · Store the session (implicit hash flow) */
+      const { error } = await supabase.auth.getSession();
+      if (error) console.error("OAuth session error:", error.message);
 
-      // 2 · read lastPage = pathname we saved in a cookie
-      const lastPageCookie = document.cookie
+      /* 2 · Retrieve lastPage cookie; fall back to "/" */
+      const raw = document.cookie
         .split("; ")
         .find(c => c.startsWith("lastPage="));
 
-      // decode URI component because cookies are URL‑encoded
-      const lastPage = lastPageCookie
-        ? decodeURIComponent(lastPageCookie.split("=")[1])
-        : "/";                     // fallback
+      const lastPage = raw ? decodeURIComponent(raw.split("=")[1]) : "/";
+      const target =
+        !lastPage || lastPage.startsWith("/auth/callback") ? "/" : lastPage;
 
-      // 3 · navigate there and remove the hash / query
-      router.replace(lastPage);
+      /* 3 · Hard‑redirect so we leave the spinner page */
+      window.location.href = target;
     })();
-  }, [router, supabase]);
+  }, [supabase]);
 
   return (
     <p className="p-10 text-center">
-      Completing sign‑in&nbsp;…
+      Completing&nbsp;sign‑in…
     </p>
   );
 }

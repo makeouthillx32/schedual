@@ -14,9 +14,8 @@ export default function useLoginSession() {
       setSession(data.session);
     };
 
-    fetchSession();
+    fetchSession(); // on mount
 
-    // Force refresh on ?refresh=true
     const params = new URLSearchParams(window.location.search);
     if (params.get("refresh") === "true") {
       fetchSession().then(() => {

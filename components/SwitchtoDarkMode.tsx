@@ -2,16 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { getCookie } from "@/lib/cookieUtils";
-import { useTheme } from "@/app/provider"; // ✅ your custom context
 
-const SwitchtoDarkMode: React.FC = () => {
-  const { toggleTheme, themeType } = useTheme(); // ✅ no props needed
+interface SwitchtoDarkModeProps {
+  toggleTheme: () => void;
+}
+
+const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ toggleTheme }) => {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const theme = getCookie("theme");
     setIsDark(theme === "dark");
-  }, [themeType]);
+  }, []);
 
   const handleClick = () => {
     setIsDark((prev) => !prev);

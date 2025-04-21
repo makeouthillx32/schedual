@@ -1,34 +1,33 @@
+Fix my signinwithgoodge 
+
+
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
-export default function OAuthCallbackPage() {
-  const router = useRouter();
+export default function SignInWithGoogle() {
   const supabase = useSupabaseClient();
 
-  useEffect(() => {
-    const run = async () => {
-      // Just call getSession – Supabase automatically extracts tokens from hash
-      const { data, error } = await supabase.auth.getSession();
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}/auth/callback?refresh=true`, // ✅ force session re-check
+      },
+    });
 
-      if (error) {
-        console.error("OAuth session error:", error.message);
-      } else {
-        console.log("Session retrieved:", data.session);
-      }
+    if (error) {
+      console.error("Google sign-in error:", error.message);
+    }
+  };
 
-      const lastPage = document.cookie
-        .split("; ")
-        .find((c) => c.startsWith("lastPage="))
-        ?.split("=")[1] || "/";
-
-      router.replace(lastPage);
-    };
-
-    run();
-  }, [supabase, router]);
-
-  return <p className="p-10 text-center">Completing sign-in...</p>;
+  return (
+    <button
+      type="button"
+      className="login-with-google-btn"
+      onClick={handleGoogleSignIn}
+    >
+      Sign in with Google
+    </button>
+  );
 }

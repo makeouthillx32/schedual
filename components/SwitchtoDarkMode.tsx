@@ -2,12 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { getCookie } from "@/lib/cookieUtils";
+import { useTheme } from "@/app/provider"; // ✅ Get toggleTheme from context
 
-interface SwitchtoDarkModeProps {
-  toggleTheme: () => void;
-}
-
-const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ toggleTheme }) => {
+const SwitchtoDarkMode: React.FC = () => {
+  const { toggleTheme } = useTheme(); // ✅ Use context directly
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -38,17 +36,25 @@ const SwitchtoDarkMode: React.FC<SwitchtoDarkModeProps> = ({ toggleTheme }) => {
         strokeLinejoin="round"
       >
         {/* Moon (shows in light mode) */}
-        <path className={`moon-icon ${!isDark ? "visible" : "hidden"}`} d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        <path
+          className={`moon-icon ${!isDark ? "visible" : "hidden"}`}
+          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+        />
         {/* Sun (shows in dark mode) */}
-        <circle className={`sun-icon ${isDark ? "visible" : "hidden"}`} cx="12" cy="12" r="5"></circle>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="12" y1="1" x2="12" y2="3"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="12" y1="21" x2="12" y2="23"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="1" y1="12" x2="3" y2="12"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="21" y1="12" x2="23" y2="12"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        <circle
+          className={`sun-icon ${isDark ? "visible" : "hidden"}`}
+          cx="12"
+          cy="12"
+          r="5"
+        />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="12" y1="1" x2="12" y2="3" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="12" y1="21" x2="12" y2="23" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="1" y1="12" x2="3" y2="12" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="21" y1="12" x2="23" y2="12" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+        <line className={`sun-icon ${isDark ? "visible" : "hidden"}`} x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
       </svg>
     </button>
   );

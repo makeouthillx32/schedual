@@ -9,8 +9,7 @@ export default function SignInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback/oauth`, // ✅ client route to handle Google
-        flowType: "pkce", // ✅ required for full OAuth support
+        redirectTo: `${location.origin}/auth/callback/oauth`, // new client callback route
       },
     });
 

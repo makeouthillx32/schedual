@@ -1,7 +1,11 @@
+// app/auth/callback/route.ts
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  return NextResponse.redirect(
-    new URL("/sign-in", process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app")
-  );
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const next = searchParams.get("next");
+
+  const redirectTo = next ? decodeURIComponent(next) : "/CMS";
+
+  return NextResponse.redirect(redirectTo);
 }

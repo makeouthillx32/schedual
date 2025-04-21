@@ -95,7 +95,7 @@ The CMS Schedule App is a scheduling and client management platform designed to 
 4. **Run the Development Server**
    ```bash
    npm run dev
-   \`\`\`
+   
    Visit [http://localhost:3000](http://localhost:3000) to view the app.
 
 5. **Build for Production**

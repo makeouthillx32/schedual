@@ -3,17 +3,15 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = cookies(); // ✅ this is not a Promise
   const supabase = createServerActionClient({ cookies: () => cookieStore });
 
-  // This processes the OAuth response and sets the session
+  // ✅ Sets the Supabase session cookie from OAuth
   await supabase.auth.getSession();
 
-  // Use the same cookie store to get lastPage
-  const allCookies = cookieStore.getAll();
-  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
-  const lastPage = lastPageCookie?.value!;
+  // ✅ Safely read lastPage from the same cookie store
+  const lastPage = cookieStore.get("lastPage")?.value;
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
-  return NextResponse.redirect(new URL(lastPage, baseUrl));
+  return NextResponse.redirect(new URL(lastPage!, baseUrl));
 }

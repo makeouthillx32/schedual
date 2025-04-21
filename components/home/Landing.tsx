@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
         <div className="w-48 h-48 flex-shrink-0">
           <Image
-            src="/images/home/dartboard.jpg"
+            src="/images/home/dartboard.png"
             alt="DART Target Logo"
             width={192}
             height={192}
@@ -16,7 +16,7 @@ export default function HomePage() {
           />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-2">
+          <h1 className="text-2xl md:text-3xl font-semibold text-black mb-2">
             Welcome to Desert Area Resources and Training
           </h1>
           <h2 className="text-lg md:text-xl font-medium mb-4">Our Mission is to:</h2>
@@ -61,9 +61,9 @@ export default function HomePage() {
 
       {/* Sponsor Logos */}
       <div className="flex flex-wrap justify-center gap-8 mb-12">
-        <Image src="/images/home/sponsor1.jpg" alt="Sponsor 1" width={150} height={80} className="object-contain" />
-        <Image src="/images/home/sponsor2.jpg" alt="Sponsor 2" width={150} height={80} className="object-contain" />
-        <Image src="/images/home/sponsor3.jpg" alt="Sponsor 3" width={150} height={80} className="object-contain" />
+        <Image src="/images/home/sponsor1.png" alt="Sponsor 1" width={150} height={80} className="object-contain" />
+        <Image src="/images/home/sponsor2.png" alt="Sponsor 2" width={150} height={80} className="object-contain" />
+        <Image src="/images/home/sponsor3.png" alt="Sponsor 3" width={150} height={80} className="object-contain" />
       </div>
 
       {/* History Section */}

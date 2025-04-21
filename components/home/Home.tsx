@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
@@ -9,10 +9,29 @@ import Title9Page from "@/components/home/Title9Information";
 import ActionDayPage from "@/components/home/ActionDayGala";
 import JobsPage from "@/components/home/Jobs";
 import HomePage from "@/components/home/Landing";
+import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
+import { getCookie } from "@/lib/cookieUtils";
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const readThemeFromCookie = () => {
+    const cookieTheme = getCookie("theme");
+    setTheme(cookieTheme === "dark" ? "dark" : "light");
+  };
+
+  useEffect(() => {
+    readThemeFromCookie();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      readThemeFromCookie();
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
 
   const navigateTo = (page: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -22,30 +41,39 @@ export default function Home() {
   };
 
   return (
-    <div className="home-page flex flex-col min-h-screen">
-      <header className="border-b border-gray-200 py-2 px-4 relative">
+    <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+      <header className="border-b border-gray-200 py-2 px-4 relative" style={{ backgroundColor: "var(--home-nav-bg)", color: "var(--home-nav-text)" }}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="font-bold text-lg">
             <a href="#" onClick={navigateTo("home")} className="flex items-center">
-              <img src="/images/home/dartlogo.svg" alt="DART Logo" width={80} height={80} className="h-12 w-auto" />
+              <img
+                src={theme === "dark" ? "/images/home/dartlogowhite.svg" : "/images/home/dartlogo.svg"}
+                alt="DART Logo"
+                width={80}
+                height={80}
+                className="h-12 w-auto"
+              />
             </a>
           </div>
-          <nav className="hidden md:flex space-x-6 text-sm">
-            <a href="#" onClick={navigateTo("about")} className="hover:underline">About Us</a>
-            <a href="#" onClick={navigateTo("board")} className="hover:underline">Board of Directors</a>
-            <a href="#" onClick={navigateTo("title9")} className="hover:underline">Title 9 Information</a>
-            <a href="#" onClick={navigateTo("action")} className="hover:underline">Autism Day Camp</a>
-            <a href="#" onClick={navigateTo("jobs")} className="hover:underline">Jobs</a>
-          </nav>
-          <button
-            className="md:hidden p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          <div className="flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-6 text-sm">
+              <a href="#" onClick={navigateTo("about")} className="hover:underline">About Us</a>
+              <a href="#" onClick={navigateTo("board")} className="hover:underline">Board of Directors</a>
+              <a href="#" onClick={navigateTo("title9")} className="hover:underline">Title 9 Information</a>
+              <a href="#" onClick={navigateTo("action")} className="hover:underline">Autism Day Camp</a>
+              <a href="#" onClick={navigateTo("jobs")} className="hover:underline">Jobs</a>
+            </nav>
+            <SwitchtoDarkMode />
+            <button
+              className="md:hidden p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
         {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-md z-50 border-b border-gray-200">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-[var(--home-dark)] shadow-md z-50 border-b border-gray-200">
             <div className="flex flex-col py-2">
               <a href="#" onClick={navigateTo("about")} className="px-4 py-2 hover:bg-gray-100">About Us</a>
               <a href="#" onClick={navigateTo("board")} className="px-4 py-2 hover:bg-gray-100">Board of Directors</a>
@@ -59,7 +87,7 @@ export default function Home() {
 
       {currentPage !== "home" && (
         <div className="bg-blue-500 h-12 md:h-16 flex items-center justify-center">
-          <h1 className="text-white text-xl md:text-2xl font-semibold">
+          <div className="intro-bar-text text-white text-xl md:text-2xl font-semibold">
             {currentPage === "about"
               ? "About Us"
               : currentPage === "board"
@@ -71,11 +99,11 @@ export default function Home() {
               : currentPage === "jobs"
               ? "Jobs"
               : ""}
-          </h1>
+          </div>
         </div>
       )}
 
-      <main className="flex-grow bg-white">
+      <main className="flex-grow">
         <div className="max-w-5xl mx-auto px-4 py-12">
           {currentPage === "home" && <HomePage />}
           {currentPage === "about" && <AboutUsPage />}
@@ -86,7 +114,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="bg-white py-4 text-center text-xs text-gray-500 border-t border-gray-200">
+      <footer className="bg-white dark:bg-[var(--home-dark)] py-4 text-center text-xs text-gray-500 dark:text-white border-t border-gray-200">
         © 2023 Desert Area Resources and Training (DART)
       </footer>
     </div>

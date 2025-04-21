@@ -119,23 +119,31 @@ select:focus {
 }
 
 /* ========== Homepage Theme Overrides ========== */
-.home-page {
-  --home-primary: #004f9f;
-  --home-light: #4c4c4c;
-  --home-dark: #003470;
-  --home-background: #f8f9fa;
-  --home-text: #1a1a1a;
-
-  background-color: var(--home-background);
-  color: var(--home-text);
+:root {
+  --home-primary: #0056b3;
+  --home-light: #6c757d;
+  --home-dark: #0b2545;
+  --home-background: #f0f2f5;
+  --home-text: #1e1e1e;
+  --home-header: #ffffff;
+  --home-header-text: #1e1e1e;
+  --home-heading: #14213d;
+  --home-section-heading: #003566;
+  --home-nav-bg: #ffffff;
+  --home-nav-text: #212529;
+  --home-content-heading: #14213d;
+  --home-logo-color: #0b2545;
 }
 
-.home-page a {
-  color: var(--home-primary);
-}
-
-.home-page h1,
-.home-page h2,
-.home-page h3 {
-  color: var(--home-dark);
+.dark .home-page {
+  --home-header: #1b1f23;
+  --home-header-text: #f8f9fa;
+  --home-background: #121417;
+  --home-text: #e4e6eb;
+  --home-heading: #f1f1f1;
+  --home-section-heading: #aad1ff;
+  --home-nav-bg: #020202;
+  --home-nav-text: #e4e6eb;
+  --home-content-heading: #f1f1f1;
+  --home-logo-color: #ffffff;
 }

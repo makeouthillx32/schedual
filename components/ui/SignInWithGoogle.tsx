@@ -5,19 +5,18 @@ import { useRouter } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 export default function OAuthCallbackPage() {
-  const supabase = useSupabaseClient();
   const router = useRouter();
+  const supabase = useSupabaseClient();
 
   useEffect(() => {
     const run = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession({
-        redirectUrl: window.location.href,
-      });
+      // Just call getSession – Supabase automatically extracts tokens from hash
+      const { data, error } = await supabase.auth.getSession();
 
       if (error) {
-        console.error("Error exchanging OAuth code:", error.message);
+        console.error("OAuth session error:", error.message);
       } else {
-        console.log("Session set:", data.session);
+        console.log("Session retrieved:", data.session);
       }
 
       const lastPage = document.cookie

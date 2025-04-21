@@ -20,7 +20,10 @@ export default function RootLayout({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setCookie("lastPage", pathname);
+      const excluded = ["/sign-in", "/sign-up", "/auth/callback"];
+      if (!excluded.includes(pathname)) {
+        setCookie("lastPage", pathname);
+      }
     }
   }, [pathname]);
 

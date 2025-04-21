@@ -3,7 +3,7 @@ import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const cookieStore = await cookies(); // ✅ now it's awaited
+  const cookieStore = cookies(); // ✅ no `await`
   const supabase = createServerActionClient({ cookies: () => cookieStore });
 
   await supabase.auth.getSession();

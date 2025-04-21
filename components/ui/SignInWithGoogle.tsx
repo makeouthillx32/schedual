@@ -8,9 +8,16 @@ export default function SignInWithGoogle() {
   const router = useRouter();
 
   const handleGoogleSignIn = async () => {
+    const next = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("next="))
+      ?.split("=")[1];
+
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google"
-      // No `redirectTo` unless you're using a custom callback URL
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}/auth/callback${next ? `?next=${next}` : ""}`,
+      },
     });
 
     if (error) {

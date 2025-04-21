@@ -5,17 +5,16 @@ import { cookies } from "next/headers";
 export async function GET() {
   const supabase = createServerActionClient({ cookies });
 
-  // Process the OAuth callback and set the session
+  // Force Supabase to process the OAuth callback and set the session
   await supabase.auth.getSession();
 
-  // Read lastPage cookie
+  // Grab cookies and find lastPage
   const store = await cookies();
   const allCookies = store.getAll();
   const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
 
-  const lastPage = lastPageCookie?.value!;
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  const lastPage = lastPageCookie?.value!; // no fallback
 
-  // ✅ Append ?refresh=true to tell the client to reload session
-  return NextResponse.redirect(new URL(`${lastPage}?refresh=true`, baseUrl));
-}
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  return NextResponse.redirect(new URL(lastPage, baseUrl));
+} 

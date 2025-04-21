@@ -1,22 +1,15 @@
 "use client";
 
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
-import { useRouter } from "next/navigation";
 
 export default function SignInWithGoogle() {
   const supabase = useSupabaseClient();
-  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
-    const next = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("next="))
-      ?.split("=")[1];
-
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback${next ? `?next=${next}` : ""}`,
+        redirectTo: `${location.origin}/auth/callback`,
       },
     });
 

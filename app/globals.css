@@ -121,7 +121,7 @@ select:focus {
 /* ========== Homepage Theme Overrides ========== */
 .home-page {
   --home-primary: #004f9f;
-  --home-light: #d9e9ff;
+  --home-light: #4c4c4c;
   --home-dark: #003470;
   --home-background: #f8f9fa;
   --home-text: #1a1a1a;

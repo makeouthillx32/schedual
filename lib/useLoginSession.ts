@@ -9,10 +9,10 @@ export default function useLoginSession() {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    };
+  const fetchSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    setSession(data.session);
+  };
 
     fetchSession(); // on mount
 

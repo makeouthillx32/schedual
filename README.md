@@ -1,79 +1,119 @@
 # CMS Schedule App
 
-The CMS Schedule App is a task scheduling platform designed to simplify the process of managing jobs for multiple businesses. It uses a dynamic job randomization feature and integrates modern UI components with a dark mode toggle for better user experience.
+**Version 2 – Home Page Update**
+
+The CMS Schedule App is a scheduling and client management platform designed to simplify the process of managing jobs, schedules, and custom settings for multiple businesses. It includes a modern homepage, admin dashboard, and real-time data management powered by Supabase and Next.js.
 
 ---
 
 ## Features
 
-- **Dynamic Job Scheduling**:
-  - Automatically assign random jobs to team members based on their availability.
-- **Dark Mode Toggle**:
-  - Seamless light and dark mode switching.
-- **Dropdown Navigation**:
-  - Includes a dropdown menu for accessing home, schedule, and settings.
-- **Real-time Updates**:
-  - Displays current date and time in the dropdown menu.
-- **Modern UI**:
-  - Designed using Tailwind CSS and Radix UI for a clean, responsive interface.
-- **Next.js Framework**:
-  - Built on Next.js for fast and efficient server-side rendering.
+- **Dynamic Job Scheduling**  
+  Automatically assigns jobs to team members based on availability.
+
+- **Dark Mode Toggle**  
+  Seamless light and dark mode switching for better accessibility.
+
+- **Dropdown Navigation**  
+  Includes a dropdown menu with options for Home, Schedule, and Settings.
+
+- **Real-time Time/Date**  
+  Displays live date and time in the dropdown.
+
+- **Modern UI Components**  
+  Built with Tailwind CSS and Radix UI for a sleek, responsive interface.
+
+- **Next.js Framework**  
+  Fast server-side rendering and API integration.
+
+- **Static Asset Optimization**  
+  Images are now served from `/public/images/home/` using static `<img>` tags.
+
+- **Business Cleaning Schedule Settings**  
+  Admins can now customize business cleaning days via the CMS settings panel.
+
+- **Secure Sign-In Flow (V2)**  
+  Implemented a route-based login system that reflects authentication state without requiring a page refresh.
 
 ---
 
 ## To-Do List
 
-- [x] Implement job randomization feature.
-- [x] Add dropdown menu for navigation.
-- [x] Include a dark mode toggle.
-- [ ] Add user authentication for restricted access.
-- [ ] Implement a calendar view for better schedule visualization.
-- [ ] Develop a settings page for user preferences.
-- [ ] Allow job data to be exported as reports.
-- [ ] Deploy to production for public access.
+- [x] Implement job randomization feature  
+- [x] Add dropdown menu for navigation  
+- [x] Include a dark mode toggle  
+- [x] Add business cleaning day settings page  
+- [x] Replace `<Image>` components with static `<img>` for better control  
+- [x] Build and deploy Version 2 Home Page update  
+- [x] Create a secure login flow with live dropdown state updates  
+- [x] Add user authentication for restricted access  
+- [ ] Add "Sign in with Google" or third-party provider login (button hidden for now)  
+- [ ] Implement a calendar view for better schedule visualization  
+- [ ] Develop a settings page for user preferences  
+- [ ] Allow job data to be exported as Excel reports  
+- [ ] Store form progress and purge old entries via cron job  
+- [ ] Deploy public site and admin dashboard to production  
+- [ ] Add Docker and Kubernetes integration for self-hosting  
+
+---
+
+## Goals for Future Versions
+
+- Add Excel report generation using `ExcelJS` + TypeScript  
+- Enable automatic form progress saving to Supabase  
+- Schedule background purges using Supabase Edge Functions or external cron  
+- Add client-specific settings pages for more granular control  
+- Implement mobile-friendly navigation and layouts  
+- Add localization support using `next-intl`  
+- Integrate with Supabase Storage for uploading and downloading documents  
+- Support self-hosted deployments with Docker and Kubernetes  
 
 ---
 
 ## How to Build and Run Locally
 
-1. **Clone the Repository**:
-   Clone the project from GitHub to your local machine.
-
+1. **Clone the Repository**
    ```bash
    git clone https://github.com/your-username/cms-schedule-app.git
    cd cms-schedule-app
-Install Dependencies: Install the required npm packages.
+  
 
-bash
-Copy code
-npm install
-Environment Setup: Create a .env.local file in the root directory and configure the following environment variables:
 
-env
-Copy code
-NEXT_PUBLIC_SUPABASE_URL=[INSERT YOUR SUPABASE URL]
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT YOUR SUPABASE ANON KEY]
-Run the Development Server: Start the app on your local machine.
+2. **Install Dependencies**
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-bash
-Copy code
-npm run dev
-The app will now be running at http://localhost:3000.
+3. **Environment Setup**  
+   Create a \`.env.local\` file in the root directory and add the following:
 
-Building for Production: Build the app for production.
+   \`\`\`env
+   NEXT_PUBLIC_SUPABASE_URL=[INSERT YOUR SUPABASE URL]
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT YOUR SUPABASE ANON KEY]
+   \`\`\`
 
-bash
-Copy code
-npm run build
-Start the production server.
+4. **Run the Development Server**
+   \`\`\`bash
+   npm run dev
+   \`\`\`
+   Visit [http://localhost:3000](http://localhost:3000) to view the app.
 
-bash
-Copy code
-npm start
-Feedback and Issues
-If you encounter any issues or have suggestions for improvement, feel free to create an issue in the repository or contact Me.
+5. **Build for Production**
+   \`\`\`bash
+   npm run build
+   npm start
+   \`\`\`
 
-License
-This project is open-source and available under the MIT License.
+---
 
- &#8203;:contentReference[oaicite:0]{index=0}&#8203;
+## Feedback and Issues
+
+If you encounter issues or want to suggest improvements, create a GitHub issue or reach out directly.
+
+---
+
+## License
+
+This project is open-source and available under the [MIT License](LICENSE).
+EOF
+

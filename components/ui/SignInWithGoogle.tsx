@@ -9,12 +9,14 @@ export default function SignInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback?refresh=true`, // ✅ force session re-check
+        // ⬇️  Send Google back to the client callback page we created
+        redirectTo: `${location.origin}/auth/callback`,
       },
     });
 
     if (error) {
-      console.error("Google sign-in error:", error.message);
+      console.error("Google sign‑in error:", error.message);
+      alert("Google sign‑in failed – see console for details.");
     }
   };
 

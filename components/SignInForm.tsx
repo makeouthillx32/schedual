@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useRef, useState } from "react";
 import Link from "next/link";
+import SignInWithGoogle from "@/components/ui/SignInWithGoogle"; // Import the component
 
 export default function SignInForm() {
   const router = useRouter();
@@ -86,6 +87,8 @@ export default function SignInForm() {
         >
           Sign in
         </button>
+
+        <SignInWithGoogle /> {/* Google Sign In Button */}
 
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 

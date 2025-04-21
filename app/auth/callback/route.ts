@@ -19,4 +19,3 @@ export async function GET() {
   return NextResponse.redirect(new URL(lastPage, baseUrl));
 } 
 
-Dose it 

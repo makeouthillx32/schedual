@@ -10,7 +10,7 @@ export default function SignInWithGoogle() {
       provider: "google",
       options: {
         // ⬇️  Send Google back to the client callback page we created
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/auth/callback/oauth`,
       },
     });
 

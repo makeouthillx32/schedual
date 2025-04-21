@@ -958,7 +958,7 @@ export default function Title9Page() {
               <td className="border p-2">100%</td>
             </tr>
             <tr>
-              <td className="border p-2 font-semibold" colSpan="3">
+              <td className="border p-2 font-semibold" colSpan={3}>
                 Population By Origin:
               </td>
             </tr>
@@ -973,7 +973,7 @@ export default function Title9Page() {
               <td className="border p-2">19.3%</td>
             </tr>
             <tr>
-              <td className="border p-2 font-semibold" colSpan="3">
+              <td className="border p-2 font-semibold" colSpan={3}>
                 By Race:
               </td>
             </tr>

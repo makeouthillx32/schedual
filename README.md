@@ -80,29 +80,29 @@ The CMS Schedule App is a scheduling and client management platform designed to 
 
 
 2. **Install Dependencies**
-   \`\`\`bash
+   ```bash
    npm install
-   \`\`\`
+   
 
 3. **Environment Setup**  
    Create a \`.env.local\` file in the root directory and add the following:
 
-   \`\`\`env
+    ```env
    NEXT_PUBLIC_SUPABASE_URL=[INSERT YOUR SUPABASE URL]
    NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT YOUR SUPABASE ANON KEY]
-   \`\`\`
+   
 
 4. **Run the Development Server**
-   \`\`\`bash
+   ```bash
    npm run dev
    \`\`\`
    Visit [http://localhost:3000](http://localhost:3000) to view the app.
 
 5. **Build for Production**
-   \`\`\`bash
+   ```bash
    npm run build
    npm start
-   \`\`\`
+   
 
 ---
 

@@ -22,16 +22,19 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Updated type definition to match Next.js 15 expectations
+// Updated interface to make both params and searchParams Promises
 interface ProfilePageProps {
   params: Promise<{ id: string }>
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
-  // Resolve the params promise
+  // Resolve the params and searchParams promises
   const resolvedParams = await params;
   const id = resolvedParams.id;
+  
+  // Also await searchParams (though we don't need it in this component)
+  await searchParams;
   
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()

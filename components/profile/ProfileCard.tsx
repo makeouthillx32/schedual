@@ -1,6 +1,4 @@
-"use client";
-
-import type React from "react";
+import React from "react";
 
 interface ProfileCardProps {
   label: string;
@@ -8,7 +6,7 @@ interface ProfileCardProps {
   icon: React.ReactNode;
 }
 
-export default function ProfileCard({ label, value, icon }: ProfileCardProps) {
+export function ProfileCard({ label, value, icon }: ProfileCardProps) {
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-gray-200 dark:border-zinc-700 p-5 flex gap-4 items-start">
       <div className="text-blue-600 dark:text-blue-400 mt-1">{icon}</div>

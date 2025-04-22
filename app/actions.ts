@@ -9,12 +9,17 @@ import { cookies } from "next/headers";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const supabase = await createClient(); // ✅ FIXED
-  const origin = (await headers()).get("origin");
+  const supabase = await createClient();
+  const headerList = headers();
+  const origin = headerList.get("origin");
 
   if (!email || !password) {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
+
+  // ✅ Try to extract invite from Referer header
+  const referer = headerList.get("referer");
+  const inviteCode = referer ? new URL(referer).searchParams.get("invite") : null;
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -29,13 +34,26 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed. Try again.");
   }
 
+  // ✅ Handle invite if code is present
+  if (inviteCode) {
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("role")
+      .eq("code", inviteCode)
+      .single();
+
+    if (!inviteError && invite?.role) {
+      await supabase.from("profiles").update({ role: invite.role }).eq("id", data.user.id);
+      await supabase.from("invites").delete().eq("code", inviteCode);
+    }
+  }
+
   return encodedRedirect(
     "success",
     "/sign-up",
     "Thanks for signing up! Please check your email for a verification link."
   );
 };
-
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;

@@ -13,11 +13,11 @@ import {
   Globe,
 } from "lucide-react";
 
-interface Props {
+export default async function ProfilePage({
+  params,
+}: {
   params: { id: string };
-}
-
-export default async function ProfilePage({ params }: Props) {
+}) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
   const cookieHeader = cookies().toString();
 

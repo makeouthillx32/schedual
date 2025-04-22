@@ -38,16 +38,16 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUserManager() {
-  const [users, setUsers] = useState<any[]>([]);
   const [uuid, setUuid] = useState("");
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -74,7 +74,7 @@ export default function AdminUserManager() {
   };
 
   const handleDelete = async () => {
-    const confirm = window.confirm("Delete user and all associated records permanently?");
+    const confirm = window.confirm("Delete user and profile permanently?");
     if (!confirm) return;
 
     setLoading(true);
@@ -85,7 +85,7 @@ export default function AdminUserManager() {
     });
 
     if (res.ok) {
-      setMessage("✅ Successfully deleted user and all related records.");
+      setMessage("✅ Successfully deleted user and profile.");
       setProfile(null);
       setUuid("");
     } else {
@@ -96,17 +96,17 @@ export default function AdminUserManager() {
 
   return (
     <div className="w-full max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-gray-900 shadow rounded-md">
-      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User by UUID</h2>
 
       <select
-        className="w-full p-2 mb-4 border rounded"
+        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-800 text-black dark:text-white"
         value={uuid}
         onChange={(e) => setUuid(e.target.value)}
       >
-        <option value="">Select user...</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.email || u.id}
+        <option value="">Select a user UUID</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.email || user.id}
           </option>
         ))}
       </select>

@@ -59,51 +59,63 @@ export default function AdminUserManager() {
   }, []);
 
   const fetchProfile = async () => {
+    if (!uuid) return;
     setLoading(true);
     setMessage(null);
     setProfile(null);
-    const res = await fetch(`/api/get-profile-by-id?id=${uuid}`);
-    const data = await res.json();
-
-    if (res.ok) {
-      setProfile(data);
-    } else {
-      setMessage("Profile not found or error fetching data.");
+    try {
+      const res = await fetch(`/api/get-profile-by-id?id=${uuid}`);
+      const data = await res.json();
+      if (res.ok) {
+        setProfile(data);
+      } else {
+        setMessage("Profile not found or error fetching data.");
+      }
+    } catch {
+      setMessage("Unexpected error while fetching profile.");
     }
     setLoading(false);
   };
 
   const handleDelete = async () => {
-    const confirm = window.confirm("Delete user and profile permanently?");
-    if (!confirm) return;
+    const confirmDelete = window.confirm("Delete user and all linked data permanently?");
+    if (!confirmDelete) return;
 
     setLoading(true);
-    const res = await fetch("/api/admin-delete-user", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uuid }),
-    });
+    try {
+      const res = await fetch("/api/profile/admin-delete-user", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuid }),
+      });
 
-    if (res.ok) {
-      setMessage("✅ Successfully deleted user and profile.");
-      setProfile(null);
-      setUuid("");
-    } else {
-      setMessage("❌ Deletion failed.");
+      if (res.ok) {
+        setMessage("✅ Successfully deleted user and profile.");
+        setProfile(null);
+        setUuid("");
+        // Refresh list
+        const updated = await fetch("/api/get-all-users");
+        const updatedUsers = await updated.json();
+        setUsers(updatedUsers);
+      } else {
+        setMessage("❌ Deletion failed.");
+      }
+    } catch {
+      setMessage("Unexpected error while deleting user.");
     }
     setLoading(false);
   };
 
   return (
     <div className="w-full max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-gray-900 shadow rounded-md">
-      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User by UUID</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User</h2>
 
       <select
         className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-800 text-black dark:text-white"
         value={uuid}
         onChange={(e) => setUuid(e.target.value)}
       >
-        <option value="">Select a user UUID</option>
+        <option value="">Select a user</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {user.email || user.id}
@@ -124,7 +136,10 @@ export default function AdminUserManager() {
       )}
 
       {profile && (
-        <Button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 w-full">
+        <Button
+          onClick={handleDelete}
+          className="bg-red-600 hover:bg-red-700 w-full"
+        >
           {loading ? "Deleting..." : "Delete User"}
         </Button>
       )}

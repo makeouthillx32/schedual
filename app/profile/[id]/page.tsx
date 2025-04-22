@@ -5,9 +5,17 @@ import { cookies } from "next/headers"
 import {
   UserCircle2,
   BadgeCheck,
+  Users,
+  Mail,
+  ShieldCheck,
+  KeyRound,
+  CalendarClock,
+  LogIn,
+  Globe,
+  ImageIcon,
 } from "lucide-react"
 import type { Metadata } from "next"
-import { ProfileCard } from "@/components/profile/ProfileCard"
+import { ProfileCard } from "@/components/profile/profile-card"
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -56,7 +64,26 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
         <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.email}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{profile.role || "User"}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
-          <ProfileCard profile={profile} />
+          <ProfileCard label="User ID" value={profile.id} icon={<Users />} />
+          <ProfileCard label="Email" value={profile.email} icon={<Mail />} />
+          <ProfileCard label="Role" value={profile.role || "N/A"} icon={<ShieldCheck />} />
+          <ProfileCard label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
+          <ProfileCard
+            label="Created At"
+            value={new Date(profile.created_at).toLocaleString()}
+            icon={<CalendarClock />}
+          />
+          <ProfileCard
+            label="Last Signed In"
+            value={new Date(profile.last_sign_in_at).toLocaleString()}
+            icon={<LogIn />}
+          />
+          <ProfileCard
+            label="Auth Providers"
+            value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
+            icon={<Globe />}
+          />
+          <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
         </div>
       </div>
     </div>

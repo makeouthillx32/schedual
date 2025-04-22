@@ -1,64 +1,104 @@
-"use client";
+Why are you importing icons if that’s already in our profile card that’s left where you just moved it stop being redundant 
 
-import { signUpAction } from "@/app/actions";
-import { FormMessage, Message } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
-import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
-import { useSearchParams } from "next/navigation";
+// @ts-nocheck
+import type React from "react"
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
+import {
+  UserCircle2,
+  Mail,
+  ShieldCheck,
+  CalendarClock,
+  LogIn,
+  Users,
+  ImageIcon,
+  BadgeCheck,
+  KeyRound,
+  Globe,
+} from "lucide-react"
+import type { Metadata } from "next"
 
-export default function SignupWrapper() {
-  const searchParams = useSearchParams();
-  const invite = searchParams.get("invite");
-
-  return <Signup invite={invite} />;
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "User Profile",
+  }
 }
 
-function Signup({ invite }: { invite: string | null }) {
+// Updated interface to make both params and searchParams Promises
+interface ProfilePageProps {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
+  // Resolve the params and searchParams promises
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  
+  // Also await searchParams (though we don't need it in this component)
+  await searchParams;
+  
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
+  const cookieHeader = cookies().toString()
+  const res = await fetch(`${baseUrl}/api/profile`, {
+    cache: "no-store",
+    headers: {
+      cookie: cookieHeader,
+    },
+  })
+  const profile = await res.json()
+  if (!res.ok || !profile) {
+    return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>
+  }
+  if (profile.id !== id) {
+    return redirect(`/profile/${profile.id}`)
+  }
   return (
-    <>
-      <form className="flex flex-col min-w-64 max-w-64 mx-auto">
-        <h1 className="text-2xl font-medium">Sign up</h1>
-        <p className="text-sm text text-foreground">
-          Already have an account?{" "}
-          <Link className="text-primary font-medium underline" href="/sign-in">
-            Sign in
-          </Link>
-        </p>
-
-        <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
-          <Label htmlFor="email">Email</Label>
-          <Input name="email" placeholder="you@example.com" required />
-
-          <Label htmlFor="password">Password</Label>
-          <Input
-            type="password"
-            name="password"
-            placeholder="Your password"
-            minLength={6}
-            required
-          />
-
-          {invite && (
-            <input type="hidden" name="invite" value={invite} />
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="flex flex-col items-center space-y-8">
+        <div className="relative">
+          <UserCircle2 className="h-32 w-32 text-gray-300 dark:text-gray-700" />
+          {profile.role && (
+            <BadgeCheck className="absolute bottom-0 right-0 h-6 w-6 text-green-500 bg-white rounded-full p-1" />
           )}
-
-          <SubmitButton formAction={signUpAction} pendingText="Signing up...">
-            Sign up
-          </SubmitButton>
-
-          <FormMessage message={{}} />
         </div>
-      </form>
-
-      <SmtpMessage />
-
-      <div className="mt-6 flex justify-center">
-        <SignInWithGoogle />
+        <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.email}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{profile.role || "User"}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
+          <ProfileCard label="User ID" value={profile.id} icon={<Users />} />
+          <ProfileCard label="Email" value={profile.email} icon={<Mail />} />
+          <ProfileCard label="Role" value={profile.role || "N/A"} icon={<ShieldCheck />} />
+          <ProfileCard label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
+          <ProfileCard
+            label="Created At"
+            value={new Date(profile.created_at).toLocaleString()}
+            icon={<CalendarClock />}
+          />
+          <ProfileCard
+            label="Last Signed In"
+            value={new Date(profile.last_sign_in_at).toLocaleString()}
+            icon={<LogIn />}
+          />
+          <ProfileCard
+            label="Auth Providers"
+            value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
+            icon={<Globe />}
+          />
+          <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
+        </div>
       </div>
-    </>
-  );
+    </div>
+  )
+}
+
+function ProfileCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-gray-200 dark:border-zinc-700 p-5 flex gap-4 items-start">
+      <div className="text-blue-600 dark:text-blue-400 mt-1">{icon}</div>
+      <div className="flex-1">
+        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+        <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
+      </div>
+    </div>
+  )
 }

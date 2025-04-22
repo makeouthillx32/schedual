@@ -13,8 +13,11 @@ import {
   Globe,
 } from "lucide-react";
 
-export default async function ProfilePage(props: { params: { id: string } }) {
-  const { params } = props;
+interface Props {
+  params: { id: string };
+}
+
+export default async function ProfilePage({ params }: Props) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
   const cookieHeader = cookies().toString();
 
@@ -28,7 +31,7 @@ export default async function ProfilePage(props: { params: { id: string } }) {
   const profile = await res.json();
 
   if (!res.ok || !profile) {
-    return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>;
+    return <p className="text-center p-10">User not found or unauthorized.</p>;
   }
 
   if (profile.id !== params.id) {

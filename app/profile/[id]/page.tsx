@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import type React from "react"
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 import {
   UserCircle2,
   Mail,
@@ -7,39 +8,33 @@ import {
   CalendarClock,
   LogIn,
   Users,
-  Image,
+  ImageIcon,
   BadgeCheck,
   KeyRound,
   Globe,
-} from "lucide-react";
-import type { Metadata } from "next";
+} from "lucide-react"
+import type { Metadata } from "next"
 
 // Generate metadata for the profile page (used in head tags)
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "User Profile",
-  };
+  }
 }
 
-// Define the expected props including both direct and Promise resolution
+// Define props with guaranteed synchronous params to avoid build issues
 interface PageProps {
-  params: { id: string } | Promise<{ id: string }>;
+  params: { id: string }
+  searchParams: Record<string, string | string[] | undefined>
 }
 
 // Main server component for the user profile page
-export default async function ProfilePage(props: PageProps) {
-  let { params } = props;
-
-  // Handle cases where params might be returned as a Promise
-  if (typeof params.then === "function") {
-    params = await params;
-  }
-
+export default async function ProfilePage({ params, searchParams }: PageProps) {
   // Determine the base URL to use for API calls
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
 
   // Convert cookies to string for request header
-  const cookieHeader = cookies().toString();
+  const cookieHeader = cookies().toString()
 
   // Fetch current user's profile from custom API route
   const res = await fetch(`${baseUrl}/api/profile`, {
@@ -47,18 +42,18 @@ export default async function ProfilePage(props: PageProps) {
     headers: {
       cookie: cookieHeader,
     },
-  });
+  })
 
-  const profile = await res.json();
+  const profile = await res.json()
 
   // Handle failed request or no profile found
   if (!res.ok || !profile) {
-    return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>;
+    return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>
   }
 
   // Redirect to the correct profile route if URL param doesn't match signed-in user
   if (profile.id !== params.id) {
-    return redirect(`/profile/${profile.id}`);
+    return redirect(`/profile/${profile.id}`)
   }
 
   // Render profile UI
@@ -83,18 +78,26 @@ export default async function ProfilePage(props: PageProps) {
           <ProfileCard label="Email" value={profile.email} icon={<Mail />} />
           <ProfileCard label="Role" value={profile.role || "N/A"} icon={<ShieldCheck />} />
           <ProfileCard label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
-          <ProfileCard label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
-          <ProfileCard label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />
+          <ProfileCard
+            label="Created At"
+            value={new Date(profile.created_at).toLocaleString()}
+            icon={<CalendarClock />}
+          />
+          <ProfileCard
+            label="Last Signed In"
+            value={new Date(profile.last_sign_in_at).toLocaleString()}
+            icon={<LogIn />}
+          />
           <ProfileCard
             label="Auth Providers"
             value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
             icon={<Globe />}
           />
-          <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<Image />} />
+          <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 // Reusable component to display labeled profile information with an icon
@@ -107,5 +110,5 @@ function ProfileCard({ label, value, icon }: { label: string; value: string; ico
         <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
       </div>
     </div>
-  );
+  )
 }

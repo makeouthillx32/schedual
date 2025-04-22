@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type React from "react"
 import { redirect } from "next/navigation"
@@ -16,6 +15,8 @@ import {
   Globe,
 } from "lucide-react"
 import type { Metadata } from "next"
+import dynamic from "next/dynamic";
+const InviteGenerator = dynamic(() => import("@/components/invite/InviteGenerator"), { ssr: false });
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -23,20 +24,17 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Updated interface to make both params and searchParams Promises
 interface ProfilePageProps {
   params: Promise<{ id: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
-  // Resolve the params and searchParams promises
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  
-  // Also await searchParams (though we don't need it in this component)
+
   await searchParams;
-  
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()
   const res = await fetch(`${baseUrl}/api/profile`, {
@@ -84,6 +82,11 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             icon={<Globe />}
           />
           <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
+        </div>
+
+        {/* ✅ Invite Generator Section */}
+        <div className="mt-16 w-full border-t pt-10">
+          <InviteGenerator />
         </div>
       </div>
     </div>

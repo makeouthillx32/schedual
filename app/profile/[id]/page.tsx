@@ -12,8 +12,25 @@ import {
   KeyRound,
   Globe,
 } from "lucide-react";
+import type { Metadata } from "next";
 
-export default async function ProfilePage({ params }: { params: { id: string } }) {
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "User Profile",
+  };
+}
+
+interface PageProps {
+  params: { id: string } | Promise<{ id: string }>;
+};
+}
+
+export default async function ProfilePage(props: PageProps) {
+  let { params } = props;
+  if (typeof params.then === "function") {
+    params = await params;
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
   const cookieHeader = cookies().toString();
 

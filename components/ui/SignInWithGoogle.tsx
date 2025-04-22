@@ -6,11 +6,14 @@ export default function SignInWithGoogle() {
   const supabase = useSupabaseClient();
 
   const handleGoogleSignIn = async () => {
+    const invite = new URLSearchParams(window.location.search).get("invite");
+
+    const redirectTo = `${location.origin}/auth/callback/oauth${invite ? `?invite=${invite}` : ""}`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        // ⬇️  Send Google back to the client callback page we created
-        redirectTo: `${location.origin}/auth/callback/oauth`,
+        redirectTo,
       },
     });
 

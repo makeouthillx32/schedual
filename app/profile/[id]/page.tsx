@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import type { Metadata } from "next"
 import dynamic from "next/dynamic";
+import DeleteAccount from "@/components/profile/DeleteAccount";
 import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -87,9 +88,15 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
           />
           <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
         </div>
+  
         {/* ✅ Invite Generator */}
         <div className="w-full mt-8">
           <InviteGeneratorClient />
+        </div>
+  
+        {/* ✅ Delete Account */}
+        <div className="w-full mt-4">
+          <DeleteAccount />
         </div>
       </div>
     </div>

@@ -1,20 +1,48 @@
 import { cookies } from "next/headers";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 
-export async function GET() {
-  // ‼️ Pass the cookies FUNCTION to Supabase (what it expects)
+export async function GET(req: Request) {
   const supabase = createServerActionClient({ cookies });
 
-  // Process OAuth tokens and set the session cookie
-  await supabase.auth.getSession();
+  // Process session from the OAuth callback
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
+  if (!user) {
+    return NextResponse.redirect("/sign-in");
+  }
 
-  // Now resolve the cookie store so we can read values
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
+  const inviteCode = new URL(req.url).searchParams.get("invite");
+
+  // Handle invite roles (update profile table)
+  if (inviteCode) {
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("role")
+      .eq("code", inviteCode)
+      .single();
+
+    if (!inviteError && invite?.role) {
+      await supabase.from("profiles").update({ role: invite.role }).eq("id", user.id);
+      await supabase.from("invites").delete().eq("code", inviteCode);
+    }
+  }
+
+  // Set display name if not already present
+  if (!user.user_metadata?.display_name) {
+    const defaultName = user.email?.split("@")[0] || `user-${randomUUID().slice(0, 8)}`;
+    await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...user.user_metadata,
+        display_name: defaultName,
+      },
+    });
+  }
+
   const lastPage = cookieStore.get("lastPage")?.value || "/";
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
 
   return NextResponse.redirect(
     new URL(`${lastPage}?refresh=true`, baseUrl)

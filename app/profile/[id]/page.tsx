@@ -22,33 +22,32 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function ProfilePage({
-  params,
-  searchParams,
-}: {
-  params: { id: string }
+// Updated type definition to match Next.js 15 expectations
+interface ProfilePageProps {
+  params: Promise<{ id: string }>
   searchParams: { [key: string]: string | string[] | undefined }
-}) {
+}
+
+export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
+  // Resolve the params promise
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()
-
   const res = await fetch(`${baseUrl}/api/profile`, {
     cache: "no-store",
     headers: {
       cookie: cookieHeader,
     },
   })
-
   const profile = await res.json()
-
   if (!res.ok || !profile) {
     return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>
   }
-
-  if (profile.id !== params.id) {
+  if (profile.id !== id) {
     return redirect(`/profile/${profile.id}`)
   }
-
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-col items-center space-y-8">
@@ -58,10 +57,8 @@ export default async function ProfilePage({
             <BadgeCheck className="absolute bottom-0 right-0 h-6 w-6 text-green-500 bg-white rounded-full p-1" />
           )}
         </div>
-
         <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.email}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{profile.role || "User"}</p>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
           <ProfileCard label="User ID" value={profile.id} icon={<Users />} />
           <ProfileCard label="Email" value={profile.email} icon={<Mail />} />

@@ -9,33 +9,49 @@ import { cookies } from "next/headers";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const supabase = await createClient(); // ✅ FIXED
-  const origin = (await headers()).get("origin");
+  const supabase = await createClient();
+  const headerList = headers();
+  const origin = (await headerList).get("origin");
 
   if (!email || !password) {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
 
+  // Extract invite code from the current URL (from cookie or headers if needed)
+  const inviteCode = formData.get("invite")?.toString();
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback/oauth`,
     },
   });
 
   if (error || !data.user) {
-    console.error("❌ Sign up error:", error?.message || "No user returned from Supabase.");
-    return encodedRedirect("error", "/sign-up", "Sign up failed. Try again.");
+    return encodedRedirect("error", "/sign-up", "Sign up failed.");
+  }
+
+  // If there's an invite code, update the user's role in the profile
+  if (inviteCode) {
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("role")
+      .eq("code", inviteCode)
+      .single();
+
+    if (!inviteError && invite?.role) {
+      await supabase.from("profiles").update({ role: invite.role }).eq("id", data.user.id);
+      await supabase.from("invites").delete().eq("code", inviteCode);
+    }
   }
 
   return encodedRedirect(
     "success",
     "/sign-up",
-    "Thanks for signing up! Please check your email for a verification link."
+    "Thanks for signing up! Please check your email to verify your account."
   );
 };
-
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;

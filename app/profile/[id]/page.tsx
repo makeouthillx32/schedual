@@ -22,14 +22,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Define props with guaranteed synchronous params to avoid build issues
-interface PageProps {
-  params: { id: string }
-  searchParams: Record<string, string | string[] | undefined>
-}
-
 // Main server component for the user profile page
-export default async function ProfilePage({ params, searchParams }: PageProps) {
+export default async function ProfilePage({
+  params,
+}: {
+  params: { id: string }
+}) {
   // Determine the base URL to use for API calls
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
 

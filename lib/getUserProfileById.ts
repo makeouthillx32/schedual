@@ -1,21 +1,24 @@
-// lib/getUserProfileById.ts
-"use server";
+import { cookies } from "next/headers";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
-import { createClient } from "@/utils/supabase/server";
+export async function getUserProfileById(id: string) {
+  try {
+    const supabase = createServerComponentClient({ cookies });
 
-export async function getUserProfileById(userId: string) {
-  const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, role, avatar_url")
-    .eq("id", userId)
-    .single();
+    if (error) {
+      console.error("Supabase profile fetch error:", error.message);
+      return null;
+    }
 
-  if (error) {
-    console.error("Error fetching profile by ID:", error.message);
+    return data;
+  } catch (err: any) {
+    console.error("getUserProfileById() crashed:", err.message || err);
     return null;
   }
-
-  return data;
 }

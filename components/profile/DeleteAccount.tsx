@@ -39,12 +39,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUserManager() {
   const [uuid, setUuid] = useState("");
-  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -58,28 +56,11 @@ export default function AdminUserManager() {
     fetchAllUsers();
   }, []);
 
-  const fetchProfile = async () => {
-    if (!uuid) return;
-    setLoading(true);
-    setMessage(null);
-    setProfile(null);
-    try {
-      const res = await fetch(`/api/get-profile-by-id?id=${uuid}`);
-      const data = await res.json();
-      if (res.ok) {
-        setProfile(data);
-      } else {
-        setMessage("Profile not found or error fetching data.");
-      }
-    } catch {
-      setMessage("Unexpected error while fetching profile.");
-    }
-    setLoading(false);
-  };
+  const selectedUser = users.find((user) => user.id === uuid);
 
   const handleDelete = async () => {
-    const confirmDelete = window.confirm("Delete user and all linked data permanently?");
-    if (!confirmDelete) return;
+    const confirm = window.confirm(`Delete ${selectedUser?.email || uuid}?`);
+    if (!confirm) return;
 
     setLoading(true);
     try {
@@ -91,12 +72,9 @@ export default function AdminUserManager() {
 
       if (res.ok) {
         setMessage("✅ Successfully deleted user and profile.");
-        setProfile(null);
         setUuid("");
-        // Refresh list
-        const updated = await fetch("/api/get-all-users");
-        const updatedUsers = await updated.json();
-        setUsers(updatedUsers);
+        const refreshed = await fetch("/api/get-all-users");
+        setUsers(await refreshed.json());
       } else {
         setMessage("❌ Deletion failed.");
       }
@@ -123,23 +101,15 @@ export default function AdminUserManager() {
         ))}
       </select>
 
-      <Button onClick={fetchProfile} disabled={loading || !uuid} className="mb-4 w-full">
-        {loading ? "Fetching..." : "Fetch User"}
-      </Button>
-
-      {profile && (
+      {uuid && selectedUser && (
         <div className="mb-4 border p-4 rounded bg-gray-100 dark:bg-zinc-800">
-          <p><strong>Email:</strong> {profile.email}</p>
-          <p><strong>Role:</strong> {profile.role || "N/A"}</p>
-          <p><strong>Created:</strong> {new Date(profile.created_at).toLocaleString()}</p>
+          <p><strong>Email:</strong> {selectedUser.email}</p>
+          <p><strong>UUID:</strong> {selectedUser.id}</p>
         </div>
       )}
 
-      {profile && (
-        <Button
-          onClick={handleDelete}
-          className="bg-red-600 hover:bg-red-700 w-full"
-        >
+      {uuid && (
+        <Button onClick={handleDelete} className="bg-red-600 hover:bg-red-700 w-full" disabled={loading}>
           {loading ? "Deleting..." : "Delete User"}
         </Button>
       )}

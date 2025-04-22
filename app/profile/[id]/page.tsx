@@ -31,7 +31,7 @@ export default async function ProfilePage({
   const profile = await res.json();
 
   if (!res.ok || !profile) {
-    return <p className="text-center p-10">User not found or unauthorized.</p>;
+    return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>;
   }
 
   if (profile.id !== params.id) {

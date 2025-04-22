@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { createClient } from "@/utils/supabase/server"; // ✅ import your unified client
 
 export async function GET(req: Request) {
   const supabase = createServerActionClient({ cookies });
@@ -14,7 +15,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect("/sign-in");
   }
 
-  const cookieStore = await cookies(); // ✅ FIXED
+  const cookieStore = cookies();
   const inviteCode = new URL(req.url).searchParams.get("invite");
 
   // ✅ Apply invite role
@@ -31,10 +32,13 @@ export async function GET(req: Request) {
     }
   }
 
-  // Set display name if not already present
-  if (!user.user_metadata?.display_name) {
+  // ✅ Set display name with service role
+  const adminClient = await createClient("service");
+  const currentDisplayName = user.user_metadata?.display_name;
+
+  if (!currentDisplayName) {
     const defaultName = user.email?.split("@")[0] || `user-${randomUUID().slice(0, 8)}`;
-    await supabase.auth.admin.updateUserById(user.id, {
+    await adminClient.auth.admin.updateUserById(user.id, {
       user_metadata: {
         ...user.user_metadata,
         display_name: defaultName,
@@ -42,10 +46,8 @@ export async function GET(req: Request) {
     });
   }
 
-  const lastPage = cookieStore.get("lastPage")?.value || "/";
+  const lastPage = (await cookieStore).get("lastPage")?.value || "/";
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
 
-  return NextResponse.redirect(
-    new URL(`${lastPage}?refresh=true`, baseUrl)
-  );
+  return NextResponse.redirect(new URL(`${lastPage}?refresh=true`, baseUrl));
 }

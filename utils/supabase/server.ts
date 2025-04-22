@@ -1,10 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
 export const createClient = async (mode: "regular" | "service" = "regular") => {
   if (mode === "service") {
-    return createBrowserClient(
+    return createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
@@ -25,8 +25,8 @@ export const createClient = async (mode: "regular" | "service" = "regular") => {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
             });
-          } catch (error) {
-            // Suppress errors
+          } catch {
+            // no-op
           }
         },
       },

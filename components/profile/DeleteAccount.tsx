@@ -38,15 +38,25 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function AdminUserManager() {
+  const [users, setUsers] = useState<any[]>([]);
   const [uuid, setUuid] = useState("");
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      const res = await fetch("/api/get-all-users");
+      const data = await res.json();
+      if (res.ok) setUsers(data);
+    };
+    fetchAllUsers();
+  }, []);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -64,7 +74,7 @@ export default function AdminUserManager() {
   };
 
   const handleDelete = async () => {
-    const confirm = window.confirm("Delete user and profile permanently?");
+    const confirm = window.confirm("Delete user and all associated records permanently?");
     if (!confirm) return;
 
     setLoading(true);
@@ -75,7 +85,7 @@ export default function AdminUserManager() {
     });
 
     if (res.ok) {
-      setMessage("✅ Successfully deleted user and profile.");
+      setMessage("✅ Successfully deleted user and all related records.");
       setProfile(null);
       setUuid("");
     } else {
@@ -86,14 +96,20 @@ export default function AdminUserManager() {
 
   return (
     <div className="w-full max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-gray-900 shadow rounded-md">
-      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User by UUID</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">Admin: Delete User</h2>
 
-      <Input
-        placeholder="Enter user UUID..."
+      <select
+        className="w-full p-2 mb-4 border rounded"
         value={uuid}
         onChange={(e) => setUuid(e.target.value)}
-        className="mb-4"
-      />
+      >
+        <option value="">Select user...</option>
+        {users.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.email || u.id}
+          </option>
+        ))}
+      </select>
 
       <Button onClick={fetchProfile} disabled={loading || !uuid} className="mb-4 w-full">
         {loading ? "Fetching..." : "Fetch User"}

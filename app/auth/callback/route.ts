@@ -6,17 +6,18 @@ import { randomUUID } from "crypto";
 export async function GET(req: Request) {
   const supabase = createServerActionClient({ cookies });
 
-  // Process session from the OAuth callback
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   const user = session?.user;
   if (!user) {
     return NextResponse.redirect("/sign-in");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies(); // ✅ FIXED
   const inviteCode = new URL(req.url).searchParams.get("invite");
 
-  // Handle invite roles (update profile table)
+  // ✅ Apply invite role
   if (inviteCode) {
     const { data: invite, error: inviteError } = await supabase
       .from("invites")

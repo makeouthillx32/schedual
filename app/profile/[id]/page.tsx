@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import type { Metadata } from "next"
 import dynamic from "next/dynamic";
-const InviteGenerator = dynamic(() => import("@/components/invite/InviteGenerator"), { ssr: false });
+import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -86,6 +86,10 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             icon={<Globe />}
           />
           <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
+        </div>
+        {/* ✅ Invite Generator */}
+        <div className="w-full mt-8">
+          <InviteGeneratorClient />
         </div>
       </div>
     </div>

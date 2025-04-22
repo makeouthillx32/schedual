@@ -1,9 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createBrowserClient } from "@supabase/supabase-js";
 
-// Regular client with anon key
-export const createClient = async () => {
+export const createClient = async (mode: "regular" | "service" = "regular") => {
+  if (mode === "service") {
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -19,17 +25,11 @@ export const createClient = async () => {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
             });
-          } catch (error) {}
+          } catch (error) {
+            // Suppress errors
+          }
         },
       },
     }
-  );
-};
-
-// Admin client with service role
-export const createAdminClient = () => {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 };

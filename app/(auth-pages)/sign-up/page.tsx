@@ -9,11 +9,13 @@ import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
 
 export default async function Signup(props: {
-  searchParams: Promise<Message & { invite?: string }>; // Include invite in type
+  searchParams: Promise<Message>;
 }) {
   const searchParams = await props.searchParams;
 
-  const invite = typeof searchParams.invite === "string" ? searchParams.invite : "";
+  // ✅ Get invite code from the URL query (not from cookies)
+  const url = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const invite = url.get("invite") || "";
 
   if ("message" in searchParams) {
     return (
@@ -51,7 +53,7 @@ export default async function Signup(props: {
           </div>
 
           <form className="space-y-4">
-            <input type="hidden" name="invite" value={invite || ""} />
+            <input type="hidden" name="invite" value={invite} />
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>

@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const inviteCode = requestUrl.searchParams.get("invite");
   const redirectTo = requestUrl.searchParams.get("redirect_to") ?? "/CMS";
   const cookieStore = cookies();
 
@@ -23,20 +24,35 @@ export async function GET(request: Request) {
     if (user) {
       const userId = user.id;
 
-      // Check if display_name is missing in profile
-      const { data: profile, error } = await supabase
+      // Fetch current profile
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("display_name")
+        .select("display_name, role")
         .eq("id", userId)
         .single();
 
-      if (!error && !profile?.display_name) {
+      // ✅ Set display name if missing
+      if (!profileError && !profile?.display_name) {
         const defaultName = user.email?.split("@")[0];
         if (defaultName) {
           await supabase
             .from("profiles")
             .update({ display_name: defaultName })
             .eq("id", userId);
+        }
+      }
+
+      // ✅ Apply invite role if role is missing
+      if ((!profile || !profile.role) && inviteCode) {
+        const { data: invite, error: inviteError } = await supabase
+          .from("invites")
+          .select("role")
+          .eq("code", inviteCode)
+          .single();
+
+        if (!inviteError && invite?.role) {
+          await supabase.from("profiles").update({ role: invite.role }).eq("id", userId);
+          await supabase.from("invites").delete().eq("code", inviteCode);
         }
       }
     }

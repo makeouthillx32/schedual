@@ -7,16 +7,13 @@ import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
-import { cookies } from "next/headers";
 
 export default async function Signup(props: {
-  searchParams: Promise<Message>;
+  searchParams: Promise<Message & { invite?: string }>; // Include invite in type
 }) {
   const searchParams = await props.searchParams;
 
-  // ✅ FIX: Await cookies properly and then get invite
-  const cookieData = await cookies();
-  const invite = cookieData.get("invite")?.value;
+  const invite = typeof searchParams.invite === "string" ? searchParams.invite : "";
 
   if ("message" in searchParams) {
     return (

@@ -6,7 +6,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
-import useLoginSession from "@/lib/useLoginSession"; // ✅ NEW IMPORT
+import useLoginSession from "@/lib/useLoginSession";
+import LogoutButton from "@/components/ui/LogoutButton";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -77,8 +78,7 @@ const DropdownMenuCurrentDateTime: React.FC = () => {
   return (
     <DropdownMenuItem>
       <span className="text-xs">
-        {currentDateTime.toLocaleDateString()}{" "}
-        {currentDateTime.toLocaleTimeString()}
+        {currentDateTime.toLocaleDateString()} {currentDateTime.toLocaleTimeString()}
       </span>
     </DropdownMenuItem>
   );
@@ -88,23 +88,16 @@ const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
-  const session = useLoginSession(); // ✅ use the new hook
+  const session = useLoginSession();
 
   const activePage = pathname.split("/")[1] || "home";
   const settingsLink = `/settings/${activePage}`;
-
   const handleMenuClick = () => setOpen(false);
-  const handleLogout = () => {
-    window.location.href = "/auth/logout";
-  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          className="flex items-center justify-center w-8 h-8"
-          aria-label="Toggle menu"
-        >
+        <button className="flex items-center justify-center w-8 h-8" aria-label="Toggle menu">
           <div className="space-y-1.5">
             <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
             <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
@@ -138,16 +131,16 @@ const CustomDropdown: React.FC = () => {
         )}
         {!session && (
           <DropdownMenuItem asChild>
-            <Link href="/sign-in" onClick={handleMenuClick} className="w-full text-blue-600 dark:text-blue-400 font-semibold">
+            <Link
+              href="/sign-in"
+              onClick={handleMenuClick}
+              className="w-full text-blue-600 dark:text-blue-400 font-semibold"
+            >
               Sign in
             </Link>
           </DropdownMenuItem>
         )}
-        {session && (
-          <DropdownMenuItem variant="danger" onSelect={handleLogout}>
-            Log out
-          </DropdownMenuItem>
-        )}
+        {session && <LogoutButton />}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,9 +1,10 @@
+// app/components/invite/InviteGenerator.tsx
 "use client";
 
 import { useState } from "react";
 
-export default function InviteGenerator() {
-  const [role, setRole] = useState("client");
+export default function InviteGenerator({ defaultRole = "client" }: { defaultRole?: string }) {
+  const [role, setRole] = useState(defaultRole);
   const [inviteLink, setInviteLink] = useState("");
   const [loading, setLoading] = useState(false);
 

@@ -12,6 +12,8 @@ export default async function Signup(props: {
   searchParams: Promise<Message>;
 }) {
   const searchParams = await props.searchParams;
+  const inviteCode = (searchParams as Record<string, string>)?.invite ?? "";
+
   if ("message" in searchParams) {
     return (
       <div className="w-full flex-1 flex items-center min-h-screen sm:max-w-md justify-center gap-2 p-4">
@@ -19,6 +21,7 @@ export default async function Signup(props: {
       </div>
     );
   }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-800 p-8 shadow-xl">
@@ -31,10 +34,10 @@ export default async function Signup(props: {
             </Link>
           </p>
         </div>
-        
+
         <div className="space-y-4">
           <SignInWithGoogle />
-          
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-gray-300 dark:border-zinc-600"></span>
@@ -45,24 +48,25 @@ export default async function Signup(props: {
               </span>
             </div>
           </div>
-          
-          <form className="space-y-4">
+
+          <form className="space-y-4" action={signUpAction}>
+            <input type="hidden" name="invite" value={inviteCode} />
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                   <Mail size={18} />
                 </div>
-                <Input 
-                  name="email" 
+                <Input
+                  name="email"
                   id="email"
-                  placeholder="you@example.com" 
+                  placeholder="you@example.com"
                   required
-                  className="pl-10" 
+                  className="pl-10"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <div className="relative">
@@ -80,24 +84,24 @@ export default async function Signup(props: {
                 />
               </div>
             </div>
-            
-            <SubmitButton 
-              formAction={signUpAction} 
+
+            <SubmitButton
+              formAction={signUpAction}
               pendingText="Creating account..."
               className="w-full py-2.5 rounded-lg font-medium bg-primary hover:bg-primary/90 transition-colors"
             >
               Create account
             </SubmitButton>
-            
+
             <FormMessage message={searchParams} />
           </form>
         </div>
-        
+
         <div className="mt-6 text-center text-xs text-muted-foreground">
           <p>By creating an account, you agree to our <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link></p>
         </div>
       </div>
-      
+
       <SmtpMessage />
     </div>
   );

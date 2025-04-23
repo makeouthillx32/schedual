@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import type React from "react"
 import { redirect } from "next/navigation"
@@ -16,9 +15,10 @@ import {
   Globe,
 } from "lucide-react"
 import type { Metadata } from "next"
-import dynamic from "next/dynamic";
 import DeleteAccount from "@/components/profile/DeleteAccount";
 import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
+import AdminDelete from "@/components/profile/AdminDelete";
+import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -26,20 +26,16 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-// Updated interface to make both params and searchParams Promises
 interface ProfilePageProps {
   params: Promise<{ id: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
-  // Resolve the params and searchParams promises
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  
-  // Also await searchParams (though we don't need it in this component)
   await searchParams;
-  
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()
   const res = await fetch(`${baseUrl}/api/profile`, {
@@ -88,15 +84,21 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
           />
           <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
         </div>
-  
+
         {/* ✅ Invite Generator */}
         <div className="w-full mt-8">
           <InviteGeneratorClient />
         </div>
-  
+
         {/* ✅ Delete Account */}
         <div className="w-full mt-4">
           <DeleteAccount />
+        </div>
+
+        {/* ✅ Admin Delete & Role Editor */}
+        <div className="w-full mt-4 space-y-6">
+          <AdminDelete />
+          <ManualRoleEditor />
         </div>
       </div>
     </div>

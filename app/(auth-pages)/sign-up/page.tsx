@@ -7,15 +7,14 @@ import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
+import { cookies } from "next/headers";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
 }) {
   const searchParams = await props.searchParams;
-
-  // ✅ Get invite code from the URL query (not from cookies)
-  const url = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-  const invite = url.get("invite") || "";
+  const cookieData = await cookies();
+  const invite = cookieData.get("invite")?.value;
 
   if ("message" in searchParams) {
     return (
@@ -52,8 +51,8 @@ export default async function Signup(props: {
             </div>
           </div>
 
-          <form className="space-y-4">
-            <input type="hidden" name="invite" value={invite} />
+          <form className="space-y-4" action={signUpAction}>
+            <input type="hidden" name="invite" value={invite || ""} />
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
@@ -90,7 +89,6 @@ export default async function Signup(props: {
             </div>
 
             <SubmitButton 
-              formAction={signUpAction} 
               pendingText="Creating account..."
               className="w-full py-2.5 rounded-lg font-medium bg-primary hover:bg-primary/90 transition-colors"
             >

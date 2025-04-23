@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Select, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 export default function ManualRoleEditor() {
   const [users, setUsers] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedDisplayName, setSelectedDisplayName] = useState("");
+  const [uuid, setUuid] = useState("");
   const [role, setRole] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,23 +23,24 @@ export default function ManualRoleEditor() {
   }, []);
 
   const handleUpdateRole = async () => {
-    if (!selectedId || !role) return;
+    const selectedUser = users.find((user) => user.display_name === selectedDisplayName);
+    if (!selectedUser || !role) return;
+    setUuid(selectedUser.id);
     setLoading(true);
     setMessage(null);
 
     const res = await fetch("/api/profile/set-role", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uuid: selectedId, role }),
+      body: JSON.stringify({ uuid: selectedUser.id, role }),
     });
 
     const result = await res.json();
     if (res.ok) {
-      setMessage(`✅ Role updated to '${role}' for user.`);
+      setMessage(`✅ Role updated to '${role}' for ${selectedDisplayName}.`);
     } else {
       setMessage(`❌ ${result.error || "Failed to update role."}`);
     }
-
     setLoading(false);
   };
 
@@ -46,16 +48,17 @@ export default function ManualRoleEditor() {
     <div className="max-w-lg mx-auto mt-10 bg-white dark:bg-zinc-800 p-6 rounded shadow">
       <h2 className="text-xl font-bold mb-4 text-center">Manually Set User Role</h2>
 
-      <Label htmlFor="uuid">User Display Name</Label>
+      <Label htmlFor="user">Select User</Label>
       <select
-        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
-        value={selectedId}
-        onChange={(e) => setSelectedId(e.target.value)}
+        id="user"
+        className="mb-4 p-2 rounded border w-full dark:bg-zinc-900 text-black dark:text-white"
+        value={selectedDisplayName}
+        onChange={(e) => setSelectedDisplayName(e.target.value)}
       >
-        <option value="">Select user</option>
+        <option value="">Select a display name</option>
         {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {user.user_metadata?.display_name || user.email || user.id}
+          <option key={user.id} value={user.display_name}>
+            {user.display_name || user.id}
           </option>
         ))}
       </select>
@@ -63,15 +66,15 @@ export default function ManualRoleEditor() {
       <Label htmlFor="role">New Role</Label>
       <select
         id="role"
-        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
+        className="mb-4 p-2 rounded border w-full dark:bg-zinc-900 text-black dark:text-white"
         value={role}
         onChange={(e) => setRole(e.target.value)}
       >
         <option value="">Select role</option>
-        <option value="admin">Admin</option>
-        <option value="job_coach">Job Coach</option>
-        <option value="client">Client</option>
-        <option value="anonymous">Anonymous</option>
+        <option value="admin">admin</option>
+        <option value="job_coach">job_coach</option>
+        <option value="client">client</option>
+        <option value="anonymous">anonymous</option>
       </select>
 
       <Button onClick={handleUpdateRole} disabled={loading} className="w-full">

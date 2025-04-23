@@ -2,45 +2,44 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 export default function ManualRoleEditor() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedDisplayName, setSelectedDisplayName] = useState("");
   const [uuid, setUuid] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState("client");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchAllUsers = async () => {
       const res = await fetch("/api/get-all-users");
       const data = await res.json();
       if (res.ok) setUsers(data);
     };
-    fetchUsers();
+    fetchAllUsers();
   }, []);
 
+  const selectedUser = users.find((user) => user.id === uuid);
+
   const handleUpdateRole = async () => {
-    const selectedUser = users.find((user) => user.display_name === selectedDisplayName);
-    if (!selectedUser || !role) return;
-    setUuid(selectedUser.id);
+    if (!uuid || !role) return;
     setLoading(true);
     setMessage(null);
 
     const res = await fetch("/api/profile/set-role", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uuid: selectedUser.id, role }),
+      body: JSON.stringify({ uuid, role }),
     });
 
     const result = await res.json();
     if (res.ok) {
-      setMessage(`✅ Role updated to '${role}' for ${selectedDisplayName}.`);
+      setMessage(`✅ Role updated to '${role}' for user ${selectedUser?.display_name}.`);
     } else {
       setMessage(`❌ ${result.error || "Failed to update role."}`);
     }
+
     setLoading(false);
   };
 
@@ -51,30 +50,29 @@ export default function ManualRoleEditor() {
       <Label htmlFor="user">Select User</Label>
       <select
         id="user"
-        className="mb-4 p-2 rounded border w-full dark:bg-zinc-900 text-black dark:text-white"
-        value={selectedDisplayName}
-        onChange={(e) => setSelectedDisplayName(e.target.value)}
+        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
+        value={uuid}
+        onChange={(e) => setUuid(e.target.value)}
       >
-        <option value="">Select a display name</option>
+        <option value="">Select a user</option>
         {users.map((user) => (
-          <option key={user.id} value={user.display_name}>
-            {user.display_name || user.id}
+          <option key={user.id} value={user.id}>
+            {user.display_name || user.email || user.id}
           </option>
         ))}
       </select>
 
-      <Label htmlFor="role">New Role</Label>
+      <Label htmlFor="role">Role</Label>
       <select
         id="role"
-        className="mb-4 p-2 rounded border w-full dark:bg-zinc-900 text-black dark:text-white"
+        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
         value={role}
         onChange={(e) => setRole(e.target.value)}
       >
-        <option value="">Select role</option>
-        <option value="admin">admin</option>
-        <option value="job_coach">job_coach</option>
-        <option value="client">client</option>
-        <option value="anonymous">anonymous</option>
+        <option value="admin">Admin</option>
+        <option value="job_coach">Job Coach</option>
+        <option value="client">Client</option>
+        <option value="anonymous">Anonymous</option>
       </select>
 
       <Button onClick={handleUpdateRole} disabled={loading} className="w-full">

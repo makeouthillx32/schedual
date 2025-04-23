@@ -5,6 +5,15 @@ export async function middleware(req: NextRequest) {
   /* 1. create a mutable response wrapper */
   let res = NextResponse.next({ request: { headers: req.headers } });
 
+  /* ✅ Set invite code cookie if present in the query */
+  const invite = req.nextUrl.searchParams.get("invite");
+  if (invite) {
+    res.cookies.set("invite", invite, {
+      path: "/",
+      maxAge: 60 * 10, // 10 minutes
+    });
+  }
+
   /* 2. supabase client able to read / write cookies */
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +22,6 @@ export async function middleware(req: NextRequest) {
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll: (cookies) => {
-          // keep request + response cookies in‑sync
           cookies.forEach(({ name, value }) => req.cookies.set(name, value));
           res = NextResponse.next({ request: { headers: req.headers } });
           cookies.forEach(({ name, value, options }) =>

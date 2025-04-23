@@ -18,7 +18,18 @@ export const signUpAction = async (formData: FormData) => {
   }
 
   const inviteCode = formData.get("invite")?.toString();
-  let userMeta: Record<string, any> = {};
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback/oauth`,
+    },
+  });
+
+  if (error || !data.user) {
+    return encodedRedirect("error", "/sign-up", "Sign up failed.");
+  }
 
   if (inviteCode) {
     const { data: invite, error: inviteError } = await supabase
@@ -28,23 +39,12 @@ export const signUpAction = async (formData: FormData) => {
       .single();
 
     if (!inviteError && invite?.role) {
-      userMeta.role = invite.role;
-      userMeta.invite_code = inviteCode;
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        role: invite.role,
+      });
       await supabase.from("invites").delete().eq("code", inviteCode);
     }
-  }
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback/oauth`,
-      data: userMeta,
-    },
-  });
-
-  if (error || !data.user) {
-    return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
   return encodedRedirect(
@@ -93,7 +93,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    console.error("\u274C Forgot password error:", error.message);
+    console.error("❌ Forgot password error:", error.message);
     return encodedRedirect("error", "/forgot-password", "Could not reset password");
   }
 

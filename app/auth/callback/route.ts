@@ -1,53 +1,47 @@
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
-import { createClient } from "@/utils/supabase/server"; // ✅ import your unified client
 
-export async function GET(req: Request) {
-  const supabase = createServerActionClient({ cookies });
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user;
-  if (!user) {
-    return NextResponse.redirect("/sign-in");
-  }
-
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
   const cookieStore = cookies();
-  const inviteCode = new URL(req.url).searchParams.get("invite");
 
-  // ✅ Apply invite role
-  if (inviteCode) {
-    const { data: invite, error: inviteError } = await supabase
-      .from("invites")
-      .select("role")
-      .eq("code", inviteCode)
-      .single();
+  if (code) {
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    if (!inviteError && invite?.role) {
-      await supabase.from("profiles").update({ role: invite.role }).eq("id", user.id);
-      await supabase.from("invites").delete().eq("code", inviteCode);
+    // Set the session using the OAuth code
+    await supabase.auth.exchangeCodeForSession(code);
+
+    // ✅ Fetch session info to get the user
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+
+    if (user) {
+      const userId = user.id;
+
+      // ✅ Check if display_name exists
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+
+      if (!profileError && !profile?.display_name) {
+        // ✅ Create default name from email before @
+        const defaultName = user.email?.split("@")[0];
+
+        if (defaultName) {
+          await supabase
+            .from("profiles")
+            .update({ display_name: defaultName })
+            .eq("id", userId);
+        }
+      }
     }
   }
 
-  // ✅ Set display name with service role
-  const adminClient = await createClient("service");
-  const currentDisplayName = user.user_metadata?.display_name;
-
-  if (!currentDisplayName) {
-    const defaultName = user.email?.split("@")[0] || `user-${randomUUID().slice(0, 8)}`;
-    await adminClient.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        ...user.user_metadata,
-        display_name: defaultName,
-      },
-    });
-  }
-
-  const lastPage = (await cookieStore).get("lastPage")?.value || "/";
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
-
-  return NextResponse.redirect(new URL(`${lastPage}?refresh=true`, baseUrl));
+  const redirectTo =
+    requestUrl.searchParams.get("redirect_to") ?? "/CMS";
+  return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
 }

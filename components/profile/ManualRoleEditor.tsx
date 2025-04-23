@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function ManualRoleEditor() {
@@ -45,14 +46,13 @@ export default function ManualRoleEditor() {
     <div className="max-w-lg mx-auto mt-10 bg-white dark:bg-zinc-800 p-6 rounded shadow">
       <h2 className="text-xl font-bold mb-4 text-center">Manually Set User Role</h2>
 
-      <Label htmlFor="user">Select User</Label>
+      <Label htmlFor="uuid">User Display Name</Label>
       <select
-        id="user"
-        className="w-full p-2 mb-4 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
+        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
         value={selectedId}
         onChange={(e) => setSelectedId(e.target.value)}
       >
-        <option value="">-- Select a user --</option>
+        <option value="">Select user</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {user.user_metadata?.display_name || user.email || user.id}
@@ -60,14 +60,14 @@ export default function ManualRoleEditor() {
         ))}
       </select>
 
-      <Label htmlFor="role">Select Role</Label>
+      <Label htmlFor="role">New Role</Label>
       <select
         id="role"
-        className="w-full p-2 mb-4 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
+        className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
         value={role}
         onChange={(e) => setRole(e.target.value)}
       >
-        <option value="">-- Select a role --</option>
+        <option value="">Select role</option>
         <option value="admin">Admin</option>
         <option value="job_coach">Job Coach</option>
         <option value="client">Client</option>

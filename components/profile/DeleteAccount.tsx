@@ -103,6 +103,7 @@ export default function AdminUserManager() {
 
       {uuid && selectedUser && (
         <div className="mb-4 border p-4 rounded bg-gray-100 dark:bg-zinc-800">
+          <p><strong>Display Name:</strong> {selectedUser.user_metadata?.display_name || "N/A"}</p>
           <p><strong>Email:</strong> {selectedUser.email}</p>
           <p><strong>UUID:</strong> {selectedUser.id}</p>
         </div>

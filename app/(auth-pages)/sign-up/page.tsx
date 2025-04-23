@@ -13,10 +13,10 @@ export default async function Signup(props: {
   searchParams: Promise<Message>;
 }) {
   const searchParams = await props.searchParams;
-  const cookieStore = cookies();
 
-  // If invite code is present in the URL, persist it into a hidden field
-  const invite = (await cookieStore.get("invite"))?.value;
+  // ✅ FIX: Await cookies properly and then get invite
+  const cookieData = await cookies();
+  const invite = cookieData.get("invite")?.value;
 
   if ("message" in searchParams) {
     return (
@@ -25,6 +25,7 @@ export default async function Signup(props: {
       </div>
     );
   }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-800 p-8 shadow-xl">
@@ -54,6 +55,7 @@ export default async function Signup(props: {
 
           <form className="space-y-4">
             <input type="hidden" name="invite" value={invite || ""} />
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
@@ -101,7 +103,11 @@ export default async function Signup(props: {
         </div>
 
         <div className="mt-6 text-center text-xs text-muted-foreground">
-          <p>By creating an account, you agree to our <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link></p>
+          <p>
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and{" "}
+            <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>
+          </p>
         </div>
       </div>
 

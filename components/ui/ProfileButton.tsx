@@ -1,0 +1,19 @@
+"use client";
+
+import Link from "next/link";
+import { DropdownMenuItem } from "./dropdown-menu";
+
+interface ProfileButtonProps {
+  userId: string;
+  onClick?: () => void;
+}
+
+const ProfileButton: React.FC<ProfileButtonProps> = ({ userId, onClick }) => (
+  <DropdownMenuItem asChild>
+    <Link href={`/profile/${userId}`} onClick={onClick} className="w-full">
+      Profile
+    </Link>
+  </DropdownMenuItem>
+);
+
+export default ProfileButton;

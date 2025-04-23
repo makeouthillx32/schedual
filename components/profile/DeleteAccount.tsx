@@ -96,7 +96,7 @@ export default function AdminUserManager() {
         <option value="">Select a user</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
-            {user.email || user.id}
+            {user.user_metadata?.display_name || user.email || user.id}
           </option>
         ))}
       </select>

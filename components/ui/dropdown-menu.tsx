@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import useLoginSession from "@/lib/useLoginSession";
 import LogoutButton from "@/components/ui/LogoutButton";
 import SignInButton from "@/components/ui/SignInButton";
+import ProfileButton from "@/components/ui/ProfileButton";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -123,13 +124,7 @@ const CustomDropdown: React.FC = () => {
             Settings
           </Link>
         </DropdownMenuItem>
-        {session?.user?.id && (
-          <DropdownMenuItem asChild>
-            <Link href={`/profile/${session.user.id}`} onClick={handleMenuClick} className="w-full">
-              Profile
-            </Link>
-          </DropdownMenuItem>
-        )}
+        {session?.user?.id && <ProfileButton userId={session.user.id} onClick={handleMenuClick} />}
         {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
       </DropdownMenuContent>

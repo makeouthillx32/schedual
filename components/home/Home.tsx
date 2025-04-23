@@ -19,7 +19,7 @@ import MobileMenu from "@/components/home/MobileMenu";
 import IntroBar from "@/components/home/IntroBar";
 import MainContent from "@/components/home/MainContent";
 import useThemeCookie from "@/lib/useThemeCookie";
-import Footer from "@/components/home/Footer";
+
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState("home");

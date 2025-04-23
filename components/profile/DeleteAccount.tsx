@@ -59,7 +59,7 @@ export default function AdminUserManager() {
   const selectedUser = users.find((user) => user.id === uuid);
 
   const handleDelete = async () => {
-    const confirm = window.confirm(`Delete ${selectedUser?.email || uuid}?`);
+    const confirm = window.confirm(`Delete ${selectedUser?.display_name || uuid}?`);
     if (!confirm) return;
 
     setLoading(true);
@@ -96,15 +96,14 @@ export default function AdminUserManager() {
         <option value="">Select a user</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
-            {user.user_metadata?.display_name || user.email || user.id}
+            {user.display_name || user.id}
           </option>
         ))}
       </select>
 
       {uuid && selectedUser && (
         <div className="mb-4 border p-4 rounded bg-gray-100 dark:bg-zinc-800">
-          <p><strong>Display Name:</strong> {selectedUser.user_metadata?.display_name || "N/A"}</p>
-          <p><strong>Email:</strong> {selectedUser.email}</p>
+          <p><strong>Display Name:</strong> {selectedUser.display_name || "N/A"}</p>
           <p><strong>UUID:</strong> {selectedUser.id}</p>
         </div>
       )}

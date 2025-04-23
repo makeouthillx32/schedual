@@ -13,30 +13,8 @@ export async function GET() {
 
   const simplifiedUsers = data.users.map((user) => ({
     id: user.id,
-    email: user.email,
-    display_name: user.user_metadata?.display_name || null, // ✅ now included
+    display_name: user.user_metadata?.display_name || null,
   }));
 
   return NextResponse.json(simplifiedUsers);
-}
-
-export async function DELETE(req: NextRequest) {
-  const supabase = await createClient("service");
-  const { uuid } = await req.json();
-
-  const { error: authError } = await supabase.auth.admin.deleteUser(uuid);
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 500 });
-  }
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .delete()
-    .eq("id", uuid);
-
-  if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ message: "User and profile deleted" });
 }

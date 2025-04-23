@@ -1,24 +1,53 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { createServerActionClient } from "@supabase/auth-helpers-nextjs";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createClient } from "@/utils/supabase/server"; // ✅ import your unified client
 
-export async function GET() {
-  // ‼️ Pass the cookies FUNCTION to Supabase (what it expects)
+export async function GET(req: Request) {
   const supabase = createServerActionClient({ cookies });
 
-  // Process OAuth tokens and set the session cookie
-  await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
+  if (!user) {
+    return NextResponse.redirect("/sign-in");
+  }
 
-  // Now resolve the cookie store so we can read values
-  const cookieStore = await cookies();
-  const lastPage = cookieStore.get("lastPage")?.value || "/";
+  const cookieStore = cookies();
+  const inviteCode = new URL(req.url).searchParams.get("invite");
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+  // ✅ Apply invite role
+  if (inviteCode) {
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("role")
+      .eq("code", inviteCode)
+      .single();
 
-  return NextResponse.redirect(
-    new URL(`${lastPage}?refresh=true`, baseUrl)
-  );
+    if (!inviteError && invite?.role) {
+      await supabase.from("profiles").update({ role: invite.role }).eq("id", user.id);
+      await supabase.from("invites").delete().eq("code", inviteCode);
+    }
+  }
+
+  // ✅ Set display name with service role
+  const adminClient = await createClient("service");
+  const currentDisplayName = user.user_metadata?.display_name;
+
+  if (!currentDisplayName) {
+    const defaultName = user.email?.split("@")[0] || `user-${randomUUID().slice(0, 8)}`;
+    await adminClient.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...user.user_metadata,
+        display_name: defaultName,
+      },
+    });
+  }
+
+  const lastPage = (await cookieStore).get("lastPage")?.value || "/";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app";
+
+  return NextResponse.redirect(new URL(`${lastPage}?refresh=true`, baseUrl));
 }

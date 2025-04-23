@@ -7,12 +7,16 @@ import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
+import { cookies } from "next/headers";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
 }) {
   const searchParams = await props.searchParams;
-  const inviteCode = (searchParams as Record<string, string>)?.invite ?? "";
+  const cookieStore = cookies();
+
+  // If invite code is present in the URL, persist it into a hidden field
+  const invite = (await cookieStore.get("invite"))?.value;
 
   if ("message" in searchParams) {
     return (
@@ -21,7 +25,6 @@ export default async function Signup(props: {
       </div>
     );
   }
-
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-800 p-8 shadow-xl">
@@ -49,20 +52,20 @@ export default async function Signup(props: {
             </div>
           </div>
 
-          <form className="space-y-4" action={signUpAction}>
-            <input type="hidden" name="invite" value={inviteCode} />
+          <form className="space-y-4">
+            <input type="hidden" name="invite" value={invite || ""} />
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                   <Mail size={18} />
                 </div>
-                <Input
-                  name="email"
+                <Input 
+                  name="email" 
                   id="email"
-                  placeholder="you@example.com"
+                  placeholder="you@example.com" 
                   required
-                  className="pl-10"
+                  className="pl-10" 
                 />
               </div>
             </div>
@@ -85,8 +88,8 @@ export default async function Signup(props: {
               </div>
             </div>
 
-            <SubmitButton
-              formAction={signUpAction}
+            <SubmitButton 
+              formAction={signUpAction} 
               pendingText="Creating account..."
               className="w-full py-2.5 rounded-lg font-medium bg-primary hover:bg-primary/90 transition-colors"
             >

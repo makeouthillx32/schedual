@@ -8,6 +8,7 @@ import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
 import useLoginSession from "@/lib/useLoginSession";
 import LogoutButton from "@/components/ui/LogoutButton";
+import SignInButton from "@/components/ui/SignInButton";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -129,17 +130,7 @@ const CustomDropdown: React.FC = () => {
             </Link>
           </DropdownMenuItem>
         )}
-        {!session && (
-          <DropdownMenuItem asChild>
-            <Link
-              href="/sign-in"
-              onClick={handleMenuClick}
-              className="w-full text-blue-600 dark:text-blue-400 font-semibold"
-            >
-              Sign in
-            </Link>
-          </DropdownMenuItem>
-        )}
+        {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
       </DropdownMenuContent>
     </DropdownMenu>

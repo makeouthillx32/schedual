@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
@@ -10,6 +9,10 @@ import useLoginSession from "@/lib/useLoginSession";
 import LogoutButton from "@/components/ui/LogoutButton";
 import SignInButton from "@/components/ui/SignInButton";
 import ProfileButton from "@/components/ui/ProfileButton";
+import SettingsButton from "@/components/ui/SettingsButton";
+import ScheduleButton from "@/components/ui/ScheduleButton";
+import HomeButton from "@/components/ui/HomeButton";
+import CurrentDateTime from "@/components/ui/CurrentDateTime";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -67,25 +70,6 @@ const DropdownMenuItem = React.forwardRef<
 });
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
-const DropdownMenuCurrentDateTime: React.FC = () => {
-  const [currentDateTime, setCurrentDateTime] = React.useState(new Date());
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentDateTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <DropdownMenuItem>
-      <span className="text-xs">
-        {currentDateTime.toLocaleDateString()} {currentDateTime.toLocaleTimeString()}
-      </span>
-    </DropdownMenuItem>
-  );
-};
-
 const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
   const [open, setOpen] = React.useState(false);
@@ -93,7 +77,6 @@ const CustomDropdown: React.FC = () => {
   const session = useLoginSession();
 
   const activePage = pathname.split("/")[1] || "home";
-  const settingsLink = `/settings/${activePage}`;
   const handleMenuClick = () => setOpen(false);
 
   return (
@@ -108,22 +91,10 @@ const CustomDropdown: React.FC = () => {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuCurrentDateTime />
-        <DropdownMenuItem asChild>
-          <Link href="/" onClick={handleMenuClick} className="w-full">
-            Home
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/CMS/schedule" onClick={handleMenuClick} className="w-full">
-            Schedule
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={settingsLink} onClick={handleMenuClick} className="w-full">
-            Settings
-          </Link>
-        </DropdownMenuItem>
+        <CurrentDateTime />
+        <HomeButton onClick={handleMenuClick} />
+        <ScheduleButton onClick={handleMenuClick} />
+        <SettingsButton activePage={activePage} onClick={handleMenuClick} />
         {session?.user?.id && <ProfileButton userId={session.user.id} onClick={handleMenuClick} />}
         {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
@@ -138,5 +109,4 @@ export {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuCurrentDateTime,
 };

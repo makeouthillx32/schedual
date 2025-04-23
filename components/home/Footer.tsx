@@ -7,4 +7,5 @@ const Footer: React.FC = () => (
 );
 
 export default Footer;
- 
+// Compare this snippet from components/home/Footer.tsx:
+// "use client";    

@@ -3,12 +3,13 @@
 import React from "react";
 import { Menu, X } from "lucide-react";
 import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
+import { navLinks } from "@/components/home/navLinks";
 
 interface HeaderProps {
   theme: "light" | "dark";
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
-  navigateTo: (page: string) => (e: React.MouseEvent) => void;
+  navigateTo: (page: string) => (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -35,11 +36,16 @@ const Header: React.FC<HeaderProps> = ({
       </div>
       <div className="flex items-center space-x-4">
         <nav className="hidden md:flex items-center space-x-6 text-sm">
-          <a href="#" onClick={navigateTo("about")} className="hover:underline">About Us</a>
-          <a href="#" onClick={navigateTo("board")} className="hover:underline">Board of Directors</a>
-          <a href="#" onClick={navigateTo("title9")} className="hover:underline">Title 9 Information</a>
-          <a href="#" onClick={navigateTo("action")} className="hover:underline">Autism Day Camp</a>
-          <a href="#" onClick={navigateTo("jobs")} className="hover:underline">Jobs</a>
+          {navLinks.map((link) => (
+            <a
+              key={link.key}
+              href="#"
+              onClick={navigateTo(link.key)}
+              className="hover:underline"
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
         <SwitchtoDarkMode />
         <button

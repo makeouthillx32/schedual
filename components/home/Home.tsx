@@ -14,6 +14,7 @@ import useLoginSession from "@/lib/useLoginSession";
 import SignInButton from "@/components/ui/SignInButton";
 import LogoutButton from "@/components/ui/LogoutButton";
 import Header from "@/components/home/Header";
+import Footer from "@/components/home/Footer";
 import MobileMenu from "@/components/home/MobileMenu";
 import IntroBar from "@/components/home/IntroBar";
 import MainContent from "@/components/home/MainContent";

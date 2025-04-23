@@ -17,7 +17,6 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
 
-  // Extract invite code from the current URL (from cookie or headers if needed)
   const inviteCode = formData.get("invite")?.toString();
 
   const { data, error } = await supabase.auth.signUp({
@@ -32,7 +31,8 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
-  // If there's an invite code, update the user's role in the profile
+  let roleToAssign = "user";
+
   if (inviteCode) {
     const { data: invite, error: inviteError } = await supabase
       .from("invites")
@@ -41,10 +41,15 @@ export const signUpAction = async (formData: FormData) => {
       .single();
 
     if (!inviteError && invite?.role) {
-      await supabase.from("profiles").update({ role: invite.role }).eq("id", data.user.id);
+      roleToAssign = invite.role;
       await supabase.from("invites").delete().eq("code", inviteCode);
     }
   }
+
+  await supabase.from("profiles").insert({
+    id: data.user.id,
+    role: roleToAssign,
+  });
 
   return encodedRedirect(
     "success",
@@ -52,6 +57,7 @@ export const signUpAction = async (formData: FormData) => {
     "Thanks for signing up! Please check your email to verify your account."
   );
 };
+
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -63,14 +69,12 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  // Get last visited page from cookies
   const store = await cookies();
   const allCookies = store.getAll();
   const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
 
   let lastPage = lastPageCookie?.value || "/CMS";
 
-  // Prevent redirecting back to auth pages
   if (["/sign-in", "/sign-up", "/forgot-password"].includes(lastPage)) {
     lastPage = "/CMS";
   }
@@ -80,7 +84,7 @@ export const signInAction = async (formData: FormData) => {
 
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
-  const supabase = await createClient(); // ✅ FIXED
+  const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const callbackUrl = formData.get("callbackUrl")?.toString();
 
@@ -107,7 +111,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
 };
 
 export const resetPasswordAction = async (formData: FormData) => {
-  const supabase = await createClient(); // ✅ FIXED
+  const supabase = await createClient();
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
 
@@ -129,7 +133,7 @@ export const resetPasswordAction = async (formData: FormData) => {
 };
 
 export const signOutAction = async () => {
-  const supabase = await createClient(); // ✅ FIXED
+  const supabase = await createClient();
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };

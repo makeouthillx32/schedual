@@ -5,10 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";
-import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -16,97 +14,89 @@ export default async function Signup(props: {
   const searchParams = await props.searchParams;
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;
-  const lastPage = cookieData.get("lastPage")?.value;
 
-  if ("message" in searchParams && searchParams.message.includes("Thanks for signing up") && lastPage) {
-    return redirect(`${lastPage}?refresh=true`);
+  if ("message" in searchParams) {
+    return (
+      <div className="w-full flex-1 flex items-center min-h-screen justify-center gap-2 p-4">
+        <FormMessage message={searchParams} />
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-950 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-800 p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight mb-2">Create account</h1>
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link className="text-primary font-medium hover:underline transition-all" href="/sign-in">
-              Sign in
-            </Link>
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-zinc-100 to-zinc-200 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-700 px-4 md:px-6 lg:px-12">
+      <div className="mx-auto w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-800 shadow-2xl p-10">
+        <h1 className="text-4xl font-extrabold text-center text-primary dark:text-white mb-6">Create an Account</h1>
+
+        <SignInWithGoogle />
+
+        <div className="flex items-center my-6">
+          <div className="flex-grow border-t border-gray-300 dark:border-zinc-600"></div>
+          <span className="mx-4 text-sm text-muted-foreground">OR</span>
+          <div className="flex-grow border-t border-gray-300 dark:border-zinc-600"></div>
         </div>
 
-        <div className="space-y-4">
-          <SignInWithGoogle />
+        <form className="space-y-6" action={signUpAction}>
+          <input type="hidden" name="invite" value={invite || ""} />
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300 dark:border-zinc-600"></span>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-zinc-800 px-2 text-muted-foreground">
-                or continue with email
+          <div>
+            <Label htmlFor="email">Email address</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Mail size={18} />
               </span>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                required
+                className="pl-10"
+              />
             </div>
           </div>
 
-          <form className="space-y-4" action={signUpAction}>
-            <input type="hidden" name="invite" value={invite || ""} />
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                  <Mail size={18} />
-                </div>
-                <Input 
-                  name="email" 
-                  id="email"
-                  placeholder="you@example.com" 
-                  required
-                  className="pl-10" 
-                />
-              </div>
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Lock size={18} />
+              </span>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="At least 6 characters"
+                minLength={6}
+                required
+                className="pl-10"
+              />
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                  <Lock size={18} />
-                </div>
-                <Input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="At least 6 characters"
-                  minLength={6}
-                  required
-                  className="pl-10"
-                />
-              </div>
-            </div>
+          <SubmitButton
+            pendingText="Creating..."
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold"
+          >
+            Create Account
+          </SubmitButton>
 
-            <SubmitButton 
-              pendingText="Creating account..."
-              className="w-full py-2.5 rounded-lg font-medium bg-primary hover:bg-primary/90 transition-colors"
-            >
-              Create account
-            </SubmitButton>
+          <FormMessage message={searchParams} />
+        </form>
 
-            <FormMessage message={searchParams} />
-          </form>
-        </div>
+        <p className="text-center text-sm mt-6 text-muted-foreground">
+          Already have an account?{' '}
+          <Link href="/sign-in" className="text-blue-600 dark:text-blue-400 hover:underline">
+            Sign in
+          </Link>
+        </p>
 
-        <div className="mt-6 text-center text-xs text-muted-foreground">
-          <p>
-            By creating an account, you agree to our{" "}
-            <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and{" "}
-            <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>
-          </p>
-        </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          By signing up, you agree to our{' '}
+          <Link href="/terms" className="underline hover:text-primary">Terms</Link> and{' '}
+          <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+        </p>
       </div>
-
-      <SmtpMessage />
     </div>
   );
 }

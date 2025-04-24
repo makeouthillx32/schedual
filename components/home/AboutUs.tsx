@@ -1,11 +1,46 @@
 "use client";
+import { useState } from "react";
 import Image from "next/image";
 
-interface AboutUsPageProps {
-  navigateTo: (page: string) => void;
-}
+import Transportation from "@/components/home/services/Transportation";
+import EarlyChildhood from "@/components/home/services/EarlyChildhood";
+import SupportedLiving from "@/components/home/services/SupportedLiving";
+import Artists from "@/components/home/services/Artists";
+import AutismDayCamp from "@/components/home/services/AutismDayCamp";
+import Employment from "@/components/home/services/Employment";
+import CARF from "@/components/home/services/CARF";
+import ThriftStore from "@/components/home/services/ThriftStore";
+import Shredding from "@/components/home/services/Shredding";
 
-export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
+const components: Record<string, JSX.Element> = {
+  transportation: <Transportation />,
+  earlychildhood: <EarlyChildhood />,
+  supportedliving: <SupportedLiving />,
+  artists: <Artists />,
+  action: <AutismDayCamp />,
+  employment: <Employment />,
+  carf: <CARF />,
+  thrift: <ThriftStore />,
+  shredding: <Shredding />,
+};
+
+export default function AboutUsPage() {
+  const [active, setActive] = useState<string | null>(null);
+
+  if (active) {
+    return (
+      <div className="p-6 bg-[var(--home-background)] text-[var(--home-text)] space-y-4">
+        <button
+          onClick={() => setActive(null)}
+          className="text-sm text-blue-600 underline hover:opacity-80"
+        >
+          ← Back to Overview
+        </button>
+        {components[active]}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 text-[var(--home-text)] bg-[var(--home-background)]">
       <div className="text-sm space-y-4">
@@ -45,7 +80,7 @@ export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
         </div>
       </div>
 
-      {/* Services Grid (updated to use navigateTo) */}
+      {/* Services Grid */}
       <div className="flex flex-col items-center mt-12 space-y-6">
         {[
           ["Transportation", "transportation", "Transportation.jpg"],
@@ -60,13 +95,13 @@ export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
         ].map(([title, key, filename]) => (
           <button
             key={key}
-            onClick={() => navigateTo(key)}
+            onClick={() => setActive(key)}
             className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
           >
             <div className="w-24 h-24 flex-shrink-0">
               <Image
                 src={`/images/home/${filename}`}
-                alt={title as string}
+                alt={title}
                 width={96}
                 height={96}
                 className="w-full h-full object-cover rounded"

@@ -9,13 +9,12 @@ import HomePage from "@/components/home/Landing";
 
 interface MainContentProps {
   currentPage: string;
-  navigateTo: (page: string) => void;
 }
 
-const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
+const MainContent: React.FC<MainContentProps> = ({ currentPage }) => {
   switch (currentPage) {
     case "about":
-      return <AboutUsPage navigateTo={navigateTo} />;
+      return <AboutUsPage />;
     case "board":
       return <BoardPage />;
     case "title9":

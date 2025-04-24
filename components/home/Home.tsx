@@ -26,8 +26,7 @@ export default function Home() {
   const theme = useThemeCookie();
   const session = useLoginSession();
 
-  const navigateTo = (page: string) => (e: React.MouseEvent) => {
-    e.preventDefault();
+  const navigateTo = (page: string) => {
     setCurrentPage(page);
     setMobileMenuOpen(false);
     window.scrollTo(0, 0);
@@ -40,22 +39,27 @@ export default function Home() {
           theme={theme}
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
-          navigateTo={navigateTo}
+          navigateTo={(page) => (e) => {
+            e.preventDefault();
+            navigateTo(page);
+          }}
         />
         {mobileMenuOpen && (
           <MobileMenu
-            navigateTo={navigateTo}
+            navigateTo={(page) => (e) => {
+              e.preventDefault();
+              navigateTo(page);
+            }}
             session={session}
             onClose={() => setMobileMenuOpen(false)}
           />
         )}
 
-
         {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
 
         <main className="flex-grow">
           <div className="max-w-5xl mx-auto px-4 py-12">
-            <MainContent currentPage={currentPage} />
+            <MainContent currentPage={currentPage} navigateTo={navigateTo} />
           </div>
         </main>
 

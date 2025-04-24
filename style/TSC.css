@@ -1,0 +1,339 @@
+/* Updated TSC.css file for multi-week support */
+.timesheet-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.timesheet-container h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.week-tabs {
+  display: flex;
+  overflow-x: auto;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 2px;
+}
+
+.week-tab {
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background-color: #f0f0f0;
+  margin-right: 5px;
+  cursor: pointer;
+  position: relative;
+}
+
+.week-tab.active {
+  background-color: #fff;
+  border-bottom: 2px solid #fff;
+  margin-bottom: -1px;
+  font-weight: bold;
+}
+
+.week-tab:hover {
+  background-color: #e0e0e0;
+}
+
+.week-tab.active:hover {
+  background-color: #fff;
+}
+
+.week-tab.add-week {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.week-tab.add-week:hover {
+  background-color: #45a049;
+}
+
+.remove-week-button {
+  margin-left: 8px;
+  color: #ff5252;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.remove-week-button:hover {
+  color: #e04545;
+}
+
+.week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.week-name-input {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 200px;
+}
+
+.week-name-input:focus {
+  border-color: #ddd;
+  outline: none;
+}
+
+.week-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-week-from-current {
+  padding: 8px 15px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-week-from-current:hover {
+  background-color: #0b7dda;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.custom-day-input {
+  flex: 1;
+  max-width: 200px;
+}
+
+.custom-day-input input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.add-button {
+  padding: 8px 15px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background-color: #45a049;
+}
+
+.no-days-message {
+  text-align: center;
+  padding: 30px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  color: #666;
+  font-style: italic;
+}
+
+.timesheet-table {
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.timesheet-row {
+  display: flex;
+  padding: 10px 15px;
+  background-color: #fff;
+  align-items: center;
+}
+
+.row-alternate {
+  background-color: #f4f4f4;
+}
+
+.day-label {
+  width: 120px;
+  font-weight: bold;
+  color: #555;
+}
+
+.time-section {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.time-input, .break-input {
+  display: flex;
+  align-items: center;
+}
+
+.time-separator {
+  margin: 0 4px;
+  font-weight: bold;
+}
+
+.hour-select, .minute-select {
+  width: 60px;
+  text-align: center;
+  padding: 8px 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.ampm-select {
+  width: 80px;
+  padding: 8px 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-left: 5px;
+}
+
+.break-select {
+  width: 100px;
+  padding: 8px 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.hours-total {
+  width: 80px;
+  text-align: right;
+  font-weight: bold;
+}
+
+.remove-row-button {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.remove-row-button:hover {
+  background-color: #e04545;
+}
+
+.week-total-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 15px;
+  background-color: #e8f5e9;
+  border-top: 2px solid #ddd;
+  font-weight: bold;
+}
+
+.week-total-label {
+  margin-right: 20px;
+}
+
+.week-total-hours {
+  width: 100px;
+  text-align: right;
+}
+
+.totals-section {
+  padding: 15px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.week-summaries {
+  margin-bottom: 20px;
+}
+
+.week-summaries h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.week-summary-list {
+  margin-bottom: 15px;
+}
+
+.week-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px dashed #ddd;
+}
+
+.all-weeks-total {
+  font-size: 18px;
+  margin: 15px 0;
+}
+
+.hourly-rate-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.hourly-rate-section input {
+  width: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.calculate-pay-button {
+  padding: 8px 15px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.calculate-pay-button:hover {
+  background-color: #45a049;
+}
+
+.pay-calculation {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pay-detail {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pay-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+  font-weight: bold;
+  font-size: 18px;
+}

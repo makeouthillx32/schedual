@@ -18,15 +18,8 @@ export default async function Signup(props: {
   const invite = cookieData.get("invite")?.value;
   const lastPage = cookieData.get("lastPage")?.value;
 
-  if ("message" in searchParams) {
-    if (searchParams.type === "success" && lastPage) {
-      return redirect(`${lastPage}?refresh=true`);
-    }
-    return (
-      <div className="w-full flex-1 flex items-center min-h-screen sm:max-w-md justify-center gap-2 p-4">
-        <FormMessage message={searchParams} />
-      </div>
-    );
+  if ("message" in searchParams && searchParams.message.includes("Thanks for signing up") && lastPage) {
+    return redirect(`${lastPage}?refresh=true`);
   }
 
   return (

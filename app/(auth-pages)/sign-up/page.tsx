@@ -8,6 +8,7 @@ import Link from "next/link";
 import { SmtpMessage } from "../smtp-message";
 import { Mail, Lock } from "lucide-react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -15,8 +16,12 @@ export default async function Signup(props: {
   const searchParams = await props.searchParams;
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;
+  const lastPage = cookieData.get("lastPage")?.value;
 
   if ("message" in searchParams) {
+    if (searchParams.type === "success" && lastPage) {
+      return redirect(`${lastPage}?refresh=true`);
+    }
     return (
       <div className="w-full flex-1 flex items-center min-h-screen sm:max-w-md justify-center gap-2 p-4">
         <FormMessage message={searchParams} />

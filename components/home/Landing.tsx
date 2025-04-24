@@ -16,21 +16,21 @@ export default function HomePage() {
           />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-black mb-2">
+          <h1 className="text-2xl md:text-3xl font-semibold text-[var(--home-heading)] mb-2">
             Welcome to Desert Area Resources and Training
           </h1>
           <h2 className="text-lg md:text-xl font-medium mb-4">Our Mission is to:</h2>
-          <p className="text-gray-600 mb-2">
+          <p className="text-[var(--home-text)] mb-2">
             Provide support and opportunities for people who have intellectual or developmental disabilities
           </p>
-          <p className="text-gray-600 mb-2">
+          <p className="text-[var(--home-text)] mb-2">
             to make positive choices, to live and learn together, and pursue the dreams and lifestyles they choose.
           </p>
         </div>
       </div>
 
       {/* Welcome Text */}
-      <div className="space-y-6 text-gray-700 text-sm md:text-base mb-12">
+      <div className="space-y-6 text-[var(--home-text)] text-sm md:text-base mb-12">
         <p>
           DART offers programs and services to people with and without developmental disabilities or other special
           needs. Our staff is here to provide services and opportunities to meet the needs of the individual.
@@ -67,8 +67,10 @@ export default function HomePage() {
       </div>
 
       {/* History Section */}
-      <div className="space-y-4 text-gray-700 text-sm">
-        <h3 className="font-semibold text-base">The History of Desert Area Resources and Training</h3>
+      <div className="space-y-4 text-[var(--home-text)] text-sm">
+        <h3 className="font-semibold text-base text-[var(--home-content-heading)]">
+          The History of Desert Area Resources and Training
+        </h3>
 
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <div className="md:w-1/4">

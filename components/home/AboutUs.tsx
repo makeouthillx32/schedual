@@ -5,8 +5,8 @@ import Image from "next/image";
 
 export default function AboutUsPage() {
   return (
-    <div className="space-y-8">
-      <div className="text-sm text-gray-700 space-y-4">
+    <div className="space-y-8 text-[var(--home-text)] bg-[var(--home-background)]">
+      <div className="text-sm space-y-4">
         <p>Serving the community since 1961</p>
         <p>
           DART operates with highly experienced, well-trained in 1961. We are a
@@ -23,7 +23,7 @@ export default function AboutUsPage() {
           Rehabilitation Commission). A copy of the accreditation is available upon
           request from Executive Director's office. For more information about CARF
           visit{" "}
-          <a href="#" className="text-blue-600 hover:underline">
+          <a href="#" className="text-blue-500 hover:underline">
             www.carf.org
           </a>
         </p>
@@ -74,7 +74,7 @@ export default function AboutUsPage() {
               />
             </div>
             <div>
-              <h3 className="font-semibold">{title}</h3>
+              <h3 className="font-semibold text-[var(--home-content-heading)]">{title}</h3>
             </div>
           </div>
         ))}

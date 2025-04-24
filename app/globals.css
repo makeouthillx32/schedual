@@ -136,17 +136,22 @@ select:focus {
 }
 
 .dark .home-page {
-  --home-header: #1b1f23;
-  --home-header-text: #f8f9fa;
-  --home-background: #121417;
-  --home-text: #e4e6eb;
-  --home-heading: #f1f1f1;
-  --home-section-heading: #aad1ff;
-  --home-nav-bg: #020202;
-  --home-nav-text: #e4e6eb;
-  --home-content-heading: #f1f1f1;
-  --home-logo-color: #ffffff;
+  --home-header: #252934;
+  --home-header-text: #fefefe;
+  --home-background: #1a1c23;
+  --home-text: #e2e8f0;
+  --home-heading: #ffffff;
+  --home-section-heading: #7dd3fc;
+  --home-nav-bg: #2d3142;
+  --home-nav-text: #f1f5f9;
+  --home-content-heading: #fafafa;
+  --home-logo-color: #93c5fd;
+  --home-accent: #fcd34d;
+  --home-danger: #fb7185;
 }
+
+
+
 
 .login-with-google-btn {
   width: 100%;

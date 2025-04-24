@@ -19,8 +19,7 @@ const Header: React.FC<HeaderProps> = ({
   navigateTo,
 }) => (
   <header
-    className="border-b border-gray-200 py-2 px-4 relative"
-    style={{ backgroundColor: "var(--home-nav-bg)", color: "var(--home-nav-text)" }}
+    className="border-b border-gray-200 py-2 px-4 relative bg-[var(--home-header)] text-[var(--home-header-text)]"
   >
     <div className="max-w-7xl mx-auto flex justify-between items-center">
       <div className="font-bold text-lg">
@@ -41,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({
               key={link.key}
               href="#"
               onClick={navigateTo(link.key)}
-              className="hover:underline"
+              className="hover:underline text-[var(--home-nav-text)]"
             >
               {link.label}
             </a>

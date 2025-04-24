@@ -69,10 +69,10 @@ export const signInAction = async (formData: FormData) => {
   const allCookies = store.getAll();
   const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
 
-  let lastPage = lastPageCookie?.value || "/CMS";
+  let lastPage = lastPageCookie?.value || "/";
 
   if (["/sign-in", "/sign-up", "/forgot-password"].includes(lastPage)) {
-    lastPage = "/CMS";
+    lastPage = "/";
   }
 
   return redirect(`${lastPage}?refresh=true`);
@@ -130,6 +130,7 @@ export const resetPasswordAction = async (formData: FormData) => {
 
 export const signOutAction = async () => {
   const supabase = await createClient();
+  const store = await cookies();
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };

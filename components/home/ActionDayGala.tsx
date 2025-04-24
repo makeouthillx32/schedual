@@ -1,7 +1,7 @@
 export default function ActionDayPage() {
   return (
-    <div className="max-w-3xl mx-auto text-center text-gray-700 space-y-6">
-      <h2 className="text-2xl md:text-3xl font-bold text-blue-900 mt-8">
+    <div className="max-w-3xl mx-auto text-center text-[var(--home-text)] bg-[var(--home-background)] space-y-6">
+      <h2 className="text-2xl md:text-3xl font-bold text-[var(--home-content-heading)] mt-8">
         Autism Day Camp
       </h2>
       <p className="text-base md:text-lg leading-relaxed">

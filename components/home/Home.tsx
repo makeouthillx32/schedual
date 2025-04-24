@@ -20,7 +20,6 @@ import IntroBar from "@/components/home/IntroBar";
 import MainContent from "@/components/home/MainContent";
 import useThemeCookie from "@/lib/useThemeCookie";
 
-
 export default function Home() {
   const [currentPage, setCurrentPage] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,27 +34,33 @@ export default function Home() {
   };
 
   return (
-    <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
-      <Header
-        theme={theme}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-        navigateTo={navigateTo}
-      />
+    <div className={theme === "dark" ? "dark" : ""}>
+      <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)]">
+        <Header
+          theme={theme}
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          navigateTo={navigateTo}
+        />
+        {mobileMenuOpen && (
+          <MobileMenu
+            navigateTo={navigateTo}
+            session={session}
+            onClose={() => setMobileMenuOpen(false)}
+          />
+        )}
 
-      {mobileMenuOpen && (
-        <MobileMenu navigateTo={navigateTo} session={session} />
-      )}
 
-      {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
+        {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
 
-      <main className="flex-grow">
-        <div className="max-w-5xl mx-auto px-4 py-12">
-          <MainContent currentPage={currentPage} />
-        </div>
-      </main>
+        <main className="flex-grow">
+          <div className="max-w-5xl mx-auto px-4 py-12">
+            <MainContent currentPage={currentPage} />
+          </div>
+        </main>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 }

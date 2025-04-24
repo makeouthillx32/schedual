@@ -36,7 +36,7 @@ export default function JobsPage() {
   const activeJob = jobs.find((job) => job.title === selectedJob);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
+    <div className="max-w-5xl mx-auto px-4 py-12 text-[var(--home-text)] bg-[var(--home-background)]">
       {!selectedJob && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start">
@@ -73,7 +73,7 @@ export default function JobsPage() {
 
       {selectedJob && activeJob ? (
         <div className="border-t pt-6">
-          <h3 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+          <h3 className="text-3xl font-bold text-[var(--home-content-heading)] flex items-center gap-2">
             {activeJob.title}
             {activeJob.featured && (
               <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
@@ -86,7 +86,7 @@ export default function JobsPage() {
             <span>📍 {activeJob.location}</span>
             <span>🔖 {activeJob.type}</span>
           </div>
-          <p className="mt-3 text-gray-600 text-sm leading-relaxed">
+          <p className="mt-3 text-[var(--home-text)] text-sm leading-relaxed">
             {activeJob.description}
           </p>
           {activeJob.expired && (
@@ -109,7 +109,7 @@ export default function JobsPage() {
                 onClick={() => setSelectedJob(job.title)}
                 className="text-left"
               >
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-[var(--home-content-heading)] flex items-center gap-2">
                   {job.title}
                   {job.featured && (
                     <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
@@ -123,7 +123,7 @@ export default function JobsPage() {
                 <span>📍 {job.location}</span>
                 <span>🔖 {job.type}</span>
               </div>
-              <p className="mt-3 text-gray-600 text-sm leading-relaxed">
+              <p className="mt-3 text-[var(--home-text)] text-sm leading-relaxed">
                 {job.description.slice(0, 180)}...
               </p>
             </div>

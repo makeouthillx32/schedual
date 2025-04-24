@@ -5,7 +5,7 @@ import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import "./globals.css";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { setCookie } from "@/lib/cookieUtils";
 
 export default function RootLayout({
@@ -14,6 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Hide layout on homepage and /Tools
   const excludeGlobalLayout =
@@ -30,11 +31,15 @@ export default function RootLayout({
       if (!isAuthPage) {
         setCookie("lastPage", pathname, { path: "/" });
       }
+
+      // Sync dark mode from localStorage
+      const theme = localStorage.getItem("theme");
+      setIsDarkMode(theme === "dark");
     }
   }, [pathname]);
 
   return (
-    <html lang="en">
+    <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <body>
         <Providers>
           {!excludeGlobalLayout && <Nav />}

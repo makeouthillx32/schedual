@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <>
+    <div className="home-page bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
         <div className="w-48 h-48 flex-shrink-0">
@@ -113,6 +113,6 @@ export default function HomePage() {
           to expand its programs and impact throughout surrounding counties.
         </p>
       </div>
-    </>
+    </div>
   );
 }

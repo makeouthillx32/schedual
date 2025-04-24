@@ -12,7 +12,7 @@ import CARF from "@/components/home/services/CARF";
 import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 
-const components: Record<string, JSX.Element> = {
+const components = {
   transportation: <Transportation />,
   earlychildhood: <EarlyChildhood />,
   supportedliving: <SupportedLiving />,
@@ -101,7 +101,7 @@ export default function AboutUsPage() {
             <div className="w-24 h-24 flex-shrink-0">
               <Image
                 src={`/images/home/${filename}`}
-                alt={title}
+                alt={title as string}
                 width={96}
                 height={96}
                 className="w-full h-full object-cover rounded"

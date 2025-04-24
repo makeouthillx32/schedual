@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="home-page bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+    <div className="home-page min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-background)] dark:text-[var(--home-text)]">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
         <div className="w-48 h-48 flex-shrink-0">

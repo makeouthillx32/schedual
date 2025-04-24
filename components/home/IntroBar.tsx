@@ -10,6 +10,14 @@ const labels: Record<string, string> = {
   title9: "Title 9 Information",
   action: "Autism Day Camp",
   jobs: "Jobs",
+  transportation: "Transportation",
+  earlychildhood: "Early Childhood Services",
+  supportedliving: "Supported Living Services",
+  artists: "Artists on the Edge",
+  employment: "Employment Services",
+  carf: "Commission for the Accreditation of Rehabilitation Facilities",
+  thrift: "DART Thrift Store",
+  shredding: "Secure Document Shredding",
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
@@ -24,7 +32,6 @@ const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
 };
 
 export default IntroBar;
-
 
 // "use client";
 

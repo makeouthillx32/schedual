@@ -1,46 +1,12 @@
 "use client";
-import { useState } from "react";
+
 import Image from "next/image";
 
-import Transportation from "@/components/home/services/Transportation";
-import EarlyChildhood from "@/components/home/services/EarlyChildhood";
-import SupportedLiving from "@/components/home/services/SupportedLiving";
-import Artists from "@/components/home/services/Artists";
-import AutismDayCamp from "@/components/home/services/AutismDayCamp";
-import Employment from "@/components/home/services/Employment";
-import CARF from "@/components/home/services/CARF";
-import ThriftStore from "@/components/home/services/ThriftStore";
-import Shredding from "@/components/home/services/Shredding";
+interface AboutUsPageProps {
+  navigateTo: (page: string) => void;
+}
 
-const components = {
-  transportation: <Transportation />,
-  earlychildhood: <EarlyChildhood />,
-  supportedliving: <SupportedLiving />,
-  artists: <Artists />,
-  action: <AutismDayCamp />,
-  employment: <Employment />,
-  carf: <CARF />,
-  thrift: <ThriftStore />,
-  shredding: <Shredding />,
-};
-
-export default function AboutUsPage() {
-  const [active, setActive] = useState<string | null>(null);
-
-  if (active) {
-    return (
-      <div className="p-6 bg-[var(--home-background)] text-[var(--home-text)] space-y-4">
-        <button
-          onClick={() => setActive(null)}
-          className="text-sm text-blue-600 underline hover:opacity-80"
-        >
-          ← Back to Overview
-        </button>
-        {components[active]}
-      </div>
-    );
-  }
-
+export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
   return (
     <div className="space-y-8 text-[var(--home-text)] bg-[var(--home-background)]">
       <div className="text-sm space-y-4">
@@ -95,7 +61,7 @@ export default function AboutUsPage() {
         ].map(([title, key, filename]) => (
           <button
             key={key}
-            onClick={() => setActive(key)}
+            onClick={() => navigateTo(key as string)}
             className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
           >
             <div className="w-24 h-24 flex-shrink-0">

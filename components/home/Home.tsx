@@ -26,8 +26,8 @@ export default function Home() {
   const theme = useThemeCookie();
   const session = useLoginSession();
 
-  const navigateTo = (page: string) => (e: React.MouseEvent) => {
-    e.preventDefault();
+  const navigateTo = (page: string) => (e?: React.MouseEvent) => {
+    e?.preventDefault();
     setCurrentPage(page);
     setMobileMenuOpen(false);
     window.scrollTo(0, 0);
@@ -50,7 +50,7 @@ export default function Home() {
 
       <main className="flex-grow">
         <div className="max-w-5xl mx-auto px-4 py-12">
-          <MainContent currentPage={currentPage} />
+          <MainContent currentPage={currentPage} navigateTo={(page) => navigateTo(page)()} />
         </div>
       </main>
 

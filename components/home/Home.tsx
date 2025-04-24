@@ -43,16 +43,16 @@ export default function Home() {
       />
 
       {mobileMenuOpen && (
-      <MobileMenu
-        navigateTo={navigateTo}
-        session={session}
-        onClose={() => setMobileMenuOpen(false)}
-      />
+        <MobileMenu
+          navigateTo={navigateTo}
+          session={session}
+          onClose={() => setMobileMenuOpen(false)}
+        />
       )}
 
       {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
 
-      <main className="flex-grow bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+      <main className="flex-grow">
         <div className="max-w-5xl mx-auto px-4 py-12">
           <MainContent currentPage={currentPage} navigateTo={(page) => navigateTo(page)()} />
         </div>

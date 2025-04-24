@@ -52,7 +52,7 @@ export default function Home() {
 
       {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
 
-      <main className="flex-grow">
+      <main className="flex-grow bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
         <div className="max-w-5xl mx-auto px-4 py-12">
           <MainContent currentPage={currentPage} navigateTo={(page) => navigateTo(page)()} />
         </div>

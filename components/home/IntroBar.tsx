@@ -33,31 +33,3 @@ const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
 };
 
 export default IntroBar;
-
-
-// "use client";
-
-// interface IntroBarProps {
-//   currentPage: string;
-// }
-
-// const labels: Record<string, string> = {
-//   about: "About Us",
-//   board: "Board of Directors",
-//   title9: "Title 9 Information",
-//   action: "Autism Day Camp",
-//   jobs: "Jobs",
-// };
-
-// const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-//   if (!labels[currentPage]) return null;
-//   return (
-//     <div className="bg-[var(--home-section-heading)] h-12 md:h-16 flex items-center justify-center">
-//       <div className="intro-bar-text text-[var(--home-header-text)] text-xl md:text-2xl font-semibold">
-//         {labels[currentPage]}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default IntroBar;

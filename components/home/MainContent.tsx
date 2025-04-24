@@ -1,5 +1,6 @@
 "use client";
 
+import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
 import Title9Page from "@/components/home/Title9Information";
@@ -22,11 +23,21 @@ interface MainContentProps {
   navigateTo: (page: string) => void;
 }
 
+const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
+  <div className="mb-4">
+    <button
+      onClick={() => navigateTo("about")}
+      className="flex items-center gap-1 text-blue-600 text-sm underline hover:opacity-80"
+    >
+      <FiArrowLeft /> Back to About Us
+    </button>
+  </div>
+);
+
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
     case "about":
-    return <AboutUsPage navigateTo={navigateTo} />;
-
+      return <AboutUsPage navigateTo={navigateTo} />;
     case "board":
       return <BoardPage />;
     case "title9":
@@ -36,21 +47,45 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
     case "jobs":
       return <JobsPage />;
     case "transportation":
-      return <Transportation />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <Transportation />
+      </>;
     case "earlychildhood":
-      return <EarlyChildhood />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <EarlyChildhood />
+      </>;
     case "supportedliving":
-      return <SupportedLiving />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <SupportedLiving />
+      </>;
     case "artists":
-      return <Artists />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <Artists />
+      </>;
     case "employment":
-      return <Employment />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <Employment />
+      </>;
     case "carf":
-      return <CARF />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <CARF />
+      </>;
     case "thrift":
-      return <ThriftStore />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <ThriftStore />
+      </>;
     case "shredding":
-      return <Shredding />;
+      return <>
+        <BackButton navigateTo={navigateTo} />
+        <Shredding />
+      </>;
     default:
       return <HomePage />;
   }

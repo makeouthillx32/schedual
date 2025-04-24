@@ -43,7 +43,11 @@ export default function Home() {
       />
 
       {mobileMenuOpen && (
-        <MobileMenu navigateTo={navigateTo} session={session} />
+      <MobileMenu
+        navigateTo={navigateTo}
+        session={session}
+        onClose={() => setMobileMenuOpen(false)}
+      />
       )}
 
       {currentPage !== "home" && <IntroBar currentPage={currentPage} />}

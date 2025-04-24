@@ -21,6 +21,10 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const session = useLoginSession();
 
+  const filteredNavLinks = navLinks.filter(
+    (link) => link.key !== "sign-in" && link.key !== "logout"
+  );
+
   return (
     <header className="border-b border-gray-200 py-2 px-4 relative bg-[var(--home-header)] text-[var(--home-header-text)]">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -36,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({
           </a>
         </div>
         <div className="flex-1 hidden md:flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm min-w-0 overflow-hidden text-ellipsis">
-          {navLinks.map((link) => (
+          {filteredNavLinks.map((link) => (
             <a
               key={link.key}
               href="#"

@@ -36,7 +36,7 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
 
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   const wrapWithTheme = (children: React.ReactNode) => (
-    <div className="home-page w-full min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+    <div className="w-full min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
       {children}
     </div>
   );

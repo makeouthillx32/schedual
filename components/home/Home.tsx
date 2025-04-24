@@ -34,7 +34,7 @@ export default function Home() {
   };
 
   return (
-    <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+    <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-background)] dark:text-[var(--home-text)]">
       <Header
         theme={theme}
         mobileMenuOpen={mobileMenuOpen}
@@ -52,8 +52,8 @@ export default function Home() {
 
       {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
 
-      <main className="flex-grow bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
-        <div className="max-w-5xl mx-auto px-4 py-12 bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-dark)] dark:text-white">
+      <main className="flex-grow">
+        <div className="max-w-5xl mx-auto px-4 py-12">
           <MainContent currentPage={currentPage} navigateTo={(page) => navigateTo(page)()} />
         </div>
       </main>

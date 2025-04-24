@@ -1,8 +1,36 @@
 "use client";
+import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+
+import Transportation from "@/components/home/services/Transportation";
+import EarlyChildhood from "@/components/home/services/EarlyChildhood";
+import SupportedLiving from "@/components/home/services/SupportedLiving";
+import Artists from "@/components/home/services/Artists";
+import AutismDayCamp from "@/components/home/services/AutismDayCamp";
+import Employment from "@/components/home/services/Employment";
+import CARF from "@/components/home/services/CARF";
+import ThriftStore from "@/components/home/services/ThriftStore";
+import Shredding from "@/components/home/services/Shredding";
+
+const components: Record<string, JSX.Element> = {
+  transportation: <Transportation />,
+  earlychildhood: <EarlyChildhood />,
+  supportedliving: <SupportedLiving />,
+  artists: <Artists />,
+  action: <AutismDayCamp />,
+  employment: <Employment />,
+  carf: <CARF />,
+  thrift: <ThriftStore />,
+  shredding: <Shredding />,
+};
 
 export default function AboutUsPage() {
+  const [active, setActive] = useState<string | null>(null);
+
+  if (active) {
+    return components[active];
+  }
+
   return (
     <div className="space-y-8 text-[var(--home-text)] bg-[var(--home-background)]">
       <div className="text-sm space-y-4">
@@ -22,8 +50,6 @@ export default function AboutUsPage() {
             www.carf.org
           </a>.
         </p>
-
-        {/* We Believe section with indentation bar */}
         <div className="border-l-4 border-gray-400 pl-4 space-y-2 mt-6">
           <p className="font-semibold">We Believe…</p>
           <p>
@@ -44,7 +70,7 @@ export default function AboutUsPage() {
         </div>
       </div>
 
-      {/* Services Section with Links */}
+      {/* Services Grid */}
       <div className="flex flex-col items-center mt-12 space-y-6">
         {[
           ["Transportation", "transportation", "Transportation.jpg"],
@@ -56,8 +82,12 @@ export default function AboutUsPage() {
           ["Commission for the Accreditation of Rehabilitation Facilities", "carf", "Commission for the Accreditation.jpg"],
           ["DART Thrift Store", "thrift", "DART Thrift Store.jpg"],
           ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
-        ].map(([title, slug, filename]) => (
-          <Link key={title} href={`/${slug}`} className="flex items-center space-x-4 hover:opacity-80 transition">
+        ].map(([title, key, filename]) => (
+          <button
+            key={title}
+            onClick={() => setActive(key)}
+            className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
+          >
             <div className="w-24 h-24 flex-shrink-0">
               <Image
                 src={`/images/home/${filename}`}
@@ -70,7 +100,7 @@ export default function AboutUsPage() {
             <div>
               <h3 className="font-semibold text-[var(--home-content-heading)]">{title}</h3>
             </div>
-          </Link>
+          </button>
         ))}
       </div>
     </div>

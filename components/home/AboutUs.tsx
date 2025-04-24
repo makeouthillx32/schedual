@@ -28,7 +28,17 @@ export default function AboutUsPage() {
   const [active, setActive] = useState<string | null>(null);
 
   if (active) {
-    return components[active];
+    return (
+      <div className="p-6 bg-[var(--home-background)] text-[var(--home-text)] space-y-4">
+        <button
+          onClick={() => setActive(null)}
+          className="text-sm text-blue-600 underline hover:opacity-80"
+        >
+          ← Back to Overview
+        </button>
+        {components[active]}
+      </div>
+    );
   }
 
   return (
@@ -84,7 +94,7 @@ export default function AboutUsPage() {
           ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
         ].map(([title, key, filename]) => (
           <button
-            key={title}
+            key={key}
             onClick={() => setActive(key)}
             className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
           >

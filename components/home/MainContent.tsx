@@ -35,59 +35,39 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
 );
 
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
+  const wrapWithTheme = (children: React.ReactNode) => (
+    <div className="bg-[var(--home-background)] text-[var(--home-text)]">{children}</div>
+  );
+
   switch (currentPage) {
     case "about":
-      return <AboutUsPage navigateTo={navigateTo} />;
+      return wrapWithTheme(<AboutUsPage navigateTo={navigateTo} />);
     case "board":
-      return <BoardPage />;
+      return wrapWithTheme(<BoardPage />);
     case "title9":
-      return <Title9Page />;
+      return wrapWithTheme(<Title9Page />);
     case "action":
-      return <ActionDayPage />;
+      return wrapWithTheme(<ActionDayPage />);
     case "jobs":
-      return <JobsPage />;
+      return wrapWithTheme(<JobsPage />);
     case "transportation":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <Transportation />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><Transportation /></>);
     case "earlychildhood":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <EarlyChildhood />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><EarlyChildhood /></>);
     case "supportedliving":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <SupportedLiving />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><SupportedLiving /></>);
     case "artists":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <Artists />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><Artists /></>);
     case "employment":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <Employment />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><Employment /></>);
     case "carf":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <CARF />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><CARF /></>);
     case "thrift":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <ThriftStore />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><ThriftStore /></>);
     case "shredding":
-      return <>
-        <BackButton navigateTo={navigateTo} />
-        <Shredding />
-      </>;
+      return wrapWithTheme(<><BackButton navigateTo={navigateTo} /><Shredding /></>);
     default:
-      return <HomePage />;
+      return wrapWithTheme(<HomePage />);
   }
 };
 

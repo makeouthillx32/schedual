@@ -11,8 +11,9 @@ import Employment from "@/components/home/services/Employment";
 import CARF from "@/components/home/services/CARF";
 import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
+import React from "react";
 
-const components: Record<string, JSX.Element> = {
+const components: Record<string, React.ReactElement> = {
   transportation: <Transportation />,
   earlychildhood: <EarlyChildhood />,
   supportedliving: <SupportedLiving />,

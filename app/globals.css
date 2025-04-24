@@ -133,6 +133,8 @@ select:focus {
   --home-nav-text: #212529;
   --home-content-heading: #14213d;
   --home-logo-color: #0b2545;
+  --home-accent: #4d93fc;
+  --home-danger: #fb7185;
 }
 
 .dark .home-page {
@@ -195,3 +197,8 @@ select:focus {
   cursor: not-allowed;
 }
 
+.login-with-google-btn {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgdmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTcuNiA5LjJsLS4xLTEuOEg5djMuNGg0LjhDMTMuNiAxMiAxMyAxMyAxMiAxMy42djIuMmgzYTguOCA4LjggMCAwIDAgMi42LTYuNnoiIGZpbGw9IiM0Mjg1RjQiLz48cGF0aCBkPSJNOTAxOC44OTMgYzIuNCAwIDQuNS0uOCA2LTIuMmwtMy0yLjJhNS40IDUuNCAwIDAgMS04LTIuOUgxVjEzYTkgOSAwIDAgMCA4IDV6IiBmaWxsPSIjMzRBODUzIi8+PHBhdGggZD0iTTQgMTAuN2E1LjQgNS40IDAgMCAxIDAtMy40VjVIMWE5IDkgMCAwIDAgMCA4bDMtMi4zeiIgZmlsbD0iI0ZCQkMwNSIvPjxwYXRoIGQ9Ik05IDMuNmMxLjMgMCAyLjUuNCAzLjQgMS4zTDE1IDIuM2E5IDkgMCAwIDAtMTQgMyAwIDEgMCAwIDQgMCA1LjQgNS40IDAgMCAxIDUtMy43eiIgZmlsbD0iI0VBNDMzNSIvPjwvc3ZnPg==");
+  background-repeat: no-repeat;
+  background-position: 12px 11px;
+}

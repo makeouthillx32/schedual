@@ -15,44 +15,39 @@ export async function GET(request: Request) {
     // Exchange code for session
     await supabase.auth.exchangeCodeForSession(code);
 
-    // Get the current session to access the user
+    // Attach invite to user metadata if present
+    if (inviteCode) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        await supabase.auth.updateUser({
+          data: { invite: inviteCode },
+        });
+      }
+    }
+
+    // Set display name if missing
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
     const user = session?.user;
     if (user) {
-      const userId = user.id;
-
-      // Fetch current profile
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
-        .select("display_name, role")
-        .eq("id", userId)
+        .select("display_name")
+        .eq("id", user.id)
         .single();
 
-      // ✅ Set display name if missing
-      if (!profileError && !profile?.display_name) {
+      if (!error && !profile?.display_name) {
         const defaultName = user.email?.split("@")[0];
         if (defaultName) {
           await supabase
             .from("profiles")
             .update({ display_name: defaultName })
-            .eq("id", userId);
-        }
-      }
-
-      // ✅ Apply invite role if role is missing
-      if ((!profile || !profile.role) && inviteCode) {
-        const { data: invite, error: inviteError } = await supabase
-          .from("invites")
-          .select("role")
-          .eq("code", inviteCode)
-          .single();
-
-        if (!inviteError && invite?.role) {
-          await supabase.from("profiles").update({ role: invite.role }).eq("id", userId);
-          await supabase.from("invites").delete().eq("code", inviteCode);
+            .eq("id", user.id);
         }
       }
     }

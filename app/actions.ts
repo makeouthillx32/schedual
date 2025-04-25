@@ -24,27 +24,12 @@ export const signUpAction = async (formData: FormData) => {
     password,
     options: {
       emailRedirectTo: `${origin}/auth/callback/oauth`,
+      data: inviteCode ? { invite: inviteCode } : {},
     },
   });
 
   if (error || !data.user) {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
-  }
-
-  if (inviteCode) {
-    const { data: invite, error: inviteError } = await supabase
-      .from("invites")
-      .select("role")
-      .eq("code", inviteCode)
-      .single();
-
-    if (!inviteError && invite?.role) {
-      await supabase.from("profiles").insert({
-        id: data.user.id,
-        role: invite.role,
-      });
-      await supabase.from("invites").delete().eq("code", inviteCode);
-    }
   }
 
   return encodedRedirect(

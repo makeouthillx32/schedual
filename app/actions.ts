@@ -28,6 +28,21 @@ export const signUpAction = async (formData: FormData) => {
     },
   });
 
+  if (!email || !password) {
+    return encodedRedirect("error", "/sign-up", "Email and password are required.");
+  }
+
+  const inviteCode = formData.get("invite")?.toString();
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback/oauth`,
+      data: inviteCode ? { invite: inviteCode } : {}, // ✅ correctly passing invite
+    },
+  });
+
   if (error || !data.user) {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }

@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 export default function CompleteSignup() {
   const supabase = useSupabaseClient();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
+    const run = async () => {
+      // Wait for the session to be ready
       const { data: sessionData } = await supabase.auth.getSession();
       const { data: userData } = await supabase.auth.getUser();
+
       if (!userData.user) {
-        console.error("No user found in session");
+        console.log("User not ready yet, retrying in 2 seconds...");
+        setTimeout(run, 2000);
         return;
       }
 
@@ -19,7 +23,7 @@ export default function CompleteSignup() {
       const urlParams = new URLSearchParams(window.location.search);
       const invite = urlParams.get("invite");
 
-      // 1. Insert profile if missing
+      // 1. Check if profile exists
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -29,7 +33,7 @@ export default function CompleteSignup() {
       if (!existingProfile) {
         await supabase.from("profiles").insert({
           id: user.id,
-          role: 'anonymous', // default role
+          role: 'anonymous',
         });
       }
 
@@ -50,7 +54,7 @@ export default function CompleteSignup() {
         }
       }
 
-      // 3. Redirect to dashboard
+      // 3. Redirect after everything
       const raw = document.cookie
         .split("; ")
         .find((c) => c.startsWith("lastPage="));
@@ -58,7 +62,9 @@ export default function CompleteSignup() {
       const target = !lastPage || lastPage.startsWith("/auth/callback") ? "/" : lastPage;
 
       window.location.href = target;
-    })();
+    };
+
+    run();
   }, [supabase]);
 
   return (

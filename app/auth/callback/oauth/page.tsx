@@ -11,23 +11,50 @@ export default function OAuthCallback() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.error("OAuth session error:", sessionError.message);
+        return;
       }
 
       const urlParams = new URLSearchParams(window.location.search);
       const invite = urlParams.get("invite");
 
-      if (invite && session?.user) {
-        const { error: updateError } = await supabase.auth.updateUser({
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+
+      if (user && invite) {
+        // 1. Attach invite to metadata (optional but good)
+        await supabase.auth.updateUser({
           data: { invite },
         });
 
-        if (updateError) {
-          console.error("Failed to attach invite:", updateError.message);
+        // 2. Lookup the invite
+        const { data: inviteData, error: inviteError } = await supabase
+          .from("invites")
+          .select("role_id")
+          .eq("code", invite)
+          .maybeSingle();
+
+        if (!inviteError && inviteData?.role_id) {
+          // 3. Update profile role
+          await supabase
+            .from("profiles")
+            .update({ role: inviteData.role_id })
+            .eq("id", user.id);
+
+          // 4. Delete invite after use
+          await supabase
+            .from("invites")
+            .delete()
+            .eq("code", invite);
         }
+
+        // 5. Clean up metadata (remove invite)
+        await supabase.auth.updateUser({
+          data: { invite: null },
+        });
       }
 
-      // Redirect to server-side /auth/callback route to apply invite role
-      window.location.href = "/auth/callback";
+      // 6. Redirect to home/dashboard
+      window.location.href = "/CMS";
     })();
   }, [supabase]);
 

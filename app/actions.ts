@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
+  const inviteCode = formData.get("invite")?.toString();
   const supabase = await createClient();
   const headerList = headers();
   const origin = (await headerList).get("origin");
@@ -16,8 +17,6 @@ export const signUpAction = async (formData: FormData) => {
   if (!email || !password) {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
-
-  const inviteCode = formData.get("invite")?.toString();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -32,6 +31,12 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
+  if (inviteCode) {
+    // ✅ Only if invite exists, redirect to complete-signup
+    return redirect(`/complete-signup?invite=${inviteCode}`);
+  }
+
+  // ✅ Otherwise show the original "Thanks for signing up" flow
   return encodedRedirect(
     "success",
     "/sign-up",

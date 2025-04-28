@@ -45,12 +45,17 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     },
   })
   const profile = await res.json()
+
   if (!res.ok || !profile) {
     return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>
   }
-  if (profile.id !== id) {
-    return redirect(`/profile/${profile.id}`)
+
+  const realId = id === "me" ? profile.id : id;
+
+  if (profile.id !== realId) {
+    return redirect(`/profile/me`);
   }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-col items-center space-y-8">
@@ -67,21 +72,9 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
           <ProfileCard label="Email" value={profile.email} icon={<Mail />} />
           <ProfileCard label="Role" value={profile.role || "N/A"} icon={<ShieldCheck />} />
           <ProfileCard label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
-          <ProfileCard
-            label="Created At"
-            value={new Date(profile.created_at).toLocaleString()}
-            icon={<CalendarClock />}
-          />
-          <ProfileCard
-            label="Last Signed In"
-            value={new Date(profile.last_sign_in_at).toLocaleString()}
-            icon={<LogIn />}
-          />
-          <ProfileCard
-            label="Auth Providers"
-            value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
-            icon={<Globe />}
-          />
+          <ProfileCard label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
+          <ProfileCard label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />
+          <ProfileCard label="Auth Providers" value={profile.app_metadata?.providers?.join(", ") || "Unknown"} icon={<Globe />} />
           <ProfileCard label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
         </div>
 

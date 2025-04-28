@@ -35,6 +35,15 @@ export default function RootLayout({
       // Sync dark mode from localStorage
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
+
+      // ✨ Dynamically set theme-color for iOS Safari top bar
+      const metaThemeColor = document.querySelector("meta[name=theme-color]") || document.createElement("meta");
+      metaThemeColor.setAttribute("name", "theme-color");
+      metaThemeColor.setAttribute("content", theme === "dark" ? "#09090b" : "#f9fafb");
+
+      if (!document.head.contains(metaThemeColor)) {
+        document.head.appendChild(metaThemeColor);
+      }
     }
   }, [pathname]);
 

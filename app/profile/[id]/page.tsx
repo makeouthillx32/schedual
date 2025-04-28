@@ -38,6 +38,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()
+
   const res = await fetch(`${baseUrl}/api/profile`, {
     cache: "no-store",
     headers: {
@@ -56,6 +57,22 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     return redirect(`/profile/me`);
   }
 
+  let roleLabel = "User";
+
+  if (profile?.role) {
+    const roleRes = await fetch(`${baseUrl}/api/role-label?role_id=${profile.role}`, {
+      cache: "no-store",
+      headers: {
+        cookie: cookieHeader,
+      },
+    });
+
+    if (roleRes.ok) {
+      const roleData = await roleRes.json();
+      roleLabel = roleData.role || "User";
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-col items-center space-y-8">
@@ -65,12 +82,12 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             <BadgeCheck className="absolute bottom-0 right-0 h-6 w-6 text-green-500 bg-white rounded-full p-1" />
           )}
         </div>
-        <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.email}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{profile.role || "User"}</p>
+        <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.display_name || profile.email}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
           <ProfileCard label="User ID" value={profile.id} icon={<Users />} />
           <ProfileCard label="Email" value={profile.email} icon={<Mail />} />
-          <ProfileCard label="Role" value={profile.role || "N/A"} icon={<ShieldCheck />} />
+          <ProfileCard label="Role" value={roleLabel || "N/A"} icon={<ShieldCheck />} />
           <ProfileCard label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
           <ProfileCard label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
           <ProfileCard label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />

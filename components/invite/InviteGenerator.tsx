@@ -1,16 +1,18 @@
-// app/components/invite/InviteGenerator.tsx
 "use client";
 
 import { useState } from "react";
+import { Copy } from "lucide-react"; // We'll use Lucide's Copy icon (looks clean!)
 
 export default function InviteGenerator({ defaultRole = "client" }: { defaultRole?: string }) {
   const [role, setRole] = useState(defaultRole);
   const [inviteLink, setInviteLink] = useState("");
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleGenerateInvite = async () => {
     setLoading(true);
     setInviteLink("");
+    setCopied(false);
 
     const res = await fetch("/api/invite/create", {
       method: "POST",
@@ -24,6 +26,17 @@ export default function InviteGenerator({ defaultRole = "client" }: { defaultRol
     }
 
     setLoading(false);
+  };
+
+  const handleCopy = async () => {
+    if (inviteLink) {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000); // Clear copied state after 2 seconds
+    }
   };
 
   return (
@@ -52,7 +65,18 @@ export default function InviteGenerator({ defaultRole = "client" }: { defaultRol
 
       {inviteLink && (
         <div className="mt-4">
-          <p className="mb-1 font-medium">Invite Link:</p>
+          <label className="mb-1 font-medium flex items-center justify-between">
+            Invite Link:
+            <button
+              onClick={handleCopy}
+              className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+              title={copied ? "Copied!" : "Copy to clipboard"}
+            >
+              <Copy size={18} />
+              {copied && <span className="text-xs">Copied!</span>}
+            </button>
+          </label>
+
           <input
             readOnly
             value={inviteLink}

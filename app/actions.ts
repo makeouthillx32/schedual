@@ -31,21 +31,8 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
-  // After successful signup, manually insert into profiles
-  await supabase.from('profiles').insert({
-    id: data.user.id,
-    role: 'anonymous',
-  });
-
-  if (inviteCode) {
-    return redirect(`/complete-signup?invite=${inviteCode}`);
-  }
-
-  return encodedRedirect(
-    "success",
-    "/sign-up",
-    "Thanks for signing up! Please check your email to verify your account."
-  );
+  // Always redirect to complete-signup after signup succeeds
+  return redirect(`/complete-signup${inviteCode ? `?invite=${inviteCode}` : ""}`);
 };
 
 export const signInAction = async (formData: FormData) => {

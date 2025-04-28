@@ -9,7 +9,6 @@ import { cookies } from "next/headers";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const inviteCode = formData.get("invite")?.toString();
   const supabase = await createClient();
   const headerList = headers();
   const origin = (await headerList).get("origin");
@@ -18,12 +17,13 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
 
+  const inviteCode = formData.get("invite")?.toString();
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${origin}/auth/callback/oauth`,
-      data: inviteCode ? { invite: inviteCode } : {},
     },
   });
 
@@ -31,8 +31,27 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
-  // Always redirect to complete-signup after signup succeeds
-  return redirect(`/complete-signup${inviteCode ? `?invite=${inviteCode}` : ""}`);
+  if (inviteCode) {
+    const { data: invite, error: inviteError } = await supabase
+      .from("invites")
+      .select("role")
+      .eq("code", inviteCode)
+      .single();
+
+    if (!inviteError && invite?.role) {
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        role: invite.role,
+      });
+      await supabase.from("invites").delete().eq("code", inviteCode);
+    }
+  }
+
+  return encodedRedirect(
+    "success",
+    "/sign-up",
+    "Thanks for signing up! Please check your email to verify your account."
+  );
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -74,7 +93,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    console.error("\u274C Forgot password error:", error.message);
+    console.error("❌ Forgot password error:", error.message);
     return encodedRedirect("error", "/forgot-password", "Could not reset password");
   }
 

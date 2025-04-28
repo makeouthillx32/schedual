@@ -31,7 +31,6 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
-  // ✅ Immediately apply invite role after signup if invite exists
   if (inviteCode) {
     const { data: inviteData, error: inviteError } = await supabase
       .from("invites")
@@ -58,6 +57,7 @@ export const signUpAction = async (formData: FormData) => {
     "Thanks for signing up! Please check your email to verify your account."
   );
 };
+
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;

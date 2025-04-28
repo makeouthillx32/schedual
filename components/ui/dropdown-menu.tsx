@@ -95,7 +95,7 @@ const CustomDropdown: React.FC = () => {
         <HomeButton onClick={handleMenuClick} />
         <ScheduleButton onClick={handleMenuClick} />
         <SettingsButton activePage={activePage} onClick={handleMenuClick} />
-        {session?.user?.id && <ProfileButton userId={session.user.id} onClick={handleMenuClick} />}
+        {session?.user?.id && <ProfileButton onClick={handleMenuClick} />}
         {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
       </DropdownMenuContent>

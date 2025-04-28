@@ -31,7 +31,7 @@ export const signUpAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
 
-  // ✅ After successful signup, manually insert into profiles
+  // After successful signup, manually insert into profiles
   await supabase.from('profiles').insert({
     id: data.user.id,
     role: 'anonymous',
@@ -87,7 +87,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    console.error("❌ Forgot password error:", error.message);
+    console.error("\u274C Forgot password error:", error.message);
     return encodedRedirect("error", "/forgot-password", "Could not reset password");
   }
 

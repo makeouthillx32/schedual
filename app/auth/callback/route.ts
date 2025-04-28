@@ -5,23 +5,37 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const urlInvite = requestUrl.searchParams.get("invite");
   const redirectTo = requestUrl.searchParams.get("redirect_to") ?? "/CMS";
   const cookieStore = cookies();
 
   if (code) {
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
 
-    // Exchange code for session
     await supabase.auth.exchangeCodeForSession(code);
 
-    // Get fresh session user
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
       const userId = user.id;
-      const inviteCode = user.user_metadata?.invite;
+      const metaInvite = user.user_metadata?.invite;
+      const inviteCode = metaInvite || urlInvite;
 
-      // 1. Apply invite role if invite code exists
+      // ✅ Step 1: Ensure profile exists
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        await supabase.from("profiles").insert({
+          id: userId,
+          role: "anonymous",
+        });
+      }
+
+      // ✅ Step 2: Apply invite if found
       if (inviteCode) {
         const { data: invite, error: inviteError } = await supabase
           .from("invites")
@@ -30,13 +44,11 @@ export async function GET(request: Request) {
           .maybeSingle();
 
         if (!inviteError && invite?.role_id) {
-          // Update user profile role
           await supabase
             .from("profiles")
             .update({ role: invite.role_id })
             .eq("id", userId);
 
-          // Delete the invite so it's one-time use
           await supabase
             .from("invites")
             .delete()
@@ -44,7 +56,7 @@ export async function GET(request: Request) {
         }
       }
 
-      // 2. Set display name if missing
+      // ✅ Step 3: Set display name if missing
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("display_name")
@@ -60,6 +72,11 @@ export async function GET(request: Request) {
             .eq("id", userId);
         }
       }
+
+      // ✅ Step 4: Clean up metadata (remove invite)
+      await supabase.auth.updateUser({
+        data: { invite: null },
+      });
     }
   }
 

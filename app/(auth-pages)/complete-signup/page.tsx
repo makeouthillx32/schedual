@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function CompleteSignup() {
+function CompleteSignupInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invite = searchParams.get('invite');
@@ -22,7 +22,7 @@ export default function CompleteSignup() {
       });
 
       if (res.ok) {
-        router.replace('/dashboard'); // or wherever your app's home is
+        router.replace('/dashboard');
       } else {
         router.replace('/error');
       }
@@ -33,5 +33,13 @@ export default function CompleteSignup() {
     <p className="p-10 text-center text-sm text-gray-600 dark:text-gray-300">
       Applying your invite and finishing setup...
     </p>
+  );
+}
+
+export default function CompleteSignupPage() {
+  return (
+    <Suspense fallback={<p className="p-10 text-center text-sm text-gray-600 dark:text-gray-300">Loading...</p>}>
+      <CompleteSignupInner />
+    </Suspense>
   );
 }

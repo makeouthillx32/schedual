@@ -60,7 +60,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   let roleLabel = "User";
 
   if (profile?.role) {
-    const roleRes = await fetch(`${baseUrl}/api/role-label?role_id=${profile.role}`, {
+    const roleRes = await fetch(`${baseUrl}/api/profile/role-label?role_id=${profile.role}`, {
       cache: "no-store",
       headers: {
         cookie: cookieHeader,
@@ -73,6 +73,8 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     }
   }
 
+  const displayName = profile.display_name || profile.email;
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-col items-center space-y-8">
@@ -82,7 +84,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
             <BadgeCheck className="absolute bottom-0 right-0 h-6 w-6 text-green-500 bg-white rounded-full p-1" />
           )}
         </div>
-        <h1 className="text-4xl font-extrabold text-center dark:text-white">{profile.display_name || profile.email}</h1>
+        <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
           <ProfileCard label="User ID" value={profile.id} icon={<Users />} />

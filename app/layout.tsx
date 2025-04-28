@@ -1,3 +1,5 @@
+// app/layout.tsx
+
 "use client";
 
 import { Providers } from "./provider";
@@ -36,19 +38,25 @@ export default function RootLayout({
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      // ✨ Dynamically set theme-color for iOS Safari top bar
-      const metaThemeColor = document.querySelector("meta[name=theme-color]") || document.createElement("meta");
-      metaThemeColor.setAttribute("name", "theme-color");
-      metaThemeColor.setAttribute("content", theme === "dark" ? "#09090b" : "#f9fafb");
-
-      if (!document.head.contains(metaThemeColor)) {
-        document.head.appendChild(metaThemeColor);
+      // Dynamically update iOS browser top bar color
+      const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
+      if (meta) {
+        meta.content = theme === "dark" ? "#1a1c23" : "#f0f2f5";
+      } else {
+        const newMeta = document.createElement("meta");
+        newMeta.name = "theme-color";
+        newMeta.content = theme === "dark" ? "#1a1c23" : "#f0f2f5";
+        document.head.appendChild(newMeta);
       }
     }
   }, [pathname]);
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
+      <head>
+        {/* Static fallback to avoid white flash during initial page load */}
+        <meta name="theme-color" content="#f0f2f5" />
+      </head>
       <body>
         <Providers>
           {!excludeGlobalLayout && <Nav />}

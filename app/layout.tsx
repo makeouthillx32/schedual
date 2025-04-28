@@ -1,7 +1,3 @@
-// app/layout.tsx
-
-"use client";
-
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
@@ -18,13 +14,11 @@ export default function RootLayout({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Hide layout on homepage and /Tools
   const excludeGlobalLayout =
     pathname === "/" || pathname?.startsWith("/Tools");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      /* ▸ don’t record auth‑related pages as “lastPage” */
       const isAuthPage =
         pathname === "/sign-in" ||
         pathname === "/sign-up" ||
@@ -34,28 +28,24 @@ export default function RootLayout({
         setCookie("lastPage", pathname, { path: "/" });
       }
 
-      // Sync dark mode from localStorage
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      // Dynamically update iOS browser top bar color
-      const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement;
-      if (meta) {
-        meta.content = theme === "dark" ? "#1a1c23" : "#f0f2f5";
-      } else {
-        const newMeta = document.createElement("meta");
-        newMeta.name = "theme-color";
-        newMeta.content = theme === "dark" ? "#1a1c23" : "#f0f2f5";
-        document.head.appendChild(newMeta);
+      // Force meta theme-color to RED for now
+      let meta = document.querySelector("meta[name=theme-color]");
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.setAttribute("name", "theme-color");
+        document.head.appendChild(meta);
       }
+      meta.setAttribute("content", "#ff0000"); // Red for both dark and light
     }
   }, [pathname]);
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
-        {/* Static fallback to avoid white flash during initial page load */}
-        <meta name="theme-color" content="#f0f2f5" />
+        <meta name="theme-color" content="#ff0000" /> {/* fallback for non-js */}
       </head>
       <body>
         <Providers>

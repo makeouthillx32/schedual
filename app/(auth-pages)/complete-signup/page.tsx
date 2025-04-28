@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 export default function CompleteSignup() {
   const supabase = useSupabaseClient();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const run = async () => {
-      // Wait for the session to be ready
       const { data: sessionData } = await supabase.auth.getSession();
       const { data: userData } = await supabase.auth.getUser();
 
-      if (!userData.user) {
-        console.log("User not ready yet, retrying in 2 seconds...");
+      if (!userData?.user) {
+        console.log("User not ready, retrying...");
         setTimeout(run, 2000);
         return;
       }
@@ -23,38 +21,20 @@ export default function CompleteSignup() {
       const urlParams = new URLSearchParams(window.location.search);
       const invite = urlParams.get("invite");
 
-      // 1. Check if profile exists
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
+      // ✅ Call the server API to complete signup
+      const res = await fetch("/api/profile/complete-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, inviteCode: invite }),
+      });
 
-      if (!existingProfile) {
-        await supabase.from("profiles").insert({
-          id: user.id,
-          role: 'anonymous',
-        });
+      if (!res.ok) {
+        console.error("[complete-signup] API error:", await res.text());
+      } else {
+        console.log("[complete-signup] Profile created successfully.");
       }
 
-      // 2. Apply invite role if invite exists
-      if (invite) {
-        const { data: inviteData, error: inviteError } = await supabase
-          .from("invites")
-          .select("role_id")
-          .eq("code", invite)
-          .maybeSingle();
-
-        if (!inviteError && inviteData?.role_id) {
-          await supabase.from("profiles")
-            .update({ role: inviteData.role_id })
-            .eq("id", user.id);
-
-          await supabase.from("invites").delete().eq("code", invite);
-        }
-      }
-
-      // 3. Redirect after everything
+      // ✅ Then redirect
       const raw = document.cookie
         .split("; ")
         .find((c) => c.startsWith("lastPage="));

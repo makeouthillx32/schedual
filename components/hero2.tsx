@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import WeekList from "@/components/WeekList"; // Import WeekList
+import WeekList from "@/components/WeekList";
 import { fetchSchedule } from "@/components/fetchSchedule";
-import { useTheme } from "@/app/provider"; // Import useTheme
+import { useTheme } from "@/app/provider";
 
 interface Job {
   job_name: string;
@@ -22,69 +22,73 @@ interface GroupedSchedule {
 }
 
 const Hero2: React.FC = () => {
-  const { themeType } = useTheme(); // Access theme context
-  const [week, setWeek] = useState<number>(1); // Default to Week 1
-  const [schedule, setSchedule] = useState<GroupedSchedule>({}); // Grouped schedule data
-  const [loading, setLoading] = useState<boolean>(false); // Loading state
-  const [error, setError] = useState<string | null>(null); // Error state
+  const { themeType } = useTheme();
+  const [week, setWeek] = useState<number>(1);
+  const [schedule, setSchedule] = useState<GroupedSchedule>({});
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]; // Days of the week
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   const loadWeeklySchedule = async () => {
-    console.log("Fetching schedule for week:", week); // Debugging log
-    setLoading(true); // Set loading state
+    setLoading(true);
     try {
       const groupedSchedules: GroupedSchedule = {};
 
-      // Fetch schedules for all days of the week
       for (const day of days) {
-        const data = await fetchSchedule(week, day.toLowerCase()); // Fetch schedule for each day
-        console.log(`API Response for ${day}:`, data); // Debug API response
-        groupedSchedules[day] = data.schedule || []; // Group schedules by day
+        const data = await fetchSchedule(week, day.toLowerCase());
+        groupedSchedules[day] = data.schedule || [];
       }
 
-      setSchedule(groupedSchedules); // Set grouped schedule data
-      setError(null); // Clear error
+      setSchedule(groupedSchedules);
+      setError(null);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to fetch schedule.";
-      console.error("Error fetching schedule:", errorMessage); // Log errors
-      setError(errorMessage); // Set error state
+      setError(errorMessage);
     } finally {
-      setLoading(false); // Clear loading state
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadWeeklySchedule(); // Fetch data when `week` changes
+    loadWeeklySchedule();
   }, [week]);
 
   return (
     <div
-      className={`p-5 ${
-        themeType === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
-      }`}
+      className="p-5"
+      style={{
+        backgroundColor: "var(--app-background)",
+        color: "var(--app-foreground)",
+      }}
     >
       {/* Week Selection */}
       <div className="flex flex-col mb-5 space-y-4">
         <div>
-          <label htmlFor="week-selector" className="block mb-2 font-bold">
+          <label
+            htmlFor="week-selector"
+            className="block mb-2 font-bold"
+          >
             Select Week:
           </label>
           <select
-            id="week-selector" // Accessibility improvement
-            title="Week Selector" // Add title for accessibility
+            id="week-selector"
+            title="Week Selector"
             value={week}
             onChange={(e) => setWeek(Number(e.target.value))}
-            className={`p-2 border rounded ${
-              themeType === "dark" ? "bg-gray-800 text-white" : "bg-gray-100 text-black"
-            }`}
+            className="p-2 border rounded"
+            style={{
+              backgroundColor: "var(--app-muted)",
+              color: "var(--app-foreground)",
+              borderColor: "var(--app-border)",
+            }}
           >
             <option value={1}>Week 1</option>
             <option value={2}>Week 2</option>
             <option value={3}>Week 3</option>
             <option value={4}>Week 4</option>
-            <option value={5}>Week 5</option> {/* Added Week 5 */}
+            <option value={5}>Week 5</option>
           </select>
         </div>
       </div>

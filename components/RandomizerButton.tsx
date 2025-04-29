@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 interface RandomizerButtonProps {
@@ -5,7 +7,14 @@ interface RandomizerButtonProps {
 }
 
 const RandomizerButton: React.FC<RandomizerButtonProps> = ({ onClick }) => (
-  <button onClick={onClick} className="p-2 bg-blue-500 text-white rounded">
+  <button
+    onClick={onClick}
+    className="p-2 rounded"
+    style={{
+      backgroundColor: "var(--button1-background)",
+      color: "var(--button1-foreground)",
+    }}
+  >
     Randomize Jobs
   </button>
 );

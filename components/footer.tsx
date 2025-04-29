@@ -16,16 +16,10 @@ const Footer: React.FC = () => {
 
   return (
     <footer
-      className={`p-4 ${
-        themeType === "dark" ? "bg-gray-900 text-gray-300" : "bg-gray-100 text-gray-700"
-      } flex flex-col items-center`}
+      className="p-4 bg-[var(--hnf-background)] text-[var(--hnf-foreground)] flex flex-col items-center"
     >
       <div className="w-full text-left mb-2">
-        <h3
-          className={`text-sm font-bold ${
-            themeType === "dark" ? "text-gray-200" : "text-black"
-          } tracking-[0]`}
-        >
+        <h3 className="text-sm font-bold tracking-[0] text-[var(--hnf-heading)]">
           Tools
         </h3>
         <ul className="leading-[1.1] tracking-[0]">
@@ -33,7 +27,7 @@ const Footer: React.FC = () => {
             <li key={tool.name}>
               <a
                 href={tool.path}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-[var(--hnf-muted)] hover:text-[var(--hnf-muted-hover)]"
               >
                 {tool.name}
               </a>
@@ -41,7 +35,7 @@ const Footer: React.FC = () => {
           ))}
         </ul>
       </div>
-      <p className="text-xs text-gray-400 tracking-[0] leading-[1.1]">
+      <p className="text-xs text-[var(--hnf-muted)] tracking-[0] leading-[1.1]">
         Powered by Unenter © {currentYear}
       </p>
     </footer>
@@ -49,9 +43,3 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
-
-
-
-
-
- 

@@ -14,9 +14,11 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
 
   return (
     <nav
-      className={`flex justify-between items-center p-4 transition-colors ${
-        themeType === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-black"
-      }`}
+      className="flex justify-between items-center p-4 transition-colors"
+      style={{
+        backgroundColor: "var(--hnf-background)",
+        color: "var(--hnf-foreground)",
+      }}
     >
       <h1 className="text-lg font-bold">
         CMS Schedule App

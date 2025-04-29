@@ -1,5 +1,3 @@
-// Corrected page.tsx (Signup) to fix the build error
-
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -45,7 +43,7 @@ export default async function Signup({ searchParams }: { searchParams: { invite?
   if ("message" in searchParams) {
     return (
       <div className="w-full flex-1 flex items-center min-h-screen justify-center gap-2 p-4">
-        <FormMessage message={searchParams} />
+        <FormMessage message={searchParams as unknown as Message} />
       </div>
     );
   }
@@ -108,7 +106,7 @@ export default async function Signup({ searchParams }: { searchParams: { invite?
             Create Account
           </SubmitButton>
 
-          <FormMessage message={searchParams} />
+          <FormMessage message={searchParams as unknown as Message} />
         </form>
 
         <p className="text-center text-sm mt-6 text-muted-foreground">

@@ -30,27 +30,27 @@ export const signUpAction = async (formData: FormData) => {
   if (error || !data.user) {
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
-
+  
   if (inviteCode) {
     const { data: inviteData, error: inviteError } = await supabase
       .from("invites")
       .select("role_id")
       .eq("code", inviteCode)
       .maybeSingle();
-
+  
     if (!inviteError && inviteData?.role_id) {
       await supabase
         .from("profiles")
         .update({ role: inviteData.role_id })
         .eq("id", data.user.id);
-
+  
+      // ✅ Here you DELETE the invite after use
       await supabase
         .from("invites")
         .delete()
         .eq("code", inviteCode);
     }
   }
-
   return encodedRedirect(
     "success",
     "/sign-up",

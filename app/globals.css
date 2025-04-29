@@ -211,6 +211,10 @@ select:focus {
   --home-danger: #fb7185;
 }
 
+.dark {
+  --home-nav-bg: #2d3142;
+}
+
 
 
 

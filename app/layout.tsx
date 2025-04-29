@@ -19,7 +19,7 @@ export default function RootLayout({
   const excludeGlobalLayout =
     pathname === "/" || pathname?.startsWith("/Tools");
 
-  useEffect(() => {
+    useEffect(() => {
     if (typeof window !== "undefined") {
       const isAuthPage =
         pathname === "/sign-in" ||
@@ -33,18 +33,30 @@ export default function RootLayout({
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      // Inject meta theme-color for iOS top bar
+      // 🛠 Correct dynamic meta theme-color setup
+      let color = "#ffffff"; // Default light mode home color
+
+      if (pathname === "/" || pathname.startsWith("/Tools")) {
+        // Landing page or Tools
+        color = isDarkMode ? "#111827" : "#f9fafb"; 
+      } else {
+        // CMS or inside App
+        color = isDarkMode ? "#111827" : "#ffffff"; 
+      }
+
+      // Update meta tag
       const metaTag = document.querySelector("meta[name='theme-color']");
       if (metaTag) {
-        metaTag.setAttribute("content", "#ff0000");
+        metaTag.setAttribute("content", color);
       } else {
         const newMeta = document.createElement("meta");
         newMeta.name = "theme-color";
-        newMeta.content = "#ff0000";
+        newMeta.content = color;
         document.head.appendChild(newMeta);
       }
     }
-  }, [pathname]);
+  }, [pathname, isDarkMode]);
+
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>

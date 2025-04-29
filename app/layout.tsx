@@ -1,5 +1,3 @@
-"use client";
-
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
@@ -19,7 +17,7 @@ export default function RootLayout({
   const excludeGlobalLayout =
     pathname === "/" || pathname?.startsWith("/Tools");
 
-    useEffect(() => {
+  useEffect(() => {
     if (typeof window !== "undefined") {
       const isAuthPage =
         pathname === "/sign-in" ||
@@ -34,14 +32,14 @@ export default function RootLayout({
       setIsDarkMode(theme === "dark");
 
       // 🛠 Correct dynamic meta theme-color setup
-      let color = "#ffffff"; // Default light mode home color
+      let color = "#ffffff"; // Default light
 
-      if (pathname === "/" || pathname.startsWith("/Tools")) {
-        // Landing page or Tools
-        color = isDarkMode ? "#111827" : "#f9fafb"; 
+      if (pathname === "/") {
+        // Home page
+        color = isDarkMode ? "#111827" : "#f9fafb";
       } else {
-        // CMS or inside App
-        color = isDarkMode ? "#111827" : "#ffffff"; 
+        // Everything else is app
+        color = isDarkMode ? "#111827" : "#ffffff";
       }
 
       // Update meta tag
@@ -61,8 +59,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
-        {/* Static fallback for iOS devices without JS */}
-        <meta name="theme-color" content="#ff0000" />
+        <meta name="theme-color" content="#ff0000" /> {/* fallback for non-js */}
       </head>
       <body>
         <Providers>

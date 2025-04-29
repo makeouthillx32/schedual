@@ -28,7 +28,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  // 3. Generate invite link
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/sign-up?invite=${code}`;
+  // 3. Generate invite link with `role` param included for Open Graph preview
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL}/sign-up?invite=${code}&role=${role}`;
+
   return NextResponse.json({ inviteLink: url });
 }

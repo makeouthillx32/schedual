@@ -1,3 +1,5 @@
+"use client";
+
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
@@ -31,21 +33,24 @@ export default function RootLayout({
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      // Force meta theme-color to RED for now
-      let meta = document.querySelector("meta[name=theme-color]");
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.setAttribute("name", "theme-color");
-        document.head.appendChild(meta);
+      // Inject meta theme-color for iOS top bar
+      const metaTag = document.querySelector("meta[name='theme-color']");
+      if (metaTag) {
+        metaTag.setAttribute("content", "#ff0000");
+      } else {
+        const newMeta = document.createElement("meta");
+        newMeta.name = "theme-color";
+        newMeta.content = "#ff0000";
+        document.head.appendChild(newMeta);
       }
-      meta.setAttribute("content", "#ff0000"); // Red for both dark and light
     }
   }, [pathname]);
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#ff0000" /> {/* fallback for non-js */}
+        {/* Static fallback for iOS devices without JS */}
+        <meta name="theme-color" content="#ff0000" />
       </head>
       <body>
         <Providers>

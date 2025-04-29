@@ -39,15 +39,19 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://schedual-five.vercel.app"
   const cookieHeader = cookies().toString()
 
-  const res = await fetch(`${baseUrl}/api/profile`, {
+  const profileRes = await fetch(`${baseUrl}/api/profile`, {
     cache: "no-store",
-    headers: {
-      cookie: cookieHeader,
-    },
+    headers: { cookie: cookieHeader },
   })
-  const profile = await res.json()
+  const profile = await profileRes.json()
 
-  if (!res.ok || !profile) {
+  const authRes = await fetch(`${baseUrl}/api/get-all-users`, {
+    cache: "no-store",
+    headers: { cookie: cookieHeader },
+  })
+  const allUsers = await authRes.json()
+
+  if (!profileRes.ok || !profile) {
     return <div className="text-center py-10 text-red-600">User not found or unauthorized.</div>
   }
 
@@ -62,9 +66,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   if (profile?.role) {
     const roleRes = await fetch(`${baseUrl}/api/profile/role-label?role_id=${profile.role}`, {
       cache: "no-store",
-      headers: {
-        cookie: cookieHeader,
-      },
+      headers: { cookie: cookieHeader },
     });
 
     if (roleRes.ok) {
@@ -73,7 +75,8 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
     }
   }
 
-  const displayName = profile.display_name || profile.email;
+  const matchingUser = allUsers.find((user) => user.id === profile.id);
+  const displayName = matchingUser?.display_name || "Unnamed User";
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">

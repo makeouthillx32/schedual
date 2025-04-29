@@ -18,6 +18,7 @@ export default function RootLayout({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Hide layout on homepage only
   const excludeGlobalLayout = pathname === "/";
 
   useEffect(() => {
@@ -31,16 +32,24 @@ export default function RootLayout({
         setCookie("lastPage", pathname, { path: "/" });
       }
 
-      const theme = localStorage.getItem("theme") || "light";
+      const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      const color = pathname === "/"
-        ? (theme === "dark" ? "#111827" : "#f9fafb")
-        : (theme === "dark" ? "#111827" : "#ffffff");
+      let color = "#ffffff"; // default fallback
 
-      const tag = document.querySelector("meta[name='theme-color']");
-      if (tag) {
-        tag.setAttribute("content", color);
+      const style = getComputedStyle(document.documentElement);
+
+      if (pathname === "/") {
+        // Home page
+        color = style.getPropertyValue("--home-nav-bg").trim();
+      } else {
+        // App pages (CMS, etc.)
+        color = style.getPropertyValue("--hnf-background").trim();
+      }
+
+      const metaTag = document.querySelector("meta[name='theme-color']");
+      if (metaTag) {
+        metaTag.setAttribute("content", color);
       } else {
         const newMeta = document.createElement("meta");
         newMeta.name = "theme-color";
@@ -52,7 +61,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
-      <head />
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+      </head>
       <body>
         <Providers>
           {!excludeGlobalLayout && <Nav />}

@@ -1,17 +1,20 @@
-// app/CMS/page.tsx or layout.tsx
+// app/CMS/opengraph-image.tsx
+import { ImageResponse } from "next/og";
 
-export const metadata = {
-  title: "CMS Dashboard",
-  description: "Manage your commercial service schedule and staff.",
-  openGraph: {
-    title: "CMS Dashboard",
-    description: "Schedule tools and staff controls for your organization.",
-    images: ["/images/cms.png"], // <- Add your CMS image
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "CMS Dashboard",
-    description: "Control and coordinate your teams.",
-    images: ["/images/cms.png"],
-  }
-};
+export const runtime = "edge";
+
+export default function OGImage() {
+  return new ImageResponse(
+    (
+      <img
+        src="https://schedual-five.vercel.app/images/cms.png"
+        alt="CMS Preview"
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
+  );
+}

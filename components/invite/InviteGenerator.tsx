@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy } from "lucide-react"; // We'll use Lucide's Copy icon (looks clean!)
+import { Copy } from "lucide-react";
 
 export default function InviteGenerator({ defaultRole = "client" }: { defaultRole?: string }) {
   const [role, setRole] = useState(defaultRole);
@@ -35,7 +35,7 @@ export default function InviteGenerator({ defaultRole = "client" }: { defaultRol
 
       setTimeout(() => {
         setCopied(false);
-      }, 2000); // Clear copied state after 2 seconds
+      }, 2000);
     }
   };
 
@@ -50,9 +50,9 @@ export default function InviteGenerator({ defaultRole = "client" }: { defaultRol
         onChange={(e) => setRole(e.target.value)}
       >
         <option value="admin">Admin</option>
-        <option value="job_coach">Job Coach</option>
+        <option value="jobcoach">Job Coach</option> {/* updated */}
         <option value="client">Client</option>
-        <option value="anonymous">Anonymous</option>
+        <option value="user">Anonymous</option>      {/* updated */}
       </select>
 
       <button

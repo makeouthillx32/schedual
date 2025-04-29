@@ -7,6 +7,34 @@ import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";
 import { Mail, Lock } from "lucide-react";
 import { cookies } from "next/headers";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ searchParams }: { searchParams: { invite?: string; role?: string } }): Promise<Metadata> {
+  const role = searchParams?.role || "client";
+
+  const roleName = {
+    admin: "Admin",
+    job_coach: "Job Coach",
+    client: "Client",
+    anonymous: "User"
+  }[role] || "User";
+
+  return {
+    title: `Invite to join as ${roleName}`,
+    description: `You've been invited to join as a ${roleName} on the CMS Schedule App.`,
+    openGraph: {
+      title: `Join as a ${roleName}`,
+      description: `Create an account and get started as a ${roleName} on the CMS Schedule App.`,
+      images: [`/images/${role}.png`]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Join as a ${roleName}`,
+      description: `You've been invited to create an account as a ${roleName}.`,
+      images: [`/images/${role}.png`]
+    }
+  };
+}
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;

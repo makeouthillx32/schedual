@@ -16,7 +16,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
     admin: "Admin",
     job_coach: "Job Coach",
     client: "Client",
-    anonymous: "User"
+    anonymous: "User",
   }[role] || "User";
 
   return {
@@ -25,14 +25,14 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
     openGraph: {
       title: `Join as a ${roleName}`,
       description: `Create an account and get started as a ${roleName} on the CMS Schedule App.`,
-      images: [`/images/${role}.png`]
+      images: [`/images/${role}.png`],
     },
     twitter: {
       card: "summary_large_image",
       title: `Join as a ${roleName}`,
       description: `You've been invited to create an account as a ${roleName}.`,
-      images: [`/images/${role}.png`]
-    }
+      images: [`/images/${role}.png`],
+    },
   };
 }
 

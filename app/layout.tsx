@@ -18,8 +18,7 @@ export default function RootLayout({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Hide layout on homepage only
-  const excludeGlobalLayout = pathname === "/";
+  const isHome = pathname === "/";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -32,19 +31,20 @@ export default function RootLayout({
         setCookie("lastPage", pathname, { path: "/" });
       }
 
-      const theme = localStorage.getItem("theme");
+      const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      let color = "#ffffff"; // default fallback
+      const computedStyle = getComputedStyle(document.documentElement);
+      let color = "#ffffff"; // fallback
 
-      const style = getComputedStyle(document.documentElement);
-
-      if (pathname === "/") {
-        // Home page
-        color = style.getPropertyValue("--home-nav-bg").trim();
+      if (isHome) {
+        color = theme === "dark"
+          ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
+          : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff";
       } else {
-        // App pages (CMS, etc.)
-        color = style.getPropertyValue("--hnf-background").trim();
+        color = theme === "dark"
+          ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
+          : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb";
       }
 
       const metaTag = document.querySelector("meta[name='theme-color']");
@@ -57,7 +57,9 @@ export default function RootLayout({
         document.head.appendChild(newMeta);
       }
     }
-  }, [pathname, isDarkMode]);
+  }, [pathname]);
+
+  const excludeGlobalLayout = isHome;
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>

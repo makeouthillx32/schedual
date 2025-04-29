@@ -1,11 +1,13 @@
 "use client";
 
+import MetaThemeColor from "@/components/MetaThemeColor"; // ⬅️ import
 import { tools } from "@/lib/toolsConfig";
 import Link from "next/link";
 
-const ToolsPage: React.FC = () => {
+export default function Page() {
   return (
-    <div>
+    <>
+      <MetaThemeColor type="app" />
       <h1>Available Tools</h1>
       <ul>
         {tools.map((tool) => (
@@ -14,8 +16,6 @@ const ToolsPage: React.FC = () => {
           </li>
         ))}
       </ul>
-    </div>
+    </>
   );
-};
-
-export default ToolsPage;
+}

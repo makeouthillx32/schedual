@@ -36,9 +36,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
   };
 }
 
-export default async function Signup(props: {
-  searchParams: Promise<Message>;
-}) {
+export default async function Signup(props: { searchParams: Promise<Message> }) {
   const searchParams = await props.searchParams;
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;

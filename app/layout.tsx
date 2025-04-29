@@ -1,28 +1,24 @@
+import "./globals.css";
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import "./globals.css";
-import HeadMeta from "@/components/HeadMeta"; // Your theme-color meta handler
-import { usePathname } from "next/navigation";
+import HeadMeta from "@/components/HeadMeta";
+import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-
-  // ✅ Only exclude layout on home page "/"
-  const excludeGlobalLayout = pathname === "/";
-
   return (
     <html lang="en" suppressHydrationWarning>
-      <HeadMeta />
+      <HeadMeta /> {/* already handles dynamic theme-color */}
       <body>
         <Providers>
-          {!excludeGlobalLayout && <Nav />}
+          <ClientLayoutWrapper />
+          <Nav />
           <main>{children}</main>
-          {!excludeGlobalLayout && <Footer />}
+          <Footer />
         </Providers>
       </body>
     </html>

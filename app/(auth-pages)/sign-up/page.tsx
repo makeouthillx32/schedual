@@ -9,8 +9,9 @@ import { Mail, Lock } from "lucide-react";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 
-export async function generateMetadata({ searchParams }: { searchParams: { invite?: string; role?: string } }): Promise<Metadata> {
-  const role = searchParams?.role || "client";
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ invite?: string; role?: string }> }): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const role = resolvedSearchParams?.role || "client";
 
   const roleName = {
     admin: "Admin",
@@ -37,14 +38,14 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
 }
 
 export default async function Signup({ searchParams }: { searchParams: Promise<Message> }) {
-  const searchParamsResolved = await searchParams;
+  const resolvedSearchParams = await searchParams;
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;
 
-  if ("message" in searchParamsResolved) {
+  if ("message" in resolvedSearchParams) {
     return (
       <div className="w-full flex-1 flex items-center min-h-screen justify-center gap-2 p-4">
-        <FormMessage message={searchParamsResolved} />
+        <FormMessage message={resolvedSearchParams} />
       </div>
     );
   }
@@ -107,7 +108,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<M
             Create Account
           </SubmitButton>
 
-          <FormMessage message={searchParamsResolved} />
+          <FormMessage message={resolvedSearchParams} />
         </form>
 
         <p className="text-center text-sm mt-6 text-muted-foreground">

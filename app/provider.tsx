@@ -15,7 +15,6 @@ interface ThemeContextType {
 }
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Expose the theme hook
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
@@ -24,8 +23,6 @@ export const useTheme = () => {
   return context;
 };
 
-// ------------------- Auth Context ------------------- //
-
 interface AuthContextType {
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
@@ -33,7 +30,6 @@ interface AuthContextType {
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Expose the auth hook
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -42,7 +38,6 @@ export function useAuth() {
   return context;
 }
 
-// The actual AuthProvider that wraps SessionContextProvider
 function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   const { supabaseClient, session } = useSessionContext();
   const user = session?.user || null;
@@ -52,16 +47,12 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    if (error) {
-      console.error("Sign-in error:", error.message);
-    }
+    if (error) console.error("Sign-in error:", error.message);
   }
 
   async function signOut() {
     const { error } = await supabaseClient.auth.signOut();
-    if (error) {
-      console.error("Sign-out error:", error.message);
-    }
+    if (error) console.error("Sign-out error:", error.message);
   }
 
   return (
@@ -71,8 +62,6 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// --------------------------------------------------- //
-
 export const Providers: React.FC<{
   children: React.ReactNode;
   session?: Session | null;
@@ -81,9 +70,6 @@ export const Providers: React.FC<{
 
   useEffect(() => {
     const savedTheme = getCookie("theme") || "light";
-    const html = document.documentElement;
-    html.classList.remove("light", "dark");
-    html.classList.add(savedTheme);
     setThemeType(savedTheme as "light" | "dark");
   }, []);
 
@@ -92,6 +78,15 @@ export const Providers: React.FC<{
     html.classList.remove("light", "dark");
     html.classList.add(themeType);
     setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
+
+    const color = themeType === "dark" ? "#111827" : "#ffffff";
+    let metaTag = document.querySelector("meta[name='theme-color']");
+    if (!metaTag) {
+      metaTag = document.createElement("meta");
+      metaTag.setAttribute("name", "theme-color");
+      document.head.appendChild(metaTag);
+    }
+    metaTag.setAttribute("content", color);
   }, [themeType]);
 
   const toggleTheme = () => {

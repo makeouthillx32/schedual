@@ -1,3 +1,5 @@
+// Corrected page.tsx (Signup) to fix the build error
+
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
@@ -16,7 +18,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
     admin: "Admin",
     job_coach: "Job Coach",
     client: "Client",
-    anonymous: "User",
+    anonymous: "User"
   }[role] || "User";
 
   return {
@@ -25,19 +27,18 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
     openGraph: {
       title: `Join as a ${roleName}`,
       description: `Create an account and get started as a ${roleName} on the CMS Schedule App.`,
-      images: [`/images/${role}.png`],
+      images: [`/images/${role}.png`]
     },
     twitter: {
       card: "summary_large_image",
       title: `Join as a ${roleName}`,
       description: `You've been invited to create an account as a ${roleName}.`,
-      images: [`/images/${role}.png`],
-    },
+      images: [`/images/${role}.png`]
+    }
   };
 }
 
-export default async function Signup(props: { searchParams: Promise<Message> }) {
-  const searchParams = await props.searchParams;
+export default async function Signup({ searchParams }: { searchParams: { invite?: string; role?: string } }) {
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;
 

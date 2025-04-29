@@ -18,7 +18,6 @@ export default function RootLayout({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // Hide layout on homepage
   const excludeGlobalLayout = pathname === "/";
 
   useEffect(() => {
@@ -35,30 +34,26 @@ export default function RootLayout({
       const theme = localStorage.getItem("theme");
       setIsDarkMode(theme === "dark");
 
-      let color = "#ffffff"; // default light
+      let color = "#ffffff";
 
       if (pathname === "/") {
-        color = isDarkMode ? "#111827" : "#f9fafb";
+        color = theme === "dark" ? "#111827" : "#f9fafb";
       } else {
-        color = isDarkMode ? "#111827" : "#ffffff";
+        color = theme === "dark" ? "#111827" : "#ffffff";
       }
 
       const metaTag = document.querySelector("meta[name='theme-color']");
       if (metaTag) {
         metaTag.setAttribute("content", color);
-      } else {
-        const newMeta = document.createElement("meta");
-        newMeta.name = "theme-color";
-        newMeta.content = color;
-        document.head.appendChild(newMeta);
       }
     }
-  }, [pathname, isDarkMode]);
+  }, [pathname]);
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
       </head>
       <body>
         <Providers>

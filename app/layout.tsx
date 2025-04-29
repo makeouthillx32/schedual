@@ -31,30 +31,28 @@ export default function RootLayout({
         setCookie("lastPage", pathname, { path: "/" });
       }
 
-      const theme = localStorage.getItem("theme");
+      const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      let color = "#ffffff";
+      const color = pathname === "/"
+        ? (theme === "dark" ? "#111827" : "#f9fafb")
+        : (theme === "dark" ? "#111827" : "#ffffff");
 
-      if (pathname === "/") {
-        color = theme === "dark" ? "#111827" : "#f9fafb";
+      const tag = document.querySelector("meta[name='theme-color']");
+      if (tag) {
+        tag.setAttribute("content", color);
       } else {
-        color = theme === "dark" ? "#111827" : "#ffffff";
-      }
-
-      const metaTag = document.querySelector("meta[name='theme-color']");
-      if (metaTag) {
-        metaTag.setAttribute("content", color);
+        const newMeta = document.createElement("meta");
+        newMeta.name = "theme-color";
+        newMeta.content = color;
+        document.head.appendChild(newMeta);
       }
     }
-  }, [pathname]);
+  }, [pathname, isDarkMode]);
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
-      <head>
-        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
-      </head>
+      <head />
       <body>
         <Providers>
           {!excludeGlobalLayout && <Nav />}

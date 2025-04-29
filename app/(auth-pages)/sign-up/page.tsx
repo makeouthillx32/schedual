@@ -36,14 +36,15 @@ export async function generateMetadata({ searchParams }: { searchParams: { invit
   };
 }
 
-export default async function Signup({ searchParams }: { searchParams: { invite?: string; role?: string } }) {
+export default async function Signup({ searchParams }: { searchParams: Promise<Message> }) {
+  const searchParamsResolved = await searchParams;
   const cookieData = await cookies();
   const invite = cookieData.get("invite")?.value;
 
-  if ("message" in searchParams) {
+  if ("message" in searchParamsResolved) {
     return (
       <div className="w-full flex-1 flex items-center min-h-screen justify-center gap-2 p-4">
-        <FormMessage message={searchParams as unknown as Message} />
+        <FormMessage message={searchParamsResolved} />
       </div>
     );
   }
@@ -106,7 +107,7 @@ export default async function Signup({ searchParams }: { searchParams: { invite?
             Create Account
           </SubmitButton>
 
-          <FormMessage message={searchParams as unknown as Message} />
+          <FormMessage message={searchParamsResolved} />
         </form>
 
         <p className="text-center text-sm mt-6 text-muted-foreground">

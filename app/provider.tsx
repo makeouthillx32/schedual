@@ -78,21 +78,21 @@ export const Providers: React.FC<{
     html.classList.remove("light", "dark");
     html.classList.add(themeType);
     setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
-
-    // 🛠 Dynamically get the real theme color from your global.css
-    const appBgColor = getComputedStyle(document.documentElement).getPropertyValue(
-      themeType === "dark" ? "--hnf-background" : "--hnf-background"
-    ).trim();
-
-    const metaTag = document.querySelector("meta[name='theme-color']");
-    if (metaTag) {
-      metaTag.setAttribute("content", appBgColor);
-    } else {
-      const newMeta = document.createElement("meta");
-      newMeta.name = "theme-color";
-      newMeta.content = appBgColor;
-      document.head.appendChild(newMeta);
+  
+    const isHome = window.location.pathname === "/";
+  
+    const cssVar = isHome ? "--home-nav-bg" : "--hnf-background";
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue(cssVar)
+      .trim();
+  
+    let metaTag = document.querySelector("meta[name='theme-color']");
+    if (!metaTag) {
+      metaTag = document.createElement("meta");
+      metaTag.setAttribute("name", "theme-color");
+      document.head.appendChild(metaTag);
     }
+    metaTag.setAttribute("content", color);
   }, [themeType]);
 
   const toggleTheme = () => {

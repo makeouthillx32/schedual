@@ -382,7 +382,7 @@ export default function Title9Page() {
       {/* Notice to Public */}
       <div className="mb-6">
         <h3 className="font-bold text-lg mb-2">Notice to Public</h3>
-        <div className="bg-gray-50 p-4 mb-4 border border-gray-200">
+        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-4 mb-4 border border-[var(--home-background)]">
           <h4 className="font-semibold mb-2">NOTIFYING THE PUBLIC OF RIGHTS UNDER TITLE VI</h4>
           <h4 className="font-semibold mb-2">DESERT AREA RESOURCES AND TRAINING, also known as DART</h4>
           <ul className="list-disc pl-5 mb-3">
@@ -777,7 +777,7 @@ export default function Title9Page() {
           individuals.
         </p>
         <p className="mb-3">Desert Area Resource and Training's Title VI Program Administrator is:</p>
-        <div className="bg-gray-50 p-3 mb-3">
+        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-3 mb-3 border border-[var(--home-background)]">
           <p>Jeannie Luke, Human Resources Manager</p>
           <p>201 East Ridgecrest Blvd.</p>
           <p>Ridgecrest, CA 93555</p>
@@ -1048,7 +1048,7 @@ export default function Title9Page() {
           Our Limited English Proficiency Policy is posted, in both Spanish and English, beside the Public Notice of
           Title VI policy in all areas listed in this plan:
         </p>
-        <div className="bg-gray-50 p-3 mb-3">
+        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-3 mb-3 border border-[var(--home-background)]">
           <p>
             Desert Area Resources and Training also known as DART strives to ensure that all clients, volunteers and
             staff members have access to all of its programs and services free of charge. DART provides support to all

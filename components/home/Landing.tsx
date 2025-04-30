@@ -16,10 +16,10 @@ export default function HomePage() {
           />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-[var(--home-heading)] mb-2">
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--home-heading)] mb-2">
             Welcome to Desert Area Resources and Training
           </h1>
-          <hr className="border-t-2 border-[var(--home-text)] my-6 w-full max-w-3xl" />
+          <hr className="border-t-4 border-[var(--home-text)] my-4 w-80" />
         </div>
       </div>
 

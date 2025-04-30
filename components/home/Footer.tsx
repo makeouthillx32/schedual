@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
   const session = useLoginSession();
 
   return (
-    <footer className="bg-[var(--home-background)] text-[var(--home-header-text)] py-6 text-sm border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
+    <footer className="bg-[var(--home-header)] text-[var(--home-header-text)] py-6 text-sm border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
       {session?.user?.id ? (
         <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="flex flex-col md:flex-row justify-between w-full">

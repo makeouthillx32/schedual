@@ -179,7 +179,7 @@ select:focus {
 
 /* ========== Homepage Theme Overrides ========== */
 :root {
-  --home-primary: #0056b3;
+  --home-primary: #030303;
   --home-light: #6c757d;
   --home-dark: #0b2545;
   --home-background: #f0f2f5;

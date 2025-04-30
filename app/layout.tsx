@@ -33,22 +33,46 @@ export default function RootLayout({
 
       const theme = localStorage.getItem("theme") || "light"
       setIsDarkMode(theme === "dark")
+
+      // Keep your existing theme-color logic for now
+      const computedStyle = getComputedStyle(document.documentElement)
+      let color = "#ffffff" // fallback
+
+      if (isHome) {
+        color =
+          theme === "dark"
+            ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
+            : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff"
+      } else {
+        color =
+          theme === "dark"
+            ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
+            : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb"
+      }
+
+      const metaTag = document.querySelector("meta[name='theme-color']")
+      if (metaTag) {
+        metaTag.setAttribute("content", color)
+      } else {
+        const newMeta = document.createElement("meta")
+        newMeta.name = "theme-color"
+        newMeta.content = color
+        document.head.appendChild(newMeta)
+      }
     }
-  }, [pathname])
+  }, [pathname, isHome])
 
   const excludeGlobalLayout = isHome
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
-        {/* Base theme-color that will be overridden by our handler */}
-        <meta name="theme-color" content={isDarkMode ? "#111827" : "#ffffff"} />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#ffffff" />
+        {/* Add our ThemeColorHandler component */}
+        <ThemeColorHandler isDarkMode={isDarkMode} />
       </head>
       <body>
         <Providers>
-          {/* Add our ThemeColorHandler component */}
-          <ThemeColorHandler isDarkMode={isDarkMode} />
           {!excludeGlobalLayout && <Nav />}
           <main>{children}</main>
           {!excludeGlobalLayout && <Footer />}

@@ -54,7 +54,7 @@ export default function BoardPage() {
 
       {selected !== null && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center p-4 animate-fade-in">
-          <div className="relative w-full max-w-3xl">
+          <div className="relative w-full max-w-3xl aspect-square">
             <button
               onClick={() => setSelected(null)}
               className="absolute top-4 right-4 text-white text-4xl font-bold z-50 hover:text-[var(--home-danger)]"
@@ -62,17 +62,21 @@ export default function BoardPage() {
             >
               &times;
             </button>
-            <div className="relative aspect-square bg-gray-800 rounded-lg overflow-hidden shadow-xl">
+            <div className="relative w-full h-full rounded-lg overflow-hidden shadow-xl">
               <Image
                 src={`/images/home/${boardMembers[selected][0]}`}
                 alt={boardMembers[selected][1]}
                 fill
                 className="object-cover"
               />
-              <div className="absolute bottom-0 bg-[var(--home-dark)] bg-opacity-80 w-full p-6 text-white">
-                <h3 className="text-2xl font-bold">{boardMembers[selected][1]}</h3>
-                <p className="text-[var(--home-accent)] text-sm italic">{boardMembers[selected][2]}</p>
-                <p className="mt-2 text-sm text-[var(--home-text)]">
+              <div className="absolute bottom-0 w-full p-6 bg-gradient-to-t from-black/70 to-transparent">
+                <h3 className="text-2xl font-extrabold text-white drop-shadow-sm">
+                  {boardMembers[selected][1]}
+                </h3>
+                <p className="text-white text-sm italic drop-shadow-sm">
+                  {boardMembers[selected][2]}
+                </p>
+                <p className="mt-2 text-white text-sm drop-shadow-sm max-w-xl">
                   Brief biography of the board member highlighting their background, expertise, and commitment to DART's mission.
                 </p>
               </div>

@@ -2,17 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
-import AboutUsPage from "@/components/home/AboutUs";
-import BoardPage from "@/components/home/BoardofDirectors";
-import Title9Page from "@/components/home/Title9Information";
-import ActionDayPage from "@/components/home/ActionDayGala";
-import JobsPage from "@/components/home/Jobs";
-import HomePage from "@/components/home/Landing";
-import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
 import useLoginSession from "@/lib/useLoginSession";
-import SignInButton from "@/components/ui/SignInButton";
-import LogoutButton from "@/components/ui/LogoutButton";
 import Header from "@/components/home/Header";
 import MobileMenu from "@/components/home/MobileMenu";
 import IntroBar from "@/components/home/IntroBar";

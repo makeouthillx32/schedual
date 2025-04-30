@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
         <div className="w-48 h-48 flex-shrink-0">
           <Image
-            src="/images/home/dartboard.png"
+            src="/images/home/dartboard.svg"
             alt="DART Target Logo"
             width={192}
             height={192}

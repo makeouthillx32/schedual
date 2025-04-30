@@ -11,7 +11,7 @@ import "./globals.css"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { setCookie } from "@/lib/cookieUtils"
-import { IOSStatusBarFix } from "@/components/ios-status-bar-fix"
+import { ThemeColorObserver } from "@/components/theme-color-observer"
 
 export default function RootLayout({
   children,
@@ -34,6 +34,7 @@ export default function RootLayout({
       const theme = localStorage.getItem("theme") || "light"
       setIsDarkMode(theme === "dark")
 
+      // Keep your existing theme-color logic
       const computedStyle = getComputedStyle(document.documentElement)
       let color = "#ffffff" // fallback
 
@@ -58,33 +59,8 @@ export default function RootLayout({
         newMeta.content = color
         document.head.appendChild(newMeta)
       }
-
-      // iOS Chromium fix - Add this script to your existing useEffect
-      const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-
-      if (isIOS) {
-        // Add iOS-specific meta tags
-        const metaTags = [
-          { name: "apple-mobile-web-app-capable", content: "yes" },
-          { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-          // This is our special duplicate tag that helps iOS Chromium
-          { name: "theme-color-ios", content: color },
-        ]
-
-        metaTags.forEach(({ name, content }) => {
-          let tag = document.querySelector(`meta[name="${name}"]`)
-          if (!tag) {
-            tag = document.createElement("meta")
-            tag.setAttribute("name", name)
-            document.head.appendChild(tag)
-          }
-          tag.setAttribute("content", content)
-        })
-      }
     }
-  }, [pathname])
+  }, [pathname, isHome])
 
   const excludeGlobalLayout = isHome
 
@@ -92,13 +68,12 @@ export default function RootLayout({
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
-        {/* Add viewport meta tag for iOS */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Add our iOS status bar fix component */}
-        <IOSStatusBarFix />
       </head>
       <body>
         <Providers>
+          {/* Add our theme color observer */}
+          <ThemeColorObserver />
           {!excludeGlobalLayout && <Nav />}
           <main>{children}</main>
           {!excludeGlobalLayout && <Footer />}

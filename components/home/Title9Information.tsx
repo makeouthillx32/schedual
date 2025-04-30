@@ -407,7 +407,7 @@ export default function Title9Page() {
           </ul>
         </div>
 
-        <div className="bg-gray-50 p-4 border border-gray-200">
+        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-4 border border-[var(--home-background)]">
           <h4 className="font-semibold mb-2">Notificando al público sobre los derechos bajo el titulo VI</h4>
           <h4 className="font-semibold mb-2">DESERT AREA RESOURCES AND TRAINING, también conocido como DART</h4>
           <ul className="list-disc pl-5 mb-3">
@@ -439,7 +439,7 @@ export default function Title9Page() {
         <h3 className="font-bold text-lg mb-2">List of Locations Where Title VI Notice is Posted</h3>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Location Name</th>
               <th className="border p-2 text-left">Address</th>
               <th className="border p-2 text-left">City</th>
@@ -656,7 +656,7 @@ export default function Title9Page() {
         </p>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Type of Process</th>
               <th className="border p-2 text-left">Date</th>
               <th className="border p-2 text-left">Summary (including basis of complaint)</th>
@@ -820,7 +820,7 @@ export default function Title9Page() {
         <table className="w-full border-collapse mb-4">
           <caption className="text-left font-semibold mb-2">American FactFinder: Race or Latino Origin: 2010</caption>
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left"></th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -845,7 +845,7 @@ export default function Title9Page() {
             Ridgecrest (city) QuickFacts from the US Census Bureau: 2012 Estimate
           </caption>
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left"></th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -870,7 +870,7 @@ export default function Title9Page() {
             American FactFinder: Selected Social Characteristics 2008-2012 American Community Survey 5-Year Estimates
           </caption>
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Ability to Speak English</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -900,7 +900,7 @@ export default function Title9Page() {
             American FactFinder: Language Spoken at Home 2008-2012 American survey 5-Year Estimates
           </caption>
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Ability to Speak English</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -945,7 +945,7 @@ export default function Title9Page() {
             Ridgecrest Chamber of Commerce: Population by Origin and Race
           </caption>
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">By Origin</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -1114,7 +1114,7 @@ export default function Title9Page() {
         </p>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">TRANSLATION ITEM</th>
               <th className="border p-2 text-center">Now</th>
               <th className="border p-2 text-center">Next Year (after July 1)</th>
@@ -1199,7 +1199,7 @@ export default function Title9Page() {
         </h4>
         <table className="w-full border-collapse mb-3">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Name</th>
               <th className="border p-2 text-left">Race</th>
             </tr>
@@ -1255,7 +1255,7 @@ export default function Title9Page() {
         <h4 className="font-semibold mt-3 mb-1">Desert Area Resources and Training Board of Directors by origin:</h4>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="bg-[var(--home-background)]">
               <th className="border p-2 text-left">Origin</th>
               <th className="border p-2 text-left">Percentage</th>
             </tr>
@@ -1288,7 +1288,7 @@ export default function Title9Page() {
       </div>
 
       {/* Footer */}
-      <div className="mt-12 pt-6 border-t border-gray-200 text-xs text-gray-500">
+      <div className="mt-12 pt-6 border-t border-[var(--home-background)] text-xs text-[var(--home-text)]">
         <p>© 2023 Desert Area Resources and Training (DART)</p>
         <p>201 East Ridgecrest Blvd.</p>
         <p>Ridgecrest, CA 93555</p>

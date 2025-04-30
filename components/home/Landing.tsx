@@ -19,17 +19,16 @@ export default function HomePage() {
           <h1 className="text-2xl md:text-3xl font-semibold text-[var(--home-heading)] mb-2">
             Welcome to Desert Area Resources and Training
           </h1>
-          <h2 className="text-lg md:text-xl font-medium mb-4 flex items-start gap-2">
-            <span className="inline-block w-1 h-6 bg-[var(--home-accent)] rounded-sm"></span>
-            Our Mission is to:
-          </h2>
-          <p className="text-[var(--home-text)] mb-2">
-            Provide support and opportunities for people who have intellectual or developmental disabilities
-          </p>
-          <p className="text-[var(--home-text)] mb-2">
-            to make positive choices, to live and learn together, and pursue the dreams and lifestyles they choose.
-          </p>
         </div>
+      </div>
+
+      {/* Mission Statement Box */}
+      <div className="border-l-4 border-[var(--home-accent)] pl-4 mb-12 max-w-3xl mx-auto">
+        <h2 className="text-xl md:text-2xl font-semibold mb-2">Our Mission is to:</h2>
+        <p className="text-[var(--home-text)]">
+          Provide services and opportunities to people who have intellectual or developmental disabilities or other
+          special needs, so they and their families can pursue the dreams and lifestyles they choose.
+        </p>
       </div>
 
       {/* Welcome Text */}

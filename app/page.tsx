@@ -1,13 +1,11 @@
-import type { Metadata } from "next"
-import { getThemeColors } from "@/utils/theme-color"
+"use client";
 
-// Homepage-specific metadata
-export const generateMetadata = (): Metadata => {
-  return {
-    themeColor: getThemeColors(true),
-  }
-}
+import Home from "@/components/home/Home";
 
-export default function Home() {
-  return <main>{/* Your homepage content */}</main>
+export default function Page() {
+  return (
+    <div>
+      <Home />
+    </div>
+  );
 }

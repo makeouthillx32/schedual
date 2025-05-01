@@ -5,24 +5,32 @@ import Image from "next/image";
 import "@/app/globals.css";
 
 interface ProgramsAndServicesProps {
-  navigateTo: (key: string) => (e?: React.MouseEvent) => void;
+  navigateTo: (key: string) => void;
 }
 
-export default function ProgramsAndServices({ navigateTo }: ProgramsAndServicesProps) {
+const ProgramsAndServices: React.FC<ProgramsAndServicesProps> = ({ navigateTo }) => {
   return (
-    <section id="programs" className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+    <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
       <h1 className="text-3xl font-bold mb-4">Programs & Services</h1>
-      <p className="text-lg max-w-4xl">
-        Desert Area Resources and Training is a non-profit organization that empowers people with intellectual and developmental disabilities and their loved ones. Our suite of tailored disability services focuses on enriching, empowering and equipping those we serve to become job-ready, confident and more independent. We help remove barriers preventing individuals from finding and keeping gainful employment and assist families in accessing quality support.
-      </p>
-      <p className="text-lg max-w-4xl mt-4">
-        The programs we offer have contributed to increasing the quality of life and reducing the chances of people with disabilities falling into homelessness and poverty. Over the last 70 years, our positive impact on our community has been immeasurable. We are proud to have gained a reputation as one of the most respected and innovative non-profit organizations in the Desert region.
-      </p>
-      <p className="text-lg max-w-4xl mt-4">
+      <p className="text-lg mb-8">
+        Desert Area Resources and Training is a non-profit organization that empowers people with
+        intellectual and developmental disabilities and their loved ones. Our suite of tailored
+        disability services focuses on enriching, empowering, and equipping those we serve to become
+        job-ready, confident, and more independent. We help remove barriers preventing individuals
+        from finding and keeping gainful employment and assist families in accessing quality
+        support.
+        <br />
+        <br />
+        The programs we offer have contributed to increasing the quality of life and reducing the
+        chances of people with disabilities falling into homelessness and poverty. Over the last 70
+        years, our positive impact on our community has been immeasurable. We are proud to have
+        gained a reputation as one of the most respected and innovative nonprofit organizations in
+        Ridgecrest.
+        <br />
+        <br />
         We have a range of disability services and don’t believe in a one-size-fits-all approach.
-      </p>
-      <p className="text-lg max-w-4xl mt-4 font-semibold">
-        Learn more about the variety of disability services and programs at Desert Area Resources and Training.
+        Learn more about the variety of disability services and programs at Desert Area Resources
+        and Training.
       </p>
 
       {/* Services Grid */}
@@ -39,8 +47,8 @@ export default function ProgramsAndServices({ navigateTo }: ProgramsAndServicesP
           ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
         ].map(([title, key, filename]) => (
           <button
-            key={key as string}
-            onClick={() => navigateTo(key as string)()}
+            key={key}
+            onClick={() => navigateTo(key as string)}
             className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
           >
             <div className="w-24 h-24 flex-shrink-0">
@@ -58,6 +66,8 @@ export default function ProgramsAndServices({ navigateTo }: ProgramsAndServicesP
           </button>
         ))}
       </div>
-    </section>
+    </div>
   );
-}
+};
+
+export default ProgramsAndServices;

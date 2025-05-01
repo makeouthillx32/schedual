@@ -29,8 +29,7 @@ export const navTree = [
     label: "Business Services",
     href: "/#business",
     children: [
-      { key: "shredding",   label: "Shredding",    href: "/#shredding" },
-      { key: "thriftstore", label: "Thrift Store", href: "/#thriftstore" },
+      { key: "shredding", label: "Shredding", href: "/#shredding" },
     ],
   },
 
@@ -49,6 +48,7 @@ export const navTree = [
     href: "/#learn",
     children: [
       { key: "autismdaycamp", label: "Autism Day Camp", href: "/#autismdaycamp" },
+      { key: "thriftstore", label: "Thrift Store", href: "/#thriftstore" },
     ],
   },
 ] as const;

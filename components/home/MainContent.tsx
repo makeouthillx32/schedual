@@ -18,6 +18,7 @@ import CARF from "@/components/home/services/CARF";
 import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
+import BusinessServices from "@/components/home/BusinessServices/main";
 
 interface MainContentProps {
   currentPage: string;
@@ -81,6 +82,13 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         <>
           <section id="programs" className="sr-only">Programs</section>
           <ProgramsAndServices navigateTo={navigateTo} />
+        </>
+      );
+    case "business":
+      return (
+        <>
+          <section id="business" className="sr-only">Business</section>
+          <BusinessServices navigateTo={navigateTo} />
         </>
       );
 

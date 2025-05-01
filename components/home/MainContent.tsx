@@ -21,6 +21,7 @@ import ProgramsAndServices from "@/components/home/ProgramsandServices/programsn
 import BusinessServices from "@/components/home/BusinessServices/main";
 import GetInvolved from "@/components/home/GetInvolved/main";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
+import Careers from "@/components/home/about/Careers";
 
 interface MainContentProps {
   currentPage: string;
@@ -72,10 +73,10 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <AutismDayCamp />
         </>
       );
-    case "jobs":
+    case "careers":
       return (
         <>
-          <section id="jobs" className="sr-only">Jobs</section>
+          <section id="careers" className="sr-only">Careers</section>
           <JobsPage />
         </>
       );

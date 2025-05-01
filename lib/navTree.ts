@@ -27,9 +27,9 @@ export const navTree = [
     label: "Business Services",
     href: "/#business",
     children: [
-      { key: "shredding", label: "Shredding", href: "/#shredding" },
-      { key: "commercial", label: "Commercial Services", href: "/#commercial" },
-      { key: "donations", label: "Donations & Pickups", href: "/#donations" },
+      { key: "shredding",   label: "Shredding",           href: "/#shredding" },
+      { key: "commercial",  label: "Commercial Services", href: "/#commercial" },
+      { key: "donations",   label: "Donations & Pickups", href: "/#donations" },
     ],
   },
   {
@@ -38,6 +38,7 @@ export const navTree = [
     href: "/#involved",
     children: [
       { key: "jobs", label: "Jobs", href: "/#jobs" },
+      { key: "donate", label: "Donate Now", href: "/#donate" },
     ],
   },
   {

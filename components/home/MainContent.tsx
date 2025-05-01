@@ -77,7 +77,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="careers" className="sr-only">Careers</section>
-          <JobsPage />
+          <Careers />
         </>
       );
     case "programs":

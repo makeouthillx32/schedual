@@ -44,7 +44,6 @@ const ProgramsAndServices: React.FC<ProgramsAndServicesProps> = ({ navigateTo })
           ["Employment Services", "employment", "Employment Services.jpg"],
           ["Commission for the Accreditation of Rehabilitation Facilities", "carf", "Commission for the Accreditation.jpg"],
           ["DART Thrift Store", "thrift", "DART Thrift Store.jpg"],
-          ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
         ].map(([title, key, filename]) => (
           <button
             key={key}

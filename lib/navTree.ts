@@ -7,6 +7,7 @@ export const navTree = [
     children: [
       { key: "board", label: "Board of Directors", href: "/#board" },
       { key: "title9", label: "Title 9 Information", href: "/#title9" },
+      { key: "careers", label: "Careers", href: "/#careers" },
     ],
   },
   {
@@ -37,7 +38,6 @@ export const navTree = [
     label: "Get Involved",
     href: "/#involved",
     children: [
-      { key: "jobs", label: "Jobs", href: "/#jobs" },
       { key: "donate", label: "Donate Now", href: "/#donate" },
     ],
   },

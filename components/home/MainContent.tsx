@@ -17,6 +17,7 @@ import Employment from "@/components/home/services/Employment";
 import CARF from "@/components/home/services/CARF";
 import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
+import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 
 interface MainContentProps {
   currentPage: string;
@@ -73,6 +74,13 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         <>
           <section id="jobs" className="sr-only">Jobs</section>
           <JobsPage />
+        </>
+      );
+    case "programs":
+      return (
+        <>
+          <section id="programs" className="sr-only">Programs</section>
+          <ProgramsAndServices navigateTo={navigateTo} />
         </>
       );
 

@@ -45,7 +45,7 @@ export default function MobileDrawer({
     }, 250); // must match animation duration
   };
 
-  const handleClickAndClose = (key: string) => (e: React.MouseEvent) => {
+  const handleClickAndClose = (key: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     navigateTo(key)(e);
     handleClose();
   };

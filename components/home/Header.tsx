@@ -9,9 +9,8 @@ import MobileDrawer from "@/components/home/MobileDrawer";
 import DesktopNav from "@/components/home/DesktopNav";
 
 interface HeaderProps {
-  navigateTo: (page: string) => (e: React.MouseEvent) => void;
+  navigateTo: (page: string) => (e?: React.MouseEvent) => void;
 }
-
 const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const session = useLoginSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

@@ -9,7 +9,6 @@ export const navTree = [
       { key: "title9", label: "Title 9 Information", href: "/#title9" },
     ],
   },
-
   {
     key: "programs",
     label: "Programs & Services",
@@ -23,16 +22,16 @@ export const navTree = [
       { key: "supported-living", label: "Supported Living",    href: "/#supportedliving" },
     ],
   },
-
   {
     key: "business",
     label: "Business Services",
     href: "/#business",
     children: [
       { key: "shredding", label: "Shredding", href: "/#shredding" },
+      { key: "commercial", label: "Commercial Services", href: "/#commercial" },
+      { key: "donations", label: "Donations & Pickups", href: "/#donations" },
     ],
   },
-
   {
     key: "involved",
     label: "Get Involved",
@@ -41,7 +40,6 @@ export const navTree = [
       { key: "jobs", label: "Jobs", href: "/#jobs" },
     ],
   },
-
   {
     key: "learn",
     label: "Learn & Connect",

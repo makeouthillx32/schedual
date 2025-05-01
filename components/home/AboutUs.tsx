@@ -45,40 +45,6 @@ export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
           </p>
         </div>
       </div>
-
-      {/* Services Grid */}
-      <div className="flex flex-col items-center mt-12 space-y-6">
-        {[
-          ["Transportation", "transportation", "Transportation.jpg"],
-          ["Early Childhood Services", "earlychildhood", "Early Childhood Services.jpg"],
-          ["Supported Living Services", "supportedliving", "Supported Living Services.jpg"],
-          ["Artists on the Edge", "artists", "Artists on the Edge.jpg"],
-          ["Autism Day Camp", "action", "Autism Day Camp.png"],
-          ["Employment Services", "employment", "Employment Services.jpg"],
-          ["Commission for the Accreditation of Rehabilitation Facilities", "carf", "Commission for the Accreditation.jpg"],
-          ["DART Thrift Store", "thrift", "DART Thrift Store.jpg"],
-          ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
-        ].map(([title, key, filename]) => (
-          <button
-            key={key}
-            onClick={() => navigateTo(key as string)}
-            className="flex items-center space-x-4 hover:opacity-80 transition text-left w-full"
-          >
-            <div className="w-24 h-24 flex-shrink-0">
-              <Image
-                src={`/images/home/${filename}`}
-                alt={title as string}
-                width={96}
-                height={96}
-                className="w-full h-full object-cover rounded"
-              />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[var(--home-content-heading)]">{title}</h3>
-            </div>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

@@ -127,14 +127,14 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="involved" className="sr-only">Get Involved</section>
-          <GetInvolved navigateTo={navigateTo} />
+          <GetInvolved />
         </>
       );
     case "learn":
       return (
         <>
           <section id="learn" className="sr-only">Learn & Connect</section>
-          <LearnConnect navigateTo={navigateTo} />
+          <LearnConnect />
         </>
       );
 

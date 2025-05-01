@@ -35,13 +35,14 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<string>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const goTo = useCallback((page: string) => {
-    const target = sectionId[page] ?? page;
+  const goTo = useCallback((hash: string) => {
+    const [base, sub] = hash.split("/");
+    const target = sectionId[base] ?? base;
     setCurrentPage(target);
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const el = document.getElementById(target);
+        const el = document.getElementById(sub || target);
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
         } else {
@@ -55,7 +56,7 @@ export default function Home() {
     e?.preventDefault();
     history.pushState(null, "", `#${page}`);
     goTo(page);
-    setMobileMenuOpen(false); // always close mobile nav after click
+    setMobileMenuOpen(false);
   };
 
   useEffect(() => {

@@ -19,6 +19,8 @@ import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import BusinessServices from "@/components/home/BusinessServices/main";
+import GetInvolved from "@/components/home/GetInvolved/main";
+import LearnConnect from "@/components/home/LearnAndConnect/main";
 
 interface MainContentProps {
   currentPage: string;
@@ -84,13 +86,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <ProgramsAndServices navigateTo={navigateTo} />
         </>
       );
-    case "business":
-      return (
-        <>
-          <section id="business" className="sr-only">Business</section>
-          <BusinessServices navigateTo={navigateTo} />
-        </>
-      );
 
     /* ───────────────── Programs & Services ───────────────── */
     case "transportation":
@@ -113,12 +108,35 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
 
     /* ───────────────── Business Services ─────────────────── */
+    case "business":
+      return (
+        <>
+          <section id="business" className="sr-only">Business Services</section>
+          <BusinessServices navigateTo={navigateTo} />
+        </>
+      );
     case "carf":
       return <><BackButton navigateTo={navigateTo} /><CARF /></>;
     case "thriftstore":
       return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
     case "shredding":
       return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
+
+    /* ───────────────── Community ───────────────── */
+    case "involved":
+      return (
+        <>
+          <section id="involved" className="sr-only">Get Involved</section>
+          <GetInvolved navigateTo={navigateTo} />
+        </>
+      );
+    case "learn":
+      return (
+        <>
+          <section id="learn" className="sr-only">Learn & Connect</section>
+          <LearnConnect navigateTo={navigateTo} />
+        </>
+      );
 
     default:
       return <HomePage />;

@@ -21,7 +21,7 @@ import ProgramsAndServices from "@/components/home/ProgramsandServices/programsn
 import BusinessServices from "@/components/home/BusinessServices/main";
 import GetInvolved from "@/components/home/GetInvolved/main";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
-import Careers from "@/components/home/about/Careers";
+import Careers from "@/components/home/About/Careers";
 
 interface MainContentProps {
   currentPage: string;

@@ -39,10 +39,6 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
   </div>
 );
 
-/**
- * Switches between Landing, About, and service-detail pages.
- * Keys MUST match navTree keys exactly.
- */
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
     case "about":
@@ -77,14 +73,14 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="careers" className="sr-only">Careers</section>
-          <Careers />
+          <Careers navigateTo={navigateTo} />
         </>
       );
     case "jobs":
       return (
-         <>
-           <section id="jobs" className="sr-only">Jobs</section>
-           <JobsPage />
+        <>
+          <section id="jobs" className="sr-only">Jobs</section>
+          <JobsPage />
         </>
       );
     case "programs":
@@ -94,8 +90,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <ProgramsAndServices navigateTo={navigateTo} />
         </>
       );
-
-    /* ───────────────── Programs & Services ───────────────── */
     case "transportation":
       return <><BackButton navigateTo={navigateTo} /><Transportation /></>;
     case "early-childhood":
@@ -114,8 +108,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       );
     case "employment":
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
-
-    /* ───────────────── Business Services ─────────────────── */
     case "business":
       return (
         <>
@@ -129,8 +121,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
     case "shredding":
       return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
-
-    /* ───────────────── Community ───────────────── */
     case "involved":
       return (
         <>
@@ -147,7 +137,12 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       );
 
     default:
-      return <HomePage />;
+      return (
+        <div className="p-8 text-center text-[var(--home-text)]">
+          <h1 className="text-3xl font-bold mb-4">Working on this right now!</h1>
+          <p className="text-lg">Please check back soon for updates.</p>
+        </div>
+      );
   }
 };
 

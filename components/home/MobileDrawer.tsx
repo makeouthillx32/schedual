@@ -1,72 +1,70 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { navTree } from "@/lib/navTree";
 
-interface DesktopNavProps {
+interface MobileDrawerProps {
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;
+  session: any;
+  onClose: () => void;
 }
 
-export default function DesktopNav({ navigateTo }: DesktopNavProps) {
-  const [openKey, setOpenKey] = useState<string | null>(null);
+export default function MobileDrawer({ navigateTo, session, onClose }: MobileDrawerProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
 
   return (
-    <nav className="hidden md:flex items-center gap-8 nav-root relative z-50">
-      {navTree.map((node) => (
-        <div
-          key={node.key}
-          className="relative group"
-          onMouseEnter={() => setOpenKey(node.key)}
-          onMouseLeave={() => setOpenKey(null)}
-        >
-          {node.children ? (
-            <>
+    <div
+      ref={menuRef}
+      className="md:hidden absolute top-16 left-0 right-0 bg-[var(--home-background)] shadow-md z-50 border-b border-gray-200 rounded-b-xl animate-fade-in"
+    >
+      <div className="flex flex-col py-2">
+        {navTree.map((link) => {
+          if (link.key === "logout") {
+            return session ? (
               <button
-                className="nav-top-link"
-                onClick={navigateTo(node.key)}
-                data-state={openKey === node.key ? "open" : undefined}
+                key="logout"
+                onClick={() => (window.location.href = "/auth/logout")}
+                className="px-4 py-2 hover:bg-[var(--home-nav-bg)] text-left text-[var(--home-danger)] font-semibold"
               >
-                {node.label}
+                Log Out
               </button>
-              <div
-                className={`nav-dropdown ${openKey === node.key ? "block" : "hidden"}`}
-                data-state={openKey === node.key ? "open" : undefined}
+            ) : null;
+          }
+
+          if (link.key === "sign-in") {
+            return !session ? (
+              <a
+                key="sign-in"
+                href="/sign-in"
+                className="px-4 py-2 hover:bg-[var(--home-nav-bg)] text-[var(--home-accent)] font-semibold"
               >
-                <ul className="grid gap-1 min-w-[14rem]">
-                  <li key={`${node.key}-parent`}>
-                    <a
-                      href={`#${node.key}`}
-                      onClick={navigateTo(node.key)}
-                      className="nav-sub-link font-semibold"
-                    >
-                      {node.label}
-                    </a>
-                  </li>
-                  {node.children.map((child) => (
-                    <li key={child.key}>
-                      <a
-                        href={`#${child.key}`}
-                        onClick={navigateTo(child.key)}
-                        className="nav-sub-link"
-                      >
-                        {child.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          ) : (
+                Sign In
+              </a>
+            ) : null;
+          }
+
+          return (
             <a
-              href={`#${node.key}`}
-              onClick={navigateTo(node.key)}
-              className="nav-top-link"
+              key={link.key}
+              href={`#${link.key}`}
+              onClick={navigateTo(link.key)}
+              className="px-4 py-2 hover:bg-[var(--home-nav-bg)] text-[var(--home-text)]"
             >
-              {node.label}
+              {link.label}
             </a>
-          )}
-        </div>
-      ))}
-    </nav>
+          );
+        })}
+      </div>
+    </div>
   );
 }

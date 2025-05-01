@@ -80,6 +80,13 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <Careers />
         </>
       );
+    case "jobs":
+      return (
+         <>
+           <section id="jobs" className="sr-only">Jobs</section>
+           <JobsPage />
+        </>
+      );
     case "programs":
       return (
         <>

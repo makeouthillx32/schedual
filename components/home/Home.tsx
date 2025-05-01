@@ -1,93 +1,75 @@
 "use client";
 
-import type React from "react";
-import { useState, useEffect, useCallback } from "react";
-import useLoginSession from "@/lib/useLoginSession";
+import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/home/Header";
-import MobileMenu from "@/components/home/MobileMenu";
 import IntroBar from "@/components/home/IntroBar";
 import MainContent from "@/components/home/MainContent";
-import useThemeCookie from "@/lib/useThemeCookie";
 import Footer from "@/components/home/Footer";
+import useThemeCookie from "@/lib/useThemeCookie";
 
 export default function Home() {
-  // ‼️ initial section comes from the hash so a cold load of /#about scrolls correctly
-  const [currentPage, setCurrentPage] = useState<string>(() =>
-    typeof window === "undefined" || !window.location.hash
-      ? "home"
-      : window.location.hash.slice(1)
-  );
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const theme = useThemeCookie();
-  const session = useLoginSession();
+  useThemeCookie();
 
-  /**
-   * Shared helper: update state _and_ scroll to the section.
-   */
+  const sectionId: Record<string, string> = {
+    home: "home",
+    about: "about",
+    programs: "programs",
+    business: "business",
+    involved: "involved",
+    learn: "learn",
+    board: "board",
+    title9: "title9",
+    jobs: "jobs",
+    autismdaycamp: "autismdaycamp",
+  };
+
+  const [currentPage, setCurrentPage] = useState<string>("home");
+
+  /** Jump helper shared by header + hashchange listener */
   const goTo = useCallback((page: string) => {
-    setCurrentPage(page);
-    const el = document.getElementById(page);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    } else {
-      // fallback for sections not yet mounted
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    const target = sectionId[page] ?? page;
+    setCurrentPage(target);
+
+    // Delay scroll until DOM updates are flushed
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el = document.getElementById(target);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          document.documentElement.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 10);
+    });
   }, []);
 
-  /**
-   * Click‑handler generator used by Header & MobileMenu.
-   * ‑ pushes a history entry so Back/Forward works
-   * ‑ closes the mobile menu
-   */
+  /** click‑handler factory injected into Header / MobileDrawer */
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    setMobileMenuOpen(false);
     history.pushState(null, "", `#${page}`);
     goTo(page);
   };
 
-  /**
-   * Keep React state in sync with the address bar when the user
-   * edits the hash manually or uses Back/Forward.
-   */
   useEffect(() => {
-    const handleHashChange = () => {
-      const page = window.location.hash.slice(1) || "home";
-      goTo(page);
-    };
-
-    // run once on mount (cold refresh with a hash)
-    handleHashChange();
-
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    const sync = () => goTo(location.hash.replace("#", "") || "home");
+    sync();
+    addEventListener("hashchange", sync);
+    return () => removeEventListener("hashchange", sync);
   }, [goTo]);
 
   return (
-    <div className="home-page flex flex-col min-h-screen bg-[var(--home-background)] text-[var(--home-text)] dark:bg-[var(--home-background)] dark:text-[var(--home-text)]">
+    <div className="flex min-h-screen flex-col home-page bg-[var(--home-background)] text-[var(--home-text)] dark:text-white">
       <Header
-        theme={theme}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
+        theme="light"
+        mobileMenuOpen={false}
+        setMobileMenuOpen={() => {}}
         navigateTo={navigateTo}
       />
 
-      {mobileMenuOpen && (
-        <MobileMenu
-          navigateTo={navigateTo}
-          session={session}
-          onClose={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {currentPage !== "home" && <IntroBar currentPage={currentPage} />}
+      <IntroBar currentPage={currentPage} />
 
       <main className="flex-grow">
-        <div className="max-w-5xl mx-auto px-4 py-12">
-          {/* MainContent is still keyed off the state so it re-renders if the section is a virtual page */}
-          <MainContent currentPage={currentPage} navigateTo={(page) => navigateTo(page)()} />
-        </div>
+        <MainContent currentPage={currentPage} navigateTo={navigateTo} />
       </main>
 
       <Footer />

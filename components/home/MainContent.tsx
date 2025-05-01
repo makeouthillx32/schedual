@@ -4,7 +4,7 @@ import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
 import Title9Page from "@/components/home/Title9Information";
-import ActionDayPage from "@/components/home/ActionDayGala";
+
 import JobsPage from "@/components/home/Jobs";
 import HomePage from "@/components/home/Landing";
 
@@ -34,34 +34,76 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
   </div>
 );
 
+/**
+ * Switches between Landing, About, and service-detail pages.
+ * Keys MUST match navTree keys exactly.
+ */
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
     case "about":
-      return <AboutUsPage navigateTo={navigateTo} />;
+      return (
+        <>
+          <section id="about" className="sr-only">About</section>
+          <AboutUsPage navigateTo={navigateTo} />
+        </>
+      );
     case "board":
-      return <BoardPage />;
+      return (
+        <>
+          <section id="board" className="sr-only">Board</section>
+          <BoardPage />
+        </>
+      );
     case "title9":
-      return <Title9Page />;
+      return (
+        <>
+          <section id="title9" className="sr-only">Title 9</section>
+          <Title9Page />
+        </>
+      );
     case "action":
-      return <ActionDayPage />;
+      return (
+        <>
+          <section id="action" className="sr-only">Action Day Gala</section>
+          <AutismDayCamp />
+        </>
+      );
     case "jobs":
-      return <JobsPage />;
+      return (
+        <>
+          <section id="jobs" className="sr-only">Jobs</section>
+          <JobsPage />
+        </>
+      );
+
+    /* ───────────────── Programs & Services ───────────────── */
     case "transportation":
       return <><BackButton navigateTo={navigateTo} /><Transportation /></>;
-    case "earlychildhood":
+    case "early-childhood":
       return <><BackButton navigateTo={navigateTo} /><EarlyChildhood /></>;
-    case "supportedliving":
+    case "supported-living":
       return <><BackButton navigateTo={navigateTo} /><SupportedLiving /></>;
     case "artists":
       return <><BackButton navigateTo={navigateTo} /><Artists /></>;
+    case "autism-day-camp":
+      return (
+        <>
+          <section id="autismdaycamp" className="sr-only">Autism Day Camp</section>
+          <BackButton navigateTo={navigateTo} />
+          <AutismDayCamp />
+        </>
+      );
     case "employment":
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
+
+    /* ───────────────── Business Services ─────────────────── */
     case "carf":
       return <><BackButton navigateTo={navigateTo} /><CARF /></>;
-    case "thrift":
+    case "thriftstore":
       return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
     case "shredding":
       return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
+
     default:
       return <HomePage />;
   }

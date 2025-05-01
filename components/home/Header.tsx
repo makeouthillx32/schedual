@@ -1,75 +1,69 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useTheme } from "@/app/provider"; // Make sure your provider exports useTheme
 import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
-import { navLinks } from "@/components/home/navLinks";
 import useLoginSession from "@/lib/useLoginSession";
+import MobileDrawer from "@/components/home/MobileDrawer";
+import DesktopNav from "@/components/home/DesktopNav";
 
 interface HeaderProps {
-  theme: "light" | "dark";
-  mobileMenuOpen: boolean;
-  setMobileMenuOpen: (open: boolean) => void;
-  navigateTo: (page: string) => (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  navigateTo: (page: string) => (e: React.MouseEvent) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  theme,
-  mobileMenuOpen,
-  setMobileMenuOpen,
-  navigateTo,
-}) => {
+const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const session = useLoginSession();
-
-  const filteredNavLinks = navLinks.filter(
-    (link) => link.key !== "sign-in" && link.key !== "logout"
-  );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { themeType } = useTheme(); // get live theme from context
 
   return (
     <header className="border-b border-gray-200 py-2 px-4 relative bg-[var(--home-header)] text-[var(--home-header-text)]">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="font-bold text-lg">
+      <div className="max-w-7xl mx-auto flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2">
+        {/* Left: Logo */}
+        <div className="flex-shrink-0">
           <a href="#" onClick={navigateTo("home")} className="flex items-center">
             <img
-              src={theme === "dark" ? "/images/home/dartlogowhite.svg" : "/images/home/dartlogo.svg"}
+              src={
+                themeType === "dark"
+                  ? "/images/home/dartlogowhite.svg"
+                  : "/images/home/dartlogo.svg"
+              }
               alt="DART Logo"
-              width={80}
-              height={80}
-              className="h-12 w-auto"
+              className="h-12 w-auto max-w-none"
             />
           </a>
         </div>
-        <div className="flex-1 hidden md:flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm min-w-0 overflow-hidden text-ellipsis">
-          {filteredNavLinks.map((link) => (
-            <a
-              key={link.key}
-              href="#"
-              onClick={navigateTo(link.key)}
-              className="hover:underline text-[var(--home-nav-text)] truncate"
-            >
-              {link.label}
-            </a>
-          ))}
 
-          {/* Auth buttons - only visible on desktop */}
-          {!session ? (
-            <a
-              href="/sign-in"
-              className="text-[var(--home-accent)] text-sm font-semibold hover:underline truncate"
-            >
-              Sign In
-            </a>
-          ) : (
-            <button
-              onClick={() => (window.location.href = "/auth/logout")}
-              className="text-[var(--home-danger)] text-sm font-semibold hover:underline truncate"
-            >
-              Log Out
-            </button>
-          )}
+        {/* Center: Desktop Nav */}
+        <div className="flex-1 min-w-0 hidden md:flex items-center justify-center overflow-visible">
+          <DesktopNav navigateTo={navigateTo} />
         </div>
-        <div className="flex items-center space-x-4">
+
+        {/* Right: Auth + Dark mode + Hamburger */}
+        <div className="flex items-center gap-4 flex-shrink-0">
+          {/* Desktop Auth */}
+          <div className="hidden md:flex items-center gap-4">
+            {!session ? (
+              <a
+                href="/sign-in"
+                className="auth-link text-[var(--home-accent)] font-semibold whitespace-nowrap"
+              >
+                Sign In
+              </a>
+            ) : (
+              <button
+                onClick={() => (window.location.href = "/auth/logout")}
+                className="auth-link text-[var(--home-danger)] font-semibold whitespace-nowrap"
+              >
+                Log Out
+              </button>
+            )}
+          </div>
+
           <SwitchtoDarkMode />
+
+          {/* Mobile Hamburger */}
           <button
             className="md:hidden p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -78,6 +72,15 @@ const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <MobileDrawer
+          navigateTo={navigateTo}
+          session={session}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      )}
     </header>
   );
 };

@@ -11,17 +11,17 @@ interface BusinessServicesProps {
 const BusinessServices: React.FC<BusinessServicesProps> = ({ navigateTo }) => {
   return (
     <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
-      <h1 className="text-3xl font-bold mb-4">Business Services</h1>
+      <h1 className="text-3xl font-bold mb-6">Business Services</h1>
       <p className="text-lg mb-8">
-        Allow Desert Area Resources and Training to handle a variety of business services for your
-        organization, including commercial cleaning, paper shredding, and document imaging.
+        Allow Desert Area Resources and Training to handle a variety of business services for your organization,
+        including commercial cleaning, paper shredding, and document imaging.
       </p>
 
-      {/* Services Grid */}
-      <div className="flex flex-col items-center mt-12 space-y-6">
+      {/* Business Services Grid */}
+      <div className="flex flex-col items-center mt-8 space-y-6">
         {[
+          ["Commercial Cleaning Services", "cms", "Commercial Cleaning.jpg"],
           ["Secure Document Shredding", "shredding", "Secure Document Shredding.jpg"],
-          ["Commercial Cleaning (CMS)", "cms", "cms.jpg"],
         ].map(([title, key, filename]) => (
           <button
             key={key}

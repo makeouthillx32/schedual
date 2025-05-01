@@ -4,12 +4,15 @@ import React from "react";
 import "@/app/globals.css";
 
 interface CareersPageProps {
-  navigateTo: (key: string) => void;
+  navigateTo: (key: string) => (e?: React.MouseEvent) => void;
 }
 
 export default function CareersPage({ navigateTo }: CareersPageProps) {
   return (
     <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+      {/* Anchor for scroll targeting */}
+      <section id="careers" className="sr-only">Careers</section>
+
       <h1 className="text-3xl font-bold mb-4 text-[var(--home-content-heading)]">
         Find a Meaningful Career
       </h1>
@@ -19,7 +22,7 @@ export default function CareersPage({ navigateTo }: CareersPageProps) {
       </p>
 
       <button
-        onClick={() => navigateTo("jobs")}
+        onClick={navigateTo("jobs")}
         className="bg-[var(--home-accent)] text-white px-6 py-2 rounded hover:opacity-90 transition"
       >
         Current Openings

@@ -1,4 +1,4 @@
-use client";
+"use client";
 
 import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";

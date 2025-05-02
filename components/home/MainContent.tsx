@@ -1,3 +1,4 @@
+
 "use client";
 
 import { FiArrowLeft } from "react-icons/fi";
@@ -17,13 +18,13 @@ import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import BusinessServices from "@/components/home/BusinessServices/main";
-import CMSPage from "@/components/home/BusinessServices/cms";
-import PickUpPage from "@/components/home/BusinessServices/pickup";
 import GetInvolved from "@/components/home/GetInvolved/main";
-import DonateNow from "@/components/home/GetInvolved/donatenow";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
-import TermsPage from "@/components/home/TermsPage";
+import DonateNow from "@/components/home/GetInvolved/donatenow";
+import CMSPage from "@/components/home/BusinessServices/cms";
+import PickupPage from "@/components/home/BusinessServices/pickup";
+import TermsOfService from "@/components/home/TermsPage";
 import PrivacyPolicy from "@/components/home/PrivacyPolicy";
 
 interface MainContentProps {
@@ -130,14 +131,14 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="involved" className="sr-only">Get Involved</section>
-          <GetInvolved />
+          <GetInvolved navigateTo={navigateTo} />
         </>
       );
-    case "learn":
+    case "donate":
       return (
         <>
-          <section id="learn" className="sr-only">Learn & Connect</section>
-          <LearnConnect />
+          <section id="donate" className="sr-only">Give</section>
+          <DonateNow navigateTo={navigateTo} />
         </>
       );
     case "cms":
@@ -147,25 +148,25 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <CMSPage />
         </>
       );
-    case "pick-up":
+    case "pickup":
       return (
         <>
-          <section id="pick-up" className="sr-only">Pick Up Donations</section>
-          <PickUpPage />
+          <section id="pickup" className="sr-only">Pickup Service</section>
+          <PickupPage />
         </>
       );
-    case "donate":
+    case "learn":
       return (
         <>
-          <section id="donate" className="sr-only">Give</section>
-          <DonateNow />
+          <section id="learn" className="sr-only">Learn & Connect</section>
+          <LearnConnect />
         </>
       );
     case "terms":
       return (
         <>
           <section id="terms" className="sr-only">Terms of Service</section>
-          <TermsPage />
+          <TermsOfService />
         </>
       );
     case "privacy":
@@ -185,4 +186,5 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
   }
 };
 
-export default MainContent;
+export default MainContent
+

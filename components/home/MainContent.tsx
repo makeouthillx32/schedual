@@ -1,7 +1,5 @@
-```typescript
-// components/home/MainContent.tsx
+"use client";
 
-import React from "react";
 import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
@@ -20,9 +18,9 @@ import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import BusinessServices from "@/components/home/BusinessServices/main";
 import CMSPage from "@/components/home/BusinessServices/cms";
-import PickupPage from "@/components/home/BusinessServices/pickup";
-import DonatenowPage from "@/components/home/GetInvolved/donatenow";
+import PickUpPage from "@/components/home/BusinessServices/pickup";
 import GetInvolved from "@/components/home/GetInvolved/main";
+import DonateNow from "@/components/home/GetInvolved/donatenow";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
 import TermsPage from "@/components/home/TermsPage";
@@ -122,27 +120,12 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-    case "cms":
-      return (
-        <>
-          <section id="cms" className="sr-only">CMS</section>
-          <CMSPage />
-        </>
-      );
-    case "pickup":
-      return (
-        <>
-          <section id="pickup" className="sr-only">Pickup</section>
-          <PickupPage />
-        </>
-      );
-    case "donatenow":
-      return (
-        <>
-          <section id="donatenow" className="sr-only">Donate Now</section>
-          <DonatenowPage />
-        </>
-      );
+    case "carf":
+      return <><BackButton navigateTo={navigateTo} /><CARF /></>;
+    case "thriftstore":
+      return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
+    case "shredding":
+      return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
     case "involved":
       return (
         <>
@@ -155,6 +138,27 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         <>
           <section id="learn" className="sr-only">Learn & Connect</section>
           <LearnConnect />
+        </>
+      );
+    case "cms":
+      return (
+        <>
+          <section id="cms" className="sr-only">CMS</section>
+          <CMSPage />
+        </>
+      );
+    case "pick-up":
+      return (
+        <>
+          <section id="pick-up" className="sr-only">Pick Up Donations</section>
+          <PickUpPage />
+        </>
+      );
+    case "donate":
+      return (
+        <>
+          <section id="donate" className="sr-only">Give</section>
+          <DonateNow />
         </>
       );
     case "terms":
@@ -182,4 +186,3 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
 };
 
 export default MainContent;
-```

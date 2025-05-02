@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between w-full">
             <div className="text-left space-y-1">
               <div className="font-semibold">For Job Coaches</div>
-              <Link href="/CMS" className="underline hover:text-blue-500 block">
+              <Link href="#cms" className="underline hover:text-blue-500 block">
                 CMS App
               </Link>
             </div>
@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
               {tools.map((tool) => (
                 <Link
                   key={tool.name}
-                  href={tool.path}
+                  href={`#${tool.path.replace(/^\//, "")}`}
                   className="underline hover:text-blue-500 block"
                 >
                   {tool.name}

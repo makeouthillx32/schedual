@@ -20,6 +20,8 @@ import BusinessServices from "@/components/home/BusinessServices/main";
 import GetInvolved from "@/components/home/GetInvolved/main";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
+import TermsOfService from "@/components/home/TermsOfService";
+import PrivacyPolicy from "@/components/home/PrivacyPolicy";
 
 interface MainContentProps {
   currentPage: string;
@@ -133,6 +135,20 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         <>
           <section id="learn" className="sr-only">Learn & Connect</section>
           <LearnConnect />
+        </>
+      );
+    case "terms":
+      return (
+        <>
+          <section id="terms" className="sr-only">Terms of Service</section>
+          <TermsOfService />
+        </>
+      );
+    case "privacy":
+      return (
+        <>
+          <section id="privacy" className="sr-only">Privacy Policy</section>
+          <PrivacyPolicy />
         </>
       );
     default:

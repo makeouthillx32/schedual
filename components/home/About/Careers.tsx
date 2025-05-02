@@ -20,7 +20,9 @@ export default function CareersPage({ navigateTo }: CareersPageProps) {
       <p className="text-lg mb-6">Making a difference starts here.</p>
 
       <button
-        onClick={navigateTo("jobs")}
+        onClick={(e) => navigateTo("careers/jobs")(e)}
+        
+         
         className="bg-[var(--home-accent)] text-white px-6 py-2 rounded hover:opacity-90 transition"
       >
         Current Openings

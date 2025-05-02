@@ -35,15 +35,17 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<string>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Enhanced goTo: if hash contains subpath, navigate to sub; scroll to sub or base
   const goTo = useCallback((hash: string) => {
     const [base, sub] = hash.split("/");
-    const target = sectionId[base] ?? base;
-
+    const pageKey = sub && sectionId[sub] ? sub : base;
+    const target = sectionId[pageKey] ?? pageKey;
     setCurrentPage(target);
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const el = document.getElementById(sub || target);
+        const scrollToId = sub || target;
+        const el = document.getElementById(scrollToId);
         if (el) {
           el.scrollIntoView({ behavior: "smooth", block: "start" });
         } else {
@@ -55,7 +57,8 @@ export default function Home() {
 
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    const newHash = page === "home" ? "/" : `#${page}`;
+    // Allow composite hashes for nested routes
+    const newHash = `#${page}`;
     history.pushState(null, "", newHash);
     goTo(page);
     setMobileMenuOpen(false);

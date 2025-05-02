@@ -1,6 +1,8 @@
-"use client";
+"use client"; // This component runs only on the client-side
 
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi"; // Icon for back button
+
+// Page components
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
 import Title9Page from "@/components/home/Title9Information";
@@ -17,15 +19,22 @@ import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import BusinessServices from "@/components/home/BusinessServices/main";
+import CMSPage from "@/components/home/BusinessServices/cms"; // CMS service page
+import Pickup from "@/components/home/BusinessServices/pickup"; // Pickup donation service
 import GetInvolved from "@/components/home/GetInvolved/main";
+import DonateNow from "@/components/home/GetInvolved/donatenow"; // Donation call-to-action page
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
+import TermsPage from "@/components/home/TermsPage"; // Terms of Service
+import PrivacyPolicy from "@/components/home/PrivacyPolicy"; // Privacy policy
 
+// Props for MainContent component
 interface MainContentProps {
   currentPage: string;
   navigateTo: (page: string) => (e?: React.MouseEvent) => void;
 }
 
+// Reusable BackButton for deeper pages, navigates back to About section
 const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.MouseEvent) => void }) => (
   <div className="mb-4">
     <button
@@ -37,10 +46,14 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.M
   </div>
 );
 
+// MainContent renders the appropriate page based on the currentPage key
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
+    // Landing page
     case "home":
       return <HomePage />;
+
+    // About section pages
     case "about":
       return (
         <>
@@ -62,13 +75,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <Title9Page />
         </>
       );
-    case "action":
-      return (
-        <>
-          <section id="action" className="sr-only">Action Day Gala</section>
-          <AutismDayCamp />
-        </>
-      );
     case "careers":
       return (
         <>
@@ -83,6 +89,8 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <JobsPage />
         </>
       );
+
+    // Programs & services overview
     case "programs":
       return (
         <>
@@ -90,6 +98,8 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <ProgramsAndServices navigateTo={navigateTo} />
         </>
       );
+
+    // Detailed service pages with a back button
     case "transportation":
       return <><BackButton navigateTo={navigateTo} /><Transportation /></>;
     case "early-childhood":
@@ -108,6 +118,8 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       );
     case "employment":
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
+
+    // Business services overview
     case "business":
       return (
         <>
@@ -115,12 +127,14 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-    case "carf":
-      return <><BackButton navigateTo={navigateTo} /><CARF /></>;
-    case "thriftstore":
-      return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
-    case "shredding":
-      return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
+
+    // Additional business-related pages
+    case "cms":
+      return <CMSPage />; // Commercial cleaning CMS page
+    case "pickup":
+      return <Pickup />; // Pickup donation service page
+
+    // Community engagement pages
     case "involved":
       return (
         <>
@@ -128,6 +142,15 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <GetInvolved />
         </>
       );
+    case "donate":
+      return (
+        <>
+          <section id="donate" className="sr-only">Give</section>
+          <DonateNow navigateTo={navigateTo} />
+        </>
+      );
+
+    // Learning & resources
     case "learn":
       return (
         <>
@@ -135,11 +158,19 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <LearnConnect />
         </>
       );
+
+    // Legal pages
+    case "terms":
+      return <TermsPage />; // Terms of Service
+    case "privacy":
+      return <PrivacyPolicy />; // Privacy Policy
+
+    // Fallback for unimplemented pages
     default:
       return (
         <div className="p-8 text-center text-[var(--home-text)]">
-          <h1 className="text-3xl font-bold mb-4">Working on this right now!</h1>
-          <p className="text-lg">Please check back soon for updates.</p>
+          <h1 className="text-3xl font-bold mb-4">Page Coming Soon</h1>
+          <p className="text-lg">We're working on this section. Please check back soon!</p>
         </div>
       );
   }

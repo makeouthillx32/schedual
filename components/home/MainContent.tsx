@@ -1,5 +1,7 @@
-"use client";
+```typescript
+// components/home/MainContent.tsx
 
+import React from "react";
 import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
@@ -19,11 +21,11 @@ import ProgramsAndServices from "@/components/home/ProgramsandServices/programsn
 import BusinessServices from "@/components/home/BusinessServices/main";
 import CMSPage from "@/components/home/BusinessServices/cms";
 import PickupPage from "@/components/home/BusinessServices/pickup";
+import DonatenowPage from "@/components/home/GetInvolved/donatenow";
 import GetInvolved from "@/components/home/GetInvolved/main";
-import DonateNow from "@/components/home/GetInvolved/donatenow";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
-import TermsOfService from "@/components/home/TermsOfService";
+import TermsPage from "@/components/home/TermsPage";
 import PrivacyPolicy from "@/components/home/PrivacyPolicy";
 
 interface MainContentProps {
@@ -46,7 +48,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
   switch (currentPage) {
     case "home":
       return <HomePage />;
-
     case "about":
       return (
         <>
@@ -54,7 +55,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <AboutUsPage navigateTo={navigateTo} />
         </>
       );
-
     case "board":
       return (
         <>
@@ -62,7 +62,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BoardPage />
         </>
       );
-
     case "title9":
       return (
         <>
@@ -70,7 +69,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <Title9Page />
         </>
       );
-
     case "action":
       return (
         <>
@@ -78,7 +76,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <AutismDayCamp />
         </>
       );
-
     case "careers":
       return (
         <>
@@ -86,7 +83,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <Careers navigateTo={navigateTo} />
         </>
       );
-
     case "jobs":
       return (
         <>
@@ -94,7 +90,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <JobsPage />
         </>
       );
-
     case "programs":
       return (
         <>
@@ -102,7 +97,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <ProgramsAndServices navigateTo={navigateTo} />
         </>
       );
-
     case "transportation":
       return <><BackButton navigateTo={navigateTo} /><Transportation /></>;
     case "early-childhood":
@@ -121,7 +115,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       );
     case "employment":
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
-
     case "business":
       return (
         <>
@@ -129,7 +122,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-
     case "cms":
       return (
         <>
@@ -137,15 +129,20 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <CMSPage />
         </>
       );
-
     case "pickup":
       return (
         <>
-          <section id="pickup" className="sr-only">Pickup Donation</section>
+          <section id="pickup" className="sr-only">Pickup</section>
           <PickupPage />
         </>
       );
-
+    case "donatenow":
+      return (
+        <>
+          <section id="donatenow" className="sr-only">Donate Now</section>
+          <DonatenowPage />
+        </>
+      );
     case "involved":
       return (
         <>
@@ -153,15 +150,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <GetInvolved />
         </>
       );
-
-    case "donatenow":
-      return (
-        <>
-          <section id="donatenow" className="sr-only">Donate Now</section>
-          <DonateNow />
-        </>
-      );
-
     case "learn":
       return (
         <>
@@ -169,15 +157,13 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <LearnConnect />
         </>
       );
-
     case "terms":
       return (
         <>
           <section id="terms" className="sr-only">Terms of Service</section>
-          <TermsOfService />
+          <TermsPage />
         </>
       );
-
     case "privacy":
       return (
         <>
@@ -185,7 +171,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <PrivacyPolicy />
         </>
       );
-
     default:
       return (
         <div className="p-8 text-center text-[var(--home-text)]">
@@ -197,3 +182,4 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
 };
 
 export default MainContent;
+```

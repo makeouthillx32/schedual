@@ -29,7 +29,7 @@ export const navTree = [
     href: "/#business",
     children: [
       { key: "shredding",  label: "Shredding",             href: "/#shredding" },
-      { key: "cms",        label: "Commercial Services",    href: "/#cms" },
+      { key: "donations",        label: "Commercial Services",    href: "/#cms" },
       { key: "pickup",     label: "Donations & Pickups",    href: "/#pickup" },
     ],
   },

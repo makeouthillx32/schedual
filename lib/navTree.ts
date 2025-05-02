@@ -5,9 +5,9 @@ export const navTree = [
     label: "About",
     href: "/#about",
     children: [
-      { key: "board", label: "Board of Directors", href: "/#board" },
-      { key: "title9", label: "Title 9 Information", href: "/#title9" },
-      { key: "careers", label: "Careers", href: "/#careers" },
+      { key: "board",     label: "Board of Directors",      href: "/#board" },
+      { key: "title9",    label: "Title 9 Information",     href: "/#title9" },
+      { key: "careers",   label: "Careers",                 href: "/#careers" },
     ],
   },
   {
@@ -17,10 +17,10 @@ export const navTree = [
     children: [
       { key: "transportation",   label: "Transportation",      href: "/#transportation" },
       { key: "employment",       label: "Employment Services", href: "/#employment" },
-      { key: "early-childhood",  label: "Early Childhood",     href: "/#earlychildhood" },
-      { key: "autism-day-camp",  label: "Autism Day Camp",     href: "/#autismdaycamp" },
+      { key: "early-childhood",  label: "Early Childhood",     href: "/#early-childhood" },
+      { key: "autism-day-camp",  label: "Autism Day Camp",     href: "/#autism-day-camp" },
       { key: "artists",          label: "Artists Guild",       href: "/#artists" },
-      { key: "supported-living", label: "Supported Living",    href: "/#supportedliving" },
+      { key: "supported-living", label: "Supported Living",    href: "/#supported-living" },
     ],
   },
   {
@@ -28,9 +28,9 @@ export const navTree = [
     label: "Business Services",
     href: "/#business",
     children: [
-      { key: "shredding",   label: "Shredding",           href: "/#shredding" },
-      { key: "commercial",  label: "Commercial Services", href: "/#commercial" },
-      { key: "donations",   label: "Donations & Pickups", href: "/#donations" },
+      { key: "shredding",  label: "Shredding",             href: "/#shredding" },
+      { key: "cms",        label: "Commercial Services",    href: "/#cms" },
+      { key: "pickup",     label: "Donations & Pickups",    href: "/#pickup" },
     ],
   },
   {
@@ -46,7 +46,6 @@ export const navTree = [
     label: "Learn & Connect",
     href: "/#learn",
     children: [
-      { key: "autismdaycamp", label: "Autism Day Camp", href: "/#autismdaycamp" },
       { key: "thriftstore", label: "Thrift Store", href: "/#thriftstore" },
     ],
   },

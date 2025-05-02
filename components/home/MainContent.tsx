@@ -1,5 +1,4 @@
-
-"use client";
+use client";
 
 import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
@@ -21,9 +20,9 @@ import BusinessServices from "@/components/home/BusinessServices/main";
 import GetInvolved from "@/components/home/GetInvolved/main";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
-import DonateNow from "@/components/home/GetInvolved/donatenow";
 import CMSPage from "@/components/home/BusinessServices/cms";
-import PickupPage from "@/components/home/BusinessServices/pickup";
+import Pickup from "@/components/home/BusinessServices/pickup";
+import DonateNow from "@/components/home/GetInvolved/donatenow";
 import TermsOfService from "@/components/home/TermsPage";
 import PrivacyPolicy from "@/components/home/PrivacyPolicy";
 
@@ -127,32 +126,22 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
     case "shredding":
       return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
+    case "cms":
+      return <CMSPage />;
+    case "pickup":
+      return <Pickup />;
     case "involved":
       return (
         <>
           <section id="involved" className="sr-only">Get Involved</section>
-          <GetInvolved navigateTo={navigateTo} />
+          <GetInvolved />
         </>
       );
     case "donate":
       return (
         <>
           <section id="donate" className="sr-only">Give</section>
-          <DonateNow navigateTo={navigateTo} />
-        </>
-      );
-    case "cms":
-      return (
-        <>
-          <section id="cms" className="sr-only">CMS</section>
-          <CMSPage />
-        </>
-      );
-    case "pickup":
-      return (
-        <>
-          <section id="pickup" className="sr-only">Pickup Service</section>
-          <PickupPage />
+          <DonateNow />
         </>
       );
     case "learn":
@@ -186,5 +175,4 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
   }
 };
 
-export default MainContent
-
+export default MainContent;

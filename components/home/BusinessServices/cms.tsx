@@ -7,7 +7,7 @@ export default function CMSPage() {
     <div className="min-h-screen flex flex-col bg-[var(--home-background)] text-[var(--home-text)]">
       {/* Content wrapper gives horizontal + vertical padding */}
       <div className="flex-grow max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-8">
-        <section id="cms" className="sr-only">CMS</section>
+        <section id="commercial" className="sr-only">CMS</section>
 
         <h1 className="text-3xl font-bold mb-6 text-[var(--home-content-heading)]">
           Commercial Cleaning That Meets Your Needs

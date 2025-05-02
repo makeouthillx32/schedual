@@ -141,28 +141,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="donate" className="sr-only">Give</section>
-          <DonateNow />
-        </>
-      );
-    case "learn":
-      return (
-        <>
-          <section id="learn" className="sr-only">Learn & Connect</section>
-          <LearnConnect />
-        </>
-      );
-    case "terms":
-      return (
-        <>
-          <section id="terms" className="sr-only">Terms of Service</section>
-          <TermsOfService />
-        </>
-      );
-    case "privacy":
-      return (
-        <>
-          <section id="privacy" className="sr-only">Privacy Policy</section>
-          <PrivacyPolicy />
+          <DonateNow navigateTo={navigateTo} />
         </>
       );
     default:

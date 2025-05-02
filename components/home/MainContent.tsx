@@ -147,9 +147,9 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-    case "cms":
+    case "commercial":
       return <CMSPage />;   // Commercial Cleaning
-    case "pickup":
+    case "donations":
       return <Pickup />;    // Donation Pickup
     case "carf":
       return <><BackButton navigateTo={navigateTo} /><CARF /></>;

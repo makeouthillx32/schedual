@@ -4,10 +4,8 @@ import { FiArrowLeft } from "react-icons/fi";
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
 import Title9Page from "@/components/home/Title9Information";
-
 import JobsPage from "@/components/home/Jobs";
 import HomePage from "@/components/home/Landing";
-
 import Transportation from "@/components/home/services/Transportation";
 import EarlyChildhood from "@/components/home/services/EarlyChildhood";
 import SupportedLiving from "@/components/home/services/SupportedLiving";
@@ -25,13 +23,13 @@ import Careers from "@/components/home/About/Careers";
 
 interface MainContentProps {
   currentPage: string;
-  navigateTo: (page: string) => void;
+  navigateTo: (page: string) => (e?: React.MouseEvent) => void;
 }
 
-const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
+const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.MouseEvent) => void }) => (
   <div className="mb-4">
     <button
-      onClick={() => navigateTo("about")}
+      onClick={navigateTo("about")}
       className="flex items-center gap-1 text-blue-600 text-sm underline hover:opacity-80"
     >
       <FiArrowLeft /> Back to About Us

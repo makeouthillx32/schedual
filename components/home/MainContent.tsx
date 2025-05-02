@@ -1,9 +1,9 @@
-"use client"; // Ensure this component is only rendered on the client-side
+"use client"; // This directive ensures the component is rendered on the client side only
 
 import React from "react";
-import { FiArrowLeft } from "react-icons/fi"; // Icon used for the "Back to About" button
+import { FiArrowLeft } from "react-icons/fi"; // Arrow icon for the "Back to About Us" button
 
-// Import page components for each route
+// Primary page sections and their components
 import AboutUsPage from "@/components/home/AboutUs";
 import BoardPage from "@/components/home/BoardofDirectors";
 import Title9Page from "@/components/home/Title9Information";
@@ -11,41 +11,49 @@ import Careers from "@/components/home/About/Careers";
 import JobsPage from "@/components/home/Jobs";
 import HomePage from "@/components/home/Landing";
 
-// Service modules
+// Programs & services overview and detailed pages
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import Transportation from "@/components/home/services/Transportation";
 import EarlyChildhood from "@/components/home/services/EarlyChildhood";
 import SupportedLiving from "@/components/home/services/SupportedLiving";
 import Artists from "@/components/home/services/Artists";
-import AutismDayCamp from "@/components/home/services/AutismDayCamp";
+import AutismDayCamp from "@/components/home/LearnAndConnect/AutismDayCamp";
 import Employment from "@/components/home/services/Employment";
 
-// Business services
+// Business & commercial services
 import BusinessServices from "@/components/home/BusinessServices/main";
-import CMSPage from "@/components/home/BusinessServices/cms"; // Commercial cleaning service page
-import Pickup from "@/components/home/BusinessServices/pickup"; // Donation pickup service
+import CMSPage from "@/components/home/BusinessServices/cms";       // Commercial cleaning service
+import Pickup from "@/components/home/BusinessServices/pickup";     // Donation pickup service
 import CARF from "@/components/home/services/CARF";
 import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/BusinessServices/Shredding";
 
-// Engagement and legal modules
+// Community engagement and legal pages
 import GetInvolved from "@/components/home/GetInvolved/main";
-import DonateNow from "@/components/home/GetInvolved/donatenow"; // Donation call-to-action
+import DonateNow from "@/components/home/GetInvolved/donatenow";     // Donation CTA component
 import LearnConnect from "@/components/home/LearnAndConnect/main";
-import TermsPage from "@/components/home/TermsPage"; // Terms & conditions
-import PrivacyPolicy from "@/components/home/PrivacyPolicy"; // Privacy statement
+import TermsPage from "@/components/home/TermsPage";              // Terms & Conditions
+import PrivacyPolicy from "@/components/home/PrivacyPolicy";      // Privacy Policy
 
-// Props definition for MainContent: determines which component to render
+/**
+ * Props for MainContent component:
+ * - currentPage: the active route key
+ * - navigateTo: function to handle internal navigation
+ */
 interface MainContentProps {
   currentPage: string;
   navigateTo: (page: string) => (e?: React.MouseEvent) => void;
 }
 
-// A reusable "Back to About Us" button, shown on deeper-level pages
-const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.MouseEvent) => void }) => (
+/**
+ * BackButton: reusable component for navigating back to the "About" section.
+ */
+const BackButton = ({ navigateTo }: {
+  navigateTo: (page: string) => (e?: React.MouseEvent) => void;
+}) => (
   <div className="mb-4">
     <button
-      onClick={navigateTo("about")}
+      onClick={navigateTo("about")}  // navigate back to the About page
       className="flex items-center gap-1 text-blue-600 text-sm underline hover:opacity-80"
     >
       <FiArrowLeft /> Back to About Us
@@ -54,22 +62,21 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.M
 );
 
 /**
- * MainContent renders the correct page component based on the currentPage string.
- * Each case includes optional accessibility aids (
- *   <section id=.. className="sr-only">..</section>
- * ) and relevant navigation props.
+ * MainContent: renders different page components according to `currentPage`.
+ * Each `case` may include hidden <section> tags for accessibility and
+ * custom navigation props where needed.
  */
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
-    // Landing page: no extra wrapper needed
+    // --- Landing Page ---
     case "home":
       return <HomePage />;
 
-    // About section and sub-pages
+    // --- About Section ---
     case "about":
       return (
         <>
-          {/* Hidden section for screen readers to associate the content */}
+          {/* Assistive hidden section landmark */}
           <section id="about" className="sr-only">About</section>
           <AboutUsPage navigateTo={navigateTo} />
         </>
@@ -98,12 +105,12 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
     case "jobs":
       return (
         <>
-          <section id="jobs" className="sr-only">Job Openings</section>
+          <section id="jobs" className="sr-only">Jobs</section>
           <JobsPage />
         </>
       );
 
-    // Programs & Services overview
+    // --- Programs & Services Overview ---
     case "programs":
       return (
         <>
@@ -112,7 +119,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         </>
       );
 
-    // Individual program/service detail pages — include BackButton
+    // --- Detailed Service Pages ---
     case "transportation":
       return <><BackButton navigateTo={navigateTo} /><Transportation /></>;
     case "early-childhood":
@@ -121,7 +128,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return <><BackButton navigateTo={navigateTo} /><SupportedLiving /></>;
     case "artists":
       return <><BackButton navigateTo={navigateTo} /><Artists /></>;
-    case "autism-day-camp":
+    case "autismdaycamp":
       return (
         <>
           <section id="autismdaycamp" className="sr-only">Autism Day Camp</section>
@@ -132,7 +139,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
     case "employment":
       return <><BackButton navigateTo={navigateTo} /><Employment /></>;
 
-    // Business services overview
+    // --- Business & Commercial Services ---
     case "business":
       return (
         <>
@@ -140,12 +147,10 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-
-    // Specific business service pages
     case "cms":
-      return <CMSPage />;   // Commercial Cleaning Service
+      return <CMSPage />;   // Commercial Cleaning
     case "pickup":
-      return <Pickup />;    // Donation Pickup Service
+      return <Pickup />;    // Donation Pickup
     case "carf":
       return <><BackButton navigateTo={navigateTo} /><CARF /></>;
     case "thriftstore":
@@ -153,7 +158,7 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
     case "shredding":
       return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
 
-    // Community engagement pages
+    // --- Community Engagement ---
     case "involved":
       return (
         <>
@@ -165,12 +170,12 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return (
         <>
           <section id="donate" className="sr-only">Donate Now</section>
-          {/* Pass navigateTo so donation flow can link internally */}
+          {/* Pass navigateTo for potential in-donor navigation */}
           <DonateNow navigateTo={navigateTo} />
         </>
       );
 
-    // Learning & resources page
+    // --- Learn & Connect ---
     case "learn":
       return (
         <>
@@ -179,13 +184,13 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         </>
       );
 
-    // Legal pages
+    // --- Legal ---
     case "terms":
-      return <TermsPage />;       // Terms of Service
+      return <TermsPage />;     // Terms of Service component
     case "privacy":
-      return <PrivacyPolicy />;   // Privacy Policy
+      return <PrivacyPolicy />; // Privacy Policy component
 
-    // Fallback UI for routes not yet implemented
+    // --- Fallback for undefined routes ---
     default:
       return (
         <div className="p-8 text-center text-[var(--home-text)]">

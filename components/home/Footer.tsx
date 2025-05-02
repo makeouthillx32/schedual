@@ -1,69 +1,78 @@
+
+// components/home/Footer.tsx
+
 "use client";
 
+import React from "react";
 import useLoginSession from "@/lib/useLoginSession";
 import Link from "next/link";
-import { tools } from "@/lib/toolsConfig";
+import { FaFacebookF, FaTwitter, FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from 'react-icons/fa';
+
+const socialLinks = [
+  { icon: <FaFacebookF />, href: 'https://facebook.com/YourPage' },
+  { icon: <FaTwitter />, href: 'https://twitter.com/YourPage' },
+  { icon: <FaInstagram />, href: 'https://instagram.com/YourPage' },
+  { icon: <FaTiktok />, href: 'https://tiktok.com/@YourPage' },
+  { icon: <FaThreads />, href: 'https://threads.net/@YourPage' },
+  { icon: <FaYoutube />, href: 'https://youtube.com/YourPage' },
+  { icon: <FaLinkedinIn />, href: 'https://linkedin.com/company/YourPage' },
+];
 
 const Footer: React.FC = () => {
   const session = useLoginSession();
-
-  const year = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[var(--home-header)] text-[var(--home-header-text)] py-6 text-sm border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
-      {session?.user?.id ? (
-        <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row md:items-start justify-between gap-6">
-          <div className="flex flex-col md:flex-row justify-between w-full">
-            <div className="text-left space-y-1">
-              <div className="font-semibold">For Job Coaches</div>
-              <Link href="/cms" className="underline hover:text-blue-500 block">
-                CMS App
-              </Link>
-            </div>
-
-            <div className="text-center text-sm font-medium hidden md:block self-end">
-              © {year} Desert Area, Resource, and Training (DART)
-            </div>
-
-            <div className="text-right space-y-1">
-              <div className="font-semibold">Tools</div>
-              {tools.map((tool) => (
-                <Link
-                  key={tool.name}
-                  href={tool.path}
-                  className="underline hover:text-blue-500 block"
-                >
-                  {tool.name}
-                </Link>
-              ))}
-            </div>
+    <footer className="bg-[var(--home-header)] text-[var(--home-header-text)] py-6 border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
+      {/* Job Coaches & Tools - shown only when logged in */}
+      {session?.user?.id && (
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-6 mb-6">
+          <div className="space-y-1">
+            <div className="font-semibold">For Job Coaches</div>
+            <Link href="/cms" className="underline hover:text-blue-500 block">
+              CMS App
+            </Link>
           </div>
-
-          {/* Centered copyright for mobile */}
-          <div className="text-center text-sm font-medium md:hidden">
-            © {year} Desert Area, Resource, and Training (DART)
-          </div>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto flex items-center justify-center">
-          <div className="text-center text-sm font-medium">
-            © {year} Desert Area, Resource, and Training (DART)
+          <div className="space-y-1">
+            <div className="font-semibold">Tools</div>
+            <Link href="/Tools/timesheet-calculator" className="underline hover:text-blue-500 block">
+              Timesheet Calculator
+            </Link>
+            <Link href="/Tools/punch-card-maker" className="underline hover:text-blue-500 block">
+              Punch Card Maker
+            </Link>
           </div>
         </div>
       )}
 
-      {/* Bottom links */}
-      <div className="mt-6 border-t pt-4 text-center space-x-4">
+      {/* Social Media Icons */}
+      <div className="max-w-7xl mx-auto flex justify-center gap-4 mb-4">
+        {socialLinks.map((s, idx) => (
+          <Link key={idx} href={s.href} target="_blank" rel="noopener noreferrer">
+            <div className="rounded-full bg-[var(--home-nav-bg)] text-[var(--home-nav-text)] p-3 hover:opacity-80">
+              {s.icon}
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 text-center text-sm">
+        <span>© {currentYear} Desert Area, Resource, and Training (DART) | All Rights Reserved</span>
+        <span className="hidden sm:inline">|</span>
         <Link href="#terms" className="underline hover:text-blue-500">
           Terms of Service
         </Link>
+        <span>|</span>
         <Link href="#privacy" className="underline hover:text-blue-500">
           Privacy Policy
         </Link>
-        <span className="mx-2">| Website by unenter</span>
+        <span className="hidden sm:inline">|</span>
+        <span>Website by unenter</span>
       </div>
     </footer>
-  );
+);
 };
 
 export default Footer;
+

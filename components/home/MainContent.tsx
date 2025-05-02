@@ -17,14 +17,9 @@ import ThriftStore from "@/components/home/services/ThriftStore";
 import Shredding from "@/components/home/services/Shredding";
 import ProgramsAndServices from "@/components/home/ProgramsandServices/programsndseevices";
 import BusinessServices from "@/components/home/BusinessServices/main";
-import CMSPage from "@/components/home/BusinessServices/cms";
-import Pickup from "@/components/home/BusinessServices/pickup";
 import GetInvolved from "@/components/home/GetInvolved/main";
-import DonateNow from "@/components/home/GetInvolved/donatenow";
 import LearnConnect from "@/components/home/LearnAndConnect/main";
 import Careers from "@/components/home/About/Careers";
-import TermsOfService from "@/components/home/TermsPage";
-import PrivacyPolicy from "@/components/home/PrivacyPolicy";
 
 interface MainContentProps {
   currentPage: string;
@@ -74,14 +69,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <AutismDayCamp />
         </>
       );
-    case "autism-awareness-day":
-      return (
-        <>
-          <section id="autism-awareness-day" className="sr-only">Autism Awareness Day</section>
-          <BackButton navigateTo={navigateTo} />
-          <AutismDayCamp />
-        </>
-      );
     case "careers":
       return (
         <>
@@ -111,6 +98,16 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
       return <><BackButton navigateTo={navigateTo} /><SupportedLiving /></>;
     case "artists":
       return <><BackButton navigateTo={navigateTo} /><Artists /></>;
+    case "autism-day-camp":
+      return (
+        <>
+          <section id="autismdaycamp" className="sr-only">Autism Day Camp</section>
+          <BackButton navigateTo={navigateTo} />
+          <AutismDayCamp />
+        </>
+      );
+    case "employment":
+      return <><BackButton navigateTo={navigateTo} /><Employment /></>;
     case "business":
       return (
         <>
@@ -118,10 +115,12 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <BusinessServices navigateTo={navigateTo} />
         </>
       );
-    case "cms":
-      return <CMSPage />;
-    case "pickup":
-      return <Pickup />;
+    case "carf":
+      return <><BackButton navigateTo={navigateTo} /><CARF /></>;
+    case "thriftstore":
+      return <><BackButton navigateTo={navigateTo} /><ThriftStore /></>;
+    case "shredding":
+      return <><BackButton navigateTo={navigateTo} /><Shredding /></>;
     case "involved":
       return (
         <>
@@ -129,32 +128,11 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <GetInvolved />
         </>
       );
-    case "donate":
-      return (
-        <>
-          <section id="donate" className="sr-only">Give</section>
-          <DonateNow navigateTo={navigateTo} />
-        </>
-      );
     case "learn":
       return (
         <>
           <section id="learn" className="sr-only">Learn & Connect</section>
           <LearnConnect />
-        </>
-      );
-    case "terms":
-      return (
-        <>
-          <section id="terms" className="sr-only">Terms of Service</section>
-          <TermsOfService />
-        </>
-      );
-    case "privacy":
-      return (
-        <>
-          <section id="privacy" className="sr-only">Privacy Policy</section>
-          <PrivacyPolicy />
         </>
       );
     default:

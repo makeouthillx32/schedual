@@ -44,6 +44,8 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => (e?: React.M
 
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
+    case "":
+    case "/":
     case "home":
       return <HomePage />;
     case "about":
@@ -142,6 +144,27 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
         <>
           <section id="donate" className="sr-only">Give</section>
           <DonateNow navigateTo={navigateTo} />
+        </>
+      );
+    case "learn":
+      return (
+        <>
+          <section id="learn" className="sr-only">Learn & Connect</section>
+          <LearnConnect />
+        </>
+      );
+    case "terms":
+      return (
+        <>
+          <section id="terms" className="sr-only">Terms of Service</section>
+          <TermsOfService />
+        </>
+      );
+    case "privacy":
+      return (
+        <>
+          <section id="privacy" className="sr-only">Privacy Policy</section>
+          <PrivacyPolicy />
         </>
       );
     default:

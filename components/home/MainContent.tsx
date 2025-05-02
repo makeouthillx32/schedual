@@ -41,6 +41,8 @@ const BackButton = ({ navigateTo }: { navigateTo: (page: string) => void }) => (
 
 const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) => {
   switch (currentPage) {
+    case "home":
+      return <HomePage />;
     case "about":
       return (
         <>
@@ -135,7 +137,6 @@ const MainContent: React.FC<MainContentProps> = ({ currentPage, navigateTo }) =>
           <LearnConnect />
         </>
       );
-
     default:
       return (
         <div className="p-8 text-center text-[var(--home-text)]">

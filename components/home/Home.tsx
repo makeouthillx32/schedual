@@ -38,6 +38,7 @@ export default function Home() {
   const goTo = useCallback((hash: string) => {
     const [base, sub] = hash.split("/");
     const target = sectionId[base] ?? base;
+
     setCurrentPage(target);
 
     requestAnimationFrame(() => {
@@ -50,11 +51,12 @@ export default function Home() {
         }
       }, 10);
     });
-  }, []);
+  }, [sectionId]);
 
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    history.pushState(null, "", `#${page}`);
+    const newHash = page === "home" ? "/" : `#${page}`;
+    history.pushState(null, "", newHash);
     goTo(page);
     setMobileMenuOpen(false);
   };

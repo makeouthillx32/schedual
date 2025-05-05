@@ -9,10 +9,10 @@ export default function AvatarUpload({ userId }: { userId: string }) {
 
   const s3 = new S3Client({
     region: "us-east-1",
-    endpoint: process.env.NEXT_PUBLIC_SUPABASE_S3_ENDPOINT,
+    endpoint: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/s3",
     credentials: {
-      accessKeyId: process.env.NEXT_PUBLIC_SUPABASE_S3_ACCESS_KEY!,
-      secretAccessKey: process.env.NEXT_PUBLIC_SUPABASE_S3_SECRET_KEY!,
+      accessKeyId: process.env.NEXT_PUBLIC_S3_ACCESS_KEY!,
+      secretAccessKey: process.env.NEXT_PUBLIC_S3_SECRET_KEY!,
     },
     forcePathStyle: true,
   });
@@ -32,7 +32,7 @@ export default function AvatarUpload({ userId }: { userId: string }) {
       const command = new PutObjectCommand({
         Bucket: "avatars",
         Key: filePath,
-        Body: selectedFile,
+        Body: new Blob([selectedFile]),
         ContentType: selectedFile.type,
         ACL: "public-read",
       });

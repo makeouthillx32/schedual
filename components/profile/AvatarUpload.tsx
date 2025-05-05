@@ -26,25 +26,12 @@ export default function AvatarUpload({ userId }: { userId: string }) {
       .from("avatars")
       .upload(filePath, file, { upsert: true });
 
-    if (uploadError) {
-      alert("Upload failed: " + uploadError.message);
-      setUploading(false);
-      return;
-    }
-
-    const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: data.publicUrl })
-      .eq("id", userId);
-
     setUploading(false);
 
-    if (updateError) {
-      alert("Failed to update profile: " + updateError.message);
+    if (uploadError) {
+      alert("Upload failed: " + uploadError.message);
     } else {
-      alert("Avatar updated!");
+      alert("Upload successful!");
       location.reload();
     }
   };

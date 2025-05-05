@@ -2,9 +2,19 @@
 
 import type React from "react"
 
-import { Mail, ShieldCheck, CalendarClock, LogIn, Users, ImageIcon, KeyRound, Globe } from "lucide-react"
+import {
+  Mail,
+  ShieldCheck,
+  CalendarClock,
+  LogIn,
+  Users,
+  ImageIcon,
+  KeyRound,
+  Globe,
+} from "lucide-react"
 import Avatar from "./Avatar"
 import DeleteAccount from "./DeleteAccount"
+import AvatarUpload from "./AvatarUpload"
 
 interface Profile {
   id: string
@@ -24,12 +34,12 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
-  // Convert null to undefined to match the Avatar component's expected prop type
   const avatarUrl = profile.avatar_url || undefined
 
   return (
     <div className="flex flex-col items-center space-y-8">
       <Avatar avatarUrl={avatarUrl} userId={profile.id} role={profile.role || undefined} />
+      <AvatarUpload userId={profile.id} />
 
       <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>

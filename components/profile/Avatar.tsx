@@ -9,11 +9,11 @@ export default function Avatar({
   userId,
   role,
 }: {
-  avatarUrl: string | null | undefined
+  avatarUrl?: string // Changed from string | null to string | undefined
   userId: string
   role?: string
 }) {
-  const fallbackUrl = "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars//Defult.png"
+  const fallbackUrl = "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/default.png"
 
   return (
     <div className="relative flex flex-col items-center gap-4">

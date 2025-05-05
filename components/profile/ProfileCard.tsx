@@ -1,6 +1,5 @@
 "use client";
 
-import type { Database } from "@/types/supabase"; // or replace with your profile type directly
 import {
   Mail,
   ShieldCheck,
@@ -14,8 +13,19 @@ import {
 import Avatar from "./Avatar";
 import DeleteAccount from "./DeleteAccount";
 
+interface Profile {
+  id: string;
+  email: string;
+  role: string | null;
+  email_confirmed_at: string | null;
+  created_at: string;
+  last_sign_in_at: string;
+  avatar_url: string | null;
+  app_metadata: { providers?: string[] };
+}
+
 interface ProfileCardProps {
-  profile: any;
+  profile: Profile;
   displayName: string;
   roleLabel: string;
 }

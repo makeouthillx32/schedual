@@ -1,39 +1,32 @@
-"use client";
+"use client"
 
-import {
-  Mail,
-  ShieldCheck,
-  CalendarClock,
-  LogIn,
-  Users,
-  ImageIcon,
-  KeyRound,
-  Globe,
-} from "lucide-react";
-import Avatar from "./Avatar";
-import DeleteAccount from "./DeleteAccount";
+import type React from "react"
+
+import { Mail, ShieldCheck, CalendarClock, LogIn, Users, ImageIcon, KeyRound, Globe } from "lucide-react"
+import Avatar from "./Avatar"
+import DeleteAccount from "./DeleteAccount"
 
 interface Profile {
-  id: string;
-  email: string;
-  role: string | null;
-  email_confirmed_at: string | null;
-  created_at: string;
-  last_sign_in_at: string;
-  avatar_url: string | null;
-  app_metadata: { providers?: string[] };
+  id: string
+  email: string
+  role: string | null
+  email_confirmed_at: string | null
+  created_at: string
+  last_sign_in_at: string
+  avatar_url: string | null
+  app_metadata: { providers?: string[] }
 }
 
 interface ProfileCardProps {
-  profile: Profile;
-  displayName: string;
-  roleLabel: string;
+  profile: Profile
+  displayName: string
+  roleLabel: string
 }
 
 export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
   return (
     <div className="flex flex-col items-center space-y-8">
-      <Avatar avatarUrl={profile.avatar_url ?? null} userId={profile.id} role={profile.role} />
+      <Avatar avatarUrl={profile.avatar_url ?? undefined} userId={profile.id} role={profile.role} />
 
       <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>
@@ -45,7 +38,11 @@ export default function ProfileCard({ profile, displayName, roleLabel }: Profile
         <Info label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
         <Info label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
         <Info label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />
-        <Info label="Auth Providers" value={profile.app_metadata?.providers?.join(", ") || "Unknown"} icon={<Globe />} />
+        <Info
+          label="Auth Providers"
+          value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
+          icon={<Globe />}
+        />
         <Info label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
       </div>
 
@@ -53,7 +50,7 @@ export default function ProfileCard({ profile, displayName, roleLabel }: Profile
         <DeleteAccount />
       </div>
     </div>
-  );
+  )
 }
 
 function Info({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
@@ -65,5 +62,5 @@ function Info({ label, value, icon }: { label: string; value: string; icon: Reac
         <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
       </div>
     </div>
-  );
+  )
 }

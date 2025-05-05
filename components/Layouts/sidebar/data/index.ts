@@ -1,6 +1,6 @@
 import * as Icons from "../icons";
 
-export const NAV_DATA = [
+export const NAV_DATA = (id: string) => [
   {
     label: "MAIN MENU",
     items: [
@@ -9,20 +9,20 @@ export const NAV_DATA = [
         icon: Icons.HomeIcon,
         items: [
           {
-            title: "eCommerce",
-            url: "/",
+            title: "Overview",
+            url: `/dashboard/${id}`,
           },
         ],
       },
       {
         title: "Calendar",
-        url: "/calendar",
+        url: `/dashboard/${id}/calendar`,
         icon: Icons.Calendar,
         items: [],
       },
       {
         title: "Profile",
-        url: "/profile",
+        url: `/dashboard/${id}/profile`,
         icon: Icons.User,
         items: [],
       },
@@ -32,22 +32,22 @@ export const NAV_DATA = [
         items: [
           {
             title: "Form Elements",
-            url: "/forms/form-elements",
+            url: `/dashboard/${id}/forms/form-elements`,
           },
           {
             title: "Form Layout",
-            url: "/forms/form-layout",
+            url: `/dashboard/${id}/forms/form-layout`,
           },
         ],
       },
       {
         title: "Tables",
-        url: "/tables",
+        url: `/dashboard/${id}/tables`,
         icon: Icons.Table,
         items: [
           {
             title: "Tables",
-            url: "/tables",
+            url: `/dashboard/${id}/tables`,
           },
         ],
       },
@@ -57,7 +57,7 @@ export const NAV_DATA = [
         items: [
           {
             title: "Settings",
-            url: "/pages/settings",
+            url: `/dashboard/${id}/settings`,
           },
         ],
       },
@@ -72,7 +72,7 @@ export const NAV_DATA = [
         items: [
           {
             title: "Basic Chart",
-            url: "/charts/basic-chart",
+            url: `/dashboard/${id}/charts/basic-chart`,
           },
         ],
       },
@@ -82,11 +82,11 @@ export const NAV_DATA = [
         items: [
           {
             title: "Alerts",
-            url: "/ui-elements/alerts",
+            url: `/dashboard/${id}/ui-elements/alerts`,
           },
           {
             title: "Buttons",
-            url: "/ui-elements/buttons",
+            url: `/dashboard/${id}/ui-elements/buttons`,
           },
         ],
       },
@@ -96,7 +96,7 @@ export const NAV_DATA = [
         items: [
           {
             title: "Sign In",
-            url: "/auth/sign-in",
+            url: `/dashboard/${id}/auth/sign-in`,
           },
         ],
       },

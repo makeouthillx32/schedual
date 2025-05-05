@@ -3,7 +3,6 @@ import type React from "react"
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import {
-  UserCircle2,
   Mail,
   ShieldCheck,
   CalendarClock,
@@ -19,6 +18,7 @@ import DeleteAccount from "@/components/profile/DeleteAccount";
 import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
 import AdminDelete from "@/components/profile/AdminDelete";
 import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
+import AvatarUpload from "@/components/profile/AvatarUpload";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -81,14 +81,26 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex flex-col items-center space-y-8">
-        <div className="relative">
-          <UserCircle2 className="h-32 w-32 text-gray-300 dark:text-gray-700" />
+
+        {/* ✅ Avatar display + uploader */}
+        <div className="relative flex flex-col items-center gap-4">
+          <img
+            src={
+              profile.avatar_url ||
+              "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/default.png"
+            }
+            alt="User Avatar"
+            className="w-32 h-32 rounded-full border-4 border-gray-300 dark:border-zinc-700 object-cover"
+          />
           {profile.role && (
             <BadgeCheck className="absolute bottom-0 right-0 h-6 w-6 text-green-500 bg-white rounded-full p-1" />
           )}
+          <AvatarUpload userId={profile.id} />
         </div>
+
         <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
           <ProfileCard label="User ID" value={profile.id} icon={<Users />} />
           <ProfileCard label="Email" value={profile.email} icon={<Mail />} />

@@ -17,6 +17,10 @@ export default function AvatarUpload({ userId }: { userId: string }) {
     const filePath = `${userId}.png`
     setUploading(true)
 
+    // Delete previous image if exists
+    await supabase.storage.from("avatars").remove([filePath])
+
+    // Upload new file
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, selectedFile, { upsert: true })
@@ -27,7 +31,9 @@ export default function AvatarUpload({ userId }: { userId: string }) {
       return
     }
 
-    const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}`
+    // Add cache buster to force fresh image
+    const timestamp = Date.now()
+    const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}?t=${timestamp}`
 
     const { error: updateError } = await supabase
       .from("profiles")

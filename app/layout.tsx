@@ -19,6 +19,7 @@ export default function RootLayout({
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const isHome = pathname === "/";
+  const isToolsPage = pathname.toLowerCase().startsWith("/tools");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,9 +58,10 @@ export default function RootLayout({
         document.head.appendChild(newMeta);
       }
     }
-  }, [pathname]);
+  }, [pathname, isHome]);
 
-  const excludeGlobalLayout = isHome;
+  // hide Nav/Footer on home or any /tools/* page
+  const excludeGlobalLayout = isHome || isToolsPage;
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>

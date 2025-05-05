@@ -3,6 +3,7 @@
 import useLoginSession from "@/lib/useLoginSession";
 import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
+import { tools } from "@/lib/toolsConfig";
 
 const socialLinks = [
   { icon: <FaInstagram size={20} />, href: 'https://instagram.com/YourPage' },
@@ -19,7 +20,7 @@ const Footer: React.FC = () => {
       {session?.user?.id ? (
         <div className="max-w-7xl mx-auto flex flex-col gap-6">
           {/* Job Coaches & Tools side-by-side */}
-          <div className="flex items-center justify-between w-full">
+          <div className="flex items-start justify-between w-full">
             <div>
               <div className="font-semibold mb-1">For Job Coaches</div>
               <Link href="/CMS" className="underline hover:text-blue-500">
@@ -29,9 +30,15 @@ const Footer: React.FC = () => {
             <div>
               <div className="font-semibold mb-1">Tools</div>
               <div className="space-y-1">
-                <Link href="/CMS"     className="underline hover:text-blue-500 block">CMS</Link>
-                <Link href="/pickup"  className="underline hover:text-blue-500 block">Pick‑Up</Link>
-                <Link href="/donate"  className="underline hover:text-blue-500 block">Give</Link>
+                {tools.map(({ name, path }) => (
+                  <Link
+                    key={path}
+                    href={path}
+                    className="underline hover:text-blue-500 block"
+                  >
+                    {name}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -56,7 +63,7 @@ const Footer: React.FC = () => {
             © {new Date().getFullYear()} Desert Area Resources and Training (DART)
           </div>
 
-          {/* Privacy & Terms side-by-side with space-between */}
+          {/* Privacy & Terms side-by-side */}
           <div className="flex justify-between w-full">
             <Link href="/privacy" className="underline hover:text-blue-500">
               Privacy Policy

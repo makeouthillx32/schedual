@@ -24,9 +24,12 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
+  // Convert null to undefined explicitly
+  const avatarUrl = profile.avatar_url === null ? undefined : profile.avatar_url
+
   return (
     <div className="flex flex-col items-center space-y-8">
-      <Avatar avatarUrl={profile.avatar_url} userId={profile.id} role={profile.role} />
+      <Avatar avatarUrl={avatarUrl} userId={profile.id} role={profile.role} />
 
       <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>

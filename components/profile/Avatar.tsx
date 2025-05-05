@@ -1,20 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { BadgeCheck, X } from "lucide-react"
 import { createPortal } from "react-dom"
+import { supabase } from "@/lib/supabaseClient"
 
-export default function Avatar({
-  avatarUrl,
-  userId,
-  role,
-}: {
-  avatarUrl: string
-  userId: string
-  role?: string
-}) {
+export default function Avatar({ userId, role }: { userId: string; role?: string }) {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", userId)
+        .single()
+
+      if (!error && data?.avatar_url) {
+        setAvatarUrl(data.avatar_url)
+      } else {
+        setAvatarUrl("https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png")
+      }
+    }
+
+    fetchAvatar()
+  }, [userId])
+
+  if (!avatarUrl) return null
 
   return (
     <div className="relative flex flex-col items-center gap-4">
@@ -45,6 +59,8 @@ export default function Avatar({
                 className="rounded-xl object-contain max-h-[90vh] max-w-[90vw]"
               />
               <button
+                title="Close image preview"
+                aria-label="Close image preview"
                 className="absolute top-2 right-2 bg-white rounded-full p-1 text-black"
                 onClick={() => setShowPreview(false)}
               >

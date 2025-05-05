@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import {
   Mail,
   ShieldCheck,
@@ -12,18 +11,18 @@ import {
   KeyRound,
   Globe,
 } from "lucide-react"
+
 import Avatar from "./Avatar"
-import DeleteAccount from "./DeleteAccount"
 import AvatarUpload from "./AvatarUpload"
+import DeleteAccount from "./DeleteAccount"
 
 interface Profile {
   id: string
   email: string
-  role: string | null
+  role: string
   email_confirmed_at: string | null
   created_at: string
   last_sign_in_at: string
-  avatar_url: string | null
   app_metadata: { providers?: string[] }
 }
 
@@ -34,11 +33,9 @@ interface ProfileCardProps {
 }
 
 export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
-  const avatarUrl = profile.avatar_url || undefined
-
   return (
     <div className="flex flex-col items-center space-y-8">
-      <Avatar avatarUrl={avatarUrl} userId={profile.id} role={profile.role || undefined} />
+      <Avatar userId={profile.id} role={profile.role} />
       <AvatarUpload userId={profile.id} />
 
       <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
@@ -47,7 +44,7 @@ export default function ProfileCard({ profile, displayName, roleLabel }: Profile
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
         <Info label="User ID" value={profile.id} icon={<Users />} />
         <Info label="Email" value={profile.email} icon={<Mail />} />
-        <Info label="Role" value={roleLabel || "N/A"} icon={<ShieldCheck />} />
+        <Info label="Role" value={roleLabel} icon={<ShieldCheck />} />
         <Info label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
         <Info label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
         <Info label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />
@@ -56,7 +53,6 @@ export default function ProfileCard({ profile, displayName, roleLabel }: Profile
           value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
           icon={<Globe />}
         />
-        <Info label="Avatar URL" value={profile.avatar_url || "None set"} icon={<ImageIcon />} />
       </div>
 
       <div className="w-full mt-6">

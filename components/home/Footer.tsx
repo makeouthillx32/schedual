@@ -22,14 +22,14 @@ const Footer: React.FC = () => {
           <div className="flex items-center justify-between w-full">
             <div>
               <div className="font-semibold mb-1">For Job Coaches</div>
-              <Link href="/cms" className="underline hover:text-blue-500">
+              <Link href="/CMS" className="underline hover:text-blue-500">
                 CMS App
               </Link>
             </div>
             <div>
               <div className="font-semibold mb-1">Tools</div>
               <div className="space-y-1">
-                <Link href="/cms"     className="underline hover:text-blue-500 block">CMS</Link>
+                <Link href="/CMS"     className="underline hover:text-blue-500 block">CMS</Link>
                 <Link href="/pickup"  className="underline hover:text-blue-500 block">Pick‑Up</Link>
                 <Link href="/donate"  className="underline hover:text-blue-500 block">Give</Link>
               </div>

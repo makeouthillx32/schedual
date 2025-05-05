@@ -10,8 +10,7 @@ export default function AvatarUpload({ userId }: { userId: string }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${userId}.${fileExt}`;
+    const filePath = `${userId}.png`;
 
     setUploading(true);
 
@@ -25,9 +24,7 @@ export default function AvatarUpload({ userId }: { userId: string }) {
       return;
     }
 
-    const { data } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(filePath);
+    const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
     const { error: updateError } = await supabase
       .from("profiles")
@@ -40,6 +37,7 @@ export default function AvatarUpload({ userId }: { userId: string }) {
       alert("Failed to update profile: " + updateError.message);
     } else {
       alert("Avatar updated!");
+      location.reload(); // To reflect the new image immediately
     }
   };
 

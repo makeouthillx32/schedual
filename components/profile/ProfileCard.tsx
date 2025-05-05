@@ -33,7 +33,7 @@ interface ProfileCardProps {
 export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
   return (
     <div className="flex flex-col items-center space-y-8">
-      <Avatar avatarUrl={profile.avatar_url || undefined} userId={profile.id} role={profile.role} />
+      <Avatar avatarUrl={profile.avatar_url ?? null} userId={profile.id} role={profile.role} />
 
       <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>

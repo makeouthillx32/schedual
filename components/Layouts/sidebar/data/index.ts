@@ -1,67 +1,106 @@
-"use client"
 
-import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
-import { NAV_DATA } from "./data/nav-data"
-import MenuItem from "./menu-item"
-import { getUserProfile } from "@/lib/getUserProfile"
+import * as Icons from "../icons";
 
-export default function Sidebar() {
-  const pathname = usePathname()
-  const [userId, setUserId] = useState<string | null>(null)
-  const navData = NAV_DATA("me") // Still build menu with "me" links
-
-  const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({})
-
-  useEffect(() => {
-    // Fetch and store UUID if needed
-    getUserProfile().then((profile) => {
-      if (profile?.id) setUserId(profile.id)
-    })
-  }, [])
-
-  useEffect(() => {
-    navData.some((section) =>
-      section.items.some((item) =>
-        item.items.some((subItem) => {
-          if (subItem.url === pathname) {
-            setOpenMenus((prev) => ({
-              ...prev,
-              [item.title]: true,
-            }))
-            return true
-          }
-          return false
-        })
-      )
-    )
-  }, [pathname, navData])
-
-  return (
-    <aside className="w-64 bg-white dark:bg-zinc-900 shadow-lg h-screen sticky top-0">
-      <nav className="p-4">
-        {navData.map((section, index) => (
-          <div key={index} className="mb-6">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{section.label}</p>
-            <ul>
-              {section.items.map((item, idx) => (
-                <MenuItem
-                  key={idx}
-                  item={item}
-                  pathname={pathname}
-                  isOpen={openMenus[item.title]}
-                  toggleOpen={() =>
-                    setOpenMenus((prev) => ({
-                      ...prev,
-                      [item.title]: !prev[item.title],
-                    }))
-                  }
-                />
-              ))}
-            </ul>
-          </div>
-        ))}
-      </nav>
-    </aside>
-  )
-}
+export const NAV_DATA = [
+  {
+    label: "MAIN MENU",
+    items: [
+      {
+        title: "Dashboard",
+        icon: Icons.HomeIcon,
+        items: [
+          {
+            title: "eCommerce",
+            url: "/",
+          },
+        ],
+      },
+      {
+        title: "Calendar",
+        url: "/calendar",
+        icon: Icons.Calendar,
+        items: [],
+      },
+      {
+        title: "Profile",
+        url: "/profile",
+        icon: Icons.User,
+        items: [],
+      },
+      {
+        title: "Forms",
+        icon: Icons.Alphabet,
+        items: [
+          {
+            title: "Form Elements",
+            url: "/forms/form-elements",
+          },
+          {
+            title: "Form Layout",
+            url: "/forms/form-layout",
+          },
+        ],
+      },
+      {
+        title: "Tables",
+        url: "/tables",
+        icon: Icons.Table,
+        items: [
+          {
+            title: "Tables",
+            url: "/tables",
+          },
+        ],
+      },
+      {
+        title: "Pages",
+        icon: Icons.Alphabet,
+        items: [
+          {
+            title: "Settings",
+            url: "/pages/settings",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    label: "OTHERS",
+    items: [
+      {
+        title: "Charts",
+        icon: Icons.PieChart,
+        items: [
+          {
+            title: "Basic Chart",
+            url: "/charts/basic-chart",
+          },
+        ],
+      },
+      {
+        title: "UI Elements",
+        icon: Icons.FourCircle,
+        items: [
+          {
+            title: "Alerts",
+            url: "/ui-elements/alerts",
+          },
+          {
+            title: "Buttons",
+            url: "/ui-elements/buttons",
+          },
+        ],
+      },
+      {
+        title: "Authentication",
+        icon: Icons.Authentication,
+        items: [
+          {
+            title: "Sign In",
+            url: "/auth/sign-in",
+          },
+        ],
+      },
+    ],
+  },
+];

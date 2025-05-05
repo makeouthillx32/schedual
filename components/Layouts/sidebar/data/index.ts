@@ -4,18 +4,26 @@ import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { NAV_DATA } from "./data/nav-data"
 import MenuItem from "./menu-item"
+import { getUserProfile } from "@/lib/getUserProfile"
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const userId = "me" // Replace with actual dynamic ID if needed
-  const navData = NAV_DATA(userId)
+  const [userId, setUserId] = useState<string | null>(null)
+  const navData = NAV_DATA("me") // Still build menu with "me" links
 
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({})
 
   useEffect(() => {
-    navData.some((section) => {
-      return section.items.some((item) => {
-        return item.items.some((subItem) => {
+    // Fetch and store UUID if needed
+    getUserProfile().then((profile) => {
+      if (profile?.id) setUserId(profile.id)
+    })
+  }, [])
+
+  useEffect(() => {
+    navData.some((section) =>
+      section.items.some((item) =>
+        item.items.some((subItem) => {
           if (subItem.url === pathname) {
             setOpenMenus((prev) => ({
               ...prev,
@@ -25,8 +33,8 @@ export default function Sidebar() {
           }
           return false
         })
-      })
-    })
+      )
+    )
   }, [pathname, navData])
 
   return (

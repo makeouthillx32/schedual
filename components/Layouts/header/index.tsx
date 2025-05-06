@@ -1,68 +1,100 @@
 "use client";
 
-import { SearchIcon } from "@/assets/icons";
+import { ChevronUpIcon } from "@/assets/icons";
+import {
+  Dropdown,
+  DropdownContent,
+  DropdownTrigger,
+} from "@/components/ui/dropdown";
+import { cn } from "@/lib/utils";
+import Avatar from "@/components/profile/Avatar";
+import { useUser } from "@supabase/auth-helpers-react";
+import { useProfile } from "@/components/Layouts/sidebar/use-profile-id";
 import Image from "next/image";
 import Link from "next/link";
-import { useSidebarContext } from "../sidebar/sidebar-context";
-import { MenuIcon } from "./icons";
-import { Notification } from "./notification";
-import { ThemeToggleSwitch } from "./theme-toggle";
-import { UserInfo } from "./user-info";
-import { useProfileId } from "../sidebar/use-profile-id";
+import { useState } from "react";
+import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
 
-export function Header() {
-  const { toggleSidebar, isMobile } = useSidebarContext();
-  const profileId = useProfileId();
+export function UserInfo() {
+  const [isOpen, setIsOpen] = useState(false);
+  const user = useUser();
+  const profile = useProfile();
+
+  if (!user || !profile) return null;
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stroke bg-white px-4 py-5 shadow-1 dark:border-stroke-dark dark:bg-gray-dark md:px-5 2xl:px-10">
-      <button
-        onClick={toggleSidebar}
-        className="rounded-lg border px-1.5 py-1 dark:border-stroke-dark dark:bg-[#020D1A] hover:dark:bg-[#FFFFFF1A] lg:hidden"
+    <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
+      <DropdownTrigger className="rounded align-middle outline-none ring-primary ring-offset-2 focus-visible:ring-1 dark:ring-offset-gray-dark">
+        <span className="sr-only">My Account</span>
+
+        <figure className="flex items-center gap-3">
+          <Avatar user={user} className="size-12" />
+          <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
+            <span>{profile.displayName}</span>
+            <ChevronUpIcon
+              aria-hidden
+              className={cn(
+                "rotate-180 transition-transform",
+                isOpen && "rotate-0"
+              )}
+              strokeWidth={1.5}
+            />
+          </figcaption>
+        </figure>
+      </DropdownTrigger>
+
+      <DropdownContent
+        className="border border-stroke bg-white shadow-md dark:border-dark-3 dark:bg-gray-dark min-[230px]:min-w-[17.5rem]"
+        align="end"
       >
-        <MenuIcon />
-        <span className="sr-only">Toggle Sidebar</span>
-      </button>
+        <h2 className="sr-only">User information</h2>
 
-      {isMobile && (
-        <Link href={`/dashboard/${profileId}`} className="ml-2 max-[430px]:hidden min-[375px]:ml-4">
-          <Image
-            src={"/images/logo/logo-icon.svg"}
-            width={32}
-            height={32}
-            alt=""
-            role="presentation"
-          />
-        </Link>
-      )}
+        <figure className="flex items-center gap-2.5 px-5 py-3.5">
+          <Avatar user={user} className="size-12" />
+          <figcaption className="space-y-1 text-base font-medium">
+            <div className="mb-2 leading-none text-dark dark:text-white">
+              {profile.displayName}
+            </div>
+            <div className="leading-none text-gray-6">{profile.email}</div>
+          </figcaption>
+        </figure>
 
-      <div className="max-xl:hidden">
-        <h1 className="mb-0.5 text-heading-5 font-bold text-dark dark:text-white">
-          Dashboard
-        </h1>
-        <p className="font-medium">Next.js Admin Dashboard Solution</p>
-      </div>
+        <hr className="border-[#E8E8E8] dark:border-dark-3" />
 
-      <div className="flex flex-1 items-center justify-end gap-2 min-[375px]:gap-4">
-        <div className="relative w-full max-w-[300px]">
-          <input
-            type="search"
-            placeholder="Search"
-            className="flex w-full items-center gap-3.5 rounded-full border bg-gray-2 py-3 pl-[53px] pr-5 outline-none transition-colors focus-visible:border-primary dark:border-dark-3 dark:bg-dark-2 dark:hover:border-dark-4 dark:hover:bg-dark-3 dark:hover:text-dark-6 dark:focus-visible:border-primary"
-          />
+        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
+          <Link
+            href={`/dashboard/${profile.id}`}
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+          >
+            <UserIcon />
+            <span className="mr-auto text-base font-medium">View profile</span>
+          </Link>
 
-          <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
+          <Link
+            href={`/dashboard/${profile.id}/settings`}
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+          >
+            <SettingsIcon />
+            <span className="mr-auto text-base font-medium">
+              Account Settings
+            </span>
+          </Link>
         </div>
 
-        <ThemeToggleSwitch />
+        <hr className="border-[#E8E8E8] dark:border-dark-3" />
 
-        <Notification />
-
-        <div className="shrink-0">
-          <UserInfo />
+        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
+          <button
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+            onClick={() => setIsOpen(false)}
+          >
+            <LogOutIcon />
+            <span className="text-base font-medium">Log out</span>
+          </button>
         </div>
-      </div>
-    </header>
+      </DropdownContent>
+    </Dropdown>
   );
 }
- 

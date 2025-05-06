@@ -7,39 +7,35 @@ import { CameraIcon } from "./_components/icons";
 
 export default function Page() {
   const [data, setData] = useState({
-    name: "Loading...",
+    displayName: "Loading...",
     profilePhoto: "/images/user/user-03.png",
     coverPhoto: "/images/cover/cover-01.png",
+    email: "",
+    id: "",
+    role: "",
+    email_confirmed_at: null,
+    last_sign_in_at: "",
+    providers: [],
   });
 
   useEffect(() => {
     const fetchProfile = async () => {
       const res = await fetch("/api/profile");
-      if (!res.ok) return;
-
-      const profile = await res.json();
-
+      const result = await res.json();
       setData({
-        name: profile.user_metadata?.display_name || "Unnamed User",
-        profilePhoto: profile.avatar_url,
+        displayName: result.user_metadata.display_name,
+        profilePhoto: result.avatar_url,
         coverPhoto: "/images/cover/cover-01.png",
+        email: result.email,
+        id: result.id,
+        role: result.role,
+        email_confirmed_at: result.email_confirmed_at,
+        last_sign_in_at: result.last_sign_in_at,
+        providers: result.app_metadata?.providers || [],
       });
     };
-
     fetchProfile();
   }, []);
-
-  const handleChange = (e: any) => {
-    if (e.target.name === "profilePhoto") {
-      const file = e.target?.files[0];
-      setData({ ...data, profilePhoto: file && URL.createObjectURL(file) });
-    } else if (e.target.name === "coverPhoto") {
-      const file = e.target?.files[0];
-      setData({ ...data, coverPhoto: file && URL.createObjectURL(file) });
-    } else {
-      setData({ ...data, [e.target.name]: e.target.value });
-    }
-  };
 
   return (
     <div className="mx-auto w-full max-w-[970px]">
@@ -55,86 +51,49 @@ export default function Page() {
             height={260}
             style={{ width: "auto", height: "auto" }}
           />
-          <div className="absolute bottom-1 right-1 z-10 xsm:bottom-4 xsm:right-4">
-            <label
-              htmlFor="cover"
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-[15px] py-[5px] text-body-sm font-medium text-white hover:bg-opacity-90"
-            >
-              <input
-                type="file"
-                name="coverPhoto"
-                id="coverPhoto"
-                className="sr-only"
-                onChange={handleChange}
-                accept="image/png, image/jpg, image/jpeg"
-              />
-              <CameraIcon />
-              <span>Edit</span>
-            </label>
-          </div>
         </div>
 
         <div className="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5">
           <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-[176px] sm:p-3">
             <div className="relative drop-shadow-2">
-              {data.profilePhoto && (
-                <>
-                  <Image
-                    src={data.profilePhoto}
-                    width={160}
-                    height={160}
-                    className="overflow-hidden rounded-full"
-                    alt="profile"
-                  />
-
-                  <label
-                    htmlFor="profilePhoto"
-                    className="absolute bottom-0 right-0 flex size-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
-                  >
-                    <CameraIcon />
-                    <input
-                      type="file"
-                      name="profilePhoto"
-                      id="profilePhoto"
-                      className="sr-only"
-                      onChange={handleChange}
-                      accept="image/png, image/jpg, image/jpeg"
-                    />
-                  </label>
-                </>
-              )}
+              <Image
+                src={data.profilePhoto}
+                width={160}
+                height={160}
+                className="rounded-full object-cover"
+                alt="profile"
+              />
             </div>
           </div>
 
           <div className="mt-4">
             <h3 className="mb-1 text-heading-6 font-bold text-dark dark:text-white">
-              {data.name}
+              {data.displayName}
             </h3>
-            <p className="font-medium">CMS Role-Based User</p>
-            <div className="mx-auto mb-5.5 mt-5 grid max-w-[370px] grid-cols-3 rounded-[5px] border border-stroke py-[9px] shadow-1 dark:border-dark-3 dark:bg-dark-2 dark:shadow-card">
-              <div className="flex flex-col items-center justify-center gap-1 border-r border-stroke px-4 dark:border-dark-3 xsm:flex-row">
-                <span className="font-medium text-dark dark:text-white">259</span>
-                <span className="text-body-sm">Posts</span>
-              </div>
-              <div className="flex flex-col items-center justify-center gap-1 border-r border-stroke px-4 dark:border-dark-3 xsm:flex-row">
-                <span className="font-medium text-dark dark:text-white">129K</span>
-                <span className="text-body-sm">Followers</span>
-              </div>
-              <div className="flex flex-col items-center justify-center gap-1 px-4 xsm:flex-row">
-                <span className="font-medium text-dark dark:text-white">2K</span>
-                <span className="text-body-sm-sm">Following</span>
-              </div>
-            </div>
+            <p className="font-medium text-gray-500 dark:text-gray-400">
+              {data.role || "User"}
+            </p>
 
-            <div className="mx-auto max-w-[720px]">
-              <h4 className="font-medium text-dark dark:text-white">About Me</h4>
-              <p className="mt-4">
-                This user is authenticated with role-based permissions. Profile data is synced with Supabase.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10 text-left">
+              <Info label="User ID" value={data.id} />
+              <Info label="Email" value={data.email} />
+              <Info label="Role" value={data.role} />
+              <Info label="Email Confirmed" value={data.email_confirmed_at ? "Yes" : "No"} />
+              <Info label="Last Signed In" value={new Date(data.last_sign_in_at).toLocaleString()} />
+              <Info label="Auth Providers" value={data.providers.join(", ") || "Unknown"} />
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-gray-200 dark:border-zinc-700 p-5">
+      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
     </div>
   );
 }

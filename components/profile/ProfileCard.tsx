@@ -1,75 +1,100 @@
-"use client"
+"use client";
 
-import type React from "react"
+import { ChevronUpIcon } from "@/assets/icons";
 import {
-  Mail,
-  ShieldCheck,
-  CalendarClock,
-  LogIn,
-  Users,
-  ImageIcon,
-  KeyRound,
-  Globe,
-} from "lucide-react"
+  Dropdown,
+  DropdownContent,
+  DropdownTrigger,
+} from "@/components/ui/dropdown";
+import { cn } from "@/lib/utils";
+import Avatar from "@/components/profile/Avatar";
+import { useUser } from "@supabase/auth-helpers-react";
+import { useProfile } from "@/components/Layouts/sidebar/use-profile-id";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
 
-import Avatar from "./Avatar"
-import AvatarUpload from "./AvatarUpload"
-import DeleteAccount from "./DeleteAccount"
+export function UserInfo() {
+  const [isOpen, setIsOpen] = useState(false);
+  const user = useUser();
+  const profile = useProfile();
 
-interface Profile {
-  id: string
-  email: string
-  role: string
-  email_confirmed_at: string | null
-  created_at: string
-  last_sign_in_at: string
-  app_metadata: { providers?: string[] }
-}
+  if (!user || !profile) return null;
 
-interface ProfileCardProps {
-  profile: Profile
-  displayName: string
-  roleLabel: string
-}
-
-export default function ProfileCard({ profile, displayName, roleLabel }: ProfileCardProps) {
   return (
-    <div className="flex flex-col items-center space-y-8">
-      <Avatar userId={profile.id} role={profile.role} />
-      <AvatarUpload userId={profile.id} />
+    <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
+      <DropdownTrigger className="rounded align-middle outline-none ring-primary ring-offset-2 focus-visible:ring-1 dark:ring-offset-gray-dark">
+        <span className="sr-only">My Account</span>
 
-      <h1 className="text-4xl font-extrabold text-center dark:text-white">{displayName}</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{roleLabel}</p>
+        <figure className="flex items-center gap-3">
+          <Avatar user={user} className="size-12" />
+          <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
+            <span>{profile.displayName}</span>
+            <ChevronUpIcon
+              aria-hidden
+              className={cn(
+                "rotate-180 transition-transform",
+                isOpen && "rotate-0"
+              )}
+              strokeWidth={1.5}
+            />
+          </figcaption>
+        </figure>
+      </DropdownTrigger>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
-        <Info label="User ID" value={profile.id} icon={<Users />} />
-        <Info label="Email" value={profile.email} icon={<Mail />} />
-        <Info label="Role" value={roleLabel} icon={<ShieldCheck />} />
-        <Info label="Email Confirmed" value={profile.email_confirmed_at ? "Yes" : "No"} icon={<KeyRound />} />
-        <Info label="Created At" value={new Date(profile.created_at).toLocaleString()} icon={<CalendarClock />} />
-        <Info label="Last Signed In" value={new Date(profile.last_sign_in_at).toLocaleString()} icon={<LogIn />} />
-        <Info
-          label="Auth Providers"
-          value={profile.app_metadata?.providers?.join(", ") || "Unknown"}
-          icon={<Globe />}
-        />
-      </div>
+      <DropdownContent
+        className="border border-stroke bg-white shadow-md dark:border-dark-3 dark:bg-gray-dark min-[230px]:min-w-[17.5rem]"
+        align="end"
+      >
+        <h2 className="sr-only">User information</h2>
 
-      <div className="w-full mt-6">
-        <DeleteAccount />
-      </div>
-    </div>
-  )
-}
+        <figure className="flex items-center gap-2.5 px-5 py-3.5">
+          <Avatar user={user} className="size-12" />
+          <figcaption className="space-y-1 text-base font-medium">
+            <div className="mb-2 leading-none text-dark dark:text-white">
+              {profile.displayName}
+            </div>
+            <div className="leading-none text-gray-6">{profile.email}</div>
+          </figcaption>
+        </figure>
 
-function Info({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-gray-200 dark:border-zinc-700 p-5 flex gap-4 items-start">
-      <div className="text-blue-600 dark:text-blue-400 mt-1">{icon}</div>
-      <div className="flex-1">
-        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-        <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
-      </div>
-    </div>
-  )
+        <hr className="border-[#E8E8E8] dark:border-dark-3" />
+
+        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
+          <Link
+            href={`/dashboard/${profile.id}`}
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+          >
+            <UserIcon />
+            <span className="mr-auto text-base font-medium">View profile</span>
+          </Link>
+
+          <Link
+            href={`/dashboard/${profile.id}/settings`}
+            onClick={() => setIsOpen(false)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+          >
+            <SettingsIcon />
+            <span className="mr-auto text-base font-medium">
+              Account Settings
+            </span>
+          </Link>
+        </div>
+
+        <hr className="border-[#E8E8E8] dark:border-dark-3" />
+
+        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
+          <button
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+            onClick={() => setIsOpen(false)}
+          >
+            <LogOutIcon />
+            <span className="text-base font-medium">Log out</span>
+          </button>
+        </div>
+      </DropdownContent>
+    </Dropdown>
+  );
 }

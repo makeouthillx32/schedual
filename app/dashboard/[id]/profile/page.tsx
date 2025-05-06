@@ -1,45 +1,74 @@
 "use client";
 
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
-import DeleteAccount from "@/components/profile/DeleteAccount";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { CameraIcon } from "./_components/icons";
+import { supabase } from "@/lib/supabaseClient";
+import DeleteAccount from "@/components/profile/DeleteAccount";
 
 export default function Page() {
   const [data, setData] = useState({
-    name: "Loading...",
-    email: "",
-    avatar_url: "/images/user/user-03.png",
+    name: "",
+    profilePhoto: "",
     coverPhoto: "/images/cover/cover-01.png",
+    email: "",
+    userId: "",
     role: "",
-    id: "",
-    email_confirmed: false,
+    emailConfirmed: false,
+    lastSignIn: "",
     providers: [],
-    last_sign_in: "",
   });
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => {
-    const getProfile = async () => {
+    const fetchData = async () => {
       const res = await fetch("/api/profile");
       if (!res.ok) return;
       const user = await res.json();
 
       setData({
         name: user.user_metadata.display_name,
-        email: user.email,
-        avatar_url: user.avatar_url,
+        profilePhoto: user.avatar_url,
         coverPhoto: "/images/cover/cover-01.png",
+        email: user.email,
+        userId: user.id,
         role: user.role,
-        id: user.id,
-        email_confirmed: !!user.email_confirmed_at,
+        emailConfirmed: !!user.email_confirmed_at,
+        lastSignIn: user.last_sign_in_at,
         providers: user.app_metadata?.providers || [],
-        last_sign_in: user.last_sign_in_at,
       });
     };
-
-    getProfile();
+    fetchData();
   }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFile(e.target.files?.[0] || null);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    const filePath = `${data.userId}.png`;
+    setUploading(true);
+    await supabase.storage.from("avatars").remove([filePath]);
+    const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, selectedFile, { upsert: true });
+    if (uploadError) {
+      alert("Upload failed: " + uploadError.message);
+      setUploading(false);
+      return;
+    }
+    const timestamp = Date.now();
+    const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}?t=${timestamp}`;
+    const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", data.userId);
+    setUploading(false);
+    if (updateError) {
+      alert("Upload succeeded, but profile update failed: " + updateError.message);
+    } else {
+      alert("Avatar uploaded and profile updated!");
+      location.reload();
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-[970px]">
@@ -53,57 +82,68 @@ export default function Page() {
             className="h-full w-full rounded-tl-[10px] rounded-tr-[10px] object-cover object-center"
             width={970}
             height={260}
-            style={{ width: "auto", height: "auto" }}
           />
-          <div className="absolute bottom-1 right-1 z-10 xsm:bottom-4 xsm:right-4">
-            <label
-              htmlFor="cover"
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-[15px] py-[5px] text-body-sm font-medium text-white hover:bg-opacity-90"
-            >
-              <CameraIcon />
-              <span>Edit</span>
-              <input
-                type="file"
-                name="coverPhoto"
-                id="coverPhoto"
-                className="sr-only"
-                accept="image/png, image/jpg, image/jpeg"
-              />
-            </label>
-          </div>
         </div>
 
         <div className="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5">
-          <div className="relative z-30 mx-auto -mt-22 aspect-square h-32 w-32 sm:h-44 sm:w-44 rounded-full bg-white/20 p-1 backdrop-blur">
-            <div className="relative w-full h-full drop-shadow-2 rounded-full overflow-hidden">
-              <Image
-                src={data.avatar_url}
-                fill
-                className="object-cover"
-                alt="profile"
-              />
+          <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-[176px] sm:p-3">
+            <div className="relative drop-shadow-2">
+              {data.profilePhoto && (
+                <>
+                  <Image
+                    src={data.profilePhoto}
+                    width={160}
+                    height={160}
+                    className="overflow-hidden rounded-full object-cover"
+                    alt="profile"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="absolute bottom-0 right-0 flex size-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
+                  >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      disabled={uploading}
+                      className="sr-only"
+                    />
+                    <span className="sr-only">Edit</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6-6m2 2L9 13l-1 4 4-1 6-6z" />
+                    </svg>
+                  </label>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="mt-4">
-            <h3 className="mb-1 text-heading-6 font-bold text-dark dark:text-white">
-              {data.name}
-            </h3>
-            <p className="font-medium text-dark dark:text-white mb-4">
-              {data.role}
-            </p>
+          {selectedFile && (
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="bg-blue-600 text-white px-4 py-2 mt-4 rounded hover:bg-blue-700"
+            >
+              {uploading ? "Uploading..." : "Upload"}
+            </button>
+          )}
 
-            <div className="space-y-4 max-w-lg mx-auto">
-              <InfoCard label="User ID" value={data.id} />
-              <InfoCard label="Email" value={data.email} />
-              <InfoCard label="Email Confirmed" value={data.email_confirmed ? "Yes" : "No"} />
-              <InfoCard label="Auth Providers" value={data.providers.join(", ")} />
-              <InfoCard label="Last Signed In" value={new Date(data.last_sign_in).toLocaleString()} />
-            </div>
+          <div className="mt-8 space-y-4">
+            <div className="text-dark dark:text-white font-bold text-lg">{data.name}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{data.role}</div>
+          </div>
 
-            <div className="mt-10">
-              <DeleteAccount />
-            </div>
+          <div className="mt-6 space-y-4 text-left max-w-md mx-auto">
+            <Info label="User ID" value={data.userId} />
+            <Info label="Email" value={data.email} />
+            <Info label="Email Confirmed" value={data.emailConfirmed ? "Yes" : "No"} />
+            <Info label="Last Sign In" value={new Date(data.lastSignIn).toLocaleString()} />
+            <Info label="Auth Providers" value={data.providers.join(", ")} />
+          </div>
+
+          <div className="mt-10">
+            <DeleteAccount />
           </div>
         </div>
       </div>
@@ -111,11 +151,11 @@ export default function Page() {
   );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-dark-3 bg-dark-2 px-5 py-4 text-left shadow-card">
-      <p className="text-sm font-medium uppercase text-gray-400 mb-1">{label}</p>
-      <p className="text-base font-semibold text-white break-words">{value}</p>
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-lg border border-gray-200 dark:border-zinc-700 p-5">
+      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <p className="text-base font-medium text-gray-900 dark:text-white break-words">{value}</p>
     </div>
   );
 }

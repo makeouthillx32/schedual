@@ -22,21 +22,18 @@ export function UserInfo() {
 
   useEffect(() => {
     const getProfile = async () => {
-      try {
-        const res = await fetch("/api/profile");
-        if (!res.ok) return;
+      const res = await fetch("/api/profile");
+      if (!res.ok) return;
 
-        const data = await res.json();
-        setUSER({
-          name: data.user_metadata?.full_name || data.name || "Unnamed User",
-          email: data.email || "No email",
-          img:
-            data.avatar_url ||
-            "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
-        });
-      } catch {
-        // Fallback stays as default values
-      }
+      const data = await res.json();
+
+      setUSER({
+        name: data.display_name,
+        email: data.email,
+        img:
+          data.avatar_url ||
+          "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
+      });
     };
 
     getProfile();
@@ -85,7 +82,6 @@ export function UserInfo() {
             width={200}
             height={200}
           />
-
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
               {USER.name}

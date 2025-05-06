@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
-import { CameraIcon } from "../_components/icons";
+import { CameraIcon } from "./_components/icons";
 import DeleteAccount from "@/components/profile/DeleteAccount";
 import {
   Mail,

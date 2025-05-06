@@ -7,20 +7,18 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
-import Avatar from "@/components/profile/Avatar";
-import Info from "@/components/profile/Info";
-import { useProfileId } from "@/components/Layouts/sidebar/use-profile-id";
-import { useProfile } from "@/lib/getUserProfile";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
+import { useProfileId } from "@/components/Layouts/sidebar/use-profile-id";
+import Avatar from "@/components/profile/Avatar";
+import { useSession } from "@/utils/supabase/client";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
-  const profile = useProfile();
-  const profileId = useProfileId();
-
-  const displayName = profile?.full_name || profile?.email || "My Account";
+  const { profile, displayName } = useProfileId();
+  const { session } = useSession();
 
   return (
     <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
@@ -28,10 +26,9 @@ export function UserInfo() {
         <span className="sr-only">My Account</span>
 
         <figure className="flex items-center gap-3">
-          <Avatar className="size-12" />
+          <Avatar size={48} />
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
             <span>{displayName}</span>
-
             <ChevronUpIcon
               aria-hidden
               className={cn(
@@ -51,13 +48,12 @@ export function UserInfo() {
         <h2 className="sr-only">User information</h2>
 
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          <Avatar className="size-12" />
-
+          <Avatar size={48} />
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
               {displayName}
             </div>
-            <Info label="Email" value={profile?.email} />
+            <div className="leading-none text-gray-6">{profile?.email}</div>
           </figcaption>
         </figure>
 
@@ -65,7 +61,7 @@ export function UserInfo() {
 
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
           <Link
-            href={`/dashboard/${profileId}`}
+            href={`/dashboard/${profile?.id}`}
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
@@ -74,14 +70,12 @@ export function UserInfo() {
           </Link>
 
           <Link
-            href={`/dashboard/${profileId}/settings`}
+            href="/pages/settings"
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
             <SettingsIcon />
-            <span className="mr-auto text-base font-medium">
-              Account Settings
-            </span>
+            <span className="mr-auto text-base font-medium">Account Settings</span>
           </Link>
         </div>
 

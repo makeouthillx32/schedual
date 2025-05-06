@@ -7,7 +7,6 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -16,37 +15,33 @@ import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
   const [USER, setUSER] = useState({
-    name: "",
-    email: "",
-    img: "",
+    name: "Loading...",
+    email: "Loading...",
+    img: "/images/user/user-03.png",
   });
 
   useEffect(() => {
-    const getUserInfo = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const getProfile = async () => {
+      const res = await fetch("/api/profile");
+      if (!res.ok) return;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .single();
+      const data = await res.json();
 
       setUSER({
-        name: user.user_metadata.display_name,
-        email: user.email,
-        img: profile.avatar_url,
+        name: data.user_metadata.display_name,
+        email: data.email,
+        img: data.avatar_url,
       });
     };
 
-    getUserInfo();
+    getProfile();
   }, []);
 
   return (
     <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
       <DropdownTrigger className="rounded align-middle outline-none ring-primary ring-offset-2 focus-visible:ring-1 dark:ring-offset-gray-dark">
         <span className="sr-only">My Account</span>
+
         <figure className="flex items-center gap-3">
           <Image
             src={USER.img}
@@ -75,6 +70,7 @@ export function UserInfo() {
         align="end"
       >
         <h2 className="sr-only">User information</h2>
+
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
           <Image
             src={USER.img}
@@ -103,6 +99,7 @@ export function UserInfo() {
             <UserIcon />
             <span className="mr-auto text-base font-medium">View profile</span>
           </Link>
+
           <Link
             href="/pages/settings"
             onClick={() => setIsOpen(false)}

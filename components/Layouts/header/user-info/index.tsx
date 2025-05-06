@@ -18,6 +18,7 @@ export function UserInfo() {
     name: "Loading...",
     email: "Loading...",
     img: "/images/user/user-03.png",
+    id: "",
   });
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export function UserInfo() {
         name: data.user_metadata.display_name,
         email: data.email,
         img: data.avatar_url,
+        id: data.id,
       });
     };
 
@@ -92,7 +94,7 @@ export function UserInfo() {
 
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
           <Link
-            href="/dashboard/me"
+            href="/dashboard/me/profile"
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
@@ -101,7 +103,7 @@ export function UserInfo() {
           </Link>
 
           <Link
-            href="/pages/settings"
+            href={`/dashboard/${USER.id}/settings`}
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >

@@ -7,15 +7,45 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
-import Avatar from "@/components/profile/Avatar";
-import { useProfileId } from "@/components/Layouts/sidebar/use-profile-id";
+import { supabase } from "@/lib/supabaseClient";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
-  const { profile, displayName } = useProfileId();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [email, setEmail] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("User");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url, email, display_name")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && data) {
+        setAvatarUrl(
+          data.avatar_url ||
+            "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png"
+        );
+        setEmail(data.email || "");
+        setDisplayName(data.display_name || "User");
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  if (!avatarUrl) return null;
 
   return (
     <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
@@ -23,9 +53,17 @@ export function UserInfo() {
         <span className="sr-only">My Account</span>
 
         <figure className="flex items-center gap-3">
-          <Avatar userId={profile?.id} role={profile?.role} />
+          <Image
+            src={avatarUrl}
+            className="size-12"
+            alt={`Avatar of ${displayName}`}
+            role="presentation"
+            width={200}
+            height={200}
+          />
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
             <span>{displayName}</span>
+
             <ChevronUpIcon
               aria-hidden
               className={cn(
@@ -45,12 +83,21 @@ export function UserInfo() {
         <h2 className="sr-only">User information</h2>
 
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          <Avatar userId={profile?.id} role={profile?.role} />
+          <Image
+            src={avatarUrl}
+            className="size-12"
+            alt={`Avatar for ${displayName}`}
+            role="presentation"
+            width={200}
+            height={200}
+          />
+
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
               {displayName}
             </div>
-            <div className="leading-none text-gray-6">{profile?.email}</div>
+
+            <div className="leading-none text-gray-6">{email}</div>
           </figcaption>
         </figure>
 

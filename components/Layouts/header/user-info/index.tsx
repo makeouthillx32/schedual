@@ -7,46 +7,39 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabaseClient";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
-import Image from "next/image";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [USER, setUSER] = useState({
+    name: "Loading...",
+    email: "Loading...",
+    img: "/images/user/user-03.png",
+  });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const {
-        data: {
-          session,
-        },
-      } = await supabase.auth.getSession();
+    const getProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) return;
 
-      const user = session?.user;
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("full_name, email, avatar_url")
-        .eq("id", user.id)
-        .single();
-
-      if (error || !data) return;
-
-      setDisplayName(data.full_name);
-      setEmail(data.email);
-      setAvatarUrl(
-        data.avatar_url ||
-          "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png"
-      );
+        const data = await res.json();
+        setUSER({
+          name: data.user_metadata?.full_name || data.name || "Unnamed User",
+          email: data.email || "No email",
+          img:
+            data.avatar_url ||
+            "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
+        });
+      } catch {
+        // Fallback stays as default values
+      }
     };
 
-    fetchProfile();
+    getProfile();
   }, []);
 
   return (
@@ -55,18 +48,16 @@ export function UserInfo() {
         <span className="sr-only">My Account</span>
 
         <figure className="flex items-center gap-3">
-          {avatarUrl && (
-            <Image
-              src={avatarUrl}
-              className="size-12 rounded-full object-cover"
-              alt={`Avatar of ${displayName}`}
-              role="presentation"
-              width={48}
-              height={48}
-            />
-          )}
+          <Image
+            src={USER.img}
+            className="size-12 rounded-full object-cover"
+            alt={`Avatar of ${USER.name}`}
+            role="presentation"
+            width={200}
+            height={200}
+          />
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
-            <span>{displayName}</span>
+            <span>{USER.name}</span>
             <ChevronUpIcon
               aria-hidden
               className={cn(
@@ -86,23 +77,20 @@ export function UserInfo() {
         <h2 className="sr-only">User information</h2>
 
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          {avatarUrl && (
-            <Image
-              src={avatarUrl}
-              className="size-12 rounded-full object-cover"
-              alt={`Avatar for ${displayName}`}
-              role="presentation"
-              width={48}
-              height={48}
-            />
-          )}
+          <Image
+            src={USER.img}
+            className="size-12 rounded-full object-cover"
+            alt={`Avatar for ${USER.name}`}
+            role="presentation"
+            width={200}
+            height={200}
+          />
 
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
-              {displayName}
+              {USER.name}
             </div>
-
-            <div className="leading-none text-gray-6">{email}</div>
+            <div className="leading-none text-gray-6">{USER.email}</div>
           </figcaption>
         </figure>
 
@@ -110,7 +98,7 @@ export function UserInfo() {
 
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
           <Link
-            href="/dashboard/me"
+            href="/profile"
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
@@ -119,12 +107,14 @@ export function UserInfo() {
           </Link>
 
           <Link
-            href="/dashboard/me/settings"
+            href="/pages/settings"
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
             <SettingsIcon />
-            <span className="mr-auto text-base font-medium">Account Settings</span>
+            <span className="mr-auto text-base font-medium">
+              Account Settings
+            </span>
           </Link>
         </div>
 

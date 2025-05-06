@@ -8,19 +8,19 @@ import {
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/profile/Avatar";
-import { useUser } from "@supabase/auth-helpers-react";
-import { useProfile } from "@/components/Layouts/sidebar/use-profile-id";
-import Image from "next/image";
+import Info from "@/components/profile/Info";
+import { useProfileId } from "@/components/Layouts/sidebar/use-profile-id";
+import { useProfile } from "@/lib/getUserProfile";
 import Link from "next/link";
 import { useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
-  const user = useUser();
   const profile = useProfile();
+  const profileId = useProfileId();
 
-  if (!user || !profile) return null;
+  const displayName = profile?.full_name || profile?.email || "My Account";
 
   return (
     <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
@@ -28,9 +28,10 @@ export function UserInfo() {
         <span className="sr-only">My Account</span>
 
         <figure className="flex items-center gap-3">
-          <Avatar user={user} className="size-12" />
+          <Avatar className="size-12" />
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
-            <span>{profile.displayName}</span>
+            <span>{displayName}</span>
+
             <ChevronUpIcon
               aria-hidden
               className={cn(
@@ -50,12 +51,13 @@ export function UserInfo() {
         <h2 className="sr-only">User information</h2>
 
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          <Avatar user={user} className="size-12" />
+          <Avatar className="size-12" />
+
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
-              {profile.displayName}
+              {displayName}
             </div>
-            <div className="leading-none text-gray-6">{profile.email}</div>
+            <Info label="Email" value={profile?.email} />
           </figcaption>
         </figure>
 
@@ -63,7 +65,7 @@ export function UserInfo() {
 
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
           <Link
-            href={`/dashboard/${profile.id}`}
+            href={`/dashboard/${profileId}`}
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >
@@ -72,7 +74,7 @@ export function UserInfo() {
           </Link>
 
           <Link
-            href={`/dashboard/${profile.id}/settings`}
+            href={`/dashboard/${profileId}/settings`}
             onClick={() => setIsOpen(false)}
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
           >

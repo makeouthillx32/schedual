@@ -7,6 +7,7 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -17,33 +18,33 @@ export function UserInfo() {
   const [USER, setUSER] = useState({
     name: "Loading...",
     email: "Loading...",
-    img: "/images/user/user-03.png",
+    img: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
   });
 
   useEffect(() => {
-    const getProfile = async () => {
-      const res = await fetch("/api/profile");
-      if (!res.ok) return;
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      const data = await res.json();
+      if (!user) return;
 
       setUSER({
-        name: data.display_name || data.email,
-        email: data.email,
+        name: user.user_metadata.display_name,
+        email: user.email,
         img:
-          data.avatar_url ||
+          user.user_metadata.avatar_url ||
           "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
       });
     };
 
-    getProfile();
+    getUser();
   }, []);
 
   return (
     <Dropdown isOpen={isOpen} setIsOpen={setIsOpen}>
       <DropdownTrigger className="rounded align-middle outline-none ring-primary ring-offset-2 focus-visible:ring-1 dark:ring-offset-gray-dark">
         <span className="sr-only">My Account</span>
-
         <figure className="flex items-center gap-3">
           <Image
             src={USER.img}
@@ -72,7 +73,6 @@ export function UserInfo() {
         align="end"
       >
         <h2 className="sr-only">User information</h2>
-
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
           <Image
             src={USER.img}

@@ -28,7 +28,7 @@ export function UserInfo() {
       const data = await res.json();
 
       setUSER({
-        name: data.display_name,
+        name: data.display_name || data.email,
         email: data.email,
         img:
           data.avatar_url ||

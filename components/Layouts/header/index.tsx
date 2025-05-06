@@ -8,9 +8,11 @@ import { MenuIcon } from "./icons";
 import { Notification } from "./notification";
 import { ThemeToggleSwitch } from "./theme-toggle";
 import { UserInfo } from "./user-info";
+import { useProfileId } from "../sidebar/use-profile-id"; // <-- NEW
 
 export function Header() {
   const { toggleSidebar, isMobile } = useSidebarContext();
+  const id = useProfileId(); // <-- NEW
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stroke bg-white px-4 py-5 shadow-1 dark:border-stroke-dark dark:bg-gray-dark md:px-5 2xl:px-10">
@@ -23,7 +25,7 @@ export function Header() {
       </button>
 
       {isMobile && (
-        <Link href={"/"} className="ml-2 max-[430px]:hidden min-[375px]:ml-4">
+        <Link href={`/dashboard/${id}`} className="ml-2 max-[430px]:hidden min-[375px]:ml-4">
           <Image
             src={"/images/logo/logo-icon.svg"}
             width={32}
@@ -52,10 +54,16 @@ export function Header() {
           <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
         </div>
 
+        {/* Example dynamic links, customize as needed */}
+        <Link href={`/dashboard/${id}/calendar`} className="text-sm text-dark dark:text-white">
+          Calendar
+        </Link>
+        <Link href={`/dashboard/${id}/forms/form-elements`} className="text-sm text-dark dark:text-white">
+          Forms
+        </Link>
+
         <ThemeToggleSwitch />
-
         <Notification />
-
         <div className="shrink-0">
           <UserInfo />
         </div>

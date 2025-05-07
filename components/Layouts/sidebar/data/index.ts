@@ -1,4 +1,3 @@
-
 import * as Icons from "../icons";
 
 export const NAV_DATA = [
@@ -10,23 +9,49 @@ export const NAV_DATA = [
         icon: Icons.HomeIcon,
         items: [
           {
-            title: "eCommerce",
+            title: "Homepage",
             url: "/",
           },
+          {
+            title: "Commercial Services",
+            url: "/commercial",
+          },
         ],
+        roles: ["admin", "jobcoach"],
       },
       {
         title: "Calendar",
         url: "/calendar",
         icon: Icons.Calendar,
         items: [],
+        roles: ["admin", "jobcoach", "client"],
+      },
+      {
+        title: "Calendar Planner",
+        url: "/calendar/planner",
+        icon: Icons.Calendar, // fallback to known working icon
+        items: [],
+        roles: ["admin"],
       },
       {
         title: "Profile",
         url: "/profile",
         icon: Icons.User,
         items: [],
+        roles: ["admin", "jobcoach", "client"],
       },
+      {
+        title: "Settings",
+        url: "/pages/settings",
+        icon: Icons.Alphabet, // fallback to working icon until confirmed
+        items: [],
+        roles: ["admin"],
+      },
+    ],
+  },
+  {
+    label: "DEVELOPMENT",
+    items: [
       {
         title: "Forms",
         icon: Icons.Alphabet,
@@ -40,10 +65,10 @@ export const NAV_DATA = [
             url: "/forms/form-layout",
           },
         ],
+        roles: ["admin"],
       },
       {
         title: "Tables",
-        url: "/tables",
         icon: Icons.Table,
         items: [
           {
@@ -51,31 +76,7 @@ export const NAV_DATA = [
             url: "/tables",
           },
         ],
-      },
-      {
-        title: "Pages",
-        icon: Icons.Alphabet,
-        items: [
-          {
-            title: "Settings",
-            url: "/pages/settings",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: "OTHERS",
-    items: [
-      {
-        title: "Charts",
-        icon: Icons.PieChart,
-        items: [
-          {
-            title: "Basic Chart",
-            url: "/charts/basic-chart",
-          },
-        ],
+        roles: ["admin"],
       },
       {
         title: "UI Elements",
@@ -90,16 +91,7 @@ export const NAV_DATA = [
             url: "/ui-elements/buttons",
           },
         ],
-      },
-      {
-        title: "Authentication",
-        icon: Icons.Authentication,
-        items: [
-          {
-            title: "Sign In",
-            url: "/auth/sign-in",
-          },
-        ],
+        roles: ["admin"],
       },
     ],
   },

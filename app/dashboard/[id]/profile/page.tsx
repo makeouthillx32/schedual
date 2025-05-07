@@ -28,13 +28,24 @@ export default function Page() {
       if (!res.ok) return;
       const user = await res.json();
 
+      let roleLabel = user.role;
+      try {
+        const roleRes = await fetch(`/api/profile/role-label?role_id=${user.role}`);
+        if (roleRes.ok) {
+          const roleData = await roleRes.json();
+          roleLabel = roleData.role || user.role;
+        }
+      } catch (error) {
+        console.error("Failed to fetch role label", error);
+      }
+
       setData({
         name: user.user_metadata.display_name,
         profilePhoto: user.avatar_url,
         coverPhoto: "/images/cover/cover-01.png",
         email: user.email,
         userId: user.id,
-        role: user.role,
+        role: roleLabel,
         emailConfirmed: !!user.email_confirmed_at,
         lastSignIn: user.last_sign_in_at,
         providers: user.app_metadata?.providers || [],
@@ -86,20 +97,20 @@ export default function Page() {
         </div>
 
         <div className="px-4 pb-6 text-center lg:pb-8 xl:pb-11.5">
-          <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-[176px] sm:p-3">
-            <div className="relative drop-shadow-2">
+          <div className="relative z-30 mx-auto -mt-22 h-[160px] w-[160px] rounded-full bg-white/20 p-1 backdrop-blur drop-shadow-2">
+            <div className="relative size-full overflow-hidden rounded-full">
               {data.profilePhoto && (
                 <>
                   <Image
                     src={data.profilePhoto}
                     width={160}
                     height={160}
-                    className="overflow-hidden rounded-full object-cover"
+                    className="object-cover rounded-full"
                     alt="profile"
                   />
                   <label
                     htmlFor="file-upload"
-                    className="absolute bottom-0 right-0 flex size-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
+                    className="absolute bottom-0 right-0 flex size-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90"
                   >
                     <input
                       id="file-upload"

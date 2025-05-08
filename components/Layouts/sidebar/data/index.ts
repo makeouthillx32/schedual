@@ -52,7 +52,7 @@ export const NAV_DATA = [
       {
         title: "Messages",
         url: "/chat",
-        icon: Icons.Send,
+        icon: Icons.Calendar,
         items: [],
         roles: ["admin", "jobcoach", "client"],
       },

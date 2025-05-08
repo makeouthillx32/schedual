@@ -10,18 +10,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing UUID or role" }, { status: 400 });
   }
 
-  // Lookup role ID based on the given role name
   const { data: roleRow, error: roleError } = await supabase
     .from("roles")
     .select("id")
     .eq("name", role)
-    .single();
+    .maybeSingle();
 
-  if (roleError || !roleRow) {
+  if (roleError || !roleRow?.id) {
     return NextResponse.json({ error: "Failed to fetch role ID" }, { status: 500 });
   }
 
-  // Update the profile with the corresponding role ID
   const { error: updateError } = await supabase
     .from("profiles")
     .update({ role: roleRow.id })

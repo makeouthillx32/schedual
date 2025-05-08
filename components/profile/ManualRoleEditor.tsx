@@ -13,23 +13,23 @@ export default function ManualRoleEditor() {
   const [roles, setRoles] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchAllUsers = async () => {
-      const res = await fetch("/api/get-all-users");
-      const data = await res.json();
-      if (res.ok) setUsers(data);
-    };
-    const fetchAllRoles = async () => {
-      const res = await fetch("/api/roles");
-      const data = await res.json();
-      if (res.ok) setRoles(data);
+    const fetchData = async () => {
+      const [userRes, roleRes] = await Promise.all([
+        fetch("/api/get-all-users"),
+        fetch("/api/profile/get-roles"),
+      ]);
+
+      const userData = await userRes.json();
+      const roleData = await roleRes.json();
+
+      if (userRes.ok) setUsers(userData);
+      if (roleRes.ok) setRoles(roleData);
     };
 
-    fetchAllUsers();
-    fetchAllRoles();
+    fetchData();
   }, []);
 
   const selectedUser = users.find((user) => user.id === uuid);
-  const selectedRole = roles.find((r) => r.id === roleId);
 
   const handleUpdateRole = async () => {
     if (!uuid || !roleId) return;
@@ -44,7 +44,7 @@ export default function ManualRoleEditor() {
 
     const result = await res.json();
     if (res.ok) {
-      setMessage(`✅ Role updated to '${selectedRole?.name}' for user ${selectedUser?.display_name}.`);
+      setMessage(`✅ Role updated to '${roleId}' for user ${selectedUser?.display_name}.`);
     } else {
       setMessage(`❌ ${result.error || "Failed to update role."}`);
     }
@@ -81,7 +81,7 @@ export default function ManualRoleEditor() {
         <option value="">Select a role</option>
         {roles.map((role) => (
           <option key={role.id} value={role.id}>
-            {role.name}
+            {role.role}
           </option>
         ))}
       </select>

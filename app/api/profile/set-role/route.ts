@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   const { data: roleData, error: roleError } = await supabase
     .from("roles")
     .select("id")
-    .eq("slug", role)
+    .eq("role", role) // map from dropdown "Admin", "Client", etc.
     .single();
 
   if (roleError || !roleData) {
@@ -31,5 +31,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ message: `Role updated to '${role}' for user ${uuid}` });
+  return NextResponse.json({ message: `Role updated to '${roleId}' for user ${uuid}` });
 }

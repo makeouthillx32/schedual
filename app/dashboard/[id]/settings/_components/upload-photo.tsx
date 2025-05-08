@@ -7,21 +7,20 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
 export function UploadPhotoForm() {
-  const [userId, setUserId] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       const res = await fetch("/api/profile");
       if (!res.ok) return;
-      const data = await res.json();
-      setUserId(data.id);
-      setAvatarUrl(data.avatar_url);
+      const user = await res.json();
+      setUserId(user.id);
+      setAvatarUrl(user.avatar_url);
     };
-
-    fetchProfile();
+    fetchData();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,9 +32,7 @@ export function UploadPhotoForm() {
 
     const filePath = `${userId}.png`;
     setUploading(true);
-
     await supabase.storage.from("avatars").remove([filePath]);
-
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, selectedFile, { upsert: true });
@@ -48,7 +45,6 @@ export function UploadPhotoForm() {
 
     const timestamp = Date.now();
     const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}?t=${timestamp}`;
-
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })
@@ -100,7 +96,7 @@ export function UploadPhotoForm() {
           type="file"
           name="profilePhoto"
           id="profilePhoto"
-          accept="image/png, image/jpg, image/jpeg"
+          accept="image/*"
           hidden
           onChange={handleFileChange}
           disabled={uploading}
@@ -119,7 +115,7 @@ export function UploadPhotoForm() {
           </p>
 
           <p className="mt-1 text-body-xs">
-            SVG, PNG, JPG or GIF (max, 800 X 800px)
+            PNG, JPG or GIF format supported.
           </p>
         </label>
       </div>

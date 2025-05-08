@@ -70,7 +70,7 @@ export default function ManualRoleEditor() {
         onChange={(e) => setRole(e.target.value)}
       >
         <option value="admin">Admin</option>
-        <option value="job_coach">Job Coach</option>
+        <option value="jobcoach">Job Coach</option> {/* FIXED */}
         <option value="client">Client</option>
         <option value="anonymous">Anonymous</option>
       </select>

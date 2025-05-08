@@ -10,31 +10,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing UUID or role" }, { status: 400 });
   }
 
-  // Lookup role_id from roles table using role name
-  const { data: roles, error: roleFetchError } = await supabase
+  // Lookup role_id from roles table
+  const { data: roleRow, error: roleError } = await supabase
     .from("roles")
-    .select("id, name");
+    .select("id")
+    .eq("name", role)
+    .single();
 
-  if (roleFetchError || !roles) {
-    return NextResponse.json({ error: "Failed to fetch roles" }, { status: 500 });
+  if (roleError || !roleRow) {
+    return NextResponse.json({ error: "Failed to fetch role ID" }, { status: 500 });
   }
 
-  const matchingRole = roles.find((r) => r.name === role);
-  if (!matchingRole) {
-    return NextResponse.json({ error: `Invalid role: '${role}'` }, { status: 400 });
-  }
-
-  // Update profile with the matched role_id
-  const { error } = await supabase
+  // Update user's role_id in the profiles table
+  const { error: updateError } = await supabase
     .from("profiles")
-    .update({ role_id: matchingRole.id })
+    .update({ role_id: roleRow.id })
     .eq("id", uuid);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  return NextResponse.json({
-    message: `Role updated to '${role}' for user ${uuid}`,
-  });
+  return NextResponse.json({ message: `Role updated to '${role}' for user ${uuid}` });
 }

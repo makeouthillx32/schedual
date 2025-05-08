@@ -1,21 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UploadIcon } from "@/assets/icons";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
-export function UploadPhotoForm({ userId }: { userId: string }) {
+export function UploadPhotoForm() {
+  const [userId, setUserId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const res = await fetch("/api/profile");
+      if (!res.ok) return;
+      const user = await res.json();
+      setUserId(user.id);
+    };
+    fetchUser();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(e.target.files?.[0] || null);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !userId) return;
     const filePath = `${userId}.png`;
     setUploading(true);
     await supabase.storage.from("avatars").remove([filePath]);
@@ -45,6 +56,8 @@ export function UploadPhotoForm({ userId }: { userId: string }) {
       location.reload();
     }
   };
+
+  if (!userId) return null;
 
   return (
     <ShowcaseSection title="Your Photo" className="!p-7">

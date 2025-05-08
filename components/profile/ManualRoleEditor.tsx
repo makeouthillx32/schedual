@@ -72,7 +72,7 @@ export default function ManualRoleEditor() {
         <option value="admin">Admin</option>
         <option value="jobcoach">Job Coach</option> {/* FIXED */}
         <option value="client">Client</option>
-        <option value="anonymous">Anonymous</option>
+        <option value="user">User</option>
       </select>
 
       <Button onClick={handleUpdateRole} disabled={loading} className="w-full">

@@ -1,3 +1,5 @@
+"use client";
+
 import * as Icons from "../icons";
 
 export const NAV_DATA = [
@@ -29,7 +31,7 @@ export const NAV_DATA = [
       {
         title: "Calendar Planner",
         url: "/calendar/planner",
-        icon: Icons.Calendar, // fallback to known working icon
+        icon: Icons.Calendar,
         items: [],
         roles: ["admin"],
       },
@@ -43,9 +45,16 @@ export const NAV_DATA = [
       {
         title: "Settings",
         url: "/pages/settings",
-        icon: Icons.Alphabet, // fallback to working icon until confirmed
+        icon: Icons.Alphabet,
         items: [],
         roles: ["admin"],
+      },
+      {
+        title: "Messages",
+        url: "/chat",
+        icon: Icons.Send,
+        items: [],
+        roles: ["admin", "jobcoach", "client"],
       },
     ],
   },

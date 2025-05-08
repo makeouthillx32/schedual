@@ -27,8 +27,8 @@ export function Header() {
         <Link href={"/"} className="ml-2 max-[430px]:hidden min-[375px]:ml-4">
           <Image
             src={"/images/logo/logo-icon.svg"}
-            width={32}
-            height={32}
+            width={50}
+            height={50}
             alt=""
             role="presentation"
           />

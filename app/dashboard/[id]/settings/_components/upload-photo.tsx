@@ -6,41 +6,32 @@ import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
-export function UploadPhotoForm() {
+export function UploadPhotoForm({ userId }: { userId: string }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchUserAvatar = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+    const fetchAvatar = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", userId)
+        .single();
 
-      if (user && user.id) {
-        setUserId(user.id);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("avatar_url")
-          .eq("id", user.id)
-          .single();
-
-        if (!error && data?.avatar_url) {
-          setAvatarUrl(data.avatar_url);
-        }
+      if (!error && data?.avatar_url) {
+        setAvatarUrl(data.avatar_url);
       }
     };
-    fetchUserAvatar();
-  }, []);
+    fetchAvatar();
+  }, [userId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(e.target.files?.[0] || null);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !userId) return;
+    if (!selectedFile) return;
     const filePath = `${userId}.png`;
     setUploading(true);
     await supabase.storage.from("avatars").remove([filePath]);
@@ -74,16 +65,14 @@ export function UploadPhotoForm() {
   return (
     <ShowcaseSection title="Your Photo" className="!p-7">
       <div className="mb-4 flex items-center gap-3">
-        {avatarUrl && (
-          <Image
-            src={avatarUrl}
-            width={55}
-            height={55}
-            alt="User"
-            className="size-14 rounded-full object-cover"
-            quality={90}
-          />
-        )}
+        <Image
+          src={avatarUrl || "/images/user/user-03.png"}
+          width={55}
+          height={55}
+          alt="User"
+          className="size-14 rounded-full object-cover"
+          quality={90}
+        />
 
         <div>
           <span className="mb-1.5 font-medium text-dark dark:text-white">
@@ -97,6 +86,7 @@ export function UploadPhotoForm() {
               type="button"
               onClick={handleUpload}
               className="text-body-sm hover:text-primary"
+              disabled={uploading || !selectedFile}
             >
               {uploading ? "Uploading..." : "Update"}
             </button>
@@ -132,6 +122,18 @@ export function UploadPhotoForm() {
           </p>
         </label>
       </div>
+
+      {selectedFile && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleUpload}
+            disabled={uploading}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            {uploading ? "Uploading..." : "Upload"}
+          </button>
+        </div>
+      )}
     </ShowcaseSection>
   );
 }

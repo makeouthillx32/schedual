@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { UploadIcon } from "@/assets/icons";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
@@ -13,22 +13,26 @@ export function UploadPhotoForm() {
   const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (!error && user) {
+    const fetchUserAvatar = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (user && user.id) {
         setUserId(user.id);
-        const { data, error: profileError } = await supabase
+        const { data, error } = await supabase
           .from("profiles")
           .select("avatar_url")
           .eq("id", user.id)
           .single();
 
-        if (!profileError && data?.avatar_url) {
+        if (!error && data?.avatar_url) {
           setAvatarUrl(data.avatar_url);
         }
       }
     };
-    fetchProfile();
+    fetchUserAvatar();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +67,7 @@ export function UploadPhotoForm() {
       alert("Upload succeeded, but profile update failed: " + updateError.message);
     } else {
       alert("Avatar uploaded and profile updated!");
-      setAvatarUrl(publicUrl);
+      location.reload();
     }
   };
 

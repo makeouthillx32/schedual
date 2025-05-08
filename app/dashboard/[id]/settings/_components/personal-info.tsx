@@ -1,14 +1,37 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   CallIcon,
   EmailIcon,
-  PencilSquareIcon,
   UserIcon,
 } from "@/assets/icons";
 import InputGroup from "@/components/FormElements/InputGroup";
-import { TextAreaGroup } from "@/components/FormElements/InputGroup/text-area";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 
 export function PersonalInfoForm() {
+  const [profile, setProfile] = useState({
+    display_name: "",
+    phone: "",
+    email: "",
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const res = await fetch("/api/profile");
+      if (!res.ok) return;
+      const user = await res.json();
+
+      setProfile({
+        display_name: user.user_metadata?.display_name || "",
+        phone: user.phone || "",
+        email: user.email || "",
+      });
+    };
+
+    fetchProfile();
+  }, []);
+
   return (
     <ShowcaseSection title="Personal Information" className="!p-7">
       <form>
@@ -16,10 +39,10 @@ export function PersonalInfoForm() {
           <InputGroup
             className="w-full sm:w-1/2"
             type="text"
-            name="fullName"
-            label="Full Name"
-            placeholder="David Jhon"
-            defaultValue="David Jhon"
+            name="displayName"
+            label="Display Name"
+            placeholder="Username"
+            defaultValue={profile.display_name}
             icon={<UserIcon />}
             iconPosition="left"
             height="sm"
@@ -31,7 +54,7 @@ export function PersonalInfoForm() {
             name="phoneNumber"
             label="Phone Number"
             placeholder="+990 3343 7865"
-            defaultValue={"+990 3343 7865"}
+            defaultValue={profile.phone}
             icon={<CallIcon />}
             iconPosition="left"
             height="sm"
@@ -43,31 +66,11 @@ export function PersonalInfoForm() {
           type="email"
           name="email"
           label="Email Address"
-          placeholder="devidjond45@gmail.com"
-          defaultValue="devidjond45@gmail.com"
+          placeholder="example@email.com"
+          defaultValue={profile.email}
           icon={<EmailIcon />}
           iconPosition="left"
           height="sm"
-        />
-
-        <InputGroup
-          className="mb-5.5"
-          type="text"
-          name="username"
-          label="Username"
-          placeholder="devidjhon24"
-          defaultValue="devidjhon24"
-          icon={<UserIcon />}
-          iconPosition="left"
-          height="sm"
-        />
-
-        <TextAreaGroup
-          className="mb-5.5"
-          label="BIO"
-          placeholder="Write your bio here"
-          icon={<PencilSquareIcon />}
-          defaultValue="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam lacinia turpis tortor, consequat efficitur mi congue a. Curabitur cursus, ipsum ut lobortis sodales, enim arcu pellentesque lectus ac suscipit diam sem a felis. Cras sapien ex, blandit eu dui et suscipit gravida nunc. Sed sed est quis dui."
         />
 
         <div className="flex justify-end gap-3">

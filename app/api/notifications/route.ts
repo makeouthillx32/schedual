@@ -36,15 +36,21 @@ export async function GET() {
     return NextResponse.json({ error: "Unknown role" }, { status: 403 });
   }
 
-  const { data: notifications, error } = await supabase
+  const { data: roleNotifications, error: roleError } = await supabase
     .from("notifications")
     .select("title, subtitle, image_url, action_url")
-    .or(`receiver_id.eq.${user.id},${roleColumn}.is.true`)
-    .order("created_at", { ascending: false });
+    .filter(roleColumn, "is", true);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: directNotifications, error: directError } = await supabase
+    .from("notifications")
+    .select("title, subtitle, image_url, action_url")
+    .eq("receiver_id", user.id);
+
+  if (roleError || directError) {
+    return NextResponse.json({ error: "Notification query failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ notifications });
+  const combined = [...(roleNotifications || []), ...(directNotifications || [])];
+
+  return NextResponse.json({ notifications: combined });
 }

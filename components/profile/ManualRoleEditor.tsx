@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 
 export default function ManualRoleEditor() {
   const [uuid, setUuid] = useState("");
-  const [role, setRole] = useState("client");
+  const [roleId, setRoleId] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
-  const [roles, setRoles] = useState<{ name: string; id: string }[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -18,33 +18,33 @@ export default function ManualRoleEditor() {
       const data = await res.json();
       if (res.ok) setUsers(data);
     };
-
-    const fetchRoles = async () => {
-      const res = await fetch("/api/profile/roles");
+    const fetchAllRoles = async () => {
+      const res = await fetch("/api/roles");
       const data = await res.json();
-      if (res.ok) setRoles(data.roles);
+      if (res.ok) setRoles(data);
     };
 
     fetchAllUsers();
-    fetchRoles();
+    fetchAllRoles();
   }, []);
 
   const selectedUser = users.find((user) => user.id === uuid);
+  const selectedRole = roles.find((r) => r.id === roleId);
 
   const handleUpdateRole = async () => {
-    if (!uuid || !role) return;
+    if (!uuid || !roleId) return;
     setLoading(true);
     setMessage(null);
 
     const res = await fetch("/api/profile/set-role", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uuid, role }),
+      body: JSON.stringify({ uuid, roleId }),
     });
 
     const result = await res.json();
     if (res.ok) {
-      setMessage(`✅ Role updated to '${role}' for user ${selectedUser?.display_name}.`);
+      setMessage(`✅ Role updated to '${selectedRole?.name}' for user ${selectedUser?.display_name}.`);
     } else {
       setMessage(`❌ ${result.error || "Failed to update role."}`);
     }
@@ -75,12 +75,13 @@ export default function ManualRoleEditor() {
       <select
         id="role"
         className="w-full mb-4 p-2 rounded border bg-white dark:bg-zinc-700 text-black dark:text-white"
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
+        value={roleId}
+        onChange={(e) => setRoleId(e.target.value)}
       >
-        {roles.map((r) => (
-          <option key={r.id} value={r.name}>
-            {r.name}
+        <option value="">Select a role</option>
+        {roles.map((role) => (
+          <option key={role.id} value={role.id}>
+            {role.name}
           </option>
         ))}
       </select>

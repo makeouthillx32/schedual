@@ -10,6 +10,7 @@ export default function ManualRoleEditor() {
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<{ name: string; id: string }[]>([]);
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -17,7 +18,15 @@ export default function ManualRoleEditor() {
       const data = await res.json();
       if (res.ok) setUsers(data);
     };
+
+    const fetchRoles = async () => {
+      const res = await fetch("/api/profile/roles");
+      const data = await res.json();
+      if (res.ok) setRoles(data.roles);
+    };
+
     fetchAllUsers();
+    fetchRoles();
   }, []);
 
   const selectedUser = users.find((user) => user.id === uuid);
@@ -69,10 +78,11 @@ export default function ManualRoleEditor() {
         value={role}
         onChange={(e) => setRole(e.target.value)}
       >
-        <option value="admin">Admin</option>
-        <option value="job_coach">Job Coach</option>
-        <option value="client">Client</option>
-        <option value="anonymous">Anonymous</option>
+        {roles.map((r) => (
+          <option key={r.id} value={r.name}>
+            {r.name}
+          </option>
+        ))}
       </select>
 
       <Button onClick={handleUpdateRole} disabled={loading} className="w-full">

@@ -6,35 +6,36 @@ import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
-export function UploadPhotoForm({ userId }: { userId: string }) {
+export function UploadPhotoForm() {
+  const [userId, setUserId] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   useEffect(() => {
-    const fetchAvatar = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", userId)
-        .single();
-
-      if (!error && data?.avatar_url) {
-        setAvatarUrl(data.avatar_url);
-      }
+    const fetchProfile = async () => {
+      const res = await fetch("/api/profile");
+      if (!res.ok) return;
+      const data = await res.json();
+      setUserId(data.id);
+      setAvatarUrl(data.avatar_url);
     };
-    fetchAvatar();
-  }, [userId]);
+
+    fetchProfile();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFile(e.target.files?.[0] || null);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !userId) return;
+
     const filePath = `${userId}.png`;
     setUploading(true);
+
     await supabase.storage.from("avatars").remove([filePath]);
+
     const { error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, selectedFile, { upsert: true });
@@ -47,6 +48,7 @@ export function UploadPhotoForm({ userId }: { userId: string }) {
 
     const timestamp = Date.now();
     const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}?t=${timestamp}`;
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })
@@ -86,7 +88,6 @@ export function UploadPhotoForm({ userId }: { userId: string }) {
               type="button"
               onClick={handleUpload}
               className="text-body-sm hover:text-primary"
-              disabled={uploading || !selectedFile}
             >
               {uploading ? "Uploading..." : "Update"}
             </button>
@@ -122,18 +123,6 @@ export function UploadPhotoForm({ userId }: { userId: string }) {
           </p>
         </label>
       </div>
-
-      {selectedFile && (
-        <div className="flex justify-end">
-          <button
-            onClick={handleUpload}
-            disabled={uploading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
-      )}
     </ShowcaseSection>
   );
 }

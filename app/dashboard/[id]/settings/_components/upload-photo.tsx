@@ -1,24 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { UploadIcon } from "@/assets/icons";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 
 export function UploadPhotoForm() {
-  const [userId, setUserId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const res = await fetch("/api/profile");
-      if (!res.ok) return;
-      const user = await res.json();
-      setUserId(user.id);
+    const fetchProfile = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (!error && user) {
+        setUserId(user.id);
+        const { data, error: profileError } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("id", user.id)
+          .single();
+
+        if (!profileError && data?.avatar_url) {
+          setAvatarUrl(data.avatar_url);
+        }
+      }
     };
-    fetchUser();
+    fetchProfile();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,23 +63,23 @@ export function UploadPhotoForm() {
       alert("Upload succeeded, but profile update failed: " + updateError.message);
     } else {
       alert("Avatar uploaded and profile updated!");
-      location.reload();
+      setAvatarUrl(publicUrl);
     }
   };
-
-  if (!userId) return null;
 
   return (
     <ShowcaseSection title="Your Photo" className="!p-7">
       <div className="mb-4 flex items-center gap-3">
-        <Image
-          src="/images/user/user-03.png"
-          width={55}
-          height={55}
-          alt="User"
-          className="size-14 rounded-full object-cover"
-          quality={90}
-        />
+        {avatarUrl && (
+          <Image
+            src={avatarUrl}
+            width={55}
+            height={55}
+            alt="User"
+            className="size-14 rounded-full object-cover"
+            quality={90}
+          />
+        )}
 
         <div>
           <span className="mb-1.5 font-medium text-dark dark:text-white">

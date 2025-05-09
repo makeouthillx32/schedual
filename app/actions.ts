@@ -41,7 +41,10 @@ export const signUpAction = async (formData: FormData) => {
     if (!inviteError && inviteData?.role_id) {
       await supabase
         .from("profiles")
-        .update({ role: inviteData.role_id })
+        .update({ 
+          role: inviteData.role_id,
+          avatar_url: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png" 
+        })
         .eq("id", data.user.id);
   
       // ✅ Here you DELETE the invite after use
@@ -61,7 +64,10 @@ export const signUpAction = async (formData: FormData) => {
     if (!roleError && roleData?.id) {
       await supabase
         .from("profiles")
-        .update({ role: roleData.id })
+        .update({ 
+          role: roleData.id,
+          avatar_url: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png"
+        })
         .eq("id", data.user.id);
     }
   }

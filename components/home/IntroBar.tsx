@@ -18,10 +18,10 @@ const labels: Record<string, string> = {
   "early-childhood": "Early Childhood Services",
   "supported-living": "Supported Living Services",
   artists: "Artists on the Edge",
-  AutismDayCamp: "Autism Day Camp",               // <-- changed key
+  "autism-day-camp": "Autism Day Camp",
   employment: "Employment Services",
   business: "Business Services",
-  commercial: "Commercial Cleaning Services",       // <-- changed key
+  commercial: "Commercial Cleaning Services",
   pickup: "Donation Pick‑Up",
   donate: "Donate Now",
   involved: "Get Involved",
@@ -29,7 +29,7 @@ const labels: Record<string, string> = {
   carf: "CARF Accreditation",
   thriftstore: "DART Thrift Store",
   shredding: "Secure Document Shredding",
-  // add any other pages here...
+  // any other pages...
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {

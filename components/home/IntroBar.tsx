@@ -7,7 +7,6 @@ interface IntroBarProps {
 }
 
 const labels: Record<string, string> = {
-  home: "Welcome",
   about: "About Us",
   board: "Board of Directors",
   title9: "Title 9 Information",
@@ -29,10 +28,12 @@ const labels: Record<string, string> = {
   carf: "CARF Accreditation",
   thriftstore: "DART Thrift Store",
   shredding: "Secure Document Shredding",
-  // any other pages...
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
+  // no bar on the home page
+  if (currentPage === "home") return null;
+
   const label = labels[currentPage];
   if (!label) return null;
 

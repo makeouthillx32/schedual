@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import styles from "./IntroBar.module.scss";
+import styles from "@/components/home/_components/IntroBar.module.scss";
 
 interface IntroBarProps {
   currentPage: string;

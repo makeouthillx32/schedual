@@ -1,35 +1,45 @@
 "use client";
 
+import React from "react";
+
 interface IntroBarProps {
   currentPage: string;
 }
 
 const labels: Record<string, string> = {
+  home: "Welcome",
   about: "About Us",
   board: "Board of Directors",
   title9: "Title 9 Information",
-  action: "Autism Day Camp",
+  careers: "Careers",                          // added
   jobs: "Jobs",
-  transportation: "Transportation",
-  earlychildhood: "Early Childhood Services",
-  supportedliving: "Supported Living Services",
-  artists: "Artists on the Edge",
-  employment: "Employment Services",
-  carf: "Commission for the Accreditation of Rehabilitation Facilities",
-  thrift: "DART Thrift Store",
-  shredding: "Secure Document Shredding",
   programs: "Programs & Services",
+  transportation: "Transportation",
+  "early-childhood": "Early Childhood Services",  // dash-version
+  "supported-living": "Supported Living Services",// dash-version
+  artists: "Artists on the Edge",
+  "autism-day-camp": "Autism Day Camp",        // dash-version
+  employment: "Employment Services",
   business: "Business Services",
+  cms: "Commercial Cleaning Services",         // CMS page
+  pickup: "Donation Pick‑Up",                  // Pick‑Up page
+  donate: "Donate Now",                        // Give/Donate page
   involved: "Get Involved",
   learn: "Learn & Connect",
+  carf: "CARF Accreditation",
+  thriftstore: "DART Thrift Store",
+  shredding: "Secure Document Shredding",
+  // (add any other keys from your navTree here)
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-  if (!labels[currentPage]) return null;
+  const label = labels[currentPage];
+  if (!label) return null;
+
   return (
     <div className="bg-blue-500 h-12 md:h-16 flex items-center justify-center">
-      <div className="intro-bar-text text-white text-xl md:text-2xl font-semibold">
-        {labels[currentPage]}
+      <div className="text-white text-xl md:text-2xl font-semibold">
+        {label}
       </div>
     </div>
   );

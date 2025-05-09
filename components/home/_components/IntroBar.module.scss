@@ -1,7 +1,7 @@
-/* components/IntroBar.module.scss */
+/* components/home/_components/IntroBar.module.scss */
 
-$ ribbon-color: #2563eb;    /* your blue-500 */
-$ text-color:    #fff;
+$ribbon-color: #2563eb;    /* your blue-500 */
+$text-color:    #fff;
 
 .ribbonContainer {
   position: relative;
@@ -19,7 +19,7 @@ $ text-color:    #fff;
   font-weight: 600;
   line-height: 1;
   
-  /* create the left “tail” */
+  /* create the left & right “tails” */
   &::before,
   &::after {
     content: '';
@@ -38,6 +38,6 @@ $ text-color:    #fff;
     border-left: 1.5rem solid $ribbon-color;
   }
   
-  /* optional shadow to lift it off the page */
+  /* optional shadow */
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }

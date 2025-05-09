@@ -50,7 +50,22 @@ export const signUpAction = async (formData: FormData) => {
         .delete()
         .eq("code", inviteCode);
     }
+  } else {
+    // If no invite code, fetch and assign default user role from roles table
+    const { data: roleData, error: roleError } = await supabase
+      .from("roles")
+      .select("id")
+      .eq("role", "user")
+      .maybeSingle();
+    
+    if (!roleError && roleData?.id) {
+      await supabase
+        .from("profiles")
+        .update({ role: roleData.id })
+        .eq("id", data.user.id);
+    }
   }
+  
   return encodedRedirect(
     "success",
     "/sign-up",

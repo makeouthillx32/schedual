@@ -7,23 +7,29 @@ interface IntroBarProps {
 }
 
 const labels: Record<string, string> = {
+  home: "Welcome",
   about: "About Us",
   board: "Board of Directors",
   title9: "Title 9 Information",
-  action: "Autism Day Camp",
+  careers: "Careers",
   jobs: "Jobs",
-  transportation: "Transportation",
-  earlychildhood: "Early Childhood Services",
-  supportedliving: "Supported Living Services",
-  artists: "Artists on the Edge",
-  employment: "Employment Services",
-  carf: "Commission for the Accreditation of Rehabilitation Facilities",
-  thrift: "DART Thrift Store",
-  shredding: "Secure Document Shredding",
   programs: "Programs & Services",
+  transportation: "Transportation",
+  "early-childhood": "Early Childhood Services",
+  "supported-living": "Supported Living Services",
+  artists: "Artists on the Edge",
+  AutismDayCamp: "Autism Day Camp",               // <-- changed key
+  employment: "Employment Services",
   business: "Business Services",
+  commercial: "Commercial Cleaning Services",       // <-- changed key
+  pickup: "Donation Pick‑Up",
+  donate: "Donate Now",
   involved: "Get Involved",
   learn: "Learn & Connect",
+  carf: "CARF Accreditation",
+  thriftstore: "DART Thrift Store",
+  shredding: "Secure Document Shredding",
+  // add any other pages here...
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {

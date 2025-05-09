@@ -1,8 +1,6 @@
-// components/home/IntroBar.tsx
 "use client";
 
 import React from "react";
-// correct relative path into your _components folder
 import styles from "./_components/IntroBar.module.scss";
 
 interface IntroBarProps {
@@ -10,31 +8,31 @@ interface IntroBarProps {
 }
 
 const labels: Record<string, string> = {
-  about:            "About Us",
-  board:            "Board of Directors",
-  title9:           "Title 9 Information",
-  careers:          "Careers",
-  jobs:             "Jobs",
-  programs:         "Programs & Services",
-  transportation:   "Transportation",
-  employment:       "Employment Services",
-  "early-childhood":"Early Childhood Services",
-  autismdaycamp:    "Autism Day Camp",
-  artists:          "Artists Guild",
+  about:             "About Us",
+  board:             "Board of Directors",
+  title9:            "Title 9 Information",
+  careers:           "Careers",
+  jobs:              "Jobs",
+  programs:          "Programs & Services",
+  transportation:    "Transportation",
+  employment:        "Employment Services",
+  "early-childhood": "Early Childhood Services",
+  autismdaycamp:     "Autism Day Camp",
+  artists:           "Artists Guild",
   "supported-living":"Supported Living Services",
-  business:         "Business Services",
-  commercial:       "Commercial Services",
-  pickup:           "Donations & Pick‑Up",
-  donate:           "Donate Now",
-  involved:         "Get Involved",
-  learn:            "Learn & Connect",
-  carf:             "CARF Accreditation",
-  thriftstore:      "DART Thrift Store",
-  shredding:        "Secure Document Shredding",
+  business:          "Business Services",
+  commercial:        "Commercial Services",
+  pickup:            "Donations & Pick‑Up",
+  donate:            "Donate Now",
+  involved:          "Get Involved",
+  learn:             "Learn & Connect",
+  carf:              "CARF Accreditation",
+  thriftstore:       "DART Thrift Store",
+  shredding:         "Secure Document Shredding",
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-  // no ribbon on home
+  // never render on the home page
   if (currentPage === "home") return null;
 
   const label = labels[currentPage as keyof typeof labels];
@@ -42,9 +40,9 @@ const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
 
   return (
     <div className={styles.ribbonContainer}>
-      <div className={styles.ribbon}>
-        {label}
-      </div>
+      <h2 className={styles.ribbon}>
+        <span className={styles.content}>{label}</span>
+      </h2>
     </div>
   );
 };

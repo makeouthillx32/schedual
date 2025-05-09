@@ -7,34 +7,35 @@ interface IntroBarProps {
 }
 
 const labels: Record<string, string> = {
-  about: "About Us",
-  board: "Board of Directors",
-  title9: "Title 9 Information",
-  careers: "Careers",
-  jobs: "Jobs",
-  programs: "Programs & Services",
-  transportation: "Transportation",
-  "early-childhood": "Early Childhood Services",
-  "supported-living": "Supported Living Services",
-  artists: "Artists on the Edge",
-  "autism-day-camp": "Autism Day Camp",
-  employment: "Employment Services",
-  business: "Business Services",
-  commercial: "Commercial Cleaning Services",
-  pickup: "Donation Pick‑Up",
-  donate: "Donate Now",
-  involved: "Get Involved",
-  learn: "Learn & Connect",
-  carf: "CARF Accreditation",
-  thriftstore: "DART Thrift Store",
-  shredding: "Secure Document Shredding",
+  about:            "About Us",
+  board:            "Board of Directors",
+  title9:           "Title 9 Information",
+  careers:          "Careers",
+  jobs:             "Jobs",
+  programs:         "Programs & Services",
+  transportation:   "Transportation",
+  employment:       "Employment Services",
+  "early-childhood":"Early Childhood Services",
+  "autism-day-camp":"Autism Day Camp",
+  artists:          "Artists Guild",
+  "supported-living":"Supported Living Services",
+  business:         "Business Services",
+  commercial:       "Commercial Services",
+  pickup:           "Donations & Pick‑Up",
+  donate:           "Donate Now",
+  involved:         "Get Involved",
+  learn:            "Learn & Connect",
+  carf:             "CARF Accreditation",
+  thriftstore:      "DART Thrift Store",
+  shredding:        "Secure Document Shredding",
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-  // no bar on the home page
+  // never render on home
   if (currentPage === "home") return null;
 
   const label = labels[currentPage];
+  // if we don't have a mapping, bail out
   if (!label) return null;
 
   return (

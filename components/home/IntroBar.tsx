@@ -1,3 +1,4 @@
+// components/IntroBar.tsx
 "use client";
 
 import React from "react";
@@ -15,27 +16,26 @@ const labels: Record<string, string> = {
   programs:         "Programs & Services",
   transportation:   "Transportation",
   employment:       "Employment Services",
-  "early-childhood":"Early Childhood Services",
-  "autism-day-camp":"Autism Day Camp",
+  "early-childhood": "Early Childhood Services",
+  autismdaycamp:    "Autism Day Camp",      // ← single key for your camp page
   artists:          "Artists Guild",
   "supported-living":"Supported Living Services",
   business:         "Business Services",
   commercial:       "Commercial Services",
-  pickup:           "Donations & Pick‑Up",
+  pickup:           "Donations & Pick‑Up",
   donate:           "Donate Now",
   involved:         "Get Involved",
-  learn:            "Learn & Connect",
+  learn:            "Learn & Connect",
   carf:             "CARF Accreditation",
   thriftstore:      "DART Thrift Store",
   shredding:        "Secure Document Shredding",
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-  // never render on home
+  // never render on the home page
   if (currentPage === "home") return null;
 
-  const label = labels[currentPage];
-  // if we don't have a mapping, bail out
+  const label = labels[currentPage as keyof typeof labels];
   if (!label) return null;
 
   return (

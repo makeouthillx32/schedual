@@ -11,25 +11,25 @@ const labels: Record<string, string> = {
   about: "About Us",
   board: "Board of Directors",
   title9: "Title 9 Information",
-  careers: "Careers",                          // added
+  careers: "Careers",
   jobs: "Jobs",
   programs: "Programs & Services",
   transportation: "Transportation",
-  "early-childhood": "Early Childhood Services",  // dash-version
-  "supported-living": "Supported Living Services",// dash-version
+  "early-childhood": "Early Childhood Services",
+  "supported-living": "Supported Living Services",
   artists: "Artists on the Edge",
-  "autism-day-camp": "Autism Day Camp",        // dash-version
+  AutismDayCamp: "Autism Day Camp",               // <-- changed key
   employment: "Employment Services",
   business: "Business Services",
-  cms: "Commercial Cleaning Services",         // CMS page
-  pickup: "Donation Pick‑Up",                  // Pick‑Up page
-  donate: "Donate Now",                        // Give/Donate page
+  CMSPage: "Commercial Cleaning Services",       // <-- changed key
+  pickup: "Donation Pick‑Up",
+  donate: "Donate Now",
   involved: "Get Involved",
   learn: "Learn & Connect",
   carf: "CARF Accreditation",
   thriftstore: "DART Thrift Store",
   shredding: "Secure Document Shredding",
-  // (add any other keys from your navTree here)
+  // add any other pages here...
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {

@@ -169,7 +169,7 @@ export const resetPasswordAction = async (formData: FormData) => {
 };
 
 //--------------------------------------------------------------
-// SIGN‑OUT ACTION (unchanged)
+// SIGN‑OUT ACTION (unchanged)hcghc
 //--------------------------------------------------------------
 export const signOutAction = async () => {
   const supabase = await createClient();

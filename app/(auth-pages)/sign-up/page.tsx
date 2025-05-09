@@ -1,3 +1,4 @@
+
 // app/actions.ts – full restored file with notification support
 
 "use server";
@@ -58,7 +59,7 @@ export const signUpAction = async (formData: FormData): Promise<void> => {
     }
   }
 
-  // 👉 If NO invite we set the default “anonymous / user” role (user0x)
+  // 👉 If NO invite we set the default “anonymous uuuuu/ user” role (user0x)
   if (!assignedRoleId) {
     assignedRoleId = "user0x"; // default role ID for vanilla sign‑ups
     await supabase.from("profiles").update({ role: assignedRoleId }).eq("id", userId);

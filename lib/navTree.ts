@@ -20,7 +20,7 @@ export const navTree = [
       { key: "transportation",   label: "Transportation",      href: "/#transportation" },
       { key: "employment",       label: "Employment Services", href: "/#employment" },
       { key: "early-childhood",  label: "Early Childhood",     href: "/#early-childhood" },
-      { key: "autism-day-camp",  label: "Autism Day Camp",     href: "/#autism-day-camp" },
+      { key: "autism-day-camp",  label: "Autism Day Camp",     href: "/#autismdaycamp" },
       { key: "artists",          label: "Artists Guild",       href: "/#artists" },
       { key: "supported-living", label: "Supported Living",    href: "/#supported-living" },
     ],

@@ -1,7 +1,9 @@
-// components/IntroBar.tsx
+// components/home/IntroBar.tsx
 "use client";
 
 import React from "react";
+// correct relative path into your _components folder
+import styles from "./_components/IntroBar.module.scss";
 
 interface IntroBarProps {
   currentPage: string;
@@ -16,8 +18,8 @@ const labels: Record<string, string> = {
   programs:         "Programs & Services",
   transportation:   "Transportation",
   employment:       "Employment Services",
-  "early-childhood": "Early Childhood Services",
-  autismdaycamp:    "Autism Day Camp",      // ← single key for your camp page
+  "early-childhood":"Early Childhood Services",
+  autismdaycamp:    "Autism Day Camp",
   artists:          "Artists Guild",
   "supported-living":"Supported Living Services",
   business:         "Business Services",
@@ -32,15 +34,15 @@ const labels: Record<string, string> = {
 };
 
 const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
-  // never render on the home page
+  // no ribbon on home
   if (currentPage === "home") return null;
 
   const label = labels[currentPage as keyof typeof labels];
   if (!label) return null;
 
   return (
-    <div className="bg-blue-500 h-12 md:h-16 flex items-center justify-center">
-      <div className="text-white text-xl md:text-2xl font-semibold">
+    <div className={styles.ribbonContainer}>
+      <div className={styles.ribbon}>
         {label}
       </div>
     </div>

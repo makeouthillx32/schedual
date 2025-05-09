@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { encodedRedirect } from "@/utils/utils";
 import { cookies } from "next/headers";
+import { sendNotification } from "@/lib/notifications";
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -70,6 +71,25 @@ export const signUpAction = async (formData: FormData) => {
         })
         .eq("id", data.user.id);
     }
+  }
+  
+  // Fetch the user's profile to get display_name for notification
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", data.user.id)
+    .single();
+
+  // Send notification to admins about the new sign-up
+  try {
+    await sendNotification({
+      title: `${profileData?.display_name || email} joined the team!`,
+      subtitle: "Tell them welcome!",
+      imageUrl: profileData?.avatar_url || "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
+      role_admin: true,
+    });
+  } catch (error) {
+    console.error("Failed to send notification:", error);
   }
   
   return encodedRedirect(

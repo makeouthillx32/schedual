@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import "@/app/globals.css";
+import "@/app/globals.scss";
 
 interface CareersPageProps {
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;

@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/home/Header";
-import IntroBar from "@/components/home/IntroBar";
+import SectionPanel from "@/components/home/SectionPanel";
 import MainContent from "@/components/home/MainContent";
 import Footer from "@/components/home/Footer";
 import useThemeCookie from "@/lib/useThemeCookie";
 
 export default function Home() {
+  // Persist theme (light/dark) from cookie on first render
   useThemeCookie();
 
+  // Map hashes → canonical section IDs
   const sectionId: Record<string, string> = {
     home: "home",
     about: "about",
@@ -35,35 +37,37 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState<string>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Enhanced goTo: if hash contains subpath, navigate to sub; scroll to sub or base
-  const goTo = useCallback((hash: string) => {
-    const [base, sub] = hash.split("/");
-    const pageKey = sub && sectionId[sub] ? sub : base;
-    const target = sectionId[pageKey] ?? pageKey;
-    setCurrentPage(target);
+  // Navigate to hash and smooth‑scroll there
+  const goTo = useCallback(
+    (hash: string) => {
+      const [base, sub] = hash.split("/");
+      const pageKey = sub && sectionId[sub] ? sub : base;
+      const target = sectionId[pageKey] ?? pageKey;
+      setCurrentPage(target);
 
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const scrollToId = sub || target;
-        const el = document.getElementById(scrollToId);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-          document.documentElement.scrollIntoView({ behavior: "smooth" });
-        }
-      }, 10);
-    });
-  }, [sectionId]);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const scrollToId = sub || target;
+          const el = document.getElementById(scrollToId);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else {
+            document.documentElement.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 10);
+      });
+    },
+    [sectionId]
+  );
 
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    // Allow composite hashes for nested routes
-    const newHash = `#${page}`;
-    history.pushState(null, "", newHash);
+    history.pushState(null, "", `#${page}`);
     goTo(page);
     setMobileMenuOpen(false);
   };
 
+  // Sync on first load + hash changes
   useEffect(() => {
     const sync = () => goTo(location.hash.replace("#", "") || "home");
     sync();
@@ -80,10 +84,11 @@ export default function Home() {
         navigateTo={navigateTo}
       />
 
-      <IntroBar currentPage={currentPage} />
-
+      {/* Ribbon + card wrapper */}
       <main className="flex-grow">
-        <MainContent currentPage={currentPage} navigateTo={navigateTo} />
+        <SectionPanel currentPage={currentPage}>
+          <MainContent currentPage={currentPage} navigateTo={navigateTo} />
+        </SectionPanel>
       </main>
 
       <Footer />

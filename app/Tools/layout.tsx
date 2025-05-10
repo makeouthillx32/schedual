@@ -1,6 +1,6 @@
 "use client";
 
-import "../globals.css";
+import "../globals.scss";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 

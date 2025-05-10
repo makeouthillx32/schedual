@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import "@/app/globals.css";
+import "@/app/globals.scss";
 
 export default function LearnAndConnect() {
   return (

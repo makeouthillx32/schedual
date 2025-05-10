@@ -1,94 +1,210 @@
-/* full‑width CodePen‑style ribbon, adapted for Tailwind blue‑500 */
+/* ═════════════════════════════════════════════════════
+   MERGED COMPONENT STYLES
+   Combines ribbon overlay with panel layouts
+   ═════════════════════════════════════════════════════ */
 
-$ribbon-light:  #2563eb;    // blue‑500
-$ribbon-dark:   #1d4ed8;    // blue‑700
-$ribbon-edge:   hsl(222, 100%, 34%);
-$ribbon-text:   #ffffff;
-$ribbon-shadow: rgba(0,0,0,.45);
+/* ───────── VARIABLES ───────── */
+$ribbon-light: #2563eb;     // blue-500
+$ribbon-dark: var(--ribbon-dark);
+$ribbon-edge: var(--ribbon-edge);
+$ribbon-text: var(--ribbon-text);
+$ribbon-shadow: var(--ribbon-shadow);
+$home-bg: var(--home-background); 
+
+
+/* ───────── PANEL & CARD LAYOUT ───────── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  position: relative;
+}
+
+.card {
+  width: 100%;
+  max-width: 72rem;    /* ≈1152px */
+  padding: var(--ribbon-h) 1.5rem 2.5rem;
+  background: $home-bg;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+}
+
+:global(.dark) .card {
+  background: $home-bg;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+
+/* ───────── UNDERPAGE STYLE ───────── */
+.underpage {
+  background-color: var(--home-background);
+  box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  color: #444;
+  font-family: Garamond, 'Goudy Old Style', Times, 'Times New Roman', serif;
+  line-height: 1.5;
+  margin: 0 auto;
+  padding: 4.5em 1.5em 1.5em;
+  position: relative;
+  top: -3em;
+  width: 65%;
+  z-index: 0;
+
+  
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* ───────── CENTER RIBBON COMPONENT ───────── */
 
 .ribbonContainer {
+  background: transparent !important;
   position: relative;
   text-align: center;
-  z-index: 1;      // keep it on top of page sections
+  z-index: 1;
   margin: 0;
 }
 
-/* ───────── MAIN BAR ───────── */
 .ribbon {
   position: relative;
   display: inline-block;
-  width: 80%;
+  width: 100%;
   max-width: 48rem;
   margin: 0 auto;
   padding: 0.25em 0;
   font: 600 1rem/1 Charter, serif;
   color: $ribbon-text;
-  text-shadow: 1px 1px 2px rgba(0,0,0,.25);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.25);
+  text-align: center;
 
-  background: $ribbon-light /* fallback */;
-
-  /* if you want the subtle noise the original pen used,
-     drop a tiny PNG in /public/noise.png and uncomment:  */
-  // background: $ribbon-light url("/noise.png");
-
+  /* Default blue ribbon with noise texture */
+  background-color: $ribbon-light;
   box-shadow: 2px 6px 12px $ribbon-shadow;
 
-  /* triangle tails  */
-  &::before,
+  /* if i delete the left side of the corner disappears */
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: -1;
+    left: 0;
+    width: 0%;
+    height: 0%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* triangle tails */
   &::after {
     content: '';
     position: absolute;
     bottom: -1em;
-    width: 0; height: 0;
-    border: 1.5em solid $ribbon-light;
+    width: 0;
+    height: 0;
     z-index: -1;
   }
+  /* LEFT tails */
   &::before {
     left: -2em;
+
+    bottom: -1em;
+    border: 1.5em solid $ribbon-light;
     border-left-color: transparent;
     box-shadow: 2px 2px 2px $ribbon-shadow;
+    z-index: -1;
   }
-  &::after  {
+  /* right tails */
+  &::after {
     right: -2em;
+    border: 1.5em solid $ribbon-light;
     border-right-color: transparent;
     box-shadow: -2px 2px 2px $ribbon-shadow;
+    z-index: -1;
   }
 
   /* dashed inner strip */
   .content {
     position: relative;
     display: block;
-    padding: 0.75em 0;
-    border-top: .0625rem dashed lighten($ribbon-light, 15%);
-    border-bottom: .0625rem dashed lighten($ribbon-light, 15%);
+    padding: 0.6875em 0;
+    border-top: 0.0625em dashed lighten($ribbon-light, 15%);
+    border-bottom: 0.0625em dashed lighten($ribbon-light, 15%);
     box-shadow:
-      inset 0  1px 1px rgba(0,0,0,.08),
-      inset 0 -1px 1px rgba(255,255,255,.08),
-      0 -1px 1px rgba(255,255,255,.2),
-      0  1px 1px rgba(0,0,0,.08);
+      inset 0 1px 1px rgba(0, 0, 0, 0.08),
+      inset 0 -1px 1px rgba(255, 255, 255, 0.08),
+      0 -1px 1px rgba(255, 255, 255, 0.2),
+      0 1px 1px rgba(0, 0, 0, 0.08);
 
-    /* little fold‑overs under dashed area */
+    /* little fold-overs under dashed area */
     &::before,
     &::after {
       content: '';
       position: absolute;
       bottom: -1em;
-      width: 0; height: 0;
+      width: 0;
+      height: 0;
       border-style: solid;
-      border-color: darken($ribbon-light,10%) transparent transparent transparent;
+      border-color: darken($ribbon-light, 10%) transparent transparent transparent;
     }
-    &::before { left: 0;  border-width: 1em 0 0 1em;  }
-    &::after  { right: 0; border-width: 1em 1em 0 0; }
+    
+    &::before {
+      left: 0;
+      border-width: 1em 0 0 1em;
+    }
+    
+    &::after {
+      right: 0;
+      border-width: 1em 1em 0 0;
+    }
+  }
+  
+  /* Ribbon links styling */
+  a {
+    color: darken($ribbon-light, 15%);
+    text-decoration: none;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.25);
+    
+    &:hover {
+      color: darken($ribbon-light, 10%);
+    }
   }
 }
 
-/* ───────── DARK‑MODE VARIANT ───────── */
-html.dark .ribbon,
-html.dark .ribbon::before,
-html.dark .ribbon::after {
-  background: $ribbon-dark;
-  border-color: $ribbon-dark;
+/* ───────── ORANGE RIBBON VARIANT ───────── */
+
+
+/* ───────── SIDE RIBBON COMPONENT ───────── */
+.sideRibbon {
+  position: relative;
+  background: $ribbon-light;
+  color: $ribbon-text;
+  font: 600 1rem/1 Charter, serif;
+  text-align: center;
+  width: 100px;
+  padding: 10px;
+  
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    display: block;
+    bottom: -15px;
+    border: 15px solid $ribbon-dark;
+    z-index: 0;
+  }
+  
+  &::before {
+    left: 0;
+    border-left-color: transparent;
+  }
+  
+  &::after {
+    right: 0;
+    border-right-color: transparent;
+  }
 }
-html.dark .ribbon .content {
-  border-color: lighten($ribbon-dark, 15%) transparent transparent transparent;
-}
+

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Image from "next/image";
-import "@/app/globals.css";
+import "@/app/globals.scss";
 
 interface BusinessServicesProps {
   navigateTo: (key: string) => void;

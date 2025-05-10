@@ -14,13 +14,12 @@ $home-bg: var(--home-background);
 
 /* ───────── PANEL & CARD LAYOUT ───────── */
 .panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 72rem;
-  margin-inline: auto;
-  padding-inline: 1rem;
+  /* define ribbon height per panel scope */
+  --ribbon-h: 3.5rem;
   position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .card {
@@ -31,6 +30,7 @@ $home-bg: var(--home-background);
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
+  margin: 0 auto; /* Center the card */
 }
 
 :global(.dark) .card {
@@ -38,7 +38,20 @@ $home-bg: var(--home-background);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* Add this new class for proper ribbon-to-card relationship */
+.ribbon-wrapper {
+  width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+}
 
+/* Make ribbon stretch with card width */
+.ribbon-wrapper .ribbonContainer {
+  width: 100%;
+  max-width: calc(72rem + 4em); /* Match card max-width plus ribbon tails */
+}
 /* ───────── UNDERPAGE STYLE ───────── */
 .underpage {
   background-color: var(--home-background);
@@ -60,21 +73,21 @@ $home-bg: var(--home-background);
   }
 }
 
-/* ───────── CENTER RIBBON COMPONENT ───────── */
-
 .ribbonContainer {
   background: transparent !important;
   position: relative;
   text-align: center;
   z-index: 1;
   margin: 0;
+  width: 100%; /* Ensure container takes full width */
 }
 
 .ribbon {
   position: relative;
   display: inline-block;
-  width: 100%;
-  max-width: 48rem;
+  width: 80%;     /* Take full width */
+  /* Remove the max-width constraint that's limiting expansion */
+  /* max-width: 48rem; <- this is causing the problem */
   margin: 0 auto;
   padding: 0.25em 0;
   font: 600 1rem/1 Charter, serif;
@@ -86,19 +99,8 @@ $home-bg: var(--home-background);
   background-color: $ribbon-light;
   box-shadow: 2px 6px 12px $ribbon-shadow;
 
-  /* if i delete the left side of the corner disappears */
-  &::before {
-    content: '';
-    position: absolute;
-    bottom: -1;
-    left: 0;
-    width: 0%;
-    height: 0%;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
-    pointer-events: none;
-  }
-
-  /* triangle tails */
+  /* Modified triangular tails to scale better */
+  &::before,
   &::after {
     content: '';
     position: absolute;
@@ -107,26 +109,25 @@ $home-bg: var(--home-background);
     height: 0;
     z-index: -1;
   }
-  /* LEFT tails */
+  
+  /* LEFT tail */
   &::before {
     left: -2em;
-
     bottom: -1em;
     border: 1.5em solid $ribbon-light;
     border-left-color: transparent;
     box-shadow: 2px 2px 2px $ribbon-shadow;
-    z-index: -1;
   }
-  /* right tails */
+  
+  /* RIGHT tail */
   &::after {
     right: -2em;
     border: 1.5em solid $ribbon-light;
     border-right-color: transparent;
     box-shadow: -2px 2px 2px $ribbon-shadow;
-    z-index: -1;
   }
 
-  /* dashed inner strip */
+  /* Rest of your ribbon styling remains unchanged */
   .content {
     position: relative;
     display: block;
@@ -174,7 +175,7 @@ $home-bg: var(--home-background);
   }
 }
 
-/* ───────── ORANGE RIBBON VARIANT ───────── */
+
 
 
 /* ───────── SIDE RIBBON COMPONENT ───────── */

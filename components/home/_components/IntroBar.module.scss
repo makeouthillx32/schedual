@@ -55,23 +55,57 @@ $home-bg: var(--home-background);
 
 /* ───────── UNDERPAGE STYLE ───────── */
 .underpage {
-  background-color: var(--home-background);
-  box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.25);
+  /* main box */
+  background: var(--home-background);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, .25);
+  border: 1px solid rgba(0, 0, 0, .18);        /* crisp outer line */
+  border-radius: .75rem .75rem 0 0;            /* rounded top only */
+  position: relative;
+  margin: 0 auto;
+  width: 90%;          /* desktop width */
+  padding: 4.5em 1.5em 1.5em;
+  line-height: 2.5;
   box-sizing: border-box;
   color: #444;
-  font-family: Garamond, 'Goudy Old Style', Times, 'Times New Roman', serif;
-  line-height: 2.5;
-  margin: 0 auto;
-  padding: 4.5em 1.5em 1.5em;
-  position: relative;
-  top: -3em;
-  width: 90%;
+  top: -3em;        /* overlap the ribbon */
+  font-family: Garamond, "Goudy Old Style", Times, "Times New Roman", serif;
 
-  
+  /* bottom‑only fade using mask – extended for smoother feather */
+  -webkit-mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+  mask-image:         linear-gradient(to bottom, black 90%, transparent 100%);
+
+  /* ✨ engraved top & side inset line */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;                          /* fill the box */
+    border: 2px solid rgba(255, 255, 255, .45);  /* light inner line */
+    border-bottom: 0;                  /* only top + sides */
+    border-radius: inherit;
+    pointer-events: none;
+    mix-blend-mode: overlay;           /* subtle imprint effect */
+  }
+
+  /* mobile tweak */
+  @media (max-width: 767px) {
+    width: 84%;
+  }
+
+  /* tablet font bump */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    font-size: 1.1rem;
+  }
+
+  /* desktop font */
+  @media (min-width: 1024px) {
+    font-size: 1.2rem;
+  }
+
   p:last-child {
     margin-bottom: 0;
   }
 }
+
 
 /* ───────── CENTER RIBBON COMPONENT ───────── */
 

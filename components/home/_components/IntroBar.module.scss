@@ -209,3 +209,59 @@ $home-bg: var(--home-background);
   }
 }
 
+/* Mobile-first approach */
+.ribbon {
+  width: calc(100% - 2em); /* Account for the triangular tails */
+  font-size: 0.9rem;
+  
+  &::before {
+    left: -1.5em;
+    border-width: 1.25em;
+    border-left-color: transparent;
+  }
+  
+  &::after {
+    right: -1.5em;
+    border-width: 1.25em;
+    border-right-color: transparent;
+  }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .ribbon {
+    font-size: 1rem;
+    
+    &::before {
+      left: -2em;
+      border-width: 1.5em;
+    }
+    
+    &::after {
+      right: -2em;
+      border-width: 1.5em;
+    }
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .ribbon-wrapper {
+    max-width: calc(100% - 2rem); /* Give some breathing room on very large screens */
+  }
+
+  .ribbon {
+    font-size: 1.1rem;
+  }
+  
+  .card {
+    margin-top: -1em; /* Adjust overlay amount */
+  }
+}
+
+/* Fix for very wide screens */
+@media (min-width: 1280px) {
+  .ribbon-wrapper {
+    max-width: 80rem; /* Cap the maximum width on very large screens */
+  }
+}

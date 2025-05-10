@@ -62,7 +62,8 @@ export default function Home() {
 
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    history.pushState(null, "", `#${page}`);
+    const newHash = `#${page}`;
+    history.pushState(null, "", newHash);
     goTo(page);
     setMobileMenuOpen(false);
   };
@@ -83,6 +84,7 @@ export default function Home() {
         setMobileMenuOpen={setMobileMenuOpen}
         navigateTo={navigateTo}
       />
+      
 
       {/* Ribbon + card wrapper */}
       <main className="flex-grow">

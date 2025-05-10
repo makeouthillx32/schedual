@@ -1,6 +1,6 @@
 "use client";
 
-import "@/app/globals.scss"; // Correct absolute path to CSS
+import "@/app/globals.css"; // Correct absolute path to CSS
 
 interface LayoutProps {
   children: React.ReactNode;

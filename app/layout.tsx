@@ -5,7 +5,7 @@
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
-import "./globals.scss";
+import "./globals.css";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { setCookie } from "@/lib/cookieUtils";

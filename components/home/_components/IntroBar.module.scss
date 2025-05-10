@@ -30,6 +30,7 @@ $home-bg: var(--home-background);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
   margin: 0 auto; /* Center the card */
+  max-height: rem;
 }
 
 :global(.dark) .card {
@@ -59,13 +60,12 @@ $home-bg: var(--home-background);
   box-sizing: border-box;
   color: #444;
   font-family: Garamond, 'Goudy Old Style', Times, 'Times New Roman', serif;
-  line-height: 1.5;
+  line-height: 2.5;
   margin: 0 auto;
   padding: 4.5em 1.5em 1.5em;
   position: relative;
   top: -3em;
-  width: 100%;
-  z-index: 0;
+  width: 90%;
 
   
   p:last-child {
@@ -81,9 +81,11 @@ $home-bg: var(--home-background);
   text-align: center;
   z-index: 1;
   margin: 0 auto;         // 👈 center the 95% container
-  width: 95%;             // 👈 apply your shrink
+  width: 97%;             // 👈 apply your shrink
   display: flex;          // 👈 center the .ribbon inside
   justify-content: center;
+  padding-top: 10px;
+  bottom: -1em;
 }
 
 .ribbon {
@@ -111,7 +113,7 @@ $home-bg: var(--home-background);
     bottom: -1em;
     width: 0;
     height: 0;
-    z-index: -1;
+    z-index: -5;
   }
   
   /* LEFT tail */
@@ -153,6 +155,7 @@ $home-bg: var(--home-background);
       width: 0;
       height: 0;
       border-style: solid;
+       z-index: -4;
       border-color: darken($ribbon-light, 10%) transparent transparent transparent;
     }
     

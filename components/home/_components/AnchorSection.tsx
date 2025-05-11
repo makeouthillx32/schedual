@@ -1,5 +1,5 @@
 // components/AnchorSection.tsx
-import { ReactNode, MouseEvent } from "react";
+import React, { ReactNode, MouseEvent, ElementType } from "react";
 import { FiArrowLeft } from "react-icons/fi";
 
 interface AnchorSectionProps {
@@ -9,18 +9,19 @@ interface AnchorSectionProps {
   label?: string;
   children?: ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements; // div, section, article…
+  /** HTML tag or component type to render (defaults to <section>) */
+  as?: ElementType;
   /** optional navigate helper for a back button */
   navigateTo?: (page: string) => (e?: MouseEvent) => void;
   /** if provided, renders a “Back to …” button that calls navigateTo(backKey) */
-  backKey?: string; // e.g. "about" or "careers"
-  /** optional override for link text */
+  backKey?: string;
+  /** optional override for back button text */
   backLabel?: string;
 }
 
 /**
- * A reusable in‑page anchor.  Renders an element with the given id so any
- * link to “/#id” scrolls here.  If `backKey` is supplied, shows a button that
+ * A reusable in‑page anchor. Renders an element with the given id so any
+ * link to “/#id” scrolls here. If `backKey` is supplied, shows a button that
  * calls `navigateTo(backKey)`.
  */
 export default function AnchorSection({

@@ -1,5 +1,3 @@
-
-
 // lib/navTree.ts – single source of truth for desktop & mobile nav
 export const navTree = [
   {
@@ -20,7 +18,7 @@ export const navTree = [
       { key: "transportation",   label: "Transportation",      href: "/#transportation" },
       { key: "employment",       label: "Employment Services", href: "/#employment" },
       { key: "early-childhood",  label: "Early Childhood",     href: "/#early-childhood" },
-      { key: "autismdaycamp",  label: "Autism Day Camp",     href: "/#autismdaycamp" },
+      { key: "autismdaycamp",  label: "Autism Day Camp",     href: "/#autism-day-camp" },
       { key: "artists",          label: "Artists Guild",       href: "/#artists" },
       { key: "supported-living", label: "Supported Living",    href: "/#supported-living" },
     ],

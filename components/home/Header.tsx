@@ -1,5 +1,3 @@
-// components/home/Header.tsx
-
 "use client";
 
 import React, { useState } from "react";
@@ -9,23 +7,16 @@ import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
 import useLoginSession from "@/lib/useLoginSession";
 import MobileDrawer from "@/components/home/MobileDrawer";
 import DesktopNav from "@/components/home/DesktopNav";
-import type { NavItem } from "@/components/home/_components/navTree";
 
 interface HeaderProps {
   theme: string;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;
-  navItems: NavItem[];           // ← injected menu data
 }
-
-const Header: React.FC<HeaderProps> = ({
-  navigateTo,
-  mobileMenuOpen,
-  setMobileMenuOpen,
-  navItems
-}) => {
+const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const session = useLoginSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { themeType } = useTheme(); // get live theme from context
 
   return (
@@ -48,7 +39,7 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Center: Desktop Nav */}
         <div className="flex-1 min-w-0 hidden md:flex items-center justify-center overflow-visible">
-          <DesktopNav navigateTo={navigateTo} navItems={navItems} />
+          <DesktopNav navigateTo={navigateTo} />
         </div>
 
         {/* Right: Auth + Dark mode + Hamburger */}
@@ -90,7 +81,6 @@ const Header: React.FC<HeaderProps> = ({
           navigateTo={navigateTo}
           session={session}
           onClose={() => setMobileMenuOpen(false)}
-          navItems={navItems}
         />
       )}
     </header>

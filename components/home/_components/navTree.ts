@@ -24,9 +24,9 @@ export const navTree = [
     ],
   },
   {
-    key: "business",
+    key: "services",
     label: "Business Services",
-    href: "/#business",
+    href: "/#services",
     children: [
       { key: "shredding",  label: "Shredding",             href: "/#shredding" },
       { key: "commercial",        label: "Commercial Services",    href: "/#cms" },

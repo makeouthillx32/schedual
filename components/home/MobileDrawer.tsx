@@ -6,7 +6,7 @@ import {
   MdChevronRight,
   MdArrowForwardIos,
 } from "react-icons/md";
-import { navTree } from "@/components/home/_components/navTree";
+import { navTree } from "@/lib/navTree";
 
 interface MobileDrawerProps {
   navigateTo: (id: string) => (e?: React.MouseEvent<HTMLAnchorElement>) => void;

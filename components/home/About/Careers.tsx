@@ -2,6 +2,7 @@
 
 import React from "react";
 import "@/app/globals.css";
+import AnchorSection from "@/components/home/_components/AnchorSection";  // ← import
 
 interface CareersPageProps {
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;
@@ -10,8 +11,8 @@ interface CareersPageProps {
 export default function CareersPage({ navigateTo }: CareersPageProps) {
   return (
     <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
-      {/* Top-level anchor for /#careers */}
-      <section id="careers" className="sr-only">Careers</section>
+      {/* Top‑level anchor for /#careers */}
+      <AnchorSection id="careers" />
 
       <h1 className="text-3xl font-bold mb-4 text-[var(--home-content-heading)]">
         Find a Meaningful Career
@@ -21,8 +22,6 @@ export default function CareersPage({ navigateTo }: CareersPageProps) {
 
       <button
         onClick={(e) => navigateTo("careers/jobs")(e)}
-        
-         
         className="bg-[var(--home-accent)] text-white px-6 py-2 rounded hover:opacity-90 transition"
       >
         Current Openings
@@ -30,25 +29,25 @@ export default function CareersPage({ navigateTo }: CareersPageProps) {
 
       <div className="mt-10 space-y-4 text-lg">
         <p>
-          If your heart is gracious and your enthusiasm unwavering, the place to start is Desert Area Resources and Training!
+          If your heart is gracious and your enthusiasm unwavering, the place to
+          start is Desert Area Resources and Training!
         </p>
         <p>
-          A not-for-profit organization that serves people in our community with intellectual disabilities to enhance their lives and the lives of their families, DART is rooted in enriching the lives of its employees, too.
+          A not-for-profit organization that serves people in our community with
+          intellectual disabilities … (etc.)
         </p>
 
         {/* Inner anchor for /#careers/jobs */}
-        <section id="jobs" className="sr-only">Jobs Section</section>
+        <AnchorSection id="jobs" />
 
         <p className="font-semibold text-xl mt-6">Current Openings</p>
 
         <p>
-          Since 1961, DART has been dedicated to helping people with disabilities find the very best version of themselves.
+          Since 1961, DART has been dedicated to helping people with
+          disabilities find the very best version of themselves.
         </p>
         <p>
-          DART thrives with the funding from our social enterprises, signature events, and the generous philanthropy of our donors and community partners.
-        </p>
-        <p>
-          DART also offers a wide array of additional benefits including health, dental and vision insurance, retirement savings accounts, training and development opportunities and much more!
+          DART thrives with the funding from our social enterprises … (etc.)
         </p>
       </div>
     </div>

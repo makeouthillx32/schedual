@@ -3,9 +3,6 @@
 import React from "react";
 import styles from "./_components/IntroBar.module.scss";
 
-interface IntroBarProps {
-  currentPage: string;
-}
 
 const labels: Record<string, string> = {
   about:             "About Us",
@@ -29,14 +26,26 @@ const labels: Record<string, string> = {
   carf:              "CARF Accreditation",
   thriftstore:       "DART Thrift Store",
   shredding:         "Secure Document Shredding",
-};
+}as const;
 
-const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
+/* ------------------------------------------------------------------ */
+/* 2.  Props                                                          */
+/* ------------------------------------------------------------------ */
+type PageKey = keyof typeof labels | "home";
+
+interface IntroBarProps {
+  currentPage: PageKey;
+}
+
+/* ------------------------------------------------------------------ */
+/* 3.  Component                                                      */
+/* ------------------------------------------------------------------ */
+export default function IntroBar({ currentPage }: IntroBarProps) {
   // never render on the home page
   if (currentPage === "home") return null;
 
-  const label = labels[currentPage as keyof typeof labels];
-  if (!label) return null;
+  const label = labels[currentPage];
+  if (!label) return null;        // guard against unknown keys
 
   return (
     <div className={styles.ribbonContainer}>
@@ -45,6 +54,4 @@ const IntroBar: React.FC<IntroBarProps> = ({ currentPage }) => {
       </h2>
     </div>
   );
-};
-
-export default IntroBar;
+}

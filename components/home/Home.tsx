@@ -1,38 +1,17 @@
+// app/page.tsx or components/home/Home.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import Header from "@/components/home/Header";
 import SectionPanel from "@/components/home/SectionPanel";
-import MainContent from "@/components/home/MainContent";
+import BackButton from "@/components/home/_components/BackButton";
+import AnchorSection from "@/components/home/_components/AnchorSection";
+import { pageTree, sectionId } from "@/components/home/_components/pageTree";
 import Footer from "@/components/home/Footer";
 import useThemeCookie from "@/lib/useThemeCookie";
 
 export default function Home() {
-  // Persist theme (light/dark) from cookie on first render
-  useThemeCookie();
-
-  // Map hashes → canonical section IDs
-  const sectionId: Record<string, string> = {
-    home: "home",
-    about: "about",
-    programs: "programs",
-    business: "business",
-    involved: "involved",
-    learn: "learn",
-    board: "board",
-    title9: "title9",
-    jobs: "jobs",
-    careers: "careers",
-    autismdaycamp: "autismdaycamp",
-    transportation: "transportation",
-    earlychildhood: "earlychildhood",
-    supportedliving: "supportedliving",
-    artists: "artists",
-    employment: "employment",
-    carf: "carf",
-    thriftstore: "thriftstore",
-    shredding: "shredding",
-  };
+  useThemeCookie(); // Persist theme
 
   const [currentPage, setCurrentPage] = useState<string>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,7 +23,6 @@ export default function Home() {
       const pageKey = sub && sectionId[sub] ? sub : base;
       const target = sectionId[pageKey] ?? pageKey;
       setCurrentPage(target);
-
       requestAnimationFrame(() => {
         setTimeout(() => {
           const scrollToId = sub || target;
@@ -57,24 +35,27 @@ export default function Home() {
         }, 10);
       });
     },
-    [sectionId]
+    []
   );
 
   const navigateTo = (page: string) => (e?: React.MouseEvent) => {
     e?.preventDefault();
-    const newHash = `#${page}`;
-    history.pushState(null, "", newHash);
+    history.pushState(null, "", `#${page}`);
     goTo(page);
     setMobileMenuOpen(false);
   };
 
-  // Sync on first load + hash changes
   useEffect(() => {
     const sync = () => goTo(location.hash.replace("#", "") || "home");
     sync();
     window.addEventListener("hashchange", sync);
     return () => window.removeEventListener("hashchange", sync);
   }, [goTo]);
+
+  // Pull component & metadata from pageTree
+  const config = pageTree[currentPage];
+  if (!config) return null;
+  const { Component, backKey, backLabel, anchorId } = config;
 
   return (
     <div className="flex min-h-screen flex-col home-page bg-[var(--home-background)] text-[var(--home-text)] dark:text-white">
@@ -84,12 +65,12 @@ export default function Home() {
         setMobileMenuOpen={setMobileMenuOpen}
         navigateTo={navigateTo}
       />
-      
 
-      {/* Ribbon + card wrapper */}
       <main className="flex-grow">
         <SectionPanel currentPage={currentPage}>
-          <MainContent currentPage={currentPage} navigateTo={navigateTo} />
+          {backKey && <BackButton navigateTo={navigateTo} backKey={backKey} label={backLabel} />}
+          {anchorId && <AnchorSection id={anchorId} />}
+          <Component navigateTo={navigateTo} />
         </SectionPanel>
       </main>
 

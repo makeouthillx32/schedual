@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { navTree } from "@/lib/navTree";
+import { navTree } from "@/components/home/_components/navTree";
 
 interface DesktopNavProps {
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;

@@ -48,6 +48,6 @@ export async function GET(
     attachments:  row.attachments,
   }));
 
-  // Return JSON array of messages
+  // Return JSON array of dmessages
   return NextResponse.json(messages);
 }

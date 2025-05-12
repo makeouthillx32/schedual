@@ -21,18 +21,6 @@ export const metadata: Metadata = {
     "Next.js admin dashboard toolkit with 200+ templates, UI components, and integrations for fast dashboard development.",
 };
 
-export default function DashboardLayout({ children }: PropsWithChildren) {
+export default function RootLayout({ children }: PropsWithChildren) {
   return (
-    <Providers>
-      <NextTopLoader color="#5750F1" showSpinner={false} />
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="w-full bg-gray-2 dark:bg-[#020d1a]">
-          <Header />
-          <main>{children}</main>
-        </div>
-      </div>
-    </Providers>
-  );
-}
-
+    <html lang="en" suppressHydrationWarning>

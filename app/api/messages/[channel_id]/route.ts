@@ -1,15 +1,24 @@
 // app/api/messages/[channel_id]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/utils/supabase/server';
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: Record<string, string> }) {
-  const channel_id = params.channel_id;
+export async function GET(
+  _req: Request,
+  { params }: { params: { channel_id: string } }
+) {
+  const cookieStore = cookies();
 
-  if (!channel_id) {
-    return NextResponse.json({ error: 'Channel ID missing' }, { status: 400 });
-  }
-
-  const supabase = await createClient();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: () => {}, // no-op in route handler
+      },
+    }
+  );
 
   const {
     data: { user },
@@ -17,18 +26,18 @@ export async function GET(req: NextRequest, { params }: { params: Record<string,
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data, error } = await supabase.rpc('get_channel_messages', {
-    p_channel_id: channel_id,
+  const { data, error } = await supabase.rpc("get_channel_messages", {
+    p_channel_id: params.channel_id,
     p_user_id: user.id,
     p_limit: 50,
     p_before_id: null,
   });
 
   if (error) {
-    console.error('RPC error:', error);
+    console.error("Supabase RPC error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

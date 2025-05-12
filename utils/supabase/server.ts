@@ -1,8 +1,9 @@
+// utils/supabase/server.ts
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-export const createClient = async (mode: "regular" | "service" = "regular") => {
+export const createClient = (mode: "regular" | "service" = "regular") => {
   if (mode === "service") {
     return createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,7 +11,7 @@ export const createClient = async (mode: "regular" | "service" = "regular") => {
     );
   }
 
-  const cookieStore = await cookies();
+  const cookieStore = cookies(); // FIXED: removed `await`
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,7 +27,7 @@ export const createClient = async (mode: "regular" | "service" = "regular") => {
               cookieStore.set(name, value, options);
             });
           } catch {
-            // no-op
+            // no-op in edge environments
           }
         },
       },

@@ -3,33 +3,53 @@ import { NextRequest } from 'next/server';
 
 /**
  * Type definitions for API route handlers
+ * 
+ * These match exactly what Next.js expects for App Router API handlers
  */
 
-// Base context type for all dynamic route handlers
-export type RouteContext<T extends Record<string, string>> = {
-  params: T;
+// Don't create custom types for the context parameter
+// Instead use exactly what Next.js expects
+
+// Type for route parameters
+export type ChannelParams = {
+  params: {
+    channel_id: string;
+  };
 };
 
-// Specific route context types
-export type ChannelRouteContext = RouteContext<{
-  channel_id: string;
-}>;
+// Type for nested route parameters
+export type ChannelMessageParams = {
+  params: {
+    channel_id: string;
+    message_id: string;
+  };
+};
 
-// Channel with message context (for nested dynamic routes)
-export type ChannelMessageRouteContext = RouteContext<{
-  channel_id: string;
-  message_id: string;
-}>;
-
-// Route handler types for different HTTP methods
-export type GetRouteHandler<T extends Record<string, string>> = (
+// Handler function types using the exact Next.js expected signature
+export type GetRouteHandler<P> = (
   req: NextRequest,
-  context: RouteContext<T>
+  context: P
 ) => Promise<Response>;
 
-export type PostRouteHandler<T extends Record<string, string>> = (
+export type PostRouteHandler<P> = (
   req: NextRequest,
-  context: RouteContext<T>
+  context: P
+) => Promise<Response>;
+
+// And so on for other HTTP methods
+export type PutRouteHandler<P> = (
+  req: NextRequest,
+  context: P
+) => Promise<Response>;
+
+export type DeleteRouteHandler<P> = (
+  req: NextRequest,
+  context: P
+) => Promise<Response>;
+
+export type PatchRouteHandler<P> = (
+  req: NextRequest,
+  context: P
 ) => Promise<Response>;
 
 // You can add more specific handler types as needed

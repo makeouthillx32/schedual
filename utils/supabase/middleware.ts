@@ -1,11 +1,11 @@
+// utils/supabase/middleware.ts
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
-  // Create mutable response wrapper
-  let res = NextResponse.next({ request: { headers: req.headers } });
+  // NEVER mutate the request object unless rewriting — this breaks dynamic API route params
+  let res = NextResponse.next();
 
-  // Set invite code cookie if present
   const invite = req.nextUrl.searchParams.get("invite");
   if (invite) {
     res.cookies.set("invite", invite, {
@@ -14,7 +14,6 @@ export async function middleware(req: NextRequest) {
     });
   }
 
-  // Supabase client able to read/write cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,8 +21,6 @@ export async function middleware(req: NextRequest) {
       cookies: {
         getAll: () => req.cookies.getAll(),
         setAll: (cookies) => {
-          cookies.forEach(({ name, value }) => req.cookies.set(name, value));
-          res = NextResponse.next({ request: { headers: req.headers } });
           cookies.forEach(({ name, value, options }) =>
             res.cookies.set(name, value, options)
           );
@@ -32,14 +29,11 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Fetch current session
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Define protected route prefixes
   const protectedPrefixes = ["/protected", "/settings", "/api/messages"];
-
   const isProtected = protectedPrefixes.some(
     (prefix) =>
       req.nextUrl.pathname === prefix ||
@@ -47,9 +41,8 @@ export async function middleware(req: NextRequest) {
   );
 
   if (isProtected && !session) {
-    // Redirect unauthenticated requests
     const target =
-      req.nextUrl.pathname + (req.nextUrl.search ? req.nextUrl.search : "");
+      req.nextUrl.pathname + (req.nextUrl.search || "");
     return NextResponse.redirect(
       new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url)
     );
@@ -58,7 +51,6 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-// Updated matcher to explicitly include API routes
 export const config = {
   matcher:
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",

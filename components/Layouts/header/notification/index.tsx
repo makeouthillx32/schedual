@@ -26,21 +26,31 @@ export function Notification() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchNotifications = async () => {
       try {
         const res = await fetch("/api/notifications");
-        if (!res.ok) return;
+
+        // If backend is disabled, do nothing
+        if (res.status === 503 || !res.ok) return;
 
         const { notifications } = await res.json();
-        setNotificationList(notifications);
+        if (isMounted) {
+          setNotificationList(notifications);
+        }
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
       }
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 5000);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(fetchNotifications, 60000); // 1 min
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -48,7 +58,7 @@ export function Notification() {
       isOpen={isOpen}
       setIsOpen={(open) => {
         setIsOpen(open);
-        if (setIsDotVisible) setIsDotVisible(false);
+        if (open) setIsDotVisible(false);
       }}
     >
       <DropdownTrigger
@@ -58,11 +68,7 @@ export function Notification() {
         <span className="relative">
           <BellIcon />
           {isDotVisible && (
-            <span
-              className={cn(
-                "absolute right-0 top-0 z-1 size-2 rounded-full bg-red-light ring-2 ring-gray-2 dark:ring-dark-3"
-              )}
-            >
+            <span className="absolute right-0 top-0 z-1 size-2 rounded-full bg-red-light ring-2 ring-gray-2 dark:ring-dark-3">
               <span className="absolute inset-0 -z-1 animate-ping rounded-full bg-red-light opacity-75" />
             </span>
           )}
@@ -91,7 +97,7 @@ export function Notification() {
                 className="flex items-center gap-4 rounded-lg px-2 py-1.5 outline-none hover:bg-gray-2 focus-visible:bg-gray-2 dark:hover:bg-dark-3 dark:focus-visible:bg-dark-3"
               >
                 <Image
-                  src={item.image_url}
+                  src={item.image_url || "/default-avatar.png"}
                   className="size-14 rounded-full object-cover"
                   width={200}
                   height={200}

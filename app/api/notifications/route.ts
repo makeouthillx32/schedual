@@ -1,9 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const supabase = await createClient();
+const API_DISABLED = process.env.NOTIFICATIONS_API_ENABLED === "false";
 
+export async function GET() {
+  if (API_DISABLED) {
+    return NextResponse.json(
+      { message: "Notifications temporarily disabled." },
+      { status: 503 }
+    );
+  }
+
+  const supabase = await createClient();
   const {
     data: { user },
     error: userError,
@@ -27,7 +35,7 @@ export async function GET() {
     admin1: "role_admin",
     coachx7: "role_jobcoach",
     client7x: "role_client",
-    user0x: "role_user",
+    user0x: "role_anonymous", // fallback to lowest role
   };
 
   const roleColumn = roleColumnMap[profile.role];
@@ -40,7 +48,8 @@ export async function GET() {
     .from("notifications")
     .select("title, subtitle, image_url, action_url")
     .or(`receiver_id.eq.${user.id},${roleColumn}.is.true`)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

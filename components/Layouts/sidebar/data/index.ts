@@ -51,7 +51,7 @@ export const NAV_DATA = [
       },
       {
         title: "Messages",
-        url: "/chat",
+        url: "/messages",
         icon: Icons.Calendar,
         items: [],
         roles: ["admin", "jobcoach", "client"],

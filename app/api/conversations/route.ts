@@ -4,12 +4,11 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET() {
-  const cookieStore = cookies(); // Get cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: cookieStore, // ✅ FIXED: Pass the cookie object directly
+      cookies, // ✅ This is valid – passing the function reference, not the result
     }
   );
 

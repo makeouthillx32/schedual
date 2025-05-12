@@ -8,7 +8,7 @@ export async function GET() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies, // ✅ This is valid – passing the function reference, not the result
+      cookies: cookies(), // ✅ Fix: call the function here
     }
   );
 

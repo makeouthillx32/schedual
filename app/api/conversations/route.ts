@@ -1,8 +1,17 @@
 // app/api/conversations/route.ts
-// NOTE: Old functionality disabled – this endpoint now does nothing.
-
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function GET() {
-  return NextResponse.json({ message: "This endpoint is currently disabled." }, { status: 200 });
+  const user = supabase.auth.user();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  const { data, error } = await supabase
+    .rpc("get_user_conversations", { p_user_id: user.id, p_limit: 20 });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data, { status: 200 });
 }

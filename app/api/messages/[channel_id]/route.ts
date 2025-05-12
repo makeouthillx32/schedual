@@ -1,12 +1,10 @@
 // app/api/messages/[channel_id]/route.ts
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
-import { NextResponse } from 'next/server';
 
-// Using export function GET pattern for dynamic routes (Vercel compatible)
-export async function GET(req: NextRequest, { params }: { params: { channel_id: string } }) {
+export async function GET(req: NextRequest, context: { params: { channel_id: string } }) {
   try {
-    const { channel_id } = params;
+    const { channel_id } = context.params;
     const supabase = await createClient();
 
     const {

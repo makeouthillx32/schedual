@@ -3,19 +3,13 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
-// Next.js 15 route handlers
-export const dynamic = 'force-dynamic';
-
-// Define the context type for routes with dynamic params
-interface RouteContext {
-  params: {
-    channel_id: string;
-  };
-}
-
-// Route handler for GET requests
-export async function GET(request: Request, context: RouteContext) {
+// Using export const GET pattern without explicit types
+// This lets Next.js handle the type inference
+export const GET = async (req, { params }) => {
   try {
+    // Get channel_id from params
+    const { channel_id } = params;
+    
     // Init Supabase client
     const supabase = await createClient();
 
@@ -28,9 +22,6 @@ export async function GET(request: Request, context: RouteContext) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    // Extract channel_id from context
-    const { channel_id } = context.params;
 
     // Call the RPC function
     const { data, error } = await supabase.rpc('get_channel_messages', {
@@ -46,7 +37,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     // Map rows to front-end shape
-    const messages = (data ?? []).map((row: any) => ({
+    const messages = (data ?? []).map((row) => ({
       id: row.message_id,
       content: row.content,
       timestamp: row.created_at,

@@ -3,8 +3,8 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
 
-// Using export const GET pattern with explicit types
-export const GET = async (req: NextRequest, { params }: { params: { channel_id: string } }) => {
+// Using export function GET pattern for dynamic routes (Vercel compatible)
+export async function GET(req: NextRequest, { params }: { params: { channel_id: string } }) {
   try {
     const { channel_id } = params;
     const supabase = await createClient();
@@ -50,4 +50,4 @@ export const GET = async (req: NextRequest, { params }: { params: { channel_id: 
     console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
-};
+}

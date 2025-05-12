@@ -1,28 +1,13 @@
-// app/api/messages/[channel_id]/route.ts
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { type NextRequest } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-type Context = {
-  params: {
-    channel_id: string;
-  };
-};
-
-export async function GET(_req: Request, context: Context) {
+export async function GET(
+  req: NextRequest,
+  context: { params: { channel_id: string } }
+) {
   const { channel_id } = context.params;
-
-  const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: () => {},
-      },
-    }
-  );
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -41,7 +26,6 @@ export async function GET(_req: Request, context: Context) {
   });
 
   if (error) {
-    console.error("Supabase RPC error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

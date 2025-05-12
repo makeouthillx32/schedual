@@ -7,7 +7,7 @@ const config: Config = {
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
-    "./css/**/*.{css}"  // include custom CSS folder
+    "./css/**/*.css"    // fixed glob patternCSS folder
   ],
   darkMode: ["class"],
   prefix: "",

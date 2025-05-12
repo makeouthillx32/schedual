@@ -1,16 +1,14 @@
 // app/api/messages/[channel_id]/route.ts
-import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(
-  req: NextRequest,
+  req: Request,
   { params }: { params: { channel_id: string } }
 ) {
-  // Init Supabase client
   const supabase = await createClient();
 
-  // Ensure the user is authenticated
+  // Auth check
   const {
     data: { user },
     error: authError,
@@ -19,20 +17,18 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Call the RPC function
+  // Fetch via RPC
   const { data, error } = await supabase.rpc("get_channel_messages", {
     p_channel_id: params.channel_id,
     p_user_id: user.id,
     p_limit: 50,
     p_before_id: null,
   });
-
   if (error) {
     console.error("RPC error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Map rows to front‑end shape
   const messages = (data ?? []).map((row: any) => ({
     id: row.message_id,
     content: row.content,

@@ -1,10 +1,10 @@
 // app/api/messages/[channel_id]/route.ts
 
 import { createClient } from '@/utils/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  _req: Request,
+  request: NextRequest,
   { params }: { params: { channel_id: string } }
 ) {
   // Init Supabase client

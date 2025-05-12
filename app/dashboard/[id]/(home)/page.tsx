@@ -59,8 +59,4 @@ export default async function Home({ searchParams }: PropsType) {
       </div>
     </>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 05387cfba88de73c29df5200550233ea466cf71d

@@ -1,3 +1,4 @@
+// app/_components/_dashboard/chart-preview.tsx
 "use client";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import {
@@ -26,7 +27,12 @@ const chartConfig = {
 	},
 } satisfies ChartConfig;
 
-export function MessageChart({ chartData }) {
+type ChartDataItem = {
+	hour: string;
+	amount: number;
+};
+
+export function MessageChart({ chartData }: { chartData: ChartDataItem[] }) {
 	return (
 		<>
 			<Card className="mx-20 mt-5">

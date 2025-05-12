@@ -1,70 +1,58 @@
-// app/layout.tsx
+'use client';
 
-"use client";
+import { Providers } from './provider';
+import Nav from '@/components/nav';
+import Footer from '@/components/footer';
+import './globals.css';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { setCookie } from '@/lib/cookieUtils';
 
-import { Providers } from "./provider";
-import Nav from "@/components/nav";
-import Footer from "@/components/footer";
-import "./globals.css";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { setCookie } from "@/lib/cookieUtils";
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  const isHome = pathname === "/";
-  const isToolsPage = pathname.toLowerCase().startsWith("/tools");
+  // Determine which layouts to exclude
+  const isHome        = pathname === '/';
+  const isToolsPage   = pathname.toLowerCase().startsWith('/tools');
+  const isAuthPage    =
+    pathname === '/sign-in' ||
+    pathname === '/sign-up' ||
+    pathname.startsWith('/auth');
+  const isDashboard   = pathname.startsWith('/dashboard');
+
+  // If any of these are true, we skip Nav/Footer
+  const excludeGlobalLayout = isHome || isToolsPage || isAuthPage || isDashboard;
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isAuthPage =
-        pathname === "/sign-in" ||
-        pathname === "/sign-up" ||
-        pathname.startsWith("/auth");
+    if (typeof window === 'undefined') return;
 
-      if (!isAuthPage) {
-        setCookie("lastPage", pathname, { path: "/" });
-      }
-
-      const theme = localStorage.getItem("theme") || "light";
-      setIsDarkMode(theme === "dark");
-
-      const computedStyle = getComputedStyle(document.documentElement);
-      let color = "#ffffff"; // fallback
-
-      if (isHome) {
-        color = theme === "dark"
-          ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
-          : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff";
-      } else {
-        color = theme === "dark"
-          ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
-          : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb";
-      }
-
-      const metaTag = document.querySelector("meta[name='theme-color']");
-      if (metaTag) {
-        metaTag.setAttribute("content", color);
-      } else {
-        const newMeta = document.createElement("meta");
-        newMeta.name = "theme-color";
-        newMeta.content = color;
-        document.head.appendChild(newMeta);
-      }
+    // Persist last non-auth path
+    if (!isAuthPage) {
+      setCookie('lastPage', pathname, { path: '/' });
     }
-  }, [pathname, isHome]);
 
-  // hide Nav/Footer on home or any /tools/* page
-  const excludeGlobalLayout = isHome || isToolsPage;
+    // Initialize theme
+    const theme = localStorage.getItem('theme') || 'light';
+    setIsDarkMode(theme === 'dark');
+
+    // Update <meta name="theme-color">
+    const computed = getComputedStyle(document.documentElement);
+    const varName   = isHome
+      ? theme === 'dark' ? '--home-nav-bg' : '--home-nav-bg'
+      : theme === 'dark' ? '--hnf-background' : '--hnf-background';
+    const color     = computed.getPropertyValue(varName)?.trim() || '#ffffff';
+    let metaTag = document.querySelector("meta[name='theme-color']");
+    if (!metaTag) {
+      metaTag = document.createElement('meta');
+      metaTag.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaTag);
+    }
+    metaTag.setAttribute('content', color);
+  }, [pathname, isHome, isAuthPage]);
 
   return (
-    <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
+    <html lang="en" className={isDarkMode ? 'dark' : ''} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
       </head>

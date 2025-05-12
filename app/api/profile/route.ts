@@ -1,4 +1,4 @@
-
+// app/api/profile/route.ts
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -24,6 +24,7 @@ export async function GET() {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
+  // merge Supabase Auth user + your extra profile columns
   const fullProfile = {
     ...user,
     ...profileData,

@@ -3,19 +3,23 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { channel_id: string } }
-) {
-  const cookieStore = cookies();
+type Context = {
+  params: {
+    channel_id: string;
+  };
+};
 
+export async function GET(_req: Request, context: Context) {
+  const { channel_id } = context.params;
+
+  const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: () => {}, // no-op in route handler
+        setAll: () => {},
       },
     }
   );
@@ -30,7 +34,7 @@ export async function GET(
   }
 
   const { data, error } = await supabase.rpc("get_channel_messages", {
-    p_channel_id: params.channel_id,
+    p_channel_id: channel_id,
     p_user_id: user.id,
     p_limit: 50,
     p_before_id: null,

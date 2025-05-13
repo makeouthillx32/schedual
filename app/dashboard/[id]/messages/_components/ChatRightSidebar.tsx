@@ -1,7 +1,7 @@
 'use client';
 
-import { Image, X, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { Image, X, Pencil, ChevronLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 interface Participant {
   id:          string;
@@ -24,13 +24,34 @@ export default function ChatRightSidebar({
   isGroup = false
 }: Props) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile viewport
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      // Default to closed on mobile
+      if (window.innerWidth < 768) {
+        setIsOpen(false);
+      }
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const renderAvatar = (avatar: string, name: string) => {
     if (avatar.startsWith('http')) {
       return (
         <img
           src={avatar}
-          alt={`${name}’s avatar`}
+          alt={`${name}'s avatar`}
           className="w-full h-full object-cover"
         />
       );
@@ -48,11 +69,19 @@ export default function ChatRightSidebar({
 
   if (!isOpen) {
     return (
-      <div className="w-12 flex flex-col border-l">
-        <button onClick={() => setIsOpen(true)}>
+      <div className={`${isMobile ? 'hidden' : 'w-12'} flex flex-col border-l`}>
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label="Open sidebar"
+        >
           <Pencil size={16} />
         </button>
-        <button onClick={() => setIsOpen(true)}>
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800"
+          aria-label="Open sidebar"
+        >
           <Image size={16} />
         </button>
       </div>
@@ -60,16 +89,25 @@ export default function ChatRightSidebar({
   }
 
   return (
-    <div className="w-64 border-l bg-white dark:bg-gray-dark text-gray-900 dark:text-white flex flex-col">
+    <div className={`${isMobile ? 'fixed inset-0 z-50' : 'w-64'} bg-white dark:bg-gray-dark text-gray-900 dark:text-white flex flex-col border-l`}>
       <div className="p-4 flex justify-between items-center border-b">
-        <h3 className="font-semibold">{isGroup ? 'Group Info' : 'Chat Info'}</h3>
+        <h3 className="font-semibold flex items-center">
+          {isMobile && (
+            <ChevronLeft 
+              size={20} 
+              className="mr-2" 
+              onClick={() => setIsOpen(false)}
+            />
+          )}
+          {isGroup ? 'Group Info' : 'Chat Info'}
+        </h3>
         <button onClick={() => setIsOpen(false)}>
           <X size={16} />
         </button>
       </div>
 
       <div className="p-4 flex flex-col items-center border-b">
-        <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-500 mb-2">
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-500 mb-2 flex items-center justify-center text-white">
           {isGroup ? (
             <span className="text-2xl font-semibold">G</span>
           ) : (
@@ -78,14 +116,14 @@ export default function ChatRightSidebar({
             </span>
           )}
         </div>
-        <h3 className="font-semibold text-lg">{selectedChatName}</h3>
+        <h3 className="font-semibold text-lg text-center">{selectedChatName}</h3>
         <p className="text-sm text-gray-500">
           {participants.length}{' '}
           {participants.length === 1 ? 'participant' : 'participants'}
         </p>
       </div>
 
-      <div className="p-4 border-b">
+      <div className="p-4 border-b overflow-y-auto">
         <h4 className="mb-3 font-semibold text-sm">
           {isGroup ? 'Participants' : 'About'}
         </h4>
@@ -106,7 +144,13 @@ export default function ChatRightSidebar({
         </div>
       </div>
 
-      {/* …shared media, etc. */}
+      {/* Mobile overlay background */}
+      {isMobile && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-[-1]"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -12,10 +12,10 @@ interface User {
 interface NewChatModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConversationCreated: (conversation: Conversation) => void;
+  onCreate: (conversation: Conversation) => void;
 }
 
-export default function NewChatModal({ isOpen, onClose, onConversationCreated }: NewChatModalProps) {
+export default function NewChatModal({ isOpen, onClose, onCreate }: NewChatModalProps) {
   const [mode, setMode] = useState<'dm' | 'group'>('dm');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -24,9 +24,26 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
   const [groupName, setGroupName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if we're on mobile viewport
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   // Fetch current user ID
   useEffect(() => {
@@ -143,155 +160,149 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     setSelectedUsers(prev => prev.filter(user => user.id !== userId));
   };
 
-    const handleCreateConversation = async () => {
+  const handleCreateConversation = async () => {
     if (mode === 'dm') {
-        if (selectedUsers.length !== 1) {
+      if (selectedUsers.length !== 1) {
         setError('Please select a user to start a DM');
         return;
-        }
+      }
 
-        try {
+      try {
         setIsLoading(true);
         
         // Make the request to your API endpoint
         const response = await fetch('/api/messages/start-dm', {
-            method: 'POST',
-            headers: {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          },
+          body: JSON.stringify({
             userIds: [selectedUsers[0].id],
-            }),
-            // This makes sure cookies are sent with the request
-            credentials: 'include',
+          }),
+          // This makes sure cookies are sent with the request
+          credentials: 'include',
         });
 
-        const responseText = await response.text();
-        console.log('API Response:', response.status, responseText);
-        
         if (!response.ok) {
-            throw new Error(`Failed to create DM: ${response.status} ${responseText}`);
+          throw new Error(`Failed to create DM: ${response.status}`);
         }
 
-        let channelId;
-        try {
-            // Try to parse the response as JSON
-            const data = JSON.parse(responseText);
-            channelId = data;
-        } catch (e) {
-            // If parsing fails, use the raw text as the channel ID
-            channelId = responseText;
-        }
+        const channelId = await response.text();
         
         // Create a conversation object to pass back
         const newConversation: Conversation = {
-            id: channelId,
-            name: selectedUsers[0].display_name || 'User',
-            last_message: null,
-            last_message_at: null,
-            is_group: false,
-            unread_count: 0,
-            participant_ids: [currentUserId, selectedUsers[0].id],
-            participant_names: [selectedUsers[0].display_name || 'User']
+          id: channelId,
+          channel_id: channelId,
+          channel_name: selectedUsers[0].display_name || 'User',
+          last_message: null,
+          last_message_at: null,
+          is_group: false,
+          unread_count: 0,
+          participants: [
+            {
+              user_id: selectedUsers[0].id,
+              display_name: selectedUsers[0].display_name || 'User',
+              avatar_url: '',
+              email: '',
+              online: false
+            }
+          ]
         };
         
-        onConversationCreated(newConversation);
+        onCreate(newConversation);
         onClose();
-        } catch (err) {
+      } catch (err) {
         console.error('Error creating DM:', err);
         setError('Failed to create conversation: ' + (err instanceof Error ? err.message : String(err)));
-        } finally {
+      } finally {
         setIsLoading(false);
-        }
+      }
     } else {
-        // Group chat logic
-        if (selectedUsers.length === 0) {
+      // Group chat logic
+      if (selectedUsers.length === 0) {
         setError('Please select at least one user for the group');
         return;
-        }
+      }
 
-        if (!groupName.trim()) {
+      if (!groupName.trim()) {
         setError('Please enter a group name');
         return;
-        }
+      }
 
-        try {
+      try {
         setIsLoading(true);
         
         // Make the request to your API endpoint
         const response = await fetch('/api/messages/start-group', {
-            method: 'POST',
-            headers: {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          },
+          body: JSON.stringify({
             // The backend will get the creator ID from the authenticated user
             name: groupName,
             participantIds: selectedUsers.map(user => user.id),
-            }),
-            // This makes sure cookies are sent with the request
-            credentials: 'include',
+          }),
+          // This makes sure cookies are sent with the request
+          credentials: 'include',
         });
 
-        const responseText = await response.text();
-        console.log('API Response:', response.status, responseText);
-        
         if (!response.ok) {
-            throw new Error(`Failed to create group: ${response.status} ${responseText}`);
+          throw new Error(`Failed to create group: ${response.status}`);
         }
 
-        let channelId;
-        try {
-            // Try to parse the response as JSON
-            const data = JSON.parse(responseText);
-            channelId = data.channelId;
-        } catch (e) {
-            console.error("Error parsing response:", e);
-            throw new Error("Invalid response format from server");
-        }
+        const data = await response.json();
+        const channelId = data.channelId;
         
         // Create a conversation object to pass back
         const newConversation: Conversation = {
-            id: channelId,
-            name: groupName,
-            last_message: null,
-            last_message_at: null,
-            is_group: true,
-            unread_count: 0,
-            participant_ids: [currentUserId, ...selectedUsers.map(user => user.id)],
-            participant_names: selectedUsers.map(user => user.display_name || 'User')
+          id: channelId,
+          channel_id: channelId,
+          channel_name: groupName,
+          last_message: null,
+          last_message_at: null,
+          is_group: true,
+          unread_count: 0,
+          participants: selectedUsers.map(user => ({
+            user_id: user.id,
+            display_name: user.display_name || 'User',
+            avatar_url: '',
+            email: '',
+            online: false
+          }))
         };
         
-        onConversationCreated(newConversation);
+        onCreate(newConversation);
         onClose();
-        } catch (err) {
+      } catch (err) {
         console.error('Error creating group chat:', err);
         setError('Failed to create group conversation: ' + (err instanceof Error ? err.message : String(err)));
-        } finally {
+      } finally {
         setIsLoading(false);
-        }
+      }
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md mx-4"
+        className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md mx-auto max-h-[90vh] flex flex-col"
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">New Conversation</h2>
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            aria-label="Close modal"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 overflow-y-auto flex-1">
           {/* Toggle between DM and Group Chat */}
           <div className="flex mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
             <button
@@ -302,8 +313,8 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               }`}
               onClick={() => setMode('dm')}
             >
-              <UserCircle size={16} className="inline mr-2" />
-              Direct Message
+              <UserCircle size={16} className="inline mr-1" />
+              <span className={isMobile ? 'text-sm' : ''}>Direct Message</span>
             </button>
             <button
               className={`flex-1 py-2 text-center ${
@@ -313,8 +324,8 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               }`}
               onClick={() => setMode('group')}
             >
-              <Users size={16} className="inline mr-2" />
-              Group Chat
+              <Users size={16} className="inline mr-1" />
+              <span className={isMobile ? 'text-sm' : ''}>Group Chat</span>
             </button>
           </div>
 
@@ -340,10 +351,11 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                     key={user.id}
                     className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-2 py-1 rounded-full flex items-center text-sm"
                   >
-                    <span>{user.display_name || 'User'}</span>
+                    <span className="truncate max-w-[150px]">{user.display_name || 'User'}</span>
                     <button 
                       onClick={() => handleRemoveUser(user.id)}
                       className="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
+                      aria-label={`Remove ${user.display_name || 'user'}`}
                     >
                       <X size={14} />
                     </button>
@@ -369,7 +381,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
           </div>
 
           {/* Search results */}
-          <div className="max-h-60 overflow-y-auto mb-4">
+          <div className="max-h-48 overflow-y-auto mb-4 rounded-lg">
             {isLoading ? (
               <div className="text-center py-2 text-gray-500 dark:text-gray-400">Searching...</div>
             ) : searchQuery && searchResults.length === 0 ? (
@@ -381,10 +393,10 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer rounded-lg flex items-center"
                   onClick={() => handleSelectUser(user)}
                 >
-                  <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-3">
+                  <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 mr-3 flex-shrink-0">
                     {(user.display_name?.[0] || '?').toUpperCase()}
                   </div>
-                  <span className="text-gray-900 dark:text-white">{user.display_name || 'User'}</span>
+                  <span className="text-gray-900 dark:text-white truncate">{user.display_name || 'User'}</span>
                 </div>
               ))
             )}
@@ -394,27 +406,27 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
           {error && (
             <div className="text-red-500 text-sm mb-4">{error}</div>
           )}
+        </div>
 
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2 mt-6">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCreateConversation}
-              disabled={mode === 'dm' ? selectedUsers.length !== 1 : selectedUsers.length === 0 || !groupName.trim()}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${
-                (mode === 'dm' ? selectedUsers.length !== 1 : selectedUsers.length === 0 || !groupName.trim())
-                  ? 'opacity-50 cursor-not-allowed'
-                  : ''
-              }`}
-            >
-              {mode === 'dm' ? 'Start Chat' : 'Create Group'}
-            </button>
-          </div>
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreateConversation}
+            disabled={mode === 'dm' ? selectedUsers.length !== 1 : selectedUsers.length === 0 || !groupName.trim() || isLoading}
+            className={`px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${
+              (mode === 'dm' ? selectedUsers.length !== 1 : selectedUsers.length === 0 || !groupName.trim() || isLoading)
+                ? 'opacity-50 cursor-not-allowed'
+                : ''
+            }`}
+          >
+            {isLoading ? 'Creating...' : mode === 'dm' ? 'Start Chat' : 'Create Group'}
+          </button>
         </div>
       </div>
     </div>

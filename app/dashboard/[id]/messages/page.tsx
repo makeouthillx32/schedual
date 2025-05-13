@@ -8,7 +8,7 @@ import ChatHeader from './_components/ChatHeader';
 import ChatMessages, { Message } from './_components/ChatMessages';
 import MessageInput from './_components/MessageInput';
 import ChatRightSidebar from './_components/ChatRightSidebar';
-import './mobile.scss'; // Import our new SCSS file
+import './_components/mobile.scss'; // Import our new SCSS file
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

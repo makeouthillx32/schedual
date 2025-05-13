@@ -89,6 +89,7 @@ export default function ChatPage() {
           console.log('[Realtime] Message already exists in state, skipping');
           return prev;
         }
+        // Append message to end of array
         return [...prev, transformedMessage];
       });
       
@@ -104,6 +105,8 @@ export default function ChatPage() {
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
+      // Initialize sidebar visibility based on device
+      setShowSidebar(window.innerWidth >= 768);
     };
     
     checkIsMobile();
@@ -138,7 +141,13 @@ export default function ChatPage() {
         
         const messageData = await res.json();
         console.log(`[ChatPage] Received ${messageData.length} messages from API`);
-        setMessages(messageData);
+        
+        // Sort messages to ensure chronological order (oldest first)
+        const sortedMessages = [...messageData].sort((a, b) => 
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        
+        setMessages(sortedMessages);
         
         // Scroll to bottom after a tiny delay to ensure DOM update
         setTimeout(() => {
@@ -151,7 +160,7 @@ export default function ChatPage() {
         setLoadingMessages(false);
       }
    
-      // Auto-hide sidebar on mobile when a chat is selected
+      // Keep sidebar visible on mobile when a chat is selected
       if (isMobile) {
         setShowSidebar(false);
       }
@@ -227,6 +236,7 @@ export default function ChatPage() {
   const handleSelectChat = (chat: Conversation) => {
     console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
+    // Keep sidebar visible on desktop, hide on mobile when chat selected
     if (isMobile) setShowSidebar(false);
   };
 
@@ -235,6 +245,16 @@ export default function ChatPage() {
   if (!selectedChat) {
     return (
       <div className="chat-container">
+        {/* Mobile sidebar toggle button - always visible */}
+        {isMobile && (
+          <button 
+            className="chat-sidebar-toggle"
+            onClick={() => setShowSidebar(!showSidebar)}
+          >
+            {showSidebar ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
+        
         <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
           <ChatSidebar 
             selectedChat={null} 
@@ -256,15 +276,6 @@ export default function ChatPage() {
             <h2>Select a conversation</h2>
           )}
         </div>
-        
-        {isMobile && (
-          <button 
-            className="chat-sidebar-toggle"
-            onClick={() => setShowSidebar(!showSidebar)}
-          >
-            {showSidebar ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        )}
       </div>
     );
   }
@@ -290,7 +301,7 @@ export default function ChatPage() {
 
   return (
     <div className="chat-container">
-      {/* Mobile sidebar toggle button */}
+      {/* Mobile sidebar toggle button - always visible */}
       {isMobile && (
         <button 
           className="chat-sidebar-toggle"

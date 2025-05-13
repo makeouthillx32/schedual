@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
 const supabase = createBrowserClient(
@@ -15,10 +15,20 @@ type UseRealtimeInsertParams<T> = {
 };
 
 export function useRealtimeInsert<T>({ table, filter, onInsert }: UseRealtimeInsertParams<T>) {
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
   useEffect(() => {
-    const channelId = filter ? `${table}:${filter}` : `${table}-insert`;
+    if (!table) return;
+
+    const channelName = `realtime-${table}-${filter ?? "all"}`;
+
+    // Unsubscribe any old channel before creating new one
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
     const channel = supabase
-      .channel(channelId)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -28,13 +38,23 @@ export function useRealtimeInsert<T>({ table, filter, onInsert }: UseRealtimeIns
           ...(filter ? { filter } : {}),
         },
         (payload) => {
-          onInsert(payload.new as T);
+          const newRow = payload.new as T;
+          onInsert(newRow);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== "SUBSCRIBED") {
+          console.warn(`[Realtime] Failed to subscribe to ${channelName}`);
+        }
+      });
+
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [table, filter, onInsert]);
 }

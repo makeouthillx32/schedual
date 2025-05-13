@@ -1,5 +1,3 @@
-// app/layout.tsx
-
 "use client";
 
 import { Providers } from "./provider";
@@ -20,6 +18,7 @@ export default function RootLayout({
 
   const isHome = pathname === "/";
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
+  const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,16 +35,18 @@ export default function RootLayout({
       setIsDarkMode(theme === "dark");
 
       const computedStyle = getComputedStyle(document.documentElement);
-      let color = "#ffffff"; // fallback
+      let color = "#ffffff";
 
       if (isHome) {
-        color = theme === "dark"
-          ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
-          : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff";
+        color =
+          theme === "dark"
+            ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
+            : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff";
       } else {
-        color = theme === "dark"
-          ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
-          : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb";
+        color =
+          theme === "dark"
+            ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
+            : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb";
       }
 
       const metaTag = document.querySelector("meta[name='theme-color']");
@@ -60,8 +61,8 @@ export default function RootLayout({
     }
   }, [pathname, isHome]);
 
-  // hide Nav/Footer on home or any /tools/* page
-  const excludeGlobalLayout = isHome || isToolsPage;
+  const showNav = !isHome && !isToolsPage && !isDashboardPage;
+  const showFooter = !isHome || isDashboardPage;
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
@@ -70,9 +71,9 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          {!excludeGlobalLayout && <Nav />}
+          {showNav && <Nav />}
           <main>{children}</main>
-          {!excludeGlobalLayout && <Footer />}
+          {showFooter && <Footer />}
         </Providers>
       </body>
     </html>

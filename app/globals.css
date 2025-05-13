@@ -6,6 +6,7 @@
 @import "@/style/nav.css"; /* Styles for the navigation bar */
 @import "@/style/switch-to-dark-mode.css"; /* Styles for the dark mode toggle */
 @import "@/style/TSC.css";
+@import './_components/mobile.scss'; // Import our new SCSS file
 
 
 

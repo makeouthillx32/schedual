@@ -50,34 +50,30 @@ export default function ChatMessages({
       );
     }
     return (
-      <div
-        className={`w-full h-full flex items-center justify-center text-white ${
-          avatarColors[avatar] || 'bg-gray-500'
-        }`}
-      >
+      <div className={`avatar-initials ${avatarColors[avatar] || 'bg-gray-500'}`}>
         <span className="text-xs font-semibold uppercase">{avatar}</span>
       </div>
     );
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="chat-messages">
       {messages.map((message) => {
         const isCurrentUser = message.sender.id === currentUserId;
         return (
           <div
             key={message.id}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-3`}
           >
             {!isCurrentUser && (
-              <div className="flex-shrink-0 mr-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-500">
+              <div className="flex-shrink-0 mr-2">
+                <div className="message-avatar rounded-full overflow-hidden">
                   {renderAvatar(message.sender.avatar, message.sender.name)}
                 </div>
               </div>
             )}
 
-            <div className={`max-w-[70%] ${isCurrentUser ? 'order-1' : 'order-2'}`}>
+            <div className={`message ${isCurrentUser ? 'order-1' : 'order-2'}`}>
               {!isCurrentUser && (
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-1">
                   {message.sender.name}
@@ -86,16 +82,16 @@ export default function ChatMessages({
 
               <div className="flex flex-col">
                 <div
-                  className={`p-3 rounded-2xl ${
+                  className={`message-bubble ${
                     isCurrentUser
                       ? 'bg-blue-500 text-white rounded-tr-none'
                       : 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white rounded-tl-none'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm break-words">{message.content}</p>
 
                   {message.image && (
-                    <div className="mt-2 rounded-lg overflow-hidden">
+                    <div className="mt-2 message-image">
                       <img
                         src={message.image}
                         alt="Shared"
@@ -125,8 +121,8 @@ export default function ChatMessages({
             </div>
 
             {isCurrentUser && (
-              <div className="flex-shrink-0 ml-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-500">
+              <div className="flex-shrink-0 ml-2">
+                <div className="message-avatar rounded-full overflow-hidden">
                   {renderAvatar(message.sender.avatar, message.sender.name)}
                 </div>
               </div>

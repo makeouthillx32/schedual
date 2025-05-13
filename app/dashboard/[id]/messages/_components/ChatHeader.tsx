@@ -14,6 +14,7 @@ interface ChatHeaderProps {
   isGroup?: boolean;
   participants?: Participant[];
   currentUserId: string;
+  onInfoClick?: () => void;
 }
 
 export default function ChatHeader({
@@ -21,7 +22,8 @@ export default function ChatHeader({
   timestamp,
   isGroup,
   participants,
-  currentUserId
+  currentUserId,
+  onInfoClick
 }: ChatHeaderProps) {
   let title = name ?? 'Unnamed Chat';
 
@@ -33,19 +35,25 @@ export default function ChatHeader({
   }
 
   return (
-    <header className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-      <div>
-        <h2 className="text-xl font-semibold">{title}</h2>
+    <header className="chat-header">
+      <div className="chat-header-title">
+        <h2 className="text-xl font-semibold truncate">{title}</h2>
         {timestamp && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 truncate">
             Last message {formatDistanceToNow(new Date(timestamp), { addSuffix: true })}
           </p>
         )}
       </div>
-      <div className="flex space-x-4">
-        <Video />
-        <Phone />
-        <Info />
+      <div className="chat-header-actions">
+        <button className="hidden md:flex">
+          <Video size={20} />
+        </button>
+        <button className="hidden md:flex">
+          <Phone size={20} />
+        </button>
+        <button onClick={onInfoClick}>
+          <Info size={20} />
+        </button>
       </div>
     </header>
   );

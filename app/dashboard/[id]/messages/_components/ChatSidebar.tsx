@@ -34,27 +34,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile viewport
-  useEffect(() => {
-    const checkIfMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      // Default to closed on mobile
-      setIsMobileOpen(!mobile);
-    };
-    
-    // Initial check
-    checkIfMobile();
-    
-    // Add event listener for resize
-    window.addEventListener('resize', checkIfMobile);
-    
-    // Cleanup
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function fetchConversations() {
@@ -82,7 +62,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
         }));
 
         setConversations(mapped);
-        // auto‑select first chat if none selected
+        // auto-select first chat if none selected
         if (mapped.length > 0 && !selectedChat) {
           onSelectChat(mapped[0]);
         }
@@ -103,42 +83,30 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   // When a chat is selected on mobile, close sidebar
   const handleChatSelect = (conv: Conversation) => {
     onSelectChat(conv);
-    if (isMobile) {
-      setIsMobileOpen(false);
-    }
+    setIsMobileSidebarOpen(false);
   };
-
-  // Mobile toggle button
-  const MobileToggle = () => (
-    <button 
-      onClick={() => setIsMobileOpen(!isMobileOpen)}
-      className={`md:hidden fixed z-20 top-4 left-4 p-2 rounded-md ${isMobileOpen ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}
-      aria-label={isMobileOpen ? "Close sidebar" : "Open sidebar"}
-    >
-      {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
-    </button>
-  );
 
   return (
     <>
-      <MobileToggle />
-      
-      {/* Mobile overlay */}
-      {isMobile && isMobileOpen && (
+      {/* Mobile Overlay */}
+      {isMobileSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-10"
-          onClick={() => setIsMobileOpen(false)}
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+          onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
 
-      <div 
-        className={`
-          ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'} 
-          ${isMobileOpen ? 'translate-x-0' : isMobile ? '-translate-x-full' : ''}
-          w-64 bg-white dark:bg-gray-dark text-gray-900 dark:text-white 
-          flex flex-col border-r transition-transform duration-300 ease-in-out
-        `}
+      {/* Sidebar Toggle Button */}
+      <button 
+        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        className="chat-sidebar-toggle"
+        aria-label={isMobileSidebarOpen ? "Close sidebar" : "Open sidebar"}
       >
+        {isMobileSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Sidebar */}
+      <div className={`chat-sidebar ${!isMobileSidebarOpen ? 'hidden-mobile' : ''}`}>
         <div className="p-4 flex justify-between border-b">
           <h1 className="font-semibold">My Chats</h1>
           <button
@@ -169,10 +137,15 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
                 }`}
               >
                 <div className="font-medium">{conv.channel_name}</div>
-                <div className="text-xs text-gray-500 truncate">
+                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                   {conv.last_message ?? 'No messages yet'} •{' '}
                   {formatTimestamp(conv.last_message_at)}
                 </div>
+                {conv.unread_count > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 ml-2 text-xs font-semibold text-white bg-blue-500 rounded-full">
+                    {conv.unread_count}
+                  </span>
+                )}
               </button>
             ))
           )}

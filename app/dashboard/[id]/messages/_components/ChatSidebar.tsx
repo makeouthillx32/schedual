@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Menu, X } from 'lucide-react';
 import NewChatModal from './NewChatModal';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -31,9 +31,30 @@ interface ChatSidebarProps {
 
 export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isLoading, setIsLoading]       = useState(true);
-  const [error, setError]               = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile viewport
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Default to closed on mobile
+      setIsMobileOpen(!mobile);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Add event listener for resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   useEffect(() => {
     async function fetchConversations() {
@@ -79,9 +100,45 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   const formatTimestamp = (ts: string | null) =>
     ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
 
+  // When a chat is selected on mobile, close sidebar
+  const handleChatSelect = (conv: Conversation) => {
+    onSelectChat(conv);
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  // Mobile toggle button
+  const MobileToggle = () => (
+    <button 
+      onClick={() => setIsMobileOpen(!isMobileOpen)}
+      className={`md:hidden fixed z-20 top-4 left-4 p-2 rounded-md ${isMobileOpen ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800'}`}
+      aria-label={isMobileOpen ? "Close sidebar" : "Open sidebar"}
+    >
+      {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
+    </button>
+  );
+
   return (
     <>
-      <div className="w-64 bg-white dark:bg-gray-dark text-gray-900 dark:text-white flex flex-col border-r">
+      <MobileToggle />
+      
+      {/* Mobile overlay */}
+      {isMobile && isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-10"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <div 
+        className={`
+          ${isMobile ? 'fixed inset-y-0 left-0 z-30' : 'relative'} 
+          ${isMobileOpen ? 'translate-x-0' : isMobile ? '-translate-x-full' : ''}
+          w-64 bg-white dark:bg-gray-dark text-gray-900 dark:text-white 
+          flex flex-col border-r transition-transform duration-300 ease-in-out
+        `}
+      >
         <div className="p-4 flex justify-between border-b">
           <h1 className="font-semibold">My Chats</h1>
           <button
@@ -104,7 +161,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
             conversations.map((conv) => (
               <button
                 key={conv.id}
-                onClick={() => onSelectChat(conv)}
+                onClick={() => handleChatSelect(conv)}
                 className={`w-full text-left p-3 hover:bg-gray-100 dark:hover:bg-gray-700 ${
                   selectedChat?.id === conv.id
                     ? 'bg-gray-200 dark:bg-gray-600'
@@ -112,7 +169,7 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
                 }`}
               >
                 <div className="font-medium">{conv.channel_name}</div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 truncate">
                   {conv.last_message ?? 'No messages yet'} •{' '}
                   {formatTimestamp(conv.last_message_at)}
                 </div>

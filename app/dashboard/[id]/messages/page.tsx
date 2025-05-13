@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
+import { Menu, X } from 'lucide-react';
 import ChatSidebar, { Conversation } from './_components/ChatSidebar';
 import ChatHeader from './_components/ChatHeader';
 import ChatMessages, { Message } from './_components/ChatMessages';
 import MessageInput from './_components/MessageInput';
 import ChatRightSidebar from './_components/ChatRightSidebar';
-import { createBrowserClient } from '@supabase/ssr';
+import './mobile.scss'; // Import our new SCSS file
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +28,23 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
 
   // 1️⃣ Load current user
   useEffect(() => {
@@ -40,13 +59,19 @@ export default function ChatPage() {
       setMessages([]);
       return;
     }
+    
     (async () => {
       const res = await fetch(`/api/messages/${selectedChat.id}`);
       if (!res.ok) return console.error('Failed to load messages');
       setMessages(await res.json());
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      
+      // Auto-hide sidebar on mobile when a chat is selected
+      if (isMobile) {
+        setShowSidebar(false);
+      }
     })();
-  }, [selectedChat]);
+  }, [selectedChat, isMobile]);
 
   // 3️⃣ Send new message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -65,14 +90,48 @@ export default function ChatPage() {
     else setMessageText('');
   };
 
-  // 4️⃣ If no chat selected, show prompt
+  // Handle chat selection with sidebar toggle
+  const handleSelectChat = (chat: Conversation) => {
+    setSelectedChat(chat);
+    if (isMobile) {
+      setShowSidebar(false);
+    }
+  };
+
+  // 4️⃣ If no chat selected, show prompt or sidebar on mobile
   if (!selectedChat) {
     return (
-      <div className="flex h-screen">
-        <ChatSidebar selectedChat={null} onSelectChat={setSelectedChat} />
-        <div className="flex-1 flex items-center justify-center">
-          <h2>Select a conversation</h2>
+      <div className="chat-container">
+        <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
+          <ChatSidebar 
+            selectedChat={null} 
+            onSelectChat={handleSelectChat} 
+          />
         </div>
+        
+        <div className="flex-1 flex items-center justify-center">
+          {isMobile && !showSidebar ? (
+            <div className="text-center p-4">
+              <button 
+                onClick={() => setShowSidebar(true)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
+              >
+                Select a conversation
+              </button>
+            </div>
+          ) : !isMobile && (
+            <h2>Select a conversation</h2>
+          )}
+        </div>
+        
+        {isMobile && (
+          <button 
+            className="chat-sidebar-toggle"
+            onClick={() => setShowSidebar(!showSidebar)}
+          >
+            {showSidebar ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        )}
       </div>
     );
   }
@@ -87,7 +146,7 @@ export default function ChatPage() {
           .join(', ')
       : 'Unnamed Group');
 
-  // 6️⃣ Map participants into ChatRightSidebar’s shape
+  // 6️⃣ Map participants into ChatRightSidebar's shape
   const sidebarParticipants = selectedChat.participants.map((p) => ({
     id:     p.user_id,
     name:   p.display_name,
@@ -97,14 +156,32 @@ export default function ChatPage() {
   }));
 
   return (
-    <div className="flex h-screen">
-      <ChatSidebar selectedChat={selectedChat} onSelectChat={setSelectedChat} />
+    <div className="chat-container">
+      {/* Mobile sidebar toggle button */}
+      {isMobile && (
+        <button 
+          className="chat-sidebar-toggle"
+          onClick={() => setShowSidebar(!showSidebar)}
+        >
+          {showSidebar ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      )}
+      
+      {/* Sidebar with responsive visibility */}
+      <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
+        <ChatSidebar 
+          selectedChat={selectedChat} 
+          onSelectChat={handleSelectChat} 
+        />
+      </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="chat-content">
         <ChatHeader
           name={resolvedName}
           timestamp={selectedChat.last_message_at || ''}
           isGroup={selectedChat.is_group}
+          currentUserId={currentUserId || ''}
+          onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
         />
 
         <ChatMessages
@@ -121,12 +198,16 @@ export default function ChatPage() {
         />
       </div>
 
-      <ChatRightSidebar
-        selectedChatName={resolvedName}
-        participants={sidebarParticipants}
-        avatarColors={avatarColors}
-        isGroup={selectedChat.is_group}
-      />
+      {/* Right sidebar with mobile drawer behavior */}
+      <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
+        <ChatRightSidebar
+          selectedChatName={resolvedName}
+          participants={sidebarParticipants}
+          avatarColors={avatarColors}
+          isGroup={selectedChat.is_group}
+          onClose={() => setShowRightSidebar(false)}
+        />
+      </div>
     </div>
   );
 }

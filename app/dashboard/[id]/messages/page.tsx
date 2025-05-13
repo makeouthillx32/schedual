@@ -9,7 +9,7 @@ import ChatMessages, { Message } from './_components/ChatMessages';
 import MessageInput from './_components/MessageInput';
 import ChatRightSidebar from './_components/ChatRightSidebar';
 import './_components/mobile.scss'; // Import our new SCSS file
-
+import { useRealtimeInsert } from '@/hooks/useRealtimeInsert'; // top of file
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -32,6 +32,17 @@ export default function ChatPage() {
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+// Add real-time listener for incoming messages
+useRealtimeInsert<Message>({
+  table: 'messages',
+  filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
+  onInsert: (newMsg) => {
+    if (newMsg.channel_id === selectedChat?.id) {
+      setMessages((prev) => [...prev, newMsg]);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  },
+});
   // Check if we're on mobile
   useEffect(() => {
     const checkIsMobile = () => {
@@ -65,7 +76,7 @@ export default function ChatPage() {
       if (!res.ok) return console.error('Failed to load messages');
       setMessages(await res.json());
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      
+   
       // Auto-hide sidebar on mobile when a chat is selected
       if (isMobile) {
         setShowSidebar(false);

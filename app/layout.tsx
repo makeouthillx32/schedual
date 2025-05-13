@@ -1,11 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import "./globals.css";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { setCookie } from "@/lib/cookieUtils";
 
 export default function RootLayout({
@@ -62,7 +62,7 @@ export default function RootLayout({
   }, [pathname, isHome]);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
-  const showFooter = !isHome || isDashboardPage;
+  const showFooter = !isHome && !isDashboardPage;
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>

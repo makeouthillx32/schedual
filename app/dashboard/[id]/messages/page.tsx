@@ -1,4 +1,3 @@
-// Updated Chat Page with fixed realtime functionality
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -13,6 +12,7 @@ import './_components/mobile.scss'; // Import our new SCSS file
 import LoadingSVG from '@/app/_components/_events/loading-page';
 import { useRealtimeInsert } from '@/hooks/useRealtimeInsert'; // top of file
 
+// Create a single shared Supabase client instance
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -35,13 +35,37 @@ export default function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [supabaseReady, setSupabaseReady] = useState(false);
 
-  // Add real-time listener for incoming messages - FIXED
+  // 1️⃣ Load current user and mark Supabase as ready
+  useEffect(() => {
+    console.log("[ChatPage] Initializing and fetching current user");
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        console.error("[ChatPage] Auth error:", error);
+        return;
+      }
+      
+      if (data.user?.id) {
+        console.log("[ChatPage] User authenticated:", data.user.id);
+        setCurrentUserId(data.user.id);
+      } else {
+        console.log("[ChatPage] No authenticated user found");
+      }
+      
+      // Mark supabase as ready for realtime
+      setSupabaseReady(true);
+      console.log("[ChatPage] Supabase client ready for realtime");
+    });
+  }, []);
+
+  // Add real-time listener for incoming messages with shared Supabase client
   useRealtimeInsert({
+    supabase, // Pass the shared client
     table: 'messages',
     filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
     onInsert: (newMsg: any) => {
-      console.log('[Realtime] Processing new message:', newMsg);
+      console.log('[Realtime] Processing new message in component:', newMsg);
       
       // Transform the raw message into the expected Message format
       const transformedMessage: Message = {
@@ -59,10 +83,18 @@ export default function ChatPage() {
       };
       
       console.log('[Realtime] Adding message to state:', transformedMessage);
-      setMessages(prev => [...prev, transformedMessage]);
+      setMessages(prev => {
+        // Check if message already exists to prevent duplicates
+        if (prev.some(msg => msg.id === newMsg.id)) {
+          console.log('[Realtime] Message already exists in state, skipping');
+          return prev;
+        }
+        return [...prev, transformedMessage];
+      });
       
       // Scroll to bottom after a tiny delay to ensure DOM update
       setTimeout(() => {
+        console.log('[Realtime] Scrolling to bottom');
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 50);
     },
@@ -82,37 +114,39 @@ export default function ChatPage() {
     };
   }, []);
 
-  // 1️⃣ Load current user
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.id) setCurrentUserId(data.user.id);
-    });
-  }, []);
-
   // 2️⃣ Fetch messages on chat change
   useEffect(() => {
     if (!selectedChat) {
+      console.log("[ChatPage] No chat selected, clearing messages");
       setMessages([]);
       return;
     }
     
+    console.log(`[ChatPage] Fetching messages for chat: ${selectedChat.id}`);
+    
     (async () => {
       setLoadingMessages(true);
       try {
+        console.log(`[ChatPage] Requesting messages from API: /api/messages/${selectedChat.id}`);
         const res = await fetch(`/api/messages/${selectedChat.id}`);
+        
         if (!res.ok) {
-          console.error('Failed to load messages', await res.text());
+          const errorText = await res.text();
+          console.error(`[ChatPage] Failed to load messages: ${res.status}`, errorText);
           return;
         }
+        
         const messageData = await res.json();
+        console.log(`[ChatPage] Received ${messageData.length} messages from API`);
         setMessages(messageData);
         
         // Scroll to bottom after a tiny delay to ensure DOM update
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          console.log("[ChatPage] Scrolled to bottom after loading messages");
         }, 50);
       } catch (err) {
-        console.error('Error fetching messages:', err);
+        console.error('[ChatPage] Error fetching messages:', err);
       } finally {
         setLoadingMessages(false);
       }
@@ -124,38 +158,74 @@ export default function ChatPage() {
     })();
   }, [selectedChat, isMobile]);
 
-  // 3️⃣ Send new message (optimistic append)
+  // 3️⃣ Send new message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || !selectedChat || !currentUserId) return;
+    if (!messageText.trim() || !selectedChat || !currentUserId) {
+      console.log("[ChatPage] Cannot send message - missing data:", { 
+        hasMessage: !!messageText.trim(), 
+        hasSelectedChat: !!selectedChat, 
+        hasUser: !!currentUserId 
+      });
+      return;
+    }
 
-    console.log('Sending message to channel:', selectedChat.id);
+    const messageContent = messageText.trim();
+    console.log(`[ChatPage] Sending message to channel ${selectedChat.id}:`, messageContent);
     
-    // Insert & return the new message
-    const { data, error } = await supabase
-      .from('messages')
-      .insert(
-        {
-          channel_id: selectedChat.id,
-          sender_id:  currentUserId,
-          content:    messageText.trim(),
-        },
-        { returning: 'representation' }
-      );
+    // Optimistically add message to state for immediate feedback
+    const optimisticMessage: Message = {
+      id: Date.now(), // Temporary ID
+      content: messageContent,
+      timestamp: new Date().toISOString(),
+      likes: 0,
+      image: null,
+      sender: {
+        id: currentUserId,
+        name: 'You', // Placeholder, will be replaced by server data
+        avatar: '',
+        email: '',
+      }
+    };
+    
+    console.log("[ChatPage] Adding optimistic message:", optimisticMessage);
+    setMessages(prev => [...prev, optimisticMessage]);
+    setMessageText(''); // Clear input right away
+    
+    // Scroll to bottom after optimistic update
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+    
+    // Now send to server
+    try {
+      console.log("[ChatPage] Sending message to Supabase");
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(
+          {
+            channel_id: selectedChat.id,
+            sender_id:  currentUserId,
+            content:    messageContent,
+          },
+          { returning: 'representation' }
+        );
 
-    if (error) {
-      console.error('Send error:', error.message);
-    } else {
-      console.log('Message sent successfully:', data);
-      
-      // Clear input regardless of whether we add the message to state
-      // (realtime subscription should handle it)
-      setMessageText('');
+      if (error) {
+        console.error('[ChatPage] Send error:', error);
+        // Could add error handling UI here
+      } else {
+        console.log('[ChatPage] Message sent successfully:', data);
+        // The real message will come through the realtime subscription
+      }
+    } catch (err) {
+      console.error('[ChatPage] Error sending message:', err);
     }
   };
 
   // Handle chat selection with sidebar toggle
   const handleSelectChat = (chat: Conversation) => {
+    console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
     if (isMobile) setShowSidebar(false);
   };

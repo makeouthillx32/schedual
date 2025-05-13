@@ -1,3 +1,4 @@
+// Updated Chat Page with fixed realtime functionality
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -9,7 +10,9 @@ import ChatMessages, { Message } from './_components/ChatMessages';
 import MessageInput from './_components/MessageInput';
 import ChatRightSidebar from './_components/ChatRightSidebar';
 import './_components/mobile.scss'; // Import our new SCSS file
+import LoadingSVG from '@/app/_components/_events/loading-page';
 import { useRealtimeInsert } from '@/hooks/useRealtimeInsert'; // top of file
+
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -26,23 +29,45 @@ export default function ChatPage() {
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageText, setMessageText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-// Add real-time listener for incoming messages
-useRealtimeInsert<Message>({
-  table: 'messages',
-  filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
-  onInsert: (newMsg) => {
-    if (newMsg.channel_id === selectedChat?.id) {
-      setMessages((prev) => [...prev, newMsg]);
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  },
-});
+  // Add real-time listener for incoming messages - FIXED
+  useRealtimeInsert({
+    table: 'messages',
+    filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
+    onInsert: (newMsg: any) => {
+      console.log('[Realtime] Processing new message:', newMsg);
+      
+      // Transform the raw message into the expected Message format
+      const transformedMessage: Message = {
+        id: newMsg.id,
+        content: newMsg.content,
+        timestamp: newMsg.created_at || new Date().toISOString(),
+        likes: 0,
+        image: null,
+        sender: {
+          id: newMsg.sender_id,
+          name: newMsg.sender_name || 'Unknown User',
+          avatar: newMsg.sender_avatar || '',
+          email: newMsg.sender_email || '',
+        }
+      };
+      
+      console.log('[Realtime] Adding message to state:', transformedMessage);
+      setMessages(prev => [...prev, transformedMessage]);
+      
+      // Scroll to bottom after a tiny delay to ensure DOM update
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    },
+  });
+  
   // Check if we're on mobile
   useEffect(() => {
     const checkIsMobile = () => {
@@ -72,10 +97,25 @@ useRealtimeInsert<Message>({
     }
     
     (async () => {
-      const res = await fetch(`/api/messages/${selectedChat.id}`);
-      if (!res.ok) return console.error('Failed to load messages');
-      setMessages(await res.json());
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setLoadingMessages(true);
+      try {
+        const res = await fetch(`/api/messages/${selectedChat.id}`);
+        if (!res.ok) {
+          console.error('Failed to load messages', await res.text());
+          return;
+        }
+        const messageData = await res.json();
+        setMessages(messageData);
+        
+        // Scroll to bottom after a tiny delay to ensure DOM update
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+      } catch (err) {
+        console.error('Error fetching messages:', err);
+      } finally {
+        setLoadingMessages(false);
+      }
    
       // Auto-hide sidebar on mobile when a chat is selected
       if (isMobile) {
@@ -84,30 +124,42 @@ useRealtimeInsert<Message>({
     })();
   }, [selectedChat, isMobile]);
 
-  // 3️⃣ Send new message
+  // 3️⃣ Send new message (optimistic append)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || !selectedChat || !currentUserId) return;
 
-    const { error } = await supabase
+    console.log('Sending message to channel:', selectedChat.id);
+    
+    // Insert & return the new message
+    const { data, error } = await supabase
       .from('messages')
-      .insert({
-        channel_id: selectedChat.id,
-        sender_id:  currentUserId,
-        content:    messageText.trim(),
-      });
+      .insert(
+        {
+          channel_id: selectedChat.id,
+          sender_id:  currentUserId,
+          content:    messageText.trim(),
+        },
+        { returning: 'representation' }
+      );
 
-    if (error) console.error('Send error:', error.message);
-    else setMessageText('');
+    if (error) {
+      console.error('Send error:', error.message);
+    } else {
+      console.log('Message sent successfully:', data);
+      
+      // Clear input regardless of whether we add the message to state
+      // (realtime subscription should handle it)
+      setMessageText('');
+    }
   };
 
   // Handle chat selection with sidebar toggle
   const handleSelectChat = (chat: Conversation) => {
     setSelectedChat(chat);
-    if (isMobile) {
-      setShowSidebar(false);
-    }
+    if (isMobile) setShowSidebar(false);
   };
+
 
   // 4️⃣ If no chat selected, show prompt or sidebar on mobile
   if (!selectedChat) {
@@ -194,19 +246,25 @@ useRealtimeInsert<Message>({
           currentUserId={currentUserId || ''}
           onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
         />
-
-        <ChatMessages
-          messages={messages}
-          currentUserId={currentUserId!}
-          messagesEndRef={messagesEndRef}
-          avatarColors={avatarColors}
-        />
-
-        <MessageInput
-          message={messageText}
-          onSetMessage={setMessageText}
-          handleSendMessage={handleSendMessage}
-        />
+        {loadingMessages ? (
+          <div className="flex items-center justify-center h-full">
+            <LoadingSVG />
+          </div>
+          ) : (
+            <>
+            <ChatMessages
+              messages={messages}
+              currentUserId={currentUserId!}
+              messagesEndRef={messagesEndRef}
+              avatarColors={avatarColors}
+            />
+            <MessageInput
+              message={messageText}
+              onSetMessage={setMessageText}
+              handleSendMessage={handleSendMessage}
+            />
+          </>
+        )}
       </div>
 
       {/* Right sidebar with mobile drawer behavior */}

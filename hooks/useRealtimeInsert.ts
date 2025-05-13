@@ -21,10 +21,21 @@ export function useRealtimeInsert<T>({ table, filter, onInsert }: UseRealtimeIns
     if (!table) return;
 
     const channelName = `realtime-${table}-${filter ?? "all"}`;
+    console.log(`[Realtime] Setting up channel: ${channelName}`);
 
     // Unsubscribe any old channel before creating new one
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
+    }
+
+    // Parse the filter if provided
+    let filterObj = {};
+    if (filter) {
+      // Handle eq.value format
+      const eqMatch = filter.match(/^([^=]+)=eq\.(.+)$/);
+      if (eqMatch) {
+        filterObj = { column: eqMatch[1], value: eqMatch[2] };
+      }
     }
 
     const channel = supabase
@@ -35,14 +46,16 @@ export function useRealtimeInsert<T>({ table, filter, onInsert }: UseRealtimeIns
           event: "INSERT",
           schema: "public",
           table,
-          ...(filter ? { filter } : {}),
+          ...(filter ? filterObj : {}),
         },
         (payload) => {
+          console.log("[Realtime] Received new row:", payload.new);
           const newRow = payload.new as T;
           onInsert(newRow);
         }
       )
       .subscribe((status) => {
+        console.log(`[Realtime] Channel ${channelName} status: ${status}`);
         if (status !== "SUBSCRIBED") {
           console.warn(`[Realtime] Failed to subscribe to ${channelName}`);
         }
@@ -51,6 +64,7 @@ export function useRealtimeInsert<T>({ table, filter, onInsert }: UseRealtimeIns
     channelRef.current = channel;
 
     return () => {
+      console.log(`[Realtime] Cleaning up channel: ${channelName}`);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

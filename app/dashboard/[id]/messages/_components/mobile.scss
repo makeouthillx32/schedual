@@ -14,16 +14,6 @@ $header-height: 70px; // Define header height for consistent spacing
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes modal-appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes modal-content-appear {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -58,12 +48,6 @@ $header-height: 70px; // Define header height for consistent spacing
   @media (min-width: $breakpoint-md) {
     flex-direction: row;
   }
-  
-  &.resize-transition {
-    .chat-right-sidebar {
-      transition: none;
-    }
-  }
 }
 
 // Main chat content area
@@ -74,6 +58,7 @@ $header-height: 70px; // Define header height for consistent spacing
   min-width: 0;
   position: relative;
   height: 100%;
+  overflow: hidden; // Important: prevent content from overflowing
   background-color: var(--app-background);
 }
 
@@ -82,21 +67,19 @@ $header-height: 70px; // Define header height for consistent spacing
 // =======================================
 .chat-sidebar {
   width: 100%;
-  height: auto;
-  max-height: 100vh;
-  border-right: 0;
-  border-bottom: 1px solid var(--app-border);
+  height: 100%;
   z-index: 10;
   background-color: var(--app-card);
   color: var(--app-card-foreground);
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Important for nested scrollable content
   
   @media (min-width: $breakpoint-md) {
     width: 280px;
-    height: 100%;
     flex-shrink: 0;
     border-right: 1px solid var(--app-border);
-    border-bottom: 0;
   }
   
   &.hidden-mobile {
@@ -110,8 +93,21 @@ $header-height: 70px; // Define header height for consistent spacing
     @media (min-width: $breakpoint-md) {
       position: relative;
       transform: translateX(0);
-      display: block;
       box-shadow: none;
+    }
+  }
+  
+  // Sidebar content needs to be scrollable
+  & > div {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    
+    // Scrollable area for chat list
+    .overflow-y-auto {
+      flex: 1;
+      -webkit-overflow-scrolling: touch; // Smooth iOS scrolling
     }
   }
   
@@ -119,7 +115,7 @@ $header-height: 70px; // Define header height for consistent spacing
   &-toggle {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px; // Changed from right to left to avoid overlap
     width: 50px;
     height: 50px;
     border-radius: 25px;
@@ -130,49 +126,9 @@ $header-height: 70px; // Define header height for consistent spacing
     justify-content: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 30;
-    transition: all 0.3s ease;
-    
-    &:active {
-      transform: scale(0.95);
-    }
     
     @media (min-width: $breakpoint-md) {
       display: none;
-    }
-  }
-}
-
-// Hamburger menu
-.hamburger-menu {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 24px;
-  height: 16px;
-  cursor: pointer;
-  
-  @media (min-width: $breakpoint-md) {
-    display: none;
-  }
-  
-  span {
-    width: 100%;
-    height: 2px;
-    background-color: currentColor;
-    transition: all 0.3s ease;
-  }
-  
-  &.active {
-    span:nth-child(1) {
-      transform: translateY(7px) rotate(45deg);
-    }
-    
-    span:nth-child(2) {
-      opacity: 0;
-    }
-    
-    span:nth-child(3) {
-      transform: translateY(-7px) rotate(-45deg);
     }
   }
 }
@@ -182,20 +138,19 @@ $header-height: 70px; // Define header height for consistent spacing
 // =======================================
 .chat-right-sidebar {
   position: fixed;
-  top: $header-height; // Start below the dashboard header
+  top: 0;
   right: 0;
-  width: 75%;
-  max-width: 270px;
-  height: calc(100vh - $header-height); // Adjust height to account for header
+  width: 80%;
+  max-width: 320px;
+  height: 100%;
   transform: translateX(100%);
   transition: transform 0.3s ease;
-  z-index: 40; // High enough to be above content but below top navbar
+  z-index: 40; // Higher than everything except modals
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   background-color: var(--app-card);
   border-left: 1px solid var(--app-border);
   display: flex;
   flex-direction: column;
-  overflow-y: auto; // Enable scrolling for content
   
   &.open {
     transform: translateX(0);
@@ -203,13 +158,18 @@ $header-height: 70px; // Define header height for consistent spacing
   
   @media (min-width: $breakpoint-lg) {
     position: relative;
-    top: 0; // Reset to normal flow in desktop view
     transform: translateX(0);
-    width: 240px;
-    height: 100%; // Full height of parent container
+    width: 280px;
     box-shadow: none;
   }
+  
+  &-content {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
+
 // Right sidebar overlay
 .right-sidebar-overlay {
   position: fixed;
@@ -217,7 +177,7 @@ $header-height: 70px; // Define header height for consistent spacing
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 998;
+  z-index: 35;
   background-color: rgba(0, 0, 0, 0.5);
   animation: fade-in 0.3s ease;
   display: none;
@@ -226,7 +186,6 @@ $header-height: 70px; // Define header height for consistent spacing
     display: block;
   }
 }
-
 
 // =======================================
 // CHAT HEADER COMPONENT
@@ -239,25 +198,24 @@ $header-height: 70px; // Define header height for consistent spacing
   background-color: var(--app-card);
   color: var(--app-card-foreground);
   z-index: 5;
-  height: $header-height;
-  box-sizing: border-box;
+  flex-shrink: 0; // Prevent header from shrinking
   
   &-title {
     flex: 1;
     min-width: 0;
-    padding-right: 8px;
     
     h2 {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 16px;
-      color: var(--app-header-text);
       margin: 0;
-      
-      @media (min-width: $breakpoint-md) {
-        font-size: 18px;
-      }
+    }
+    
+    p {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
     }
   }
   
@@ -276,13 +234,6 @@ $header-height: 70px; // Define header height for consistent spacing
       width: 32px;
       height: 32px;
       border-radius: 16px;
-      color: var(--app-subtle-text);
-      transition: background-color 0.2s;
-      cursor: pointer;
-      
-      &:hover, &:active {
-        background-color: var(--app-muted);
-      }
       
       @media (min-width: $breakpoint-md) {
         width: 40px;
@@ -298,18 +249,16 @@ $header-height: 70px; // Define header height for consistent spacing
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  -webkit-overflow-scrolling: touch;
-  background-color: var(--app-background);
+  padding: 12px;
+  -webkit-overflow-scrolling: touch; // Smooth iOS scrolling
   
   @media (min-width: $breakpoint-md) {
-    padding: 20px;
+    padding: 16px;
   }
   
   .message {
     max-width: 85%;
-    margin-bottom: 20px; // Increased spacing between messages
-    animation: message-appear 0.3s ease;
+    margin-bottom: 12px;
     
     @media (min-width: $breakpoint-md) {
       max-width: 70%;
@@ -317,21 +266,11 @@ $header-height: 70px; // Define header height for consistent spacing
     
     &-bubble {
       border-radius: 18px;
-      padding: 12px 16px; // Increased padding
-      background-color: var(--app-muted);
-      color: var(--app-foreground);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      padding: 8px 12px;
       word-break: break-word;
       
-      .dark & {
-        background-color: var(--app-popover);
-        color: var(--app-popover-foreground);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      }
-      
-      &.mine {
-        background-color: var(--button1-background);
-        color: var(--button1-foreground);
+      @media (min-width: $breakpoint-md) {
+        padding: 10px 16px;
       }
     }
     
@@ -339,15 +278,13 @@ $header-height: 70px; // Define header height for consistent spacing
       border-radius: 12px;
       overflow: hidden;
       max-width: 100%;
-      margin-top: 8px;
-      margin-bottom: 8px;
-      border: 1px solid var(--app-border);
+      margin-top: 4px;
     }
     
     &-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
       overflow: hidden;
       
       @media (min-width: $breakpoint-md) {
@@ -362,14 +299,15 @@ $header-height: 70px; // Define header height for consistent spacing
 // MESSAGE INPUT COMPONENT
 // =======================================
 .message-input {
-  padding: 12px 16px;
+  padding: 12px;
   border-top: 1px solid var(--app-border);
   background-color: var(--app-card);
   position: relative;
-  margin-top: auto; // Push to bottom
+  z-index: 5; // Keep above other elements
+  flex-shrink: 0; // Prevent from being collapsed
   
   @media (min-width: $breakpoint-md) {
-    padding: 16px 20px;
+    padding: 16px;
   }
   
   &-form {
@@ -377,12 +315,7 @@ $header-height: 70px; // Define header height for consistent spacing
     align-items: center;
     background-color: var(--app-muted);
     border-radius: 24px;
-    padding: 6px; // Increased padding
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    
-    .dark & {
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
+    padding: 4px;
   }
   
   &-field {
@@ -390,16 +323,12 @@ $header-height: 70px; // Define header height for consistent spacing
     padding: 8px 12px;
     border: none;
     background: transparent;
-    color: var(--app-foreground);
+    min-height: 20px; // Ensure there's always space to type
     font-size: 14px;
+    max-height: 80px; // Prevent massive expansion
     
     &:focus {
       outline: none;
-    }
-    
-    @media (min-width: $breakpoint-md) {
-      font-size: 16px;
-      padding: 10px 14px;
     }
   }
   
@@ -409,17 +338,6 @@ $header-height: 70px; // Define header height for consistent spacing
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 18px;
-    color: var(--app-subtle-text);
-    transition: background-color 0.2s;
-    
-    &:hover, &:active {
-      background-color: rgba(0, 0, 0, 0.05);
-      
-      .dark & {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-    }
     
     @media (min-width: $breakpoint-md) {
       width: 40px;
@@ -442,153 +360,11 @@ $header-height: 70px; // Define header height for consistent spacing
     
     &.active {
       color: var(--button1-background);
-      cursor: pointer;
-      
-      &:hover, &:active {
-        background-color: rgba(59, 130, 246, 0.1);
-      }
     }
     
     &.disabled {
       color: var(--app-subtle-text);
       opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
-}
-
-// =======================================
-// PARTICIPANTS LIST COMPONENT
-// =======================================
-.participants-list {
-  padding: 16px;
-  border-bottom: 1px solid var(--app-border);
-  margin-bottom: 8px; // Add margin for separation
-  
-  h4 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--app-header-text);
-  }
-  
-  .participant {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px; // Increased spacing
-    padding: 10px;
-    border-radius: 8px;
-    transition: background-color 0.2s;
-    
-    &:hover {
-      background-color: var(--app-muted);
-    }
-    
-    &-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 20px;
-      overflow: hidden;
-      position: relative;
-      margin-right: 12px;
-      flex-shrink: 0;
-      
-      .online-indicator {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background-color: #10b981;
-        border: 2px solid var(--app-card);
-      }
-    }
-    
-    &-info {
-      flex: 1;
-      min-width: 0;
-      
-      .name {
-        font-weight: 500;
-        color: var(--app-foreground);
-        margin-bottom: 4px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      
-      .status {
-        font-size: 12px;
-        color: var(--app-subtle-text);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-  }
-}
-
-// =======================================
-// MEDIA GALLERY COMPONENT
-// =======================================
-.media-gallery {
-  padding: 16px;
-  border-bottom: 1px solid var(--app-border);
-  margin-bottom: 8px; // Add margin for separation
-  
-  h4 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--app-header-text);
-  }
-  
-  &-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    
-    @media (min-width: $breakpoint-md) {
-      gap: 12px;
-    }
-  }
-}
-
-// =======================================
-// ACTIONS SECTION COMPONENT
-// =======================================
-.actions-section {
-  padding: 16px;
-  border-bottom: 1px solid var(--app-border);
-  margin-bottom: 8px; // Add margin for separation
-  
-  h4 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--app-header-text);
-  }
-  
-  .action-button {
-    width: 100%;
-    padding: 12px 16px;
-    text-align: left;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    transition: background-color 0.2s;
-    color: var(--app-foreground);
-    
-    &:hover {
-      background-color: var(--app-muted);
-    }
-    
-    &.danger {
-      color: #f44336;
-      
-      &:hover {
-        background-color: rgba(244, 67, 54, 0.1);
-      }
     }
   }
 }
@@ -599,26 +375,23 @@ $header-height: 70px; // Define header height for consistent spacing
 .new-chat-modal {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 50; // Higher than everything
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
   padding: 16px;
-  animation: modal-appear 0.3s ease;
   
   &-content {
     width: 100%;
     max-width: 500px;
-    max-height: 85vh; // Slightly smaller to ensure it's visible
+    max-height: 85vh;
     background-color: var(--app-card);
     color: var(--app-card-foreground);
     border-radius: 12px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: modal-content-appear 0.3s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   }
   
   &-header {
@@ -627,12 +400,14 @@ $header-height: 70px; // Define header height for consistent spacing
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
   }
   
   &-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
   }
   
   &-footer {
@@ -641,102 +416,63 @@ $header-height: 70px; // Define header height for consistent spacing
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+    flex-shrink: 0;
   }
 }
 
 // =======================================
-// MOBILE BOTTOM SHEET COMPONENT
-// =======================================
-.mobile-bottom-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: var(--app-card);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  z-index: 25;
-  
-  &.open {
-    transform: translateY(0);
-  }
-  
-  &-handle {
-    width: 40px;
-    height: 4px;
-    background-color: var(--app-border);
-    border-radius: 2px;
-    margin: 12px auto;
-  }
-  
-  &-content {
-    padding: 20px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  
-  @media (min-width: $breakpoint-md) {
-    display: none;
-  }
-}
-
-// =======================================
-// RESPONSIVE FIXES AND MOBILE OPTIMIZATIONS
+// RESPONSIVE FIXES FOR MOBILE
 // =======================================
 @media (max-width: #{$breakpoint-md - 1px}) {
-  // Better tap targets
-  button, input, .participant, .message-input-icon {
-    touch-action: manipulation;
+  // Better tap targets for mobile
+  button, a, .participant, .message-input-icon {
+    min-height: 44px; // Apple's recommended minimum tap target size
+    touch-action: manipulation; // Remove 300ms delay
   }
   
-  // Fix for iOS height issues
+  // Fix for iOS input focus causing viewport shift
+  input, textarea {
+    font-size: 16px; // Prevents zoom on iOS when focusing inputs
+  }
+  
+  // Fix iOS height issues, especially with keyboard open
   .chat-container {
-    height: -webkit-fill-available;
+    height: 100%; // Less strict - works better with iOS keyboard
+    min-height: 100%;
   }
   
-  // Add overscroll behavior 
-  .chat-messages, .participants-list, .media-gallery {
+  // Add overscroll behavior to prevent pull-to-refresh
+  .chat-messages, .chat-sidebar > div .overflow-y-auto {
     overscroll-behavior: contain;
   }
-  
-  // Prevent text selection on non-inputs
-  body:not(input, textarea) {
-    user-select: none;
-  }
-}
-
-// Media query for right sidebar on non-desktop devices
-@media (max-width: #{$breakpoint-lg - 1px}) {
-  .chat-right-sidebar {
-    transform: translateX(100%);
-    
-    &.open {
-      transform: translateX(0);
-    }
-  }
 }
 
 // =======================================
-// SAFE AREA INSETS FOR NOTCH DEVICES
+// IOS SAFARI FIXES
 // =======================================
+
+// Safe area insets for notched devices
 @supports (padding: max(0px)) {
   .chat-sidebar-toggle {
     bottom: max(20px, env(safe-area-inset-bottom) + 10px);
-    right: max(20px, env(safe-area-inset-right) + 10px);
+    left: max(20px, env(safe-area-inset-left) + 10px);
   }
   
   .message-input {
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-  }
-  
-  .mobile-bottom-sheet {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(12px, env(safe-area-inset-bottom) + 4px);
   }
   
   .chat-right-sidebar {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+// Fix for stuck hover states on iOS
+@media (pointer: coarse) {
+  .participant:hover,
+  .message-input-icon:hover,
+  .send-button:hover,
+  button:hover {
+    background-color: transparent !important;
   }
 }

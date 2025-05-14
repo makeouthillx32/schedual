@@ -44,7 +44,7 @@ export const NAV_DATA = [
       },
       {
         title: "Settings",
-        url: "/pages/settings",
+        url: "/settings",
         icon: Icons.Alphabet,
         items: [],
         roles: ["admin"],

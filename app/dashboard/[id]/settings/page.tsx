@@ -1,17 +1,37 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
-import type { Metadata } from "next";
 import { PersonalInfoForm } from "./_components/personal-info";
 import { UploadPhotoForm } from "./_components/upload-photo";
 import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
 import AdminUserManager from "@/components/profile/AdminDelete";
-import { getUserProfile } from "@/lib/getUserProfile";
+import { createBrowserClient } from "@/utils/supabase/client";
 
-export const metadata: Metadata = {
-  title: "Settings Page",
-};
+export default function SettingsPage() {
+  const [isAdmin, setIsAdmin] = useState(false);
 
-export default async function SettingsPage() {
-  const profile = await getUserProfile();
+  useEffect(() => {
+    const fetchRole = async () => {
+      const supabase = createBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("role!inner(name)")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && profile?.role?.name === "admin") {
+        setIsAdmin(true);
+      }
+    };
+
+    fetchRole();
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-[1080px]">
@@ -26,8 +46,8 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {profile?.role === "admin" && (
-        <div className="mt-12 space-y-12">
+      {isAdmin && (
+        <div className="mt-10 space-y-12">
           <ManualRoleEditor />
           <AdminUserManager />
         </div>

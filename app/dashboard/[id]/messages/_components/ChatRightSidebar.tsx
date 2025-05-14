@@ -1,7 +1,9 @@
+// Fixed version of ChatRightSidebar.tsx
 'use client';
 
 import { Image, X, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import './mobile.scss'; // Add SCSS import
 
 interface Participant {
   id:          string;
@@ -10,11 +12,12 @@ interface Participant {
   email:       string;
   online:      boolean;
 }
+
 interface Props {
   selectedChatName: string;
   participants:     Participant[];
   avatarColors:     Record<string, string>;
-  isGroup?:         boolean;
+  isGroup?:         boolean; // Make sure this is defined as a prop
   onClose:          () => void;
 }
 
@@ -22,7 +25,7 @@ export default function ChatRightSidebar({
   selectedChatName,
   participants,
   avatarColors,
-  isGroup = false,
+  isGroup = false, // Use default value here to prevent undefined issues
   onClose
 }: Props) {
   const [isOpen, setIsOpen] = useState(true);
@@ -92,20 +95,20 @@ export default function ChatRightSidebar({
         </p>
       </div>
 
-      <div className="p-4 border-b overflow-y-auto">
+      <div className="participants-list p-4 border-b overflow-y-auto">
         <h4 className="mb-3 font-semibold text-sm">
           {isGroup ? 'Participants' : 'About'}
         </h4>
         <div className="space-y-3">
           {participants.map((p) => (
-            <div key={p.id} className="participant">
-              <div className="participant-avatar">
+            <div key={p.id} className="participant flex items-center">
+              <div className="participant-avatar w-8 h-8 rounded-full overflow-hidden relative mr-2">
                 {renderAvatar(p.avatar, p.name)}
                 {p.online && (
                   <div className="online-indicator"></div>
                 )}
               </div>
-              <div className="participant-info">
+              <div className="participant-info flex-1 min-w-0">
                 <p className="name font-medium">{p.name}</p>
                 <p className="status text-xs text-gray-500">
                   {p.online ? 'Online' : 'Offline'}

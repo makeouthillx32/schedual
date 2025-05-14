@@ -1,9 +1,14 @@
+// _components/ChatSidebar.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PlusCircle, Search, X } from 'lucide-react';
 import NewChatModal from './NewChatModal';
 import { formatDistanceToNow } from 'date-fns';
+import { storage, CACHE_KEYS } from '@/lib/cookieUtils';
+import { createBrowserClient } from '@supabase/ssr';
+import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
+import { useRealtime } from '@/hooks/useRealtimeInsert';
 import './mobile.scss';
 
 export interface Participant {
@@ -32,11 +37,23 @@ interface ChatSidebarProps {
 
 export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isLoading, setIsLoading]       = useState(true);
-  const [error, setError]               = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen]   = useState(false);
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [isMobile, setIsMobile]         = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Track mount status and last fetch time
+  const isMounted = useRef(true);
+  const lastFetchTime = useRef(0);
+  const hasFetched = useRef(false);
+  
+  // Create Supabase client for real-time subscriptions
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   // Check if we're on mobile
   useEffect(() => {
@@ -49,47 +66,177 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
     
     return () => {
       window.removeEventListener('resize', checkIsMobile);
+      isMounted.current = false;
     };
   }, []);
-
+  
+  // Get current user ID
   useEffect(() => {
-    async function fetchConversations() {
-      try {
-        setIsLoading(true);
-        const res = await fetch('/api/messages/get-conversations');
-        if (!res.ok) throw new Error('Failed to fetch conversations');
-        const raw = await res.json();
-
-        const mapped: Conversation[] = raw.map((c: any) => ({
-          id:              c.id ?? c.channel_id,
-          channel_id:      c.channel_id,
-          channel_name:    c.channel_name,
-          is_group:        c.is_group,
-          last_message:    c.last_message_content ?? null,
-          last_message_at: c.last_message_at ?? null,
-          unread_count:    c.unread_count ?? 0,
-          participants:    (c.participants || []).map((p: any) => ({
-            user_id:      p.user_id,
-            display_name: p.display_name,
-            avatar_url:   p.avatar_url,
-            email:        p.email,
-            online:       p.online ?? false,
-          })),
-        }));
-
-        setConversations(mapped);
-        // auto-select first chat if none selected
-        if (mapped.length > 0 && !selectedChat) {
-          onSelectChat(mapped[0]);
+    // Try to get from cache first
+    const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
+    if (cachedUser?.id) {
+      setCurrentUserId(cachedUser.id);
+      return;
+    }
+    
+    // If not in cache, get from auth
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!isMounted.current) return;
+      
+      if (data?.user?.id) {
+        setCurrentUserId(data.user.id);
+        storage.set(CACHE_KEYS.CURRENT_USER, data.user, 3600); // Cache for 1 hour
+      }
+    });
+  }, []);
+  
+  // Monitor channel_members table for any changes involving the current user
+  useRealtime<any>({
+    supabase,
+    table: 'channel_members',
+    // Filter to only show changes for the current user
+    filter: currentUserId ? `user_id=eq.${currentUserId}` : undefined,
+    event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+    onEvent: ({ new: newMember, eventType }) => {
+      console.log(`[ChatSidebar] Channel member event: ${eventType}`, newMember);
+      
+      // If we have a new membership or an update, refresh conversations
+      if (newMember && isMounted.current) {
+        console.log('[ChatSidebar] User added to or updated in a channel, refreshing conversations');
+        // Force refresh conversations
+        hasFetched.current = false;
+        fetchConversations(true);
+      }
+    }
+  });
+  
+  // Monitor messages table for updates to last messages
+  useRealtimeInsert<any>({
+    supabase,
+    table: 'messages',
+    // No specific filter, we'll check if it affects our conversations in the handler
+    onInsert: (newMessage) => {
+      if (!newMessage?.channel_id || !isMounted.current) return;
+      
+      console.log('[ChatSidebar] New message in channel:', newMessage.channel_id);
+      
+      // Update the conversation with the new message
+      setConversations(prevConversations => {
+        // Find the conversation that this message belongs to
+        const conversationIndex = prevConversations.findIndex(
+          c => c.channel_id === newMessage.channel_id
+        );
+        
+        // If conversation not found, no update needed
+        if (conversationIndex === -1) return prevConversations;
+        
+        // Create a copy of conversations
+        const updatedConversations = [...prevConversations];
+        const conversation = { ...updatedConversations[conversationIndex] };
+        
+        // Update with new message details
+        conversation.last_message = newMessage.content;
+        conversation.last_message_at = newMessage.created_at;
+        
+        // If message is not from current user, increment unread count
+        if (newMessage.sender_id !== currentUserId) {
+          conversation.unread_count = (conversation.unread_count || 0) + 1;
         }
-      } catch (err: any) {
-        console.error(err);
+        
+        // Move this conversation to the top of the list
+        updatedConversations.splice(conversationIndex, 1);
+        updatedConversations.unshift(conversation);
+        
+        // Update cache
+        storage.set(CACHE_KEYS.CONVERSATIONS, updatedConversations, 300);
+        
+        return updatedConversations;
+      });
+    }
+  });
+
+  // Fetch conversations from API
+  const fetchConversations = async (forceRefresh = false) => {
+    // Skip redundant fetches unless forced
+    if (!forceRefresh && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
+      console.log("[ChatSidebar] Skipping redundant fetch, using cached data");
+      return;
+    }
+    
+    // Try to use cached data first
+    const cachedData = storage.get(CACHE_KEYS.CONVERSATIONS);
+    if (!forceRefresh && cachedData && !hasFetched.current) {
+      console.log("[ChatSidebar] Using cached conversations");
+      setConversations(cachedData);
+      setIsLoading(false);
+      
+      // Auto-select first chat if none selected
+      if (cachedData.length > 0 && !selectedChat) {
+        onSelectChat(cachedData[0]);
+      }
+    }
+    
+    // Fetch from API regardless to ensure fresh data
+    try {
+      // Mark as fetched to prevent redundant calls
+      hasFetched.current = true;
+      lastFetchTime.current = Date.now();
+      
+      if (!cachedData || forceRefresh) {
+        setIsLoading(true);
+      }
+      
+      const res = await fetch('/api/messages/get-conversations');
+      
+      if (!isMounted.current) return;
+      
+      if (!res.ok) throw new Error('Failed to fetch conversations');
+      
+      const raw = await res.json();
+
+      const mapped: Conversation[] = raw.map((c: any) => ({
+        id:              c.id ?? c.channel_id,
+        channel_id:      c.channel_id,
+        channel_name:    c.channel_name,
+        is_group:        c.is_group,
+        last_message:    c.last_message_content ?? null,
+        last_message_at: c.last_message_at ?? null,
+        unread_count:    c.unread_count ?? 0,
+        participants:    (c.participants || []).map((p: any) => ({
+          user_id:      p.user_id,
+          display_name: p.display_name,
+          avatar_url:   p.avatar_url,
+          email:        p.email,
+          online:       p.online ?? false,
+        })),
+      }));
+
+      if (!isMounted.current) return;
+      
+      // Cache the conversations
+      storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300); // 5 minute cache
+      
+      setConversations(mapped);
+      setError(null);
+      
+      // Auto-select first chat if none selected
+      if (mapped.length > 0 && !selectedChat) {
+        onSelectChat(mapped[0]);
+      }
+    } catch (err) {
+      console.error("[ChatSidebar] Error fetching conversations:", err);
+      if (!cachedData || forceRefresh) {
         setError("You don't have any chats yet.");
-      } finally {
+      }
+    } finally {
+      if (isMounted.current) {
         setIsLoading(false);
       }
     }
+  };
 
+  // Initial fetch
+  useEffect(() => {
     fetchConversations();
   }, [selectedChat, onSelectChat]);
 

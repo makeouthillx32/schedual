@@ -6,9 +6,10 @@ import { assignRandomJobs } from "@/components/assignRandomJobs";
 import Toast from "@/components/Toast";
 import RandomizerButton from "@/components/RandomizerButton";
 import WeatherWidget from "@/components/WeatherWidget";
+import ScheduleList from "@/components/ScheduleList";
 import { members } from "../lib/members";
 import { useTheme } from "@/app/provider";
-import { Calendar, Clock, MapPin } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 
 interface JobSchedule {
   business_name: string;
@@ -94,62 +95,6 @@ const CMSSchedulePage = () => {
     if (week > 0 && day) loadSchedule();
   }, [week, day]);
 
-  const JobCard = ({ job, memberName, index }: { job: string; memberName: string; index: number }) => {
-    const colors = ["bg-blue-100 border-blue-300", "bg-green-100 border-green-300", "bg-purple-100 border-purple-300"];
-    const darkColors = ["bg-blue-900/30 border-blue-700", "bg-green-900/30 border-green-700", "bg-purple-900/30 border-purple-700"];
-    
-    const colorClass = isDark ? darkColors[index % darkColors.length] : colors[index % colors.length];
-    
-    return (
-      <div className={`p-4 rounded-lg border ${colorClass} mb-3 transition-all hover:shadow-md`}>
-        <div className="flex justify-between items-center">
-          <h4 className="font-semibold">{job}</h4>
-          <span className={`px-3 py-1 rounded-full text-sm ${
-            isDark ? "bg-gray-800 text-white" : "bg-white text-gray-800"
-          } shadow-sm`}>
-            {memberName}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  const BusinessCard = ({ business }: { business: JobSchedule }) => {
-    return (
-      <div className={`rounded-[10px] ${
-        isDark ? "bg-gray-dark shadow-card" : "bg-white shadow-1"
-      } p-6 mb-6 transition-all hover:translate-y-[-2px]`}>
-        <div className="mb-4 flex justify-between items-center">
-          <h3 className="text-xl font-bold">{business.business_name}</h3>
-          <span className={`px-3 py-1 rounded-full text-sm ${
-            business.before_open 
-              ? isDark ? "bg-amber-900/50 text-amber-200" : "bg-amber-100 text-amber-800" 
-              : isDark ? "bg-green-900/50 text-green-200" : "bg-green-100 text-green-800"
-          }`}>
-            {business.before_open ? "Before Opening" : "After Hours"}
-          </span>
-        </div>
-        
-        <div className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <MapPin size={16} className="mr-2" />
-          <span>{business.address}</span>
-        </div>
-        
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
-          <h4 className="font-medium mb-3">Assigned Tasks</h4>
-          {business.jobs.map((job, index) => (
-            <JobCard 
-              key={index} 
-              job={job.job_name} 
-              memberName={job.member_name} 
-              index={index} 
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const MembersList = () => {
     const availableMembers = members.filter(
       (member) => member[day as keyof typeof member]
@@ -190,30 +135,67 @@ const CMSSchedulePage = () => {
 
   return (
     <div className={`min-h-screen ${
-      isDark ? "bg-[#020d1a] text-white" : "bg-gray-2 text-dark"
+      isDark ? "bg-[#0f172a] text-white" : "bg-gray-50 text-dark"
     }`}>
-      <div className="max-w-screen-2xl mx-auto p-4 md:p-6 2xl:p-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div>
-            <h1 className={`text-2xl md:text-3xl font-bold ${
-              isDark ? "text-white" : "text-dark"
-            }`}>
-              Cleaning Schedule
-            </h1>
-            <div className="flex items-center mt-2">
-              <Calendar size={18} className="mr-2 text-primary" />
-              <span className="text-gray-500 dark:text-gray-400">
-                Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
-              </span>
-            </div>
+      <header className={`p-4 ${isDark ? "bg-[#0c1425]" : "bg-white"} shadow`}>
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold">CMS Schedule App</h1>
+          <button 
+            onClick={() => setActiveTab(activeTab === "schedule" ? "team" : "schedule")}
+            className="p-2 rounded-full bg-opacity-20 bg-gray-200 dark:bg-gray-700"
+          >
+            {themeType === "dark" ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 2V4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 20V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4.93 4.93L6.34 6.34" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17.66 17.66L19.07 19.07" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 12H4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 12H22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4.93 19.07L6.34 17.66" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17.66 6.34L19.07 4.93" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 2V4" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 20V22" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4.93 4.93L6.34 6.34" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17.66 17.66L19.07 19.07" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 12H4" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 12H22" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M4.93 19.07L6.34 17.66" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17.66 6.34L19.07 4.93" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+        </div>
+      </header>
+
+      <div className="max-w-screen-xl mx-auto p-4">
+        {/* Page Title */}
+        <div className="mb-6">
+          <h2 className={`text-2xl md:text-3xl font-bold ${
+            isDark ? "text-white" : "text-gray-900"
+          }`}>
+            Cleaning Schedule
+          </h2>
+          <div className="flex items-center mt-2">
+            <Calendar size={18} className="mr-2 text-blue-500" />
+            <span className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
+            </span>
           </div>
-          
-          <div className="mt-4 md:mt-0 flex items-center">
+        </div>
+
+        {/* Weather & Randomizer */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex-1">
             <WeatherWidget />
-            <div className="ml-4">
-              <RandomizerButton onClick={randomizeSchedule} />
-            </div>
+          </div>
+          <div>
+            <RandomizerButton onClick={randomizeSchedule} />
           </div>
         </div>
 
@@ -226,8 +208,8 @@ const CMSSchedulePage = () => {
                 className={`inline-block py-4 px-4 text-sm font-medium ${
                   activeTab === "schedule"
                     ? isDark 
-                      ? "text-primary border-b-2 border-primary" 
-                      : "text-primary border-b-2 border-primary"
+                      ? "text-blue-400 border-b-2 border-blue-400" 
+                      : "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
@@ -240,8 +222,8 @@ const CMSSchedulePage = () => {
                 className={`inline-block py-4 px-4 text-sm font-medium ${
                   activeTab === "team"
                     ? isDark 
-                      ? "text-primary border-b-2 border-primary" 
-                      : "text-primary border-b-2 border-primary"
+                      ? "text-blue-400 border-b-2 border-blue-400" 
+                      : "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
@@ -253,7 +235,7 @@ const CMSSchedulePage = () => {
 
         {/* Content */}
         {error ? (
-          <div className={`rounded-[10px] ${
+          <div className={`rounded-lg ${
             isDark ? "bg-green-900/20 text-green-200" : "bg-green-50 text-green-700"
           } p-8 text-center mb-6`}>
             <h3 className="text-2xl font-bold mb-2">Good News!</h3>
@@ -262,13 +244,19 @@ const CMSSchedulePage = () => {
         ) : (
           <>
             {activeTab === "schedule" && (
-              <div className="grid grid-cols-1 gap-6">
-                {schedule.map((business, index) => (
-                  <BusinessCard 
-                    key={index} 
-                    business={business} 
+              <div className="grid gap-6">
+                {schedule.length > 0 && (
+                  <ScheduleList
+                    schedule={schedule.map((entry) => ({
+                      ...entry,
+                      onClick: () => setToastInfo({
+                        business_name: entry.business_name,
+                        before_open: entry.before_open,
+                        address: entry.address,
+                      }),
+                    }))}
                   />
-                ))}
+                )}
               </div>
             )}
             

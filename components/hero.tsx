@@ -18,7 +18,7 @@ interface JobSchedule {
   address: string;
 }
 
-const CMSSchedulePage = () => {
+const Hero = () => {
   const [week, setWeek] = useState<number>(0);
   const [day, setDay] = useState<string>("");
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);

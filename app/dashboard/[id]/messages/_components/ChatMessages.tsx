@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import './mobile.scss';
 
 interface Message {
-  id: number;
+  id: string | number; // Updated to accept both string (UUID) and number
   sender: {
     id: string;
     name: string;
@@ -63,7 +63,7 @@ export default function ChatMessages({
         const isCurrentUser = message.sender.id === currentUserId;
         return (
           <div
-            key={message.id}
+            key={String(message.id)}
             className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-3`}
           >
             {!isCurrentUser && (

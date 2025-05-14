@@ -1,3 +1,4 @@
+// route.ts
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -46,7 +47,7 @@ export async function GET() {
 
   const { data: notifications, error } = await supabase
     .from("notifications")
-    .select("title, subtitle, image_url, action_url")
+    .select("id, title, subtitle, image_url, action_url, created_at")
     .or(`receiver_id.eq.${user.id},${roleColumn}.is.true`)
     .order("created_at", { ascending: false })
     .limit(10);

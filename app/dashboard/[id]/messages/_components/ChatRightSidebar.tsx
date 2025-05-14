@@ -1,34 +1,86 @@
-// Fixed version of ChatRightSidebar.tsx
 'use client';
 
 import { Image, X, Pencil } from 'lucide-react';
-import { useState } from 'react';
-import './mobile.scss'; // Add SCSS import
+import { useState, useEffect, useRef } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
+import { useRealtime } from '@/hooks/useRealtimeInsert';
+import './mobile.scss';
+
+// Create Supabase client
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Participant {
-  id:          string;
-  name:        string;
-  avatar:      string;  // now holds a URL or initials
-  email:       string;
-  online:      boolean;
+  id: string;
+  name: string;
+  avatar: string;
+  email: string;
+  online: boolean;
 }
 
 interface Props {
   selectedChatName: string;
-  participants:     Participant[];
-  avatarColors:     Record<string, string>;
-  isGroup?:         boolean; // Make sure this is defined as a prop
-  onClose:          () => void;
+  participants: Participant[];
+  avatarColors: Record<string, string>;
+  isGroup?: boolean;
+  channelId?: string;
+  onClose: () => void;
 }
 
 export default function ChatRightSidebar({
   selectedChatName,
-  participants,
+  participants: initialParticipants,
   avatarColors,
-  isGroup = false, // Use default value here to prevent undefined issues
+  isGroup = false,
+  channelId,
   onClose
 }: Props) {
   const [isOpen, setIsOpen] = useState(true);
+  const [participants, setParticipants] = useState(initialParticipants);
+  const isMounted = useRef(true);
+
+  // Update participants when props change
+  useEffect(() => {
+    if (isMounted.current) {
+      setParticipants(initialParticipants);
+    }
+  }, [initialParticipants]);
+  
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  // Monitor presence/online status changes
+  useRealtime<any>({
+    supabase,
+    table: 'presence',
+    filter: channelId ? `channel_id=eq.${channelId}` : undefined,
+    event: '*',
+    onEvent: ({ new: newState, old: oldState, eventType }) => {
+      if (!isMounted.current || !channelId) return;
+      
+      console.log(`[RightSidebar] Presence event: ${eventType}`, newState);
+      
+      // Handle presence updates (if presence system exists)
+      if (eventType === 'INSERT' || eventType === 'UPDATE') {
+        setParticipants(prev => {
+          return prev.map(p => {
+            if (p.id === newState.user_id) {
+              return {
+                ...p,
+                online: newState.status === 'online'
+              };
+            }
+            return p;
+          });
+        });
+      }
+    }
+  });
 
   const renderAvatar = (avatar: string, name: string) => {
     if (avatar.startsWith('http')) {
@@ -105,7 +157,7 @@ export default function ChatRightSidebar({
               <div className="participant-avatar w-8 h-8 rounded-full overflow-hidden relative mr-2">
                 {renderAvatar(p.avatar, p.name)}
                 {p.online && (
-                  <div className="online-indicator"></div>
+                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
                 )}
               </div>
               <div className="participant-info flex-1 min-w-0">

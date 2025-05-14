@@ -1,3 +1,5 @@
+Fix my layout 
+
 // app/dashboard/[id]/layout.tsx
 "use client";
 

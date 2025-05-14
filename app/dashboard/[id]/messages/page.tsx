@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Menu, X } from 'lucide-react';
-import { toast } from 'react-hot-toast'; // Add toast for notifications
+import { toast } from 'react-hot-toast';
 import ChatSidebar, { Conversation } from './_components/ChatSidebar';
 import ChatHeader from './_components/ChatHeader';
 import ChatMessages from './_components/ChatMessages';
@@ -50,14 +50,16 @@ export default function ChatPage() {
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
     
-    return () => window.removeEventListener('resize', checkIsMobile);
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
   }, []);
 
-  // Load current user and mark Supabase as ready
+  // 1️⃣ Load current user and mark Supabase as ready
   useEffect(() => {
     console.log("[ChatPage] Initializing and fetching current user");
     supabase.auth.getUser().then(({ data, error }) => {
-      if (!isMounted.current) return;
+      if (!isMounted.current) return; // Skip if component unmounted
       
       if (error) {
         console.error("[ChatPage] Auth error:", error);
@@ -71,30 +73,32 @@ export default function ChatPage() {
         console.log("[ChatPage] No authenticated user found");
       }
       
+      // Mark supabase as ready for realtime
       setSupabaseReady(true);
       console.log("[ChatPage] Supabase client ready for realtime");
     });
 
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  // Add real-time listener for incoming messages
+  // Add real-time listener for incoming messages with shared Supabase client
   useRealtimeInsert({
     supabase,
     table: 'messages',
     filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
     onInsert: (newMsg) => {
-      if (!isMounted.current) return;
+      if (!isMounted.current) return; // Skip if component unmounted
       
-      console.log('[Realtime] Processing new message:', newMsg);
+      console.log('[Realtime] Processing new message in component:', newMsg);
       
-      // Show notification if message isn't from current user
+      // Show notification if message is from another user
       if (newMsg.sender_id !== currentUserId) {
-        const senderName = newMsg.sender_name || 'Someone';
-        toast.success(`New message from ${senderName}`);
+        toast.success(`New message received!`);
       }
       
-      // Transform the raw message
+      // Transform the raw message into the expected Message format
       const transformedMessage = {
         id: newMsg.id,
         content: newMsg.content,
@@ -109,24 +113,28 @@ export default function ChatPage() {
         }
       };
       
+      console.log('[Realtime] Adding message to state:', transformedMessage);
       setMessages(prev => {
+        // Check if message already exists to prevent duplicates
         if (prev.some(msg => msg.id === newMsg.id)) {
-          console.log('[Realtime] Message already exists, skipping');
+          console.log('[Realtime] Message already exists in state, skipping');
           return prev;
         }
+        // Append message to end of array
         return [...prev, transformedMessage];
       });
       
-      // Scroll to bottom
+      // Scroll to bottom after a tiny delay to ensure DOM update
       setTimeout(() => {
         if (isMounted.current && messagesEndRef.current) {
+          console.log('[Realtime] Scrolling to bottom');
           messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
       }, 50);
     },
   });
 
-  // Fetch messages on chat change
+  // 2️⃣ Fetch messages on chat change with debounce protection
   useEffect(() => {
     if (!selectedChat) {
       console.log("[ChatPage] No chat selected, clearing messages");
@@ -134,6 +142,7 @@ export default function ChatPage() {
       return;
     }
     
+    // Skip if already loading
     if (isLoadingRef.current) {
       console.log("[ChatPage] Already loading messages, skipping");
       return;
@@ -146,32 +155,35 @@ export default function ChatPage() {
       setLoadingMessages(true);
       
       try {
+        console.log(`[ChatPage] Requesting messages from API: /api/messages/${selectedChat.id}`);
         const res = await fetch(`/api/messages/${selectedChat.id}`);
         
-        if (!isMounted.current) return;
+        if (!isMounted.current) return; // Skip if component unmounted
         
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(`[ChatPage] Load error: ${res.status}`, errorText);
+          console.error(`[ChatPage] Failed to load messages: ${res.status}`, errorText);
           toast.error("Failed to load messages");
           return;
         }
         
         const messageData = await res.json();
-        console.log(`[ChatPage] Received ${messageData.length} messages`);
+        console.log(`[ChatPage] Received ${messageData.length} messages from API`);
         
-        if (!isMounted.current) return;
+        if (!isMounted.current) return; // Check again after async operation
         
-        // Sort messages (oldest first)
+        // Sort messages to ensure chronological order (oldest first)
         const sortedMessages = [...messageData].sort((a, b) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
         
         setMessages(sortedMessages);
         
+        // Scroll to bottom after a tiny delay to ensure DOM update
         setTimeout(() => {
           if (isMounted.current && messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            console.log("[ChatPage] Scrolled to bottom after loading messages");
           }
         }, 50);
       } catch (err) {
@@ -184,28 +196,44 @@ export default function ChatPage() {
         }
       }
    
+      // Keep sidebar visible on mobile when a chat is selected
       if (isMobile) {
         setShowSidebar(false);
       }
     };
 
     fetchMessages();
-  }, [selectedChat?.id, isMobile]);
+    
+  }, [selectedChat?.id, isMobile]); 
 
-  // Send new message
+  // 3️⃣ Send new message - FIXED FUNCTION
   const handleSendMessage = async (e) => {
     e.preventDefault();
+    
     if (!messageText.trim() || !selectedChat || !currentUserId) {
-      console.log("[ChatPage] Cannot send message - missing data");
+      console.log("[ChatPage] Cannot send message - missing data:", { 
+        hasMessage: !!messageText.trim(), 
+        hasSelectedChat: !!selectedChat, 
+        hasUser: !!currentUserId 
+      });
+      
+      if (!messageText.trim()) {
+        return; // Silent return for empty messages
+      }
+      
+      toast.error("Cannot send message - please try again");
       return;
     }
 
     const messageContent = messageText.trim();
-    console.log(`[ChatPage] Sending message: ${messageContent}`);
     
-    // Add optimistic message
+    // Clear input right away for better UX
+    setMessageText('');
+    
+    // Create optimistic message
+    const optimisticId = `temp-${Date.now()}`;
     const optimisticMessage = {
-      id: `temp-${Date.now()}`,
+      id: optimisticId,
       content: messageContent,
       timestamp: new Date().toISOString(),
       likes: 0,
@@ -218,9 +246,10 @@ export default function ChatPage() {
       }
     };
     
+    // Update UI immediately
     setMessages(prev => [...prev, optimisticMessage]);
-    setMessageText('');
     
+    // Scroll to bottom
     setTimeout(() => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -228,20 +257,23 @@ export default function ChatPage() {
     }, 50);
     
     try {
-      const { data, error } = await supabase
+      console.log(`[ChatPage] Sending message to channel ${selectedChat.id}:`, messageContent);
+      
+      // Send message to Supabase
+      const { error } = await supabase
         .from('messages')
-        .insert([{
+        .insert({
           channel_id: selectedChat.id,
           sender_id: currentUserId,
-          content: messageContent,
-        }]);
+          content: messageContent
+        });
 
       if (error) {
         console.error('[ChatPage] Send error:', error);
         toast.error("Failed to send message");
         
         // Remove optimistic message on error
-        setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+        setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
       } else {
         toast.success("Message sent!");
       }
@@ -250,22 +282,25 @@ export default function ChatPage() {
       toast.error("Failed to send message");
       
       // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
     }
   };
 
-  // Handle chat selection
+  // Handle chat selection with sidebar toggle
   const handleSelectChat = (chat) => {
     console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
+    // Keep sidebar visible on desktop, hide on mobile when chat selected
     if (isMobile) setShowSidebar(false);
-    toast.success(`Opened chat with ${chat.channel_name || 'User'}`);
+    
+    toast.success(`Chat opened: ${chat.channel_name || 'New conversation'}`);
   };
 
-  // If no chat selected, show prompt or sidebar
+  // 4️⃣ If no chat selected, show prompt or sidebar on mobile
   if (!selectedChat) {
     return (
       <div className="chat-container">
+        {/* Mobile sidebar toggle button - always visible */}
         {isMobile && (
           <button 
             className="chat-sidebar-toggle"
@@ -300,7 +335,7 @@ export default function ChatPage() {
     );
   }
 
-  // Resolve display name
+  // 5️⃣ Resolve display name
   const resolvedName =
     selectedChat.channel_name ||
     (!selectedChat.is_group
@@ -310,17 +345,18 @@ export default function ChatPage() {
           .join(', ')
       : 'Unnamed Group');
 
-  // Map participants for right sidebar
+  // 6️⃣ Map participants into ChatRightSidebar's shape
   const sidebarParticipants = selectedChat.participants.map((p) => ({
-    id: p.user_id,
-    name: p.display_name,
+    id:     p.user_id,
+    name:   p.display_name,
     avatar: p.avatar_url,
-    email: p.email,
+    email:  p.email,
     online: p.online,
   }));
 
   return (
     <div className="chat-container">
+      {/* Mobile sidebar toggle button - always visible */}
       {isMobile && (
         <button 
           className="chat-sidebar-toggle"
@@ -330,6 +366,7 @@ export default function ChatPage() {
         </button>
       )}
       
+      {/* Sidebar with responsive visibility */}
       <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
         <ChatSidebar 
           selectedChat={selectedChat} 
@@ -366,6 +403,7 @@ export default function ChatPage() {
         )}
       </div>
 
+      {/* Right sidebar with mobile drawer behavior */}
       <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
         <ChatRightSidebar
           selectedChatName={resolvedName}

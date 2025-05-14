@@ -2,6 +2,7 @@
 
 import { Info, Phone, Video } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import './mobile.scss';
 
 interface Participant {
   user_id: string;

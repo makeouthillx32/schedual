@@ -2,6 +2,7 @@
 
 import { Heart } from 'lucide-react';
 import { format } from 'date-fns';
+import './mobile.scss';
 
 interface Message {
   id: number;

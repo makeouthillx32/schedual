@@ -1,13 +1,6 @@
-'use client';
-
 import { Smile, Paperclip, Send } from 'lucide-react';
-import './mobile.scss'; // SCSS file in the same folder
-
-interface MessageInputProps {
-  message: string;
-  onSetMessage: (message: string) => void;
-  handleSendMessage: (e: React.FormEvent) => void;
-}
+import './mobile.scss';
+// Import already exists, no change needed
 
 export default function MessageInput({
   message,

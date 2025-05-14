@@ -1,15 +1,7 @@
-'use client';
-
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import Image from 'next/image';
-
-interface PhotoGalleryProps {
-  messages: {
-    id: number;
-    image: string | null;
-  }[];
-}
+import './mobile.scss';
 
 export default function PhotoGallery({ messages }: PhotoGalleryProps) {
   const [showPhotos, setShowPhotos] = useState(true);
@@ -17,7 +9,7 @@ export default function PhotoGallery({ messages }: PhotoGalleryProps) {
   const imageMessages = messages.filter((msg) => msg.image);
 
   return (
-    <div className="p-3 md:p-4">
+    <div className="media-gallery p-3 md:p-4">
       <div
         className="flex justify-between items-center mb-2 cursor-pointer"
         onClick={() => setShowPhotos(!showPhotos)}
@@ -30,12 +22,12 @@ export default function PhotoGallery({ messages }: PhotoGalleryProps) {
       </div>
 
       {showPhotos && (
-        <div className="grid grid-cols-3 gap-1 md:gap-2">
+        <div className="media-gallery-grid grid grid-cols-3 gap-1 md:gap-2">
           {imageMessages.length > 0 ? (
             imageMessages.map((msg) => (
               <div
                 key={msg.id}
-                className="aspect-square rounded overflow-hidden border border-gray-200 dark:border-gray-700"
+                className="message-image aspect-square rounded overflow-hidden border border-gray-200 dark:border-gray-700"
               >
                 <Image
                   src={msg.image || ''}

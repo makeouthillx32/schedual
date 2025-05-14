@@ -6,14 +6,23 @@ import { createServerClient } from '@supabase/ssr';
 
 export async function GET() {
   try {
+    // Instead of using cookies directly, we'll create a wrapper
     const cookieStore = cookies();
+    
+    // Create a function to safely get cookie values
+    const getCookie = (name: string) => {
+      const cookie = cookieStore.get(name);
+      return cookie?.value ?? '';
+    };
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get: (name) => cookieStore.get(name)?.value ?? null,
+          get(name) {
+            return getCookie(name);
+          },
           set: () => {},
           remove: () => {},
         },

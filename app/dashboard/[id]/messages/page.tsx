@@ -8,67 +8,50 @@ import ChatHeader from './_components/ChatHeader';
 import ChatMessages, { Message } from './_components/ChatMessages';
 import MessageInput from './_components/MessageInput';
 import ChatRightSidebar from './_components/ChatRightSidebar';
-import './_components/mobile.scss'; // Import our new SCSS file
+import './_components/mobile.scss';
 import LoadingSVG from '@/app/_components/_events/loading-page';
-import { useRealtimeInsert } from '@/hooks/useRealtimeInsert'; // top of file
+import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
 
-// Create a single shared Supabase client instance
+// Create Supabase client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Avatar‐initial color map (used when no URL)
-const avatarColors: Record<string, string> = {
-  AL: 'bg-blue-500',
-  JA: 'bg-orange-500',
-  JE: 'bg-green-500',
-};
+// Avatar colors for initials
+const avatarColors = { AL: 'bg-blue-500', JA: 'bg-orange-500', JE: 'bg-green-500' };
 
 export default function ChatPage() {
+  // State management
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageText, setMessageText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showRightSidebar, setShowRightSidebar] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [supabaseReady, setSupabaseReady] = useState(false);
+  const [isDesktopView, setIsDesktopView] = useState(false);
+  
+  // Refs
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1️⃣ Load current user and mark Supabase as ready
+  // Load current user
   useEffect(() => {
-    console.log("[ChatPage] Initializing and fetching current user");
     supabase.auth.getUser().then(({ data, error }) => {
-      if (error) {
-        console.error("[ChatPage] Auth error:", error);
-        return;
-      }
-      
-      if (data.user?.id) {
-        console.log("[ChatPage] User authenticated:", data.user.id);
-        setCurrentUserId(data.user.id);
-      } else {
-        console.log("[ChatPage] No authenticated user found");
-      }
-      
-      // Mark supabase as ready for realtime
-      setSupabaseReady(true);
-      console.log("[ChatPage] Supabase client ready for realtime");
+      if (error) return console.error("[ChatPage] Auth error:", error);
+      if (data?.user?.id) setCurrentUserId(data.user.id);
     });
   }, []);
 
-  // Add real-time listener for incoming messages with shared Supabase client
+  // Listen for incoming messages
   useRealtimeInsert({
-    supabase, // Pass the shared client
+    supabase,
     table: 'messages',
     filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
-    onInsert: (newMsg: any) => {
-      console.log('[Realtime] Processing new message in component:', newMsg);
-      
-      // Transform the raw message into the expected Message format
-      const transformedMessage: Message = {
+    onInsert: (newMsg) => {
+      const transformedMessage = {
         id: newMsg.id,
         content: newMsg.content,
         timestamp: newMsg.created_at || new Date().toISOString(),
@@ -82,193 +65,180 @@ export default function ChatPage() {
         }
       };
       
-      console.log('[Realtime] Adding message to state:', transformedMessage);
       setMessages(prev => {
-        // Check if message already exists to prevent duplicates
-        if (prev.some(msg => msg.id === newMsg.id)) {
-          console.log('[Realtime] Message already exists in state, skipping');
-          return prev;
-        }
-        // Append message to end of array
+        if (prev.some(msg => msg.id === newMsg.id)) return prev;
         return [...prev, transformedMessage];
       });
       
-      // Scroll to bottom after a tiny delay to ensure DOM update
       setTimeout(() => {
-        console.log('[Realtime] Scrolling to bottom');
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 50);
     },
   });
   
-  // Check if we're on mobile
+  // Handle screen resizes
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      // Initialize sidebar visibility based on device
-      setShowSidebar(window.innerWidth >= 768);
+    const checkScreenSize = () => {
+      const newIsMobile = window.innerWidth < 768;
+      const newIsDesktopView = window.innerWidth >= 1024;
+      
+      const container = document.querySelector('.chat-container');
+      if (container) container.classList.add('resize-transition');
+      
+      if (isDesktopView && !newIsDesktopView && showRightSidebar) {
+        setShowRightSidebar(false);
+      }
+      
+      setIsMobile(newIsMobile);
+      setIsDesktopView(newIsDesktopView);
+      
+      if (!isDesktopView && !newIsDesktopView) {
+        setShowSidebar(window.innerWidth >= 768);
+      }
+      
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+      resizeTimeoutRef.current = setTimeout(() => {
+        if (container) container.classList.remove('resize-transition');
+      }, 100);
     };
     
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
     
     return () => {
-      window.removeEventListener('resize', checkIsMobile);
+      window.removeEventListener('resize', checkScreenSize);
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
     };
-  }, []);
+  }, [isDesktopView, showRightSidebar]);
 
-  // 2️⃣ Fetch messages on chat change
+  // Fetch messages when chat changes
   useEffect(() => {
     if (!selectedChat) {
-      console.log("[ChatPage] No chat selected, clearing messages");
       setMessages([]);
       return;
     }
     
-    console.log(`[ChatPage] Fetching messages for chat: ${selectedChat.id}`);
-    
-    (async () => {
+    const fetchMessages = async () => {
       setLoadingMessages(true);
       try {
-        console.log(`[ChatPage] Requesting messages from API: /api/messages/${selectedChat.id}`);
         const res = await fetch(`/api/messages/${selectedChat.id}`);
         
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(`[ChatPage] Failed to load messages: ${res.status}`, errorText);
+          console.error(`Failed to load messages: ${res.status}`, errorText);
           return;
         }
         
         const messageData = await res.json();
-        console.log(`[ChatPage] Received ${messageData.length} messages from API`);
-        
-        // Sort messages to ensure chronological order (oldest first)
         const sortedMessages = [...messageData].sort((a, b) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
         
         setMessages(sortedMessages);
         
-        // Scroll to bottom after a tiny delay to ensure DOM update
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          console.log("[ChatPage] Scrolled to bottom after loading messages");
         }, 50);
       } catch (err) {
-        console.error('[ChatPage] Error fetching messages:', err);
+        console.error('Error fetching messages:', err);
       } finally {
         setLoadingMessages(false);
       }
    
-      // Keep sidebar visible on mobile when a chat is selected
-      if (isMobile) {
-        setShowSidebar(false);
-      }
-    })();
+      if (isMobile) setShowSidebar(false);
+    };
+
+    fetchMessages();
   }, [selectedChat, isMobile]);
 
-  // 3️⃣ Send new message
+  // Send new message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || !selectedChat || !currentUserId) {
-      console.log("[ChatPage] Cannot send message - missing data:", { 
-        hasMessage: !!messageText.trim(), 
-        hasSelectedChat: !!selectedChat, 
-        hasUser: !!currentUserId 
-      });
-      return;
-    }
+    if (!messageText.trim() || !selectedChat || !currentUserId) return;
 
     const messageContent = messageText.trim();
-    console.log(`[ChatPage] Sending message to channel ${selectedChat.id}:`, messageContent);
     
-    // Optimistically add message to state for immediate feedback
+    // Optimistic update
     const optimisticMessage: Message = {
-      id: Date.now(), // Temporary ID
+      id: Date.now(),
       content: messageContent,
       timestamp: new Date().toISOString(),
       likes: 0,
       image: null,
       sender: {
         id: currentUserId,
-        name: 'You', // Placeholder, will be replaced by server data
+        name: 'You',
         avatar: '',
         email: '',
       }
     };
     
-    console.log("[ChatPage] Adding optimistic message:", optimisticMessage);
     setMessages(prev => [...prev, optimisticMessage]);
-    setMessageText(''); // Clear input right away
+    setMessageText('');
     
-    // Scroll to bottom after optimistic update
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 50);
     
-    // Now send to server
+    // Send to server
     try {
-      console.log("[ChatPage] Sending message to Supabase");
-      const { data, error } = await supabase
-        .from('messages')
-        .insert(
-          {
-            channel_id: selectedChat.id,
-            sender_id:  currentUserId,
-            content:    messageContent,
-          },
-          { returning: 'representation' }
-        );
-
-      if (error) {
-        console.error('[ChatPage] Send error:', error);
-        // Could add error handling UI here
-      } else {
-        console.log('[ChatPage] Message sent successfully:', data);
-        // The real message will come through the realtime subscription
-      }
+      await supabase.from('messages').insert({
+        channel_id: selectedChat.id,
+        sender_id: currentUserId,
+        content: messageContent,
+      });
     } catch (err) {
-      console.error('[ChatPage] Error sending message:', err);
+      console.error('Error sending message:', err);
     }
   };
 
-  // Handle chat selection with sidebar toggle
+  // Handle chat selection
   const handleSelectChat = (chat: Conversation) => {
-    console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
-    // Keep sidebar visible on desktop, hide on mobile when chat selected
     if (isMobile) setShowSidebar(false);
   };
 
+  // Toggle right sidebar
+  const toggleRightSidebar = () => {
+    setShowRightSidebar(prev => !prev);
+  };
 
-  // 4️⃣ If no chat selected, show prompt or sidebar on mobile
+  // Resolve chat name
+  const resolvedName = selectedChat?.name || 
+    (!selectedChat?.is_group && selectedChat?.participants
+      ? selectedChat.participants
+          .filter(p => p.user_id !== currentUserId)
+          .map(p => p.display_name)
+          .join(', ')
+      : 'Unnamed Group');
+
+  // Map participants for sidebar
+  const sidebarParticipants = selectedChat?.participants.map(p => ({
+    id: p.user_id,
+    name: p.display_name,
+    avatar: p.avatar_url,
+    email: p.email,
+    online: p.online,
+  })) || [];
+
+  // Render no chat selected state
   if (!selectedChat) {
     return (
       <div className="chat-container">
-        {/* Mobile sidebar toggle button - always visible */}
         {isMobile && (
-          <button 
-            className="chat-sidebar-toggle"
-            onClick={() => setShowSidebar(!showSidebar)}
-          >
+          <button className="chat-sidebar-toggle" onClick={() => setShowSidebar(!showSidebar)}>
             {showSidebar ? <X size={24} /> : <Menu size={24} />}
           </button>
         )}
         
         <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
-          <ChatSidebar 
-            selectedChat={null} 
-            onSelectChat={handleSelectChat} 
-          />
+          <ChatSidebar selectedChat={null} onSelectChat={handleSelectChat} />
         </div>
         
         <div className="flex-1 flex items-center justify-center">
           {isMobile && !showSidebar ? (
             <div className="text-center p-4">
-              <button 
-                onClick={() => setShowSidebar(true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-              >
+              <button onClick={() => setShowSidebar(true)} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
                 Select a conversation
               </button>
             </div>
@@ -280,43 +250,17 @@ export default function ChatPage() {
     );
   }
 
-  // 5️⃣ Resolve display name
-  const resolvedName =
-    selectedChat.name ||
-    (!selectedChat.is_group
-      ? selectedChat.participants
-          .filter((p) => p.user_id !== currentUserId)
-          .map((p) => p.display_name)
-          .join(', ')
-      : 'Unnamed Group');
-
-  // 6️⃣ Map participants into ChatRightSidebar's shape
-  const sidebarParticipants = selectedChat.participants.map((p) => ({
-    id:     p.user_id,
-    name:   p.display_name,
-    avatar: p.avatar_url,
-    email:  p.email,
-    online: p.online,
-  }));
-
+  // Main chat view
   return (
     <div className="chat-container">
-      {/* Mobile sidebar toggle button - always visible */}
       {isMobile && (
-        <button 
-          className="chat-sidebar-toggle"
-          onClick={() => setShowSidebar(!showSidebar)}
-        >
+        <button className="chat-sidebar-toggle" onClick={() => setShowSidebar(!showSidebar)}>
           {showSidebar ? <X size={24} /> : <Menu size={24} />}
         </button>
       )}
       
-      {/* Sidebar with responsive visibility */}
       <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
-        <ChatSidebar 
-          selectedChat={selectedChat} 
-          onSelectChat={handleSelectChat} 
-        />
+        <ChatSidebar selectedChat={selectedChat} onSelectChat={handleSelectChat} />
       </div>
 
       <div className="chat-content">
@@ -325,14 +269,15 @@ export default function ChatPage() {
           timestamp={selectedChat.last_message_at || ''}
           isGroup={selectedChat.is_group}
           currentUserId={currentUserId || ''}
-          onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
+          onInfoClick={toggleRightSidebar}
         />
+        
         {loadingMessages ? (
           <div className="flex items-center justify-center h-full">
             <LoadingSVG />
           </div>
-          ) : (
-            <>
+        ) : (
+          <>
             <ChatMessages
               messages={messages}
               currentUserId={currentUserId!}
@@ -348,15 +293,44 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Right sidebar with mobile drawer behavior */}
-      <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
-        <ChatRightSidebar
-          selectedChatName={resolvedName}
-          participants={sidebarParticipants}
-          avatarColors={avatarColors}
-          isGroup={selectedChat.is_group}
-          onClose={() => setShowRightSidebar(false)}
+      {/* Mobile overlay for right sidebar - use higher z-index */}
+      {showRightSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+          onClick={() => setShowRightSidebar(false)}
+          style={{ touchAction: 'none' }}
         />
+      )}
+
+      {/* Right sidebar with inline styles to ensure it's visible */}
+      <div 
+        className={showRightSidebar ? 'mobile-right-sidebar-open' : 'mobile-right-sidebar-closed'}
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          width: '80%',
+          maxWidth: '300px',
+          height: '100%',
+          backgroundColor: 'var(--app-card, #ffffff)',
+          zIndex: 50,
+          boxShadow: '-2px 0 10px rgba(0,0,0,0.2)',
+          transform: showRightSidebar ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s ease',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        {showRightSidebar && (
+          <ChatRightSidebar
+            selectedChatName={resolvedName}
+            participants={sidebarParticipants}
+            avatarColors={avatarColors}
+            isGroup={selectedChat.is_group}
+            onClose={() => setShowRightSidebar(false)}
+          />
+        )}
       </div>
     </div>
   );

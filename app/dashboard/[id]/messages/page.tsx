@@ -39,6 +39,9 @@ export default function ChatPage() {
   const [supabaseReady, setSupabaseReady] = useState(false);
   const isLoadingRef = useRef(false);
   const isMounted = useRef(true);
+  
+  // User profiles cache to solve the unknown user issue
+  const [userProfiles, setUserProfiles] = useState({});
 
   // Check if we're on mobile
   useEffect(() => {
@@ -83,6 +86,39 @@ export default function ChatPage() {
     };
   }, []);
 
+  // Helper function to get user profile from cache or participants
+  const getUserProfile = (userId) => {
+    // First check our user profiles cache
+    if (userProfiles[userId]) {
+      return userProfiles[userId];
+    }
+    
+    // Then try to find them in the participants list
+    if (selectedChat && selectedChat.participants) {
+      const participant = selectedChat.participants.find(p => p.user_id === userId);
+      if (participant) {
+        // Create a profile object from participant data
+        const profile = {
+          id: participant.user_id,
+          name: participant.display_name || 'User',
+          avatar: participant.avatar_url || participant.display_name?.charAt(0)?.toUpperCase() || 'U',
+          email: participant.email || ''
+        };
+        
+        // Save to cache for future use
+        setUserProfiles(prev => ({
+          ...prev,
+          [userId]: profile
+        }));
+        
+        return profile;
+      }
+    }
+    
+    // Default fallback
+    return null;
+  };
+
   // Add real-time listener for incoming messages with shared Supabase client
   useRealtimeInsert({
     supabase,
@@ -98,6 +134,9 @@ export default function ChatPage() {
         toast.success(`New message received!`);
       }
       
+      // Try to get better user data from our cache/participants
+      const senderProfile = getUserProfile(newMsg.sender_id);
+      
       // Transform the raw message into the expected Message format
       const transformedMessage = {
         id: newMsg.id,
@@ -107,19 +146,36 @@ export default function ChatPage() {
         image: null,
         sender: {
           id: newMsg.sender_id,
-          name: newMsg.sender_name || 'Unknown User',
-          avatar: newMsg.sender_avatar || '',
-          email: newMsg.sender_email || '',
+          // Use cached profile data if available, otherwise fall back to realtime data
+          name: senderProfile?.name || newMsg.sender_name || 'Unknown User',
+          avatar: senderProfile?.avatar || newMsg.sender_avatar || '', 
+          email: senderProfile?.email || newMsg.sender_email || '',
         }
       };
       
       console.log('[Realtime] Adding message to state:', transformedMessage);
       setMessages(prev => {
+        // FIX 1: Check for temporary messages that match this real one
+        const tempIndex = prev.findIndex(msg => 
+          msg.sender.id === newMsg.sender_id && 
+          msg.content === newMsg.content && 
+          String(msg.id).startsWith('temp-')
+        );
+        
+        if (tempIndex >= 0) {
+          // Replace the temporary message with the real one
+          console.log('[Realtime] Found matching temp message, replacing it');
+          const newMessages = [...prev];
+          newMessages[tempIndex] = transformedMessage;
+          return newMessages;
+        }
+        
         // Check if message already exists to prevent duplicates
         if (prev.some(msg => msg.id === newMsg.id)) {
           console.log('[Realtime] Message already exists in state, skipping');
           return prev;
         }
+        
         // Append message to end of array
         return [...prev, transformedMessage];
       });
@@ -133,6 +189,30 @@ export default function ChatPage() {
       }, 50);
     },
   });
+
+  // Build user profile cache when selectedChat changes
+  useEffect(() => {
+    if (!selectedChat || !selectedChat.participants) return;
+    
+    console.log('[ChatPage] Building user profile cache from participants');
+    
+    // Create a new cache object from participants
+    const newCache = {};
+    selectedChat.participants.forEach(participant => {
+      newCache[participant.user_id] = {
+        id: participant.user_id,
+        name: participant.display_name || 'User',
+        avatar: participant.avatar_url || participant.display_name?.charAt(0)?.toUpperCase() || 'U',
+        email: participant.email || ''
+      };
+    });
+    
+    // Update our user profiles cache
+    setUserProfiles(prev => ({
+      ...prev,
+      ...newCache
+    }));
+  }, [selectedChat]);
 
   // 2️⃣ Fetch messages on chat change with debounce protection
   useEffect(() => {
@@ -176,6 +256,24 @@ export default function ChatPage() {
         const sortedMessages = [...messageData].sort((a, b) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
+        
+        // Update user profile cache with message sender data
+        const newProfiles = {};
+        sortedMessages.forEach(message => {
+          if (message.sender && message.sender.id) {
+            newProfiles[message.sender.id] = {
+              id: message.sender.id,
+              name: message.sender.name || 'User',
+              avatar: message.sender.avatar || message.sender.name?.charAt(0)?.toUpperCase() || 'U',
+              email: message.sender.email || ''
+            };
+          }
+        });
+        
+        setUserProfiles(prev => ({
+          ...prev,
+          ...newProfiles
+        }));
         
         setMessages(sortedMessages);
         
@@ -230,7 +328,15 @@ export default function ChatPage() {
     // Clear input right away for better UX
     setMessageText('');
     
-    // Create optimistic message
+    // Get current user profile for better optimistic update
+    const userProfile = getUserProfile(currentUserId) || {
+      id: currentUserId,
+      name: 'You',
+      avatar: '',
+      email: ''
+    };
+    
+    // Create optimistic message with temp- prefix
     const optimisticId = `temp-${Date.now()}`;
     const optimisticMessage = {
       id: optimisticId,
@@ -240,9 +346,9 @@ export default function ChatPage() {
       image: null,
       sender: {
         id: currentUserId,
-        name: 'You',
-        avatar: '',
-        email: '',
+        name: userProfile.name,
+        avatar: userProfile.avatar,
+        email: userProfile.email
       }
     };
     
@@ -274,8 +380,6 @@ export default function ChatPage() {
         
         // Remove optimistic message on error
         setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
-      } else {
-        toast.success("Message sent!");
       }
     } catch (err) {
       console.error('[ChatPage] Error sending message:', err);

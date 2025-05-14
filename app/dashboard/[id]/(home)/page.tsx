@@ -1,3 +1,8 @@
+"use client";
+
+import { useAuth } from "@/app/provider";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { PaymentsOverview } from "@/components/Charts/payments-overview";
 import { UsedDevices } from "@/components/Charts/used-devices";
 import { WeeksProfit } from "@/components/Charts/weeks-profit";
@@ -17,6 +22,17 @@ type PropsType = {
 };
 
 export default async function Home({ searchParams }: PropsType) {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace("/sign-in");
+    }
+  }, [user]);
+
+  if (!user) return null;
+
   const { selected_time_frame } = await searchParams;
   const extractTimeFrame = createTimeFrameExtractor(selected_time_frame);
 

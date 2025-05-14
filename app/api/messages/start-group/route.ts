@@ -1,11 +1,39 @@
 // app/api/messages/start-group/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
+  const cookieStore = cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+
   try {
-    const { creatorId, name, participantIds } = await request.json();
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (!user || authError) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
+
+    // Parse request body
+    const { name, participantIds } = await request.json();
     
     if (!name || !participantIds || !Array.isArray(participantIds)) {
       return NextResponse.json(
@@ -13,54 +41,38 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Use cookies() as a function for authentication
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
-    // Get the authenticated user instead of trusting creatorId from the request
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    console.log("Auth check result:", user ? "User authenticated" : "Not authenticated", userError);
-
-    if (userError || !user) {
-      console.error("Authentication error:", userError);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Use the authenticated user's ID instead of the provided creatorId
-    const authenticatedCreatorId = user.id;
-    
-    // Ensure creator is included in participants
-    const allParticipantIds = [...new Set([authenticatedCreatorId, ...participantIds])];
+    // Ensure creator is included in participants (though our function handles this too)
+    const allParticipantIds = [...new Set([...participantIds])];
     
     console.log("Creating group with:", {
-      creator: authenticatedCreatorId,
+      creator: user.id,
       name,
       participants: allParticipantIds
     });
     
     // Call the Postgres function to create or get a group channel
     const { data, error } = await supabase.rpc("create_or_get_group_channel", {
-      p_creator_id: authenticatedCreatorId,
+      p_creator_id: user.id,
       p_channel_name: name,
       p_participant_ids: allParticipantIds
     });
 
     if (error) {
-      console.error("Failed to create group channel:", error.message);
+      console.error("Failed to create group channel:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log("Group channel created/found:", data);
+    console.log("Group channel created/found with ID:", data);
+    
+    // Return just the channel ID as a simple string to match the format
+    // expected by the frontend component
     return NextResponse.json({ channelId: data });
-  } catch (error) {
+    
+  } catch (error: any) {
     console.error("Unexpected error in start-group route:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
+      { error: "An unexpected error occurred: " + (error.message || "Unknown error") },
       { status: 500 }
     );
   }

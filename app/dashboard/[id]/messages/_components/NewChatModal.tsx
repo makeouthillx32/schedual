@@ -132,10 +132,18 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
       setSearchQuery('');
       setSearchResults([]);
     } else {
-      // For group, add to selected users
+      // For group, check if user is already selected
+      if (selectedUsers.some(selected => selected.id === user.id)) {
+        // User already selected, just return
+        return;
+      }
+      
+      // Add to selected users
       setSelectedUsers(prev => [...prev, user]);
       // Clear search input but keep search results
       setSearchQuery('');
+      // Immediately update search results to remove the selected user
+      setSearchResults(prev => prev.filter(result => result.id !== user.id));
     }
   };
 

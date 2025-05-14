@@ -293,6 +293,7 @@ export default function ChatPage() {
         )}
       </div>
 
+<<<<<<< HEAD
       {/* Mobile overlay for right sidebar - use higher z-index */}
       {showRightSidebar && (
         <div 
@@ -305,15 +306,37 @@ export default function ChatPage() {
       {/* Right sidebar with inline styles to ensure it's visible */}
       <div 
         className={showRightSidebar ? 'mobile-right-sidebar-open' : 'mobile-right-sidebar-closed'}
+=======
+      {/* Mobile overlay for right sidebar */}
+      {showRightSidebar && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50" 
+          onClick={() => setShowRightSidebar(false)}
+          style={{ 
+            touchAction: 'none', 
+            zIndex: 9998 
+          }}
+        />
+      )}
+
+      {/* Right sidebar with improved visibility */}
+      <div 
+>>>>>>> ff8dc22aa7df32d6b8bb5010e3242067fbda3936
         style={{
           position: 'fixed',
           top: 0,
           right: 0,
           width: '80%',
           maxWidth: '300px',
+<<<<<<< HEAD
           height: '100%',
           backgroundColor: 'var(--app-card, #ffffff)',
           zIndex: 50,
+=======
+          height: '100vh',
+          backgroundColor: 'var(--app-card, #ffffff)',
+          zIndex: 9999,
+>>>>>>> ff8dc22aa7df32d6b8bb5010e3242067fbda3936
           boxShadow: '-2px 0 10px rgba(0,0,0,0.2)',
           transform: showRightSidebar ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s ease',
@@ -322,6 +345,7 @@ export default function ChatPage() {
           flexDirection: 'column'
         }}
       >
+<<<<<<< HEAD
         {showRightSidebar && (
           <ChatRightSidebar
             selectedChatName={resolvedName}
@@ -330,6 +354,44 @@ export default function ChatPage() {
             isGroup={selectedChat.is_group}
             onClose={() => setShowRightSidebar(false)}
           />
+=======
+        {/* Always visible close button */}
+        {showRightSidebar && (
+          <button
+            onClick={() => setShowRightSidebar(false)}
+            style={{
+              position: 'absolute',
+              top: '15px',
+              right: '15px',
+              zIndex: 10000,
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none',
+              touchAction: 'manipulation'
+            }}
+          >
+            <X size={20} />
+          </button>
+        )}
+        
+        {/* Render sidebar content with padding for close button */}
+        {showRightSidebar && (
+          <div style={{ paddingTop: '40px', height: '100%', overflow: 'auto' }}>
+            <ChatRightSidebar
+              selectedChatName={resolvedName}
+              participants={sidebarParticipants}
+              avatarColors={avatarColors}
+              isGroup={selectedChat.is_group}
+              onClose={() => setShowRightSidebar(false)}
+            />
+          </div>
+>>>>>>> ff8dc22aa7df32d6b8bb5010e3242067fbda3936
         )}
       </div>
     </div>

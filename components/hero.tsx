@@ -272,4 +272,4 @@ const CMSSchedulePage = () => {
   );
 };
 
-export default CMSSchedulePage;
+export default Hero;

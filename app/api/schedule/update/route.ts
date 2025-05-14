@@ -30,26 +30,48 @@ export async function GET (req: Request) {
 }
 
 // ---------- BULK WRITE ----------
-// PUT body ➜ [ { id, monday, tuesday, wednesday, thursday, friday } , ... ]  (one entry per week)
-export async function PUT (req: Request) {
+export async function PUT(req: Request) {
   try {
-    const updates = await req.json();
+    const { scheduleUpdates, memberUpdates } = await req.json();
 
-    if (!Array.isArray(updates)) {
+    // Validate schedules
+    if (!Array.isArray(scheduleUpdates)) {
       return NextResponse.json({ error: "Expected array of schedule updates" }, { status: 400 });
     }
 
-    for (const entry of updates) {
+    // Update Schedule table
+    for (const entry of scheduleUpdates) {
       const { id, ...dayData } = entry;
-
-      const { error } = await supabase
-        .from("Schedule")
-        .update(dayData)
-        .eq("id", id);
-
+      const { error } = await supabase.from("Schedule").update(dayData).eq("id", id);
       if (error) {
-        console.error("Update failed for id", id, error);
+        console.error("Schedule update failed for id", id, error);
         return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+    }
+
+    // Update Members table if present
+    if (Array.isArray(memberUpdates)) {
+      for (const member of memberUpdates) {
+        if (!member.id) {
+          const { error } = await supabase.from("Members").insert(member);
+          if (error) {
+            console.error("Member insert failed:", error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+          }
+        } else if (member.delete === true) {
+          const { error } = await supabase.from("Members").delete().eq("id", member.id);
+          if (error) {
+            console.error("Member delete failed:", error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+          }
+        } else {
+          const { id, ...rest } = member;
+          const { error } = await supabase.from("Members").update(rest).eq("id", id);
+          if (error) {
+            console.error("Member update failed for id", id, error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+          }
+        }
       }
     }
 
@@ -59,7 +81,6 @@ export async function PUT (req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
-
 // ---------- SINGLE‑DAY MOVE ----------
 // POST body ➜ { business_id, week, currentDay, newDay }
 //   • sets currentDay to false and newDay to true for the given business/week

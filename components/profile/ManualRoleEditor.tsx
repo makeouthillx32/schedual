@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,50 +12,23 @@ export default function ManualRoleEditor() {
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   
-  // New state for specializations
   const [allSpecializations, setAllSpecializations] = useState([]);
   const [userSpecializations, setUserSpecializations] = useState([]);
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [availableSpecializations, setAvailableSpecializations] = useState([]);
 
-  // Fetch all users
   useEffect(() => {
-    const fetchAllUsers = async () => {
-      const res = await fetch("/api/get-all-users");
-      const data = await res.json();
-      if (res.ok) setUsers(data);
-    };
-    fetchAllUsers();
+    fetch("/api/get-all-users")
+      .then((res) => res.json())
+      .then(setUsers);
   }, []);
 
-  // Fetch all specializations
   useEffect(() => {
-    const fetchSpecializations = async () => {
-      try {
-        const res = await fetch("/api/specializations/get-all");
-        if (res.ok) {
-          const data = await res.json();
-          setAllSpecializations(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch specializations:", error);
-      }
-    };
-    fetchSpecializations();
+    fetch("/api/specializations/get-all")
+      .then((res) => res.json())
+      .then(setAllSpecializations);
   }, []);
 
-  // Filter specializations by selected role
-  useEffect(() => {
-    if (role && allSpecializations.length > 0) {
-      const selectedRole = users.find(u => u.id === uuid)?.role;
-      const roleSpecializations = allSpecializations.filter(
-        spec => spec.role_id === selectedRole
-      );
-      setAvailableSpecializations(roleSpecializations);
-    }
-  }, [role, allSpecializations]);
-
-  // Fetch user's specializations when user is selected
   useEffect(() => {
     if (uuid) {
       fetchUserSpecializations();
@@ -64,6 +36,15 @@ export default function ManualRoleEditor() {
       setUserSpecializations([]);
     }
   }, [uuid]);
+
+  useEffect(() => {
+    if (role && allSpecializations.length > 0) {
+      const roleSpecializations = allSpecializations.filter(
+        (spec) => spec.role === role
+      );
+      setAvailableSpecializations(roleSpecializations);
+    }
+  }, [role, allSpecializations]);
 
   const fetchUserSpecializations = async () => {
     try {
@@ -77,46 +58,43 @@ export default function ManualRoleEditor() {
     }
   };
 
-  const selectedUser = users.find((user) => user.id === uuid);
-
-  // Update to handle user selection
-  const handleUserChange = (selectedUuid) => {
+  const handleUserChange = async (selectedUuid) => {
     setUuid(selectedUuid);
-    
-    if (selectedUuid) {
-      // Get the user's current role
-      const user = users.find(u => u.id === selectedUuid);
-      if (user && user.role) {
-        setRole(user.role);
-      }
-    } else {
+    if (!selectedUuid) {
       setRole("client");
       setUserSpecializations([]);
+      return;
+    }
+
+    const user = users.find((u) => u.id === selectedUuid);
+    if (user?.role) {
+      // Fetch readable role name from role ID
+      const res = await fetch(`/api/profile/role-label?role_id=${user.role}`);
+      const data = await res.json();
+      if (res.ok && data.role) {
+        setRole(data.role);
+      } else {
+        setRole("client");
+      }
     }
   };
 
-  // Update the role update handler to include specializations
   const handleUpdateRole = async () => {
     if (!uuid || !role) return;
     setLoading(true);
     setMessage(null);
 
-    // Get the current user specialization IDs
-    const specIds = userSpecializations.map(spec => spec.id);
+    const specIds = userSpecializations.map((spec) => spec.id);
 
     const res = await fetch("/api/profile/set-role", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        uuid, 
-        role,
-        specializations: specIds 
-      }),
+      body: JSON.stringify({ uuid, role, specializations: specIds }),
     });
 
     const result = await res.json();
     if (res.ok) {
-      setMessage(`✅ Role updated to '${role}' for user ${selectedUser?.display_name}.`);
+      setMessage(`✅ Role updated to '${role}' for user ${uuid}.`);
     } else {
       setMessage(`❌ ${result.error || "Failed to update role."}`);
     }
@@ -124,10 +102,9 @@ export default function ManualRoleEditor() {
     setLoading(false);
   };
 
-  // Add specialization to user
   const handleAddSpecialization = async () => {
     if (!uuid || !selectedSpecialization) return;
-    
+
     setLoading(true);
     setMessage(null);
 
@@ -135,22 +112,19 @@ export default function ManualRoleEditor() {
       const res = await fetch("/api/specializations/assign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          userId: uuid, 
-          specializationId: selectedSpecialization 
+        body: JSON.stringify({
+          userId: uuid,
+          specializationId: selectedSpecialization,
         }),
       });
 
       const result = await res.json();
       if (res.ok) {
-        // Get the specialization name for the message
         const specName = allSpecializations.find(
-          spec => spec.id === selectedSpecialization
+          (spec) => spec.id === selectedSpecialization
         )?.name || selectedSpecialization;
-        
-        setMessage(`✅ Added specialization '${specName}' to user ${selectedUser?.display_name}.`);
-        
-        // Refresh user specializations
+
+        setMessage(`✅ Added specialization '${specName}' to user ${uuid}.`);
         await fetchUserSpecializations();
         setSelectedSpecialization("");
       } else {
@@ -163,10 +137,9 @@ export default function ManualRoleEditor() {
     }
   };
 
-  // Remove specialization from user
   const handleRemoveSpecialization = async (specId) => {
     if (!uuid || !specId) return;
-    
+
     setLoading(true);
     setMessage(null);
 
@@ -174,22 +147,17 @@ export default function ManualRoleEditor() {
       const res = await fetch("/api/specializations/remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          userId: uuid, 
-          specializationId: specId 
+        body: JSON.stringify({
+          userId: uuid,
+          specializationId: specId,
         }),
       });
 
       const result = await res.json();
       if (res.ok) {
-        // Get the specialization name for the message
-        const specName = userSpecializations.find(
-          spec => spec.id === specId
-        )?.name || specId;
-        
-        setMessage(`✅ Removed specialization '${specName}' from user ${selectedUser?.display_name}.`);
-        
-        // Refresh user specializations
+        const specName =
+          userSpecializations.find((spec) => spec.id === specId)?.name || specId;
+        setMessage(`✅ Removed specialization '${specName}' from user ${uuid}.`);
         await fetchUserSpecializations();
       } else {
         setMessage(`❌ ${result.error || "Failed to remove specialization."}`);
@@ -201,9 +169,8 @@ export default function ManualRoleEditor() {
     }
   };
 
-  // Filter out specializations the user already has
   const filteredAvailableSpecializations = availableSpecializations.filter(
-    avail => !userSpecializations.some(userSpec => userSpec.id === avail.id)
+    (avail) => !userSpecializations.some((userSpec) => userSpec.id === avail.id)
   );
 
   return (
@@ -234,7 +201,6 @@ export default function ManualRoleEditor() {
             value={role}
             onChange={(e) => {
               setRole(e.target.value);
-              // Reset specializations when role changes since they're role-specific
               setUserSpecializations([]);
             }}
           >
@@ -248,7 +214,6 @@ export default function ManualRoleEditor() {
             {loading ? "Updating..." : "Update Role"}
           </Button>
 
-          {/* Current Specializations */}
           <div className="mt-6">
             <Label className="block mb-2">Current Specializations</Label>
             <div className="border p-2 rounded min-h-12 mb-4 bg-gray-50 dark:bg-zinc-700">
@@ -257,7 +222,10 @@ export default function ManualRoleEditor() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {userSpecializations.map((spec) => (
-                    <div key={spec.id} className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full px-3 py-1 text-sm flex items-center">
+                    <div
+                      key={spec.id}
+                      className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full px-3 py-1 text-sm flex items-center"
+                    >
                       {spec.name}
                       <button
                         onClick={() => handleRemoveSpecialization(spec.id)}
@@ -273,7 +241,6 @@ export default function ManualRoleEditor() {
             </div>
           </div>
 
-          {/* Add Specialization */}
           <div className="mb-4">
             <Label htmlFor="specialization" className="block mb-2">Add Specialization</Label>
             <div className="flex gap-2">
@@ -291,8 +258,8 @@ export default function ManualRoleEditor() {
                   </option>
                 ))}
               </select>
-              <Button 
-                onClick={handleAddSpecialization} 
+              <Button
+                onClick={handleAddSpecialization}
                 disabled={loading || !selectedSpecialization}
               >
                 Add
@@ -308,11 +275,16 @@ export default function ManualRoleEditor() {
       )}
 
       {message && (
-        <div className={`mt-4 p-2 rounded text-sm ${message.startsWith('✅') ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'}`}>
+        <div
+          className={`mt-4 p-2 rounded text-sm ${
+            message.startsWith("✅")
+              ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+              : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+          }`}
+        >
           {message}
         </div>
       )}
     </div>
   );
 }
-

@@ -23,18 +23,26 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Role not found" }, { status: 404 });
   }
 
-  // Get associated specializations
+  // Get specializations with role name
   const { data: specializations, error: specError } = await supabase
     .from("specializations")
-    .select("id, name, description")
+    .select("id, name, description, roles(role)")
     .eq("role_id", roleId);
 
   if (specError) {
     return NextResponse.json({ error: "Error fetching specializations" }, { status: 500 });
   }
 
+  // Normalize role name into each specialization
+  const formattedSpecializations = specializations.map(spec => ({
+    id: spec.id,
+    name: spec.name,
+    description: spec.description,
+    role: spec.roles?.role ?? null
+  }));
+
   return NextResponse.json({
     role: roleData.role,
-    specializations,
+    specializations: formattedSpecializations
   });
 }

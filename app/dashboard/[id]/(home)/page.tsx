@@ -1,36 +1,38 @@
 "use client";
 
 import { useAuth } from "@/app/provider";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Suspense, useMemo } from "react";
-
 import { PaymentsOverview } from "@/components/Charts/payments-overview";
 import { UsedDevices } from "@/components/Charts/used-devices";
 import { WeeksProfit } from "@/components/Charts/weeks-profit";
 import { TopChannels } from "@/components/Tables/top-channels";
 import { TopChannelsSkeleton } from "@/components/Tables/top-channels/skeleton";
+import { createTimeFrameExtractor } from "@/utils/timeframe-extractor";
+import { Suspense, useState } from "react";
 import { ChatsCard } from "./_components/chats-card";
 import { OverviewCardsGroup } from "./_components/overview-cards";
 import { OverviewCardsSkeleton } from "./_components/overview-cards/skeleton";
 import { RegionLabels } from "./_components/region-labels";
-import { createTimeFrameExtractor } from "@/utils/timeframe-extractor";
 
-export default function DashboardPage() {
+export default function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { selected_time_frame?: string };
+}) {
   const { user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [clientReady, setClientReady] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.replace("/sign-in");
-    }
+    setClientReady(true);
+    if (!user) router.replace("/sign-in");
   }, [user]);
 
-  if (!user) return null;
+  if (!clientReady || !user) return null;
 
-  const selected_time_frame = searchParams.get("selected_time_frame") || undefined;
-  const extractTimeFrame = useMemo(() => createTimeFrameExtractor(selected_time_frame), [selected_time_frame]);
+  const { selected_time_frame } = searchParams;
+  const extractTimeFrame = createTimeFrameExtractor(selected_time_frame);
 
   return (
     <>

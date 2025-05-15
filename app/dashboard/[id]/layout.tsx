@@ -7,7 +7,7 @@ import "@/css/style.css";
 
 import { Sidebar } from "@/components/Layouts/sidebar";
 import { Header } from "@/components/Layouts/header";
-import { Providers } from "./providers";
+import { Providers } from "@/app/provider";
 import { Toaster } from "react-hot-toast";
 
 import "flatpickr/dist/flatpickr.min.css";

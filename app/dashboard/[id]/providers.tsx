@@ -2,12 +2,12 @@
 "use client";
 
 import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
-import { ThemeProvider }  from "next-themes";
+import { Providers as GlobalProviders } from "@/app/provider"; // your full app provider
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider defaultTheme="light" attribute="class">
+    <GlobalProviders>
       <SidebarProvider>{children}</SidebarProvider>
-    </ThemeProvider>
+    </GlobalProviders>
   );
 }

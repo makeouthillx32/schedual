@@ -48,8 +48,9 @@ export default function ManualRoleEditor() {
   // Filter specializations by selected role
   useEffect(() => {
     if (role && allSpecializations.length > 0) {
-      const roleSpecializations = allSpecializations.filter(spec => 
-        spec.role_name === role
+      const selectedRole = users.find(u => u.id === uuid)?.role;
+      const roleSpecializations = allSpecializations.filter(
+        spec => spec.role_id === selectedRole
       );
       setAvailableSpecializations(roleSpecializations);
     }

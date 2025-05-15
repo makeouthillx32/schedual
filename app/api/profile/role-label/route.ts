@@ -12,15 +12,29 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing role_id" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  // Get role name
+  const { data: roleData, error: roleError } = await supabase
     .from("roles")
     .select("role")
     .eq("id", roleId)
     .single();
 
-  if (error || !data) {
+  if (roleError || !roleData) {
     return NextResponse.json({ error: "Role not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ role: data.role });
+  // Get associated specializations
+  const { data: specializations, error: specError } = await supabase
+    .from("specializations")
+    .select("id, name, description")
+    .eq("role_id", roleId);
+
+  if (specError) {
+    return NextResponse.json({ error: "Error fetching specializations" }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    role: roleData.role,
+    specializations,
+  });
 }

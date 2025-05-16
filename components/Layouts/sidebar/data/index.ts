@@ -65,17 +65,17 @@ export const NAV_DATA = [
         items: [
           {
             title: "Members",
-            url: "/admin/members",
+            url: "/settings/members",
             icon: Icons.Users
           },
           {
             title: "Roles",
-            url: "/admin/roles",
+            url: "/settings/roles",
             icon: Icons.Authentication
           },
           {
             title: "Invites",
-            url: "/admin/invites",
+            url: "/settings/invites",
             icon: Icons.Table
           }
         ],

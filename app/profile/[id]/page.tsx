@@ -6,6 +6,7 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
 import AdminDelete from "@/components/profile/AdminDelete";
 import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
+import ManageSpecializations from "@/components/profile/ManageSpecializations";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: "User Profile" };
@@ -64,6 +65,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
       <InviteGeneratorClient />
       <AdminDelete />
       <ManualRoleEditor />
+      <ManageSpecializations /> {/* Add this line */}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-export const createClient = (mode: "regular" | "service" = "regular") => {
+export const createClient = async (mode: "regular" | "service" = "regular") => {
   if (mode === "service") {
     return createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,7 +11,7 @@ export const createClient = (mode: "regular" | "service" = "regular") => {
     );
   }
 
-  const cookieStore = cookies(); // FIXED: removed `await`
+  const cookieStore = await cookies(); // Await cookies()
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

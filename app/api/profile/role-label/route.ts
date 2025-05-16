@@ -1,48 +1,54 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+
+// app/api/profile/role-label/route.ts
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const roleId = url.searchParams.get("role_id");
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const { searchParams } = new URL(req.url);
+  const roleId = searchParams.get("role_id");
 
   if (!roleId) {
-    return NextResponse.json({ error: "Missing role_id" }, { status: 400 });
+    return NextResponse.json({ error: "Missing role ID" }, { status: 400 });
   }
 
-  // Get role name
-  const { data: roleData, error: roleError } = await supabase
-    .from("roles")
-    .select("role")
-    .eq("id", roleId)
-    .single();
+  const supabase = await createClient();
 
-  if (roleError || !roleData) {
-    return NextResponse.json({ error: "Role not found" }, { status: 404 });
+  try {
+    // Find the role details in the roles table
+    const { data: roleData, error: roleError } = await supabase
+      .from("roles")
+      .select("*")
+      .eq("id", roleId)
+      .single();
+
+    if (roleError || !roleData) {
+      return NextResponse.json({ 
+        error: "Role not found", 
+        role: roleId,
+        specializations: []
+      }, { status: 404 });
+    }
+
+    // Fetch specializations for this role (if applicable)
+    const { data: specializations, error: specError } = await supabase
+      .from("specializations")
+      .select("id, name, description")
+      .eq("role", roleData.role);
+
+    if (specError) {
+      console.error("Specializations fetch error:", specError);
+    }
+
+    return NextResponse.json({
+      role: roleData.role, // This is the human-readable role name
+      specializations: specializations || []
+    });
+  } catch (err) {
+    console.error("Unexpected error in role label route:", err);
+    return NextResponse.json({ 
+      role: roleId, 
+      specializations: [],
+      error: "Error processing role information" 
+    }, { status: 500 });
   }
-
-  // Get specializations with role name
-  const { data: specializations, error: specError } = await supabase
-    .from("specializations")
-    .select("id, name, description, roles(role)")
-    .eq("role_id", roleId);
-
-  if (specError) {
-    return NextResponse.json({ error: "Error fetching specializations" }, { status: 500 });
-  }
-
-  // Normalize role name into each specialization
-  const formattedSpecializations = specializations.map(spec => ({
-    id: spec.id,
-    name: spec.name,
-    description: spec.description,
-    role: spec.roles?.role ?? null
-  }));
-
-  return NextResponse.json({
-    role: roleData.role,
-    specializations: formattedSpecializations
-  });
 }

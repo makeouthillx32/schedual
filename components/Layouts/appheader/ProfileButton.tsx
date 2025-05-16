@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { DropdownMenuItem } from "./dropdown-menu";
+import { DropdownMenuItem } from "../Layouts/appheader/dropdown-menu";
 
 interface ProfileButtonProps {
   onClick?: () => void;

@@ -4,7 +4,7 @@ import { ChevronUpIcon } from "@/assets/icons";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Dropdown, DropdownContent, DropdownTrigger } from "./ui/dropdown";
+import { Dropdown, DropdownContent, DropdownTrigger } from "./Layouts/appheader/dropdown";
 
 type PropsType<TItem> = {
   defaultValue?: TItem;

@@ -1,3 +1,4 @@
+// components/ui/dropdown-menu.tsx
 "use client";
 
 import * as React from "react";
@@ -6,13 +7,14 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/app/provider";
 import { usePathname } from "next/navigation";
 import useLoginSession from "@/lib/useLoginSession";
-import LogoutButton from "@/components/ui/LogoutButton";
-import SignInButton from "@/components/ui/SignInButton";
-import ProfileButton from "@/components/ui/ProfileButton";
-import SettingsButton from "@/components/ui/SettingsButton";
-import ScheduleButton from "@/components/ui/ScheduleButton";
-import HomeButton from "@/components/ui/HomeButton";
-import CurrentDateTime from "@/components/ui/CurrentDateTime";
+import LogoutButton from "@/components/Layouts/appheader/LogoutButton";
+import SignInButton from "@/components/Layouts/appheader/SignInButton";
+// — Replaced ProfileButton with DashboardButton —
+import DashboardButton from "@/components/Layouts/appheader/DashboardButton";
+import SettingsButton from "@/components/Layouts/appheader/SettingsButton";
+import ScheduleButton from "@/components/Layouts/appheader/ScheduleButton";
+import HomeButton from "@/components/Layouts/appheader/HomeButton";
+import CurrentDateTime from "@/components/Layouts/appheader/CurrentDateTime";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -82,11 +84,26 @@ const CustomDropdown: React.FC = () => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center justify-center w-8 h-8" aria-label="Toggle menu">
+        <button
+          className="flex items-center justify-center w-8 h-8"
+          aria-label="Toggle menu"
+        >
           <div className="space-y-1.5">
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
-            <div className={`w-6 h-0.5 ${themeType === "dark" ? "bg-white" : "bg-black"}`} />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
+            <div
+              className={`w-6 h-0.5 ${
+                themeType === "dark" ? "bg-white" : "bg-black"
+              }`}
+            />
           </div>
         </button>
       </DropdownMenuTrigger>
@@ -95,7 +112,9 @@ const CustomDropdown: React.FC = () => {
         <HomeButton onClick={handleMenuClick} />
         <ScheduleButton onClick={handleMenuClick} />
         <SettingsButton activePage={activePage} onClick={handleMenuClick} />
-        {session?.user?.id && <ProfileButton onClick={handleMenuClick} />}
+        {session?.user?.id && (
+          <DashboardButton onClick={handleMenuClick} />
+        )}
         {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
       </DropdownMenuContent>

@@ -3,7 +3,7 @@
 import React from "react";
 import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
-import { CustomDropdown } from "@/components/ui/dropdown-menu";
+import { CustomDropdown } from "@/components/Layouts/appheader/dropdown-menu";
 
 interface NavProps {
   pageTitle?: string;

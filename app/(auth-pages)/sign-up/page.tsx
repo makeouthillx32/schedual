@@ -1,7 +1,7 @@
 import { signUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/Layouts/appheader/input";
 import { Label } from "@/components/ui/label";
 import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
 import Link from "next/link";

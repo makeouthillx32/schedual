@@ -8,28 +8,10 @@ import { MenuIcon } from "./icons";
 import { Notification } from "./notification";
 import { ThemeToggleSwitch } from "./theme-toggle";
 import { UserInfo } from "./user-info";
-import { useState, useEffect } from "react";
 import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
 
 export function Header() {
   const { toggleSidebar, isMobile } = useSidebarContext();
-  const [isDesktop, setIsDesktop] = useState(true);
-
-  useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-    
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    
-    return () => {
-      window.removeEventListener('resize', checkDesktop);
-    };
-  }, []);
-
-  // Choose which theme toggle to render based on screen size
-  const ThemeToggle = isDesktop ? ThemeToggleSwitch : SwitchtoDarkMode;
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stroke bg-white px-4 py-5 shadow-1 dark:border-stroke-dark dark:bg-gray-dark md:px-5 2xl:px-10">
@@ -70,8 +52,8 @@ export function Header() {
           <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
         </div>
 
-        {/* Conditionally render theme toggle based on screen size */}
-        <ThemeToggle />
+        {/* Conditionally render theme toggle */}
+        {isMobile ? <SwitchtoDarkMode /> : <ThemeToggleSwitch />}
 
         {/* This will show the notification bell with dot */}
         <Notification />

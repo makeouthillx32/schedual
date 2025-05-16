@@ -5,11 +5,12 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import Last4Weeks from "./_components/_message-charts/last_4weeks";
-import Last7d from "./_components/_message-charts/last_7d";
-import Last24h from "./_components/_message-charts/last_24hrs";
-import GeneralMessageDataCard from "./_components/_message-charts/general_data";
-import ChatBox from "./_components/_message-charts/ChatBox";
+import Last4Weeks from "./_components/last_4weeks";
+import Last7d from "./_components/last_7d";
+import Last24h from "./_components/last_24hrs";
+import GeneralMessageDataCard from "./_components/general_data";
+import ChatBox from "./_components/ChatBox";
+
 
 export default function MessagesActivityPage() {
   return (

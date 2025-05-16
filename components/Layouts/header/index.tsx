@@ -52,8 +52,10 @@ export function Header() {
           <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
         </div>
 
-        {/* Conditionally render theme toggle */}
-        {isMobile ? <SwitchtoDarkMode /> : <ThemeToggleSwitch />}
+        {/* Add debugging styles to isolate theme toggle issue */}
+        <div className="theme-toggle-container border-2 border-red-500 flex items-center justify-center">
+          {isMobile ? <SwitchtoDarkMode /> : <ThemeToggleSwitch />}
+        </div>
 
         {/* This will show the notification bell with dot */}
         <Notification />

@@ -53,8 +53,8 @@ export function Header() {
           <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
         </div>
 
-        {/* Theme toggle with transparent border for diagnostics */}
-        <div className="theme-toggle-container border-2 border-transparent flex items-center justify-center">
+        {/* Wrap theme toggle to prevent size constraints */}
+        <div className="flex items-center justify-center">
           {isMobile ? <SwitchtoDarkMode /> : <ThemeToggleSwitch />}
         </div>
 
@@ -68,3 +68,4 @@ export function Header() {
     </header>
   );
 }
+

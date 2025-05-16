@@ -1,48 +1,152 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Search, MoreHorizontal } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, Search, MoreHorizontal } from 'lucide-react';
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import './_components/members.scss';
 
-// Mock data - you'll replace this with actual data fetching
-const MOCK_MEMBERS = [
-  {
-    name: 'Seekerbone',
-    avatar: 'https://via.placeholder.com/40',
-    memberSince: '8 days ago',
-    joinedDart: '2 years ago',
-    joinMethod: 'XjnxF3XX',
-    roles: ['Streamer'],
-    signals: '+6'
-  },
-  {
-    name: 'Drowski',
-    avatar: 'https://via.placeholder.com/40',
-    memberSince: '27 days ago',
-    joinedDart: '1 year ago',
-    joinMethod: 'AJRDq3P',
-    roles: ['member'],
-    signals: ''
-  },
-  // Add more mock members...
-];
+// Define a comprehensive type for our user data
+interface User {
+  id: string;
+  display_name: string;
+  avatar_url: string;
+  email: string;
+  role_label: string;
+  created_at: string;
+  last_sign_in_at: string;
+  email_confirmed_at: string | null;
+  auth_providers: string[];
+}
 
 export default function MembersPage() {
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleMemberSelection = (name: string) => {
-    setSelectedMembers(prev => 
-      prev.includes(name) 
-        ? prev.filter(member => member !== name)
-        : [...prev, name]
+  // Fetch users and their detailed information
+  useEffect(() => {
+    const fetchUsersWithDetails = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch base users list
+        const usersResponse = await fetch('/api/get-all-users');
+        if (!usersResponse.ok) {
+          throw new Error('Failed to fetch users');
+        }
+        const baseUsers = await usersResponse.json();
+
+        // Fetch detailed user information with roles
+        const detailedUsers = await Promise.all(
+          baseUsers.map(async (user: any) => {
+            try {
+              // Fetch profile details
+              const profileResponse = await fetch(`/api/profile/${user.id}`);
+              const profileData = await profileResponse.json();
+
+              // Fetch role label
+              let roleLabel = 'User';
+              if (profileData.role) {
+                const roleResponse = await fetch(`/api/profile/role-label?role_id=${profileData.role}`);
+                const roleData = await roleResponse.json();
+                roleLabel = roleData.role || 'User';
+              }
+
+              return {
+                id: user.id,
+                display_name: user.display_name || 'Unnamed User',
+                avatar_url: profileData.avatar_url || '/images/user/user-03.png',
+                email: user.email || 'No email',
+                role_label: roleLabel,
+                created_at: profileData.created_at || 'Unknown',
+                last_sign_in_at: profileData.last_sign_in_at || 'Never',
+                email_confirmed_at: profileData.email_confirmed_at || null,
+                auth_providers: profileData.app_metadata?.providers || ['Unknown']
+              };
+            } catch (detailError) {
+              console.error(`Error fetching details for user ${user.id}:`, detailError);
+              return {
+                id: user.id,
+                display_name: user.display_name || 'Unnamed User',
+                avatar_url: '/images/user/user-03.png',
+                email: user.email || 'No email',
+                role_label: 'User',
+                created_at: 'Unknown',
+                last_sign_in_at: 'Never',
+                email_confirmed_at: null,
+                auth_providers: ['Unknown']
+              };
+            }
+          })
+        );
+
+        setUsers(detailedUsers);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsersWithDetails();
+  }, []);
+
+  const toggleUserSelection = (id: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(id) 
+        ? prev.filter(userId => userId !== id)
+        : [...prev, id]
     );
   };
 
-  const filteredMembers = MOCK_MEMBERS.filter(member => 
-    member.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = users.filter(user => 
+    user.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Select all users toggle
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === filteredUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(filteredUsers.map(user => user.id));
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString || dateString === 'Unknown' || dateString === 'Never') return dateString;
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <ShowcaseSection title="Members Management">
+        <div className="text-center py-10">Loading users...</div>
+      </ShowcaseSection>
+    );
+  }
+
+  if (error) {
+    return (
+      <ShowcaseSection title="Members Management">
+        <div className="text-center py-10 text-red-500">
+          {error}
+        </div>
+      </ShowcaseSection>
+    );
+  }
 
   return (
     <ShowcaseSection title="Members Management">
@@ -50,7 +154,7 @@ export default function MembersPage() {
         <div className="relative w-full max-w-md">
           <input 
             type="text" 
-            placeholder="Search by username or id"
+            placeholder="Search by username or email"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg bg-gray-2 dark:bg-gray-dark text-dark dark:text-white border-stroke dark:border-dark-3"
@@ -74,54 +178,55 @@ export default function MembersPage() {
               <th className="p-3 text-left">
                 <input 
                   type="checkbox" 
+                  checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                  onChange={toggleSelectAll}
                   className="form-checkbox rounded text-primary dark:text-primary-light"
                 />
               </th>
               <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">NAME</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">MEMBER SINCE</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">JOINED DART</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">JOIN METHOD</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">ROLES</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">SIGNALS</th>
+              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">EMAIL</th>
+              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">ROLE</th>
+              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">CREATED</th>
+              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">LAST LOGIN</th>
+              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">AUTH PROVIDERS</th>
               <th className="p-3 text-right text-dark-4 dark:text-dark-6 uppercase">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
-            {filteredMembers.map((member) => (
+            {filteredUsers.map((user) => (
               <tr 
-                key={member.name} 
+                key={user.id} 
                 className="border-b border-stroke dark:border-dark-3 hover:bg-gray-2 dark:hover:bg-gray-dark transition-colors"
               >
                 <td className="p-3">
                   <input 
                     type="checkbox" 
-                    checked={selectedMembers.includes(member.name)}
-                    onChange={() => toggleMemberSelection(member.name)}
+                    checked={selectedUsers.includes(user.id)}
+                    onChange={() => toggleUserSelection(user.id)}
                     className="form-checkbox rounded text-primary dark:text-primary-light"
                   />
                 </td>
                 <td className="p-3 flex items-center space-x-3">
                   <img 
-                    src={member.avatar} 
-                    alt={member.name} 
-                    className="w-10 h-10 rounded-full"
+                    src={user.avatar_url} 
+                    alt={user.display_name} 
+                    className="w-10 h-10 rounded-full object-cover"
                   />
-                  <span className="font-medium text-dark dark:text-white">{member.name}</span>
+                  <span className="font-medium text-dark dark:text-white">{user.display_name}</span>
                 </td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{member.memberSince}</td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{member.joinedDart}</td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{member.joinMethod}</td>
+                <td className="p-3 text-dark-4 dark:text-dark-5">{user.email}</td>
                 <td className="p-3">
-                  {member.roles.map(role => (
-                    <span 
-                      key={role} 
-                      className="bg-gray-2 dark:bg-gray-dark text-dark-4 dark:text-dark-5 px-2 py-1 rounded-full text-xs mr-2"
-                    >
-                      {role}
-                    </span>
-                  ))}
+                  <span 
+                    className="bg-gray-2 dark:bg-gray-dark text-dark-4 dark:text-dark-5 px-2 py-1 rounded-full text-xs"
+                  >
+                    {user.role_label}
+                  </span>
                 </td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{member.signals}</td>
+                <td className="p-3 text-dark-4 dark:text-dark-5">{formatDate(user.created_at)}</td>
+                <td className="p-3 text-dark-4 dark:text-dark-5">{formatDate(user.last_sign_in_at)}</td>
+                <td className="p-3 text-dark-4 dark:text-dark-5">
+                  {user.auth_providers.join(', ')}
+                </td>
                 <td className="p-3 text-right">
                   <button className="text-dark-4 dark:text-dark-5 hover:bg-gray-2 dark:hover:bg-gray-dark p-2 rounded transition-colors">
                     <MoreHorizontal size={20} />
@@ -135,17 +240,13 @@ export default function MembersPage() {
 
       <div className="flex justify-between items-center mt-6">
         <span className="text-dark-4 dark:text-dark-5">
-          Showing 12 members of 60
+          Showing {filteredUsers.length} of {users.length} members
         </span>
         <div className="flex space-x-2 pagination">
           <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">
             Back
           </button>
           <button className="px-4 py-2 bg-primary text-white rounded active-page">1</button>
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">2</button>
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">3</button>
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">4</button>
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">5</button>
           <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">
             Next
           </button>

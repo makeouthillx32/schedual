@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as Icons from "../icons";
@@ -43,19 +44,43 @@ export const NAV_DATA = [
         roles: ["admin", "jobcoach", "client"],
       },
       {
-        title: "Settings",
-        url: "/settings",
-        icon: Icons.Alphabet,
-        items: [],
-        roles: ["admin"],
-      },
-      {
         title: "Messages",
         url: "/messages",
-        icon: Icons.Calendar,
-        items: [],
+        icon: Icons.Authentication,
+        items: [
+          {
+            title: "Chats",
+            url: "/messages",
+          },
+          {
+            title: "Activity",
+            url: "/messages/activity",
+          }
+        ],
         roles: ["admin", "jobcoach", "client"],
       },
+      {
+        title: "Admin",
+        icon: Icons.Authentication,
+        items: [
+          {
+            title: "Members",
+            url: "/admin/members",
+            icon: Icons.Users
+          },
+          {
+            title: "Roles",
+            url: "/admin/roles",
+            icon: Icons.Authentication
+          },
+          {
+            title: "Invites",
+            url: "/admin/invites",
+            icon: Icons.Table
+          }
+        ],
+        roles: ["admin"],
+      }
     ],
   },
   {

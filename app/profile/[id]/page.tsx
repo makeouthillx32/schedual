@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import ProfileCard from "@/components/profile/ProfileCard";
-import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
 import AdminDelete from "@/components/profile/AdminDelete";
 import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
 import ManageSpecializations from "@/components/profile/ManageSpecializations";
@@ -62,7 +61,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
       <ProfileCard profile={profile} displayName={displayName} roleLabel={roleLabel} />
-      <InviteGeneratorClient />
+
       <AdminDelete />
       <ManualRoleEditor />
       <ManageSpecializations /> {/* Add this line */}

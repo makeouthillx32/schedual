@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { ShowcaseSection } from '@/components/Layouts/showcase-section';
 import InviteGeneratorClient from './_components/InviteGeneratorClient';
 import './_components/invites.scss';
+// hmm
 
 interface Invite {
   code: string;

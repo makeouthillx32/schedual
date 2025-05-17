@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import ProfileCard from "@/components/profile/ProfileCard";
-import InviteGeneratorClient from "@/components/invite/InviteGeneratorClient";
+import InviteGeneratorClient from "@/app/dashboard/[id]/settings/invites/_components/InviteGeneratorClient";
 import AdminDelete from "@/components/profile/AdminDelete";
 import ManualRoleEditor from "@/components/profile/ManualRoleEditor";
 import ManageSpecializations from "@/components/profile/ManageSpecializations";

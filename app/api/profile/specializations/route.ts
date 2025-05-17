@@ -12,8 +12,7 @@ export async function GET() {
         name, 
         description, 
         role_id,
-        color,
-        roles(role, color)
+        roles(role)
       `);
 
     if (error) {
@@ -21,15 +20,15 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Transform data to include role name and prioritize colors
+    // Transform data to include role name
     const transformedData = data.map(spec => ({
       id: spec.id,
       name: spec.name,
       description: spec.description,
-      role: spec.roles?.role || 'unknown',
-      // Use specialization color if available, otherwise use role color
-      color: spec.color || spec.roles?.color || '#94a3b8'
+      role: spec.roles?.role || 'Unassigned',
     }));
+
+    console.log("Fetched Specializations:", transformedData);
 
     return NextResponse.json(transformedData);
   } catch (err) {

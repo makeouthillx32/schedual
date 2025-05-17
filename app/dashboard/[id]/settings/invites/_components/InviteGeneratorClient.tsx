@@ -1,7 +1,7 @@
 // app/components/invite/InviteGeneratorClient.tsx
 "use client";
 
-import InviteGenerator from "./InviteGenerator";
+import InviteGenerator from "../../app/dashboard/[id]/settings/invites/_components/InviteGenerator";
 
 export default function InviteGeneratorClient({ defaultRole = "client" }: { defaultRole?: string }) {
   return (

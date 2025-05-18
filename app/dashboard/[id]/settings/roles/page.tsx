@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, XCircle, Users } from 'lucide-react';
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import RoleModal from './_components/RoleModal';
 import DeleteConfirmModal from './_components/DeleteConfirmModal';
@@ -15,7 +15,15 @@ interface Role {
   description: string;
   color: string;
   role_type: string;
-  member_count?: number;
+  member_count: number;
+}
+
+// Define member type
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url: string | null;
 }
 
 export default function RolesManagementPage() {
@@ -27,6 +35,7 @@ export default function RolesManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
+  const [loadingMemberCounts, setLoadingMemberCounts] = useState(false);
 
   // Fetch roles on component mount
   const fetchRoles = async () => {
@@ -49,12 +58,58 @@ export default function RolesManagementPage() {
       }));
       
       setRoles(transformedData);
+      
+      // After fetching roles, update member counts
+      await fetchMemberCounts(transformedData);
+      
       setError(null);
     } catch (err) {
       console.error('Error fetching roles:', err);
       setError('Failed to load roles. Please try again later.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fetch member counts for all roles
+  const fetchMemberCounts = async (rolesList: Role[]) => {
+    if (!rolesList.length) return;
+    
+    setLoadingMemberCounts(true);
+    try {
+      // Create an array of promises for fetching member counts
+      const countPromises = rolesList.map(async (role) => {
+        try {
+          const res = await fetch(`/api/profile/specializations/get-members?id=${role.id}`);
+          if (!res.ok) {
+            console.warn(`Failed to fetch members for role ${role.id}: ${res.status}`);
+            return { id: role.id, count: 0 };
+          }
+          const members = await res.json();
+          return { id: role.id, count: Array.isArray(members) ? members.length : 0 };
+        } catch (err) {
+          console.warn(`Error fetching members for role ${role.id}:`, err);
+          return { id: role.id, count: 0 };
+        }
+      });
+      
+      // Wait for all counts to be fetched
+      const memberCounts = await Promise.all(countPromises);
+      
+      // Update role objects with member counts
+      setRoles(prevRoles => 
+        prevRoles.map(role => {
+          const countData = memberCounts.find(item => item.id === role.id);
+          return {
+            ...role,
+            member_count: countData ? countData.count : 0
+          };
+        })
+      );
+    } catch (err) {
+      console.error('Error fetching member counts:', err);
+    } finally {
+      setLoadingMemberCounts(false);
     }
   };
 
@@ -113,11 +168,21 @@ export default function RolesManagementPage() {
       
       // Update the local state
       if (isCreating) {
-        setRoles(prevRoles => [...prevRoles, responseData]);
+        // For new roles, add to the list with member_count of 0
+        const newRole = {
+          ...responseData,
+          member_count: 0
+        };
+        setRoles(prevRoles => [...prevRoles, newRole]);
         toast.success(`Role "${responseData.name}" created successfully!`);
       } else {
+        // For updated roles, preserve the existing member_count
         setRoles(prevRoles => 
-          prevRoles.map(role => role.id === responseData.id ? responseData : role)
+          prevRoles.map(role => 
+            role.id === responseData.id 
+              ? { ...responseData, member_count: role.member_count } 
+              : role
+          )
         );
         toast.success(`Role "${responseData.name}" updated successfully!`);
       }
@@ -190,8 +255,23 @@ export default function RolesManagementPage() {
     setError(null);
   };
 
+  // Handle refresh of member counts
+  const handleRefreshMemberCounts = async () => {
+    await fetchMemberCounts(roles);
+    toast.success('Member counts refreshed');
+  };
+
+  // Render member count with loading indicator if needed
+  const renderMemberCount = (role: Role) => {
+    return (
+      <span className={`px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs rounded-full ${loadingMemberCounts ? 'opacity-50' : ''}`}>
+        {loadingMemberCounts ? '...' : role.member_count}
+      </span>
+    );
+  };
+
   return (
-    <ShowcaseSection title="Role & Specialization Management">
+    <ShowcaseSection title="Role Management">
       <div className="roles-management">
         {/* Header with search and create button */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -205,13 +285,23 @@ export default function RolesManagementPage() {
               className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
             />
           </div>
-          <button 
-            onClick={handleCreateRole}
-            className="create-role-btn flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={18} className="mr-2" />
-            Create Role
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleRefreshMemberCounts}
+              disabled={loadingMemberCounts}
+              className="refresh-counts-btn flex items-center justify-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            >
+              <Users size={18} className="mr-2" />
+              Refresh Counts
+            </button>
+            <button 
+              onClick={handleCreateRole}
+              className="create-role-btn flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={18} className="mr-2" />
+              Create Role
+            </button>
+          </div>
         </div>
 
         {/* Status indicators */}
@@ -280,9 +370,7 @@ export default function RolesManagementPage() {
                       {role.description || 'No description available'}
                     </div>
                     <div className="col-span-2 md:col-span-1 flex items-center justify-center">
-                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs rounded-full">
-                        {role.member_count || 0}
-                      </span>
+                      {renderMemberCount(role)}
                     </div>
                     <div className="col-span-2 md:col-span-1 flex items-center justify-center space-x-2">
                       <button 
@@ -343,6 +431,3 @@ export default function RolesManagementPage() {
     </ShowcaseSection>
   );
 }
-
-
-

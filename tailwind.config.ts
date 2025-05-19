@@ -2,14 +2,13 @@ import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
 
 const config: Config = {
-  content: [
-    "./src/**/*.{js,jsx,tsx}",
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./css/**/*.css"    // fixed glob patternCSS folder
+    content: [
+    "./style/**/*.css",
+    "./app/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: ["class"],
+
+  darkMode: "class",
   prefix: "",
   theme: {
     container: {

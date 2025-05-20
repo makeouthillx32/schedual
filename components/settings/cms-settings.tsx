@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
 import BusinessManager from "./RWbuissnes";
 import ChangeCleaning from "./changecleaning";
+import ModifyMembers from "./ModifyMembers";
+import { useTheme } from "@/app/provider";
 
 export default function CMSSettings() {
-  return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center">CMS Cleaning Schedule Settings</h2>
+  const { themeType } = useTheme();
+  const isDark = themeType === "dark";
 
-      <div className="mb-10">
+  return (
+    <div className="space-y-8">
+      <div>
         <ChangeCleaning />
       </div>
 
-      <div className="mb-10">
+      <div>
         <BusinessManager />
+      </div>
+      
+      <div>
+        <ModifyMembers />
       </div>
     </div>
   );

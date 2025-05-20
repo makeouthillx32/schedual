@@ -9,8 +9,8 @@ type PropsType = {
 
 export function ShowcaseSection({ title, children, className }: PropsType) {
   return (
-    <div className="rounded-[10px] bg-white shadow-1 dark:bg-gray-dark dark:shadow-card">
-      <h2 className="border-b border-stroke px-4 py-4 font-medium text-dark dark:border-dark-3 dark:text-white sm:px-6 xl:px-7.5">
+    <div className="rounded-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)]">
+      <h2 className="border-b border-[hsl(var(--border))] px-4 py-4 font-medium text-[hsl(var(--foreground))] dark:border-[hsl(var(--sidebar-border))] dark:text-[hsl(var(--card-foreground))] sm:px-6 xl:px-7.5">
         {title}
       </h2>
 

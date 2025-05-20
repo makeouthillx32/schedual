@@ -15,42 +15,42 @@ export default function ProductManager() {
 
   return (
     <div
-      className={`max-w-2xl mx-auto p-6 rounded-lg shadow 
-      bg-card text-card-foreground`}
+      className="max-w-2xl mx-auto p-6 rounded-[var(--radius)] shadow-[var(--shadow-md)] 
+      bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]"
     >
-      <h1 className="text-3xl font-bold text-center mb-4">Product Manager</h1>
+      <h1 className="text-3xl font-bold text-center mb-4 text-[hsl(var(--foreground))]">Product Manager</h1>
 
-      {/* ✅ Toggle Product Management */}
+      {/* Toggle Product Management */}
       <button
-        className={`w-full p-2 rounded mb-2 
-          ${showProducts ? "bg-blue-700" : "bg-blue-500"} 
-          text-white hover:bg-blue-600`}
+        className={`w-full p-2 rounded-[calc(var(--radius)*0.5)] mb-2 
+          ${showProducts ? "bg-[hsl(var(--sidebar-primary))]" : "bg-[hsl(var(--sidebar-primary))/0.8]"} 
+          text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))/0.9]`}
         onClick={() => setShowProducts(!showProducts)}
       >
         {showProducts ? "Close Product Management" : "Manage Products"}
       </button>
 
-      {/* ✅ Toggle Subsection Manager */}
+      {/* Toggle Subsection Manager */}
       <button
-        className={`w-full p-2 rounded mb-2 
-          ${showSubsectionManager ? "bg-green-700" : "bg-green-500"} 
-          text-white hover:bg-green-600`}
+        className={`w-full p-2 rounded-[calc(var(--radius)*0.5)] mb-2 
+          ${showSubsectionManager ? "bg-[hsl(var(--chart-2))]" : "bg-[hsl(var(--chart-2))/0.8]"} 
+          text-[hsl(var(--background))] hover:bg-[hsl(var(--chart-2))/0.9]`}
         onClick={() => setShowSubsectionManager(!showSubsectionManager)}
       >
         {showSubsectionManager ? "Close Subsection Manager" : "Manage Subsections"}
       </button>
 
-      {/* ✅ Toggle Section Manager */}
+      {/* Toggle Section Manager */}
       <button
-        className={`w-full p-2 rounded 
-          ${showSectionManager ? "bg-purple-700" : "bg-purple-500"} 
-          text-white hover:bg-purple-600`}
+        className={`w-full p-2 rounded-[calc(var(--radius)*0.5)]
+          ${showSectionManager ? "bg-[hsl(var(--chart-3))]" : "bg-[hsl(var(--chart-3))/0.8]"} 
+          text-[hsl(var(--background))] hover:bg-[hsl(var(--chart-3))/0.9]`}
         onClick={() => setShowSectionManager(!showSectionManager)}
       >
         {showSectionManager ? "Close Section Manager" : "Manage Sections"}
       </button>
 
-      {/* ✅ Render Components Conditionally */}
+      {/* Render Components Conditionally */}
       {showProducts && <Products />}
       {showSubsectionManager && <SubsectionManager />}
       {showSectionManager && <SectionManager />}

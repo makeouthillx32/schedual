@@ -19,16 +19,9 @@ export default function SignInPage() {
       <Suspense fallback={
         <div className="flex flex-col items-center justify-center p-8">
           <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--sidebar-primary))]" />
-          <p className="mt-4 text-[hsl(var(--muted-foreground))] font-[var(--font-sans)]">
-            Loading sign-in form...
-          </p>
         </div>
       }>
         <div className="w-full max-w-md px-4">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl md:text-3xl font-bold font-[var(--font-serif)] text-[hsl(var(--foreground))]">CMS Schedule App</h1>
-            <p className="mt-2 text-[hsl(var(--muted-foreground))] font-[var(--font-sans)]">Sign in to your account</p>
-          </div>
           <SignInForm />
         </div>
       </Suspense>

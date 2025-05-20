@@ -30,14 +30,14 @@ export function Select({
     <div className={cn("space-y-3", className)}>
       <label
         htmlFor={id}
-        className="block text-body-sm font-medium text-dark dark:text-white"
+        className="block text-body-sm font-medium text-[hsl(var(--foreground))]"
       >
         {label}
       </label>
 
       <div className="relative">
         {prefixIcon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
             {prefixIcon}
           </div>
         )}
@@ -47,8 +47,8 @@ export function Select({
           defaultValue={defaultValue || ""}
           onChange={() => setIsOptionSelected(true)}
           className={cn(
-            "w-full appearance-none rounded-lg border border-stroke bg-transparent px-5.5 py-3 outline-none transition focus:border-primary active:border-primary dark:border-dark-3 dark:bg-dark-2 dark:focus:border-primary [&>option]:text-dark-5 dark:[&>option]:text-dark-6",
-            isOptionSelected && "text-dark dark:text-white",
+            "w-full appearance-none rounded-[var(--radius)] border border-[hsl(var(--border))] bg-transparent px-5.5 py-3 outline-none transition focus:border-[hsl(var(--sidebar-primary))] active:border-[hsl(var(--sidebar-primary))] dark:border-[hsl(var(--border))] dark:bg-[hsl(var(--secondary))] dark:focus:border-[hsl(var(--sidebar-primary))] [&>option]:text-[hsl(var(--muted-foreground))] dark:[&>option]:text-[hsl(var(--muted-foreground))]",
+            isOptionSelected && "text-[hsl(var(--foreground))]",
             prefixIcon && "pl-11.5",
           )}
         >
@@ -65,7 +65,7 @@ export function Select({
           ))}
         </select>
 
-        <ChevronUpIcon className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rotate-180" />
+        <ChevronUpIcon className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rotate-180 text-[hsl(var(--muted-foreground))]" />
       </div>
     </div>
   );

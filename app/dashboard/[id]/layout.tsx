@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }: PropsWithChildren) {
       <NextTopLoader color="hsl(var(--sidebar-primary))" showSpinner={false} />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="w-full bg-gray-2 dark:bg-[hsl(var(--background))]">
+        <div className="w-full bg-[hsl(var(--muted))] dark:bg-[hsl(var(--background))]">
           <Header />
           <main className="isolate mx-auto w-full max-w-screen-2xl overflow-hidden p-4 md:p-6 2xl:p-10">
             {children}

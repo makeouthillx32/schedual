@@ -44,26 +44,26 @@ function ClientComponent() {
   ];
 
   return (
-    <Sidebar className="rounded-lg border border-white/0 bg-white/4 backdrop-blur-md">
+    <Sidebar className="rounded-[var(--radius)] border border-[hsl(var(--sidebar-border))]/0 bg-[hsl(var(--sidebar))]/4 backdrop-blur-md">
       <SidebarHeader>
         <a href="/">
           <img src="/logo-png.png" className="w-20 place-self-center" alt="Logo" />
         </a>
-        <hr />
+        <hr className="border-[hsl(var(--sidebar-border))]" />
       </SidebarHeader>
       <SidebarContent>
         <div className="mb-8">
-          <SidebarGroupLabel className="ml-1">Server Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel className="ml-1 text-[hsl(var(--sidebar-foreground))]">Server Analytics</SidebarGroupLabel>
           <SidebarGroupContent className="ml-3 w-50">
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem
                   key={item.title}
-                  className="rounded-sm from-white/0 to-white/10 transition-all hover:bg-gradient-to-r"
+                  className="rounded-[calc(var(--radius)*0.25)] from-[hsl(var(--sidebar-accent))]/0 to-[hsl(var(--sidebar-accent))]/10 transition-all hover:bg-gradient-to-r"
                 >
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
+                    <a href={item.url} className="text-[hsl(var(--sidebar-foreground))]">
+                      <item.icon className="text-[hsl(var(--sidebar-primary))]" />
                       <span>{item.title}</span>
                     </a>
                   </SidebarMenuButton>
@@ -73,17 +73,17 @@ function ClientComponent() {
           </SidebarGroupContent>
         </div>
 
-        <SidebarGroupLabel className="ml-1">Dashboard</SidebarGroupLabel>
+        <SidebarGroupLabel className="ml-1 text-[hsl(var(--sidebar-foreground))]">Dashboard</SidebarGroupLabel>
         <SidebarGroupContent className="ml-3 w-50">
           <SidebarMenu>
             {ciallyItems.map((item) => (
               <SidebarMenuItem
                 key={item.title}
-                className="rounded-sm from-white/0 to-white/10 transition-all hover:bg-gradient-to-r"
+                className="rounded-[calc(var(--radius)*0.25)] from-[hsl(var(--sidebar-accent))]/0 to-[hsl(var(--sidebar-accent))]/10 transition-all hover:bg-gradient-to-r"
               >
                 <SidebarMenuButton asChild>
-                  <a href={item.url}>
-                    <item.icon />
+                  <a href={item.url} className="text-[hsl(var(--sidebar-foreground))]">
+                    <item.icon className="text-[hsl(var(--sidebar-primary))]" />
                     <span>{item.title}</span>
                   </a>
                 </SidebarMenuButton>

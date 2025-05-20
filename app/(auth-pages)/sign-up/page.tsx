@@ -51,25 +51,25 @@ export default async function Signup({ searchParams }: { searchParams: Promise<M
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-zinc-100 to-zinc-200 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-700 px-4 md:px-6 lg:px-12">
-      <div className="mx-auto w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-800 shadow-2xl p-10">
-        <h1 className="text-4xl font-extrabold text-center text-primary dark:text-white mb-6">Create an Account</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(var(--background))] via-[hsl(var(--muted))] to-[hsl(var(--accent))] px-4 md:px-6 lg:px-12">
+      <div className="mx-auto w-full max-w-2xl rounded-[var(--radius)] bg-[hsl(var(--card))] shadow-[var(--shadow-xl)] p-8 md:p-10">
+        <h1 className="text-3xl md:text-4xl font-[var(--font-serif)] font-bold text-center text-[hsl(var(--sidebar-primary))] mb-6 leading-[1.2]">Create an Account</h1>
 
         <SignInWithGoogle />
 
         <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-300 dark:border-zinc-600"></div>
-          <span className="mx-4 text-sm text-muted-foreground">OR</span>
-          <div className="flex-grow border-t border-gray-300 dark:border-zinc-600"></div>
+          <div className="flex-grow border-t border-[hsl(var(--border))]"></div>
+          <span className="mx-4 text-sm font-[var(--font-sans)] text-[hsl(var(--muted-foreground))]">OR</span>
+          <div className="flex-grow border-t border-[hsl(var(--border))]"></div>
         </div>
 
         <form className="space-y-6" action={signUpAction}>
           <input type="hidden" name="invite" value={invite || ""} />
 
-          <div>
-            <Label htmlFor="email">Email address</Label>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="font-[var(--font-sans)] text-[hsl(var(--foreground))]">Email address</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
                 <Mail size={18} />
               </span>
               <Input
@@ -78,15 +78,15 @@ export default async function Signup({ searchParams }: { searchParams: Promise<M
                 type="email"
                 placeholder="you@example.com"
                 required
-                className="pl-10"
+                className="pl-10 border-[hsl(var(--border))] bg-[hsl(var(--input))] text-[hsl(var(--foreground))] font-[var(--font-sans)] rounded-[var(--radius)] focus:ring-[hsl(var(--sidebar-ring))] focus:border-[hsl(var(--sidebar-primary))]"
               />
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="password">Password</Label>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="font-[var(--font-sans)] text-[hsl(var(--foreground))]">Password</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
                 <Lock size={18} />
               </span>
               <Input
@@ -96,14 +96,14 @@ export default async function Signup({ searchParams }: { searchParams: Promise<M
                 placeholder="At least 6 characters"
                 minLength={6}
                 required
-                className="pl-10"
+                className="pl-10 border-[hsl(var(--border))] bg-[hsl(var(--input))] text-[hsl(var(--foreground))] font-[var(--font-sans)] rounded-[var(--radius)] focus:ring-[hsl(var(--sidebar-ring))] focus:border-[hsl(var(--sidebar-primary))]"
               />
             </div>
           </div>
 
           <SubmitButton
             pendingText="Creating..."
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold"
+            className="w-full bg-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-primary))]/90 text-[hsl(var(--sidebar-primary-foreground))] py-2.5 rounded-[var(--radius)] font-[var(--font-sans)] font-medium transition-colors duration-200 shadow-[var(--shadow-sm)]"
           >
             Create Account
           </SubmitButton>
@@ -111,17 +111,17 @@ export default async function Signup({ searchParams }: { searchParams: Promise<M
           <FormMessage message={resolvedSearchParams} />
         </form>
 
-        <p className="text-center text-sm mt-6 text-muted-foreground">
+        <p className="text-center text-sm mt-6 text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] leading-[1.5]">
           Already have an account?{' '}
-          <Link href="/sign-in" className="text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/sign-in" className="text-[hsl(var(--sidebar-primary))] hover:underline transition-all duration-200">
             Sign in
           </Link>
         </p>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 text-center text-xs text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] leading-[1.5]">
           By signing up, you agree to our{' '}
-          <Link href="/terms" className="underline hover:text-primary">Terms</Link> and{' '}
-          <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+          <Link href="/terms" className="underline hover:text-[hsl(var(--sidebar-primary))] transition-colors duration-200">Terms</Link> and{' '}
+          <Link href="/privacy" className="underline hover:text-[hsl(var(--sidebar-primary))] transition-colors duration-200">Privacy Policy</Link>.
         </p>
       </div>
     </div>

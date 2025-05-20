@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { toast } from "react-hot-toast";
+import { useTheme } from "@/app/provider";
+import { Calendar, Check, Save, Building2, Loader2 } from "lucide-react";
 
 /** ─────────────────────────────────────────
  *  Supabase set‑up
@@ -29,7 +31,10 @@ type ScheduleRow = {
   business_id: number;
 } & Record<DayKey, boolean>;
 
-export default function CMSSettings() {
+export default function ChangeCleaning() {
+  const { themeType } = useTheme();
+  const isDark = themeType === "dark";
+  
   /* ─────────── state ─────────── */
   const [businesses, setBusinesses] = useState<
     { id: number; business_name: string }[]
@@ -41,12 +46,15 @@ export default function CMSSettings() {
   /* ─────────── fetch businesses on mount ─────────── */
   useEffect(() => {
     (async () => {
+      setLoading(true);
       const { data, error } = await supabase
         .from("Businesses")
         .select("id, business_name")
         .order("business_name");
+        
       if (error) toast.error(error.message);
       if (data) setBusinesses(data);
+      setLoading(false);
     })();
   }, []);
 
@@ -92,62 +100,106 @@ export default function CMSSettings() {
     const results = await Promise.all(updates);
     const error = results.find((r) => r.error)?.error;
     if (error) toast.error(error.message);
-    else toast.success("Schedule updated!");
+    else toast.success("Schedule updated successfully!");
 
     setLoading(false);
   };
 
   /* ─────────── UI ─────────── */
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">CMS Cleaning Schedule Settings</h2>
+    <div className={`p-6 rounded-[var(--radius)] shadow-[var(--shadow-md)] ${
+      isDark 
+        ? "bg-[hsl(var(--card))]" 
+        : "bg-[hsl(var(--background))]"
+    }`}>
+      <h2 className="text-xl font-[var(--font-serif)] font-bold mb-6 flex items-center text-[hsl(var(--foreground))]">
+        <Calendar className="mr-2 text-[hsl(var(--sidebar-primary))]" size={20} />
+        Cleaning Schedule Assignment
+      </h2>
 
-      {/* selector */}
-      <select
-        className="mb-4 border p-2"
-        onChange={(e) => {
-          const id = parseInt(e.target.value);
-          setSelectedId(id);
-          fetchSchedule(id);
-        }}
-        defaultValue=""
-      >
-        <option value="" disabled>
-          Select a business
-        </option>
-        {businesses.map((b) => (
-          <option key={b.id} value={b.id}>
-            {b.business_name}
-          </option>
-        ))}
-      </select>
+      {/* Business selector */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium font-[var(--font-sans)] text-[hsl(var(--foreground))] mb-2">
+          Select Business
+        </label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
+            <Building2 size={16} />
+          </span>
+          <select
+            className={`w-full pl-10 pr-4 py-2 border border-[hsl(var(--border))] rounded-[var(--radius)] bg-[hsl(var(--input))] text-[hsl(var(--foreground))] font-[var(--font-sans)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-ring))] focus:border-[hsl(var(--sidebar-primary))] transition-colors leading-[1.5] appearance-none ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+            onChange={(e) => {
+              const id = parseInt(e.target.value);
+              setSelectedId(id);
+              fetchSchedule(id);
+            }}
+            defaultValue=""
+            disabled={loading}
+          >
+            <option value="" disabled>
+              Select a business
+            </option>
+            {businesses.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.business_name}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[hsl(var(--muted-foreground))]">
+            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
-      {loading && <p>Loading...</p>}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--sidebar-primary))]" />
+          <p className="mt-4 text-[hsl(var(--muted-foreground))] font-[var(--font-sans)]">
+            Loading schedule...
+          </p>
+        </div>
+      )}
 
-      <div className="flex flex-col gap-4">
+      {!loading && schedule.length === 0 && selectedId && (
+        <div className={`p-4 rounded-[var(--radius)] ${
+          isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
+        }`}>
+          <p className="text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] text-center">
+            No schedule found for this business. Please check your database.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-4">
         {schedule.map((weekData, index) => (
           <div
             key={weekData.id}
-            className="border rounded p-4 shadow-sm bg-white dark:bg-gray-800"
+            className={`p-4 rounded-[var(--radius)] ${
+              isDark 
+                ? "bg-[hsl(var(--secondary))]" 
+                : "bg-[hsl(var(--muted))]"
+            } border border-[hsl(var(--border))]`}
           >
-            <h3 className="font-semibold mb-2 text-lg text-blue-600">
+            <h3 className="font-[var(--font-sans)] font-semibold mb-3 text-lg text-[hsl(var(--sidebar-primary))]">
               Week {weekData.week}
             </h3>
-            <div className="flex flex-wrap gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {days.map((day) => (
                 <label
                   key={day}
-                  className="flex items-center gap-2 cursor-pointer select-none"
+                  className={`flex items-center justify-between p-2 rounded-[var(--radius)] cursor-pointer select-none transition-colors ${
+                    weekData[day]
+                      ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]"
+                      : `${isDark ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--background))]"} text-[hsl(var(--foreground))]`
+                  }`}
+                  onClick={() => toggleDay(index, day)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={weekData[day]}
-                    onChange={() => toggleDay(index, day)}
-                    className="accent-blue-600 w-4 h-4"
-                  />
-                  <span className="capitalize text-sm text-gray-700 dark:text-gray-200">
-                    {day}
-                  </span>
+                  <span className="capitalize font-[var(--font-sans)]">{day.slice(0, 3)}</span>
+                  {weekData[day] && <Check size={16} />}
                 </label>
               ))}
             </div>
@@ -157,11 +209,23 @@ export default function CMSSettings() {
 
       {selectedId && schedule.length > 0 && (
         <button
-          className="mt-6 px-6 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 disabled:opacity-50"
+          className={`mt-6 px-6 py-2 flex items-center justify-center rounded-[var(--radius)] bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] font-[var(--font-sans)] font-medium transition-colors hover:bg-[hsl(var(--sidebar-primary))]/90 ${
+            loading ? "opacity-70 cursor-not-allowed" : ""
+          }`}
           onClick={saveChanges}
           disabled={loading}
         >
-          {loading ? "Saving…" : "Save Changes"}
+          {loading ? (
+            <>
+              <Loader2 size={16} className="mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={16} className="mr-2" />
+              Save Changes
+            </>
+          )}
         </button>
       )}
     </div>

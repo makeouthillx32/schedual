@@ -22,7 +22,7 @@ export function RadioInput({
     <div>
       <label
         htmlFor={id}
-        className="flex cursor-pointer select-none items-center text-body-sm font-medium text-dark dark:text-white"
+        className="flex cursor-pointer select-none items-center text-body-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]"
       >
         <div className="relative">
           <input
@@ -36,16 +36,16 @@ export function RadioInput({
             className={cn(
               "mr-2 flex size-5 items-center justify-center rounded-full border peer-checked:[&>*]:block",
               {
-                "border-primary peer-checked:border-6": variant === "circle",
-                "border-dark-5 peer-checked:border-primary peer-checked:bg-gray-2 dark:border-dark-6 dark:peer-checked:bg-dark-2":
+                "border-[hsl(var(--sidebar-primary))] peer-checked:border-6": variant === "circle",
+                "border-[hsl(var(--muted-foreground))] peer-checked:border-[hsl(var(--sidebar-primary))] peer-checked:bg-[hsl(var(--muted))] dark:border-[hsl(var(--muted-foreground))] dark:peer-checked:bg-[hsl(var(--secondary))]":
                   variant === "dot",
               },
-              minimal && "border-stroke dark:border-dark-3",
+              minimal && "border-[hsl(var(--border))] dark:border-[hsl(var(--sidebar-border))]",
             )}
           >
             <span
               className={cn(
-                "hidden size-2.5 rounded-full bg-primary",
+                "hidden size-2.5 rounded-full bg-[hsl(var(--sidebar-primary))]",
                 variant === "circle" && "bg-transparent",
               )}
             />

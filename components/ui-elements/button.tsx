@@ -6,18 +6,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-primary text-white",
-        green: "bg-green text-white",
-        dark: "bg-dark text-white dark:bg-white/10",
+        primary: "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]",
+        green: "bg-[hsl(var(--chart-2))] text-[hsl(var(--sidebar-primary-foreground))]",
+        dark: "bg-[hsl(var(--foreground))] text-[hsl(var(--background))] dark:bg-[hsl(var(--card-foreground))]/10",
         outlinePrimary:
-          "border border-primary hover:bg-primary/10 text-primary",
-        outlineGreen: "border border-green hover:bg-green/10 text-green",
+          "border border-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-primary))]/10 text-[hsl(var(--sidebar-primary))]",
+        outlineGreen: "border border-[hsl(var(--chart-2))] hover:bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]",
         outlineDark:
-          "border border-dark hover:bg-dark/10 text-dark dark:hover:bg-white/10 dark:border-white/25 dark:text-white",
+          "border border-[hsl(var(--foreground))] hover:bg-[hsl(var(--foreground))]/10 text-[hsl(var(--foreground))] dark:hover:bg-[hsl(var(--card-foreground))]/10 dark:border-[hsl(var(--card-foreground))]/25 dark:text-[hsl(var(--card-foreground))]",
       },
       shape: {
         default: "",
-        rounded: "rounded-[5px]",
+        rounded: "rounded-[calc(var(--radius)*0.5)]",
         full: "rounded-full",
       },
       size: {

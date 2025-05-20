@@ -18,15 +18,15 @@ const SwitcherThree = () => {
               setEnabled(!enabled);
             }}
           />
-          <div className="block h-8 w-14 rounded-full bg-gray-3 dark:bg-[#5A616B]"></div>
+          <div className="block h-8 w-14 rounded-full bg-[hsl(var(--muted))] dark:bg-[hsl(var(--secondary))]"></div>
           <div
-            className={`dot absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-switch-1 transition ${
-              enabled && "!right-1 !translate-x-full !bg-primary dark:!bg-white"
+            className={`dot absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[hsl(var(--background))] shadow-[var(--shadow-sm)] transition ${
+              enabled && "!right-1 !translate-x-full !bg-[hsl(var(--sidebar-primary))] dark:!bg-[hsl(var(--background))]"
             }`}
           >
             <span className={`hidden ${enabled && "!block"}`}>
               <svg
-                className="fill-white dark:fill-dark"
+                className="fill-[hsl(var(--background))] dark:fill-[hsl(var(--foreground))]"
                 width="11"
                 height="8"
                 viewBox="0 0 11 8"
@@ -43,7 +43,7 @@ const SwitcherThree = () => {
             </span>
             <span className={`${enabled && "hidden"}`}>
               <svg
-                className="fill-current"
+                className="fill-[hsl(var(--muted-foreground))]"
                 width="11"
                 height="11"
                 viewBox="0 0 11 11"

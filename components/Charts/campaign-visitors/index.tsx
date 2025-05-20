@@ -10,28 +10,28 @@ export async function CampaignVisitors({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "rounded-[10px] bg-white shadow-1 dark:bg-gray-dark dark:shadow-card",
+        "rounded-[calc(var(--radius)*1.25)] bg-[hsl(var(--card))] shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)]",
         className,
       )}
     >
-      <div className="border-b border-stroke px-6 py-5.5 dark:border-dark-3">
+      <div className="border-b border-[hsl(var(--border))] px-6 py-5.5 dark:border-[hsl(var(--border))]">
         <div className="flex justify-between">
-          <h2 className="mb-1.5 text-2xl font-bold text-dark dark:text-white">
+          <h2 className="mb-1.5 text-2xl font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--foreground))]">
             Campaign Visitors
           </h2>
 
-          <div className="mb-0.5 text-2xl font-bold text-dark dark:text-white">
+          <div className="mb-0.5 text-2xl font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--foreground))]">
             {compactFormat(data.total_visitors)}
           </div>
         </div>
 
         <div className="flex justify-between">
-          <div className="text-sm font-medium">Last Campaign Performance</div>
+          <div className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Last Campaign Performance</div>
 
           <div
             className={cn(
               "flex items-center gap-1.5",
-              data.performance > 0 ? "text-green" : "text-red",
+              data.performance > 0 ? "text-[hsl(var(--chart-2))]" : "text-[hsl(var(--destructive))]",
             )}
           >
             <TrendingUpIcon

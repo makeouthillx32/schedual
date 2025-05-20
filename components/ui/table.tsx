@@ -19,7 +19,7 @@ export function TableHeader({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("[&_tr]:border-b", className)} {...props} />;
+  return <thead className={cn("[&_tr]:border-b [&_tr]:border-[hsl(var(--border))]", className)} {...props} />;
 }
 
 export function TableBody({
@@ -38,7 +38,7 @@ export function TableFooter({
   return (
     <tfoot
       className={cn(
-        "border-t bg-neutral-100/50 font-medium dark:bg-neutral-800/50 [&>tr]:last:border-b-0",
+        "border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))]/50 font-medium dark:bg-[hsl(var(--secondary))]/50 [&>tr]:last:border-b-0",
         className,
       )}
       {...props}
@@ -53,7 +53,7 @@ export function TableRow({
   return (
     <tr
       className={cn(
-        "border-b transition-colors hover:bg-neutral-100/50 data-[state=selected]:bg-neutral-100 dark:border-dark-3 dark:hover:bg-dark-2 dark:data-[state=selected]:bg-neutral-800",
+        "border-b border-[hsl(var(--border))] transition-colors hover:bg-[hsl(var(--muted))]/50 data-[state=selected]:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:data-[state=selected]:bg-[hsl(var(--secondary))]",
         className,
       )}
       {...props}
@@ -68,7 +68,7 @@ export function TableHead({
   return (
     <th
       className={cn(
-        "h-12 px-4 text-left align-middle font-medium text-neutral-500 dark:text-neutral-400 [&:has([role=checkbox])]:pr-0",
+        "h-12 px-4 text-left align-middle font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}

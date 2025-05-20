@@ -4,13 +4,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { useRef, useState } from "react";
 import Link from "next/link";
-import SignInWithGoogle from "@/components/ui/SignInWithGoogle"; // Import the component
+import SignInWithGoogle from "@/components/ui/SignInWithGoogle";
+import { useTheme } from "@/app/provider";
+import { Mail, Lock, Loader2 } from "lucide-react";
 
 export default function SignInForm() {
   const router = useRouter();
   const supabase = useSupabaseClient();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { themeType } = useTheme();
+  const isDark = themeType === "dark";
 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -18,87 +23,155 @@ export default function SignInForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true);
 
-    const email = emailRef.current?.value || "";
-    const password = passwordRef.current?.value || "";
+    try {
+      const email = emailRef.current?.value || "";
+      const password = passwordRef.current?.value || "";
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-    } else {
-      router.refresh();
-      router.push("/CMS");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.refresh();
+        router.push("/CMS");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen flex items-center justify-center px-4">
-      <form
-        onSubmit={handleSubmit}
-        autoComplete="on"
-        className="w-full max-w-sm bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md space-y-5"
-      >
-        <h1 className="text-2xl font-semibold text-center text-black dark:text-white">Sign in</h1>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-[hsl(var(--background))]">
+      <div className="w-full max-w-md">
+        <div className={`p-6 md:p-8 rounded-[var(--radius)] shadow-[var(--shadow-lg)] ${
+          isDark 
+            ? "bg-[hsl(var(--card))]" 
+            : "bg-[hsl(var(--card))]"
+        }`}>
+          <h1 className="text-2xl md:text-3xl font-[var(--font-serif)] font-bold text-center text-[hsl(var(--foreground))] mb-6 leading-[1.2]">
+            Welcome Back
+          </h1>
+          
+          <SignInWithGoogle />
+          
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-[hsl(var(--border))]"></div>
+            <span className="mx-4 text-sm font-[var(--font-sans)] text-[hsl(var(--muted-foreground))]">OR</span>
+            <div className="flex-grow border-t border-[hsl(var(--border))]"></div>
+          </div>
+          
+          <form onSubmit={handleSubmit} autoComplete="on" className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium font-[var(--font-sans)] text-[hsl(var(--foreground))]">
+                Email
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
+                  <Mail size={18} />
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  ref={emailRef}
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2 pl-10 border border-[hsl(var(--border))] rounded-[var(--radius)] bg-[hsl(var(--input))] text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] font-[var(--font-sans)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-ring))] focus:border-[hsl(var(--sidebar-primary))] transition-colors leading-[1.5]"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm mb-1 text-black dark:text-white">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            ref={emailRef}
-            placeholder="you@example.com"
-            className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium font-[var(--font-sans)] text-[hsl(var(--foreground))]">
+                Password
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]">
+                  <Lock size={18} />
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  ref={passwordRef}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2 pl-10 border border-[hsl(var(--border))] rounded-[var(--radius)] bg-[hsl(var(--input))] text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] font-[var(--font-sans)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-ring))] focus:border-[hsl(var(--sidebar-primary))] transition-colors leading-[1.5]"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-[hsl(var(--sidebar-primary))] border-[hsl(var(--border))] rounded focus:ring-[hsl(var(--sidebar-ring))]"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm font-[var(--font-sans)] text-[hsl(var(--muted-foreground))]">
+                  Remember me
+                </label>
+              </div>
+              
+              <div className="text-sm">
+                <Link
+                  href="/forgot-password"
+                  className="font-medium text-[hsl(var(--sidebar-primary))] hover:text-[hsl(var(--sidebar-primary))]/80 transition-colors font-[var(--font-sans)]"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full bg-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-primary))]/90 text-[hsl(var(--sidebar-primary-foreground))] font-medium py-2.5 px-4 rounded-[var(--radius)] transition-colors duration-200 shadow-[var(--shadow-sm)] font-[var(--font-sans)] ${
+                isLoading ? "opacity-80 cursor-wait" : ""
+              } flex items-center justify-center`}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
+            </button>
+
+            {error && (
+              <div className="p-3 rounded-[var(--radius)] bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))] text-sm font-[var(--font-sans)]">
+                {error}
+              </div>
+            )}
+          </form>
+          
+          <p className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] leading-[1.5]">
+            Don't have an account?{" "}
+            <Link 
+              href="/sign-up" 
+              className="text-[hsl(var(--sidebar-primary))] hover:underline transition-colors font-medium"
+            >
+              Sign up
+            </Link>
+          </p>
+          
+          <p className="mt-4 text-center text-xs text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] leading-[1.5]">
+            By signing in, you agree to our{' '}
+            <Link href="/terms" className="underline hover:text-[hsl(var(--sidebar-primary))] transition-colors">Terms</Link> and{' '}
+            <Link href="/privacy" className="underline hover:text-[hsl(var(--sidebar-primary))] transition-colors">Privacy Policy</Link>.
+          </p>
         </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm mb-1 text-black dark:text-white">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            ref={passwordRef}
-            placeholder="••••••••"
-            className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 text-black dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        <div className="text-right">
-          <Link
-            href="/forgot-password"
-            className="text-sm text-blue-600 hover:underline dark:text-blue-400"
-          >
-            Forgot your password?
-          </Link>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition-colors"
-        >
-          Sign in
-        </button>
-
-        <SignInWithGoogle /> {/* Google Sign In Button */}
-
-        {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
-        <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-          Don’t have an account?{" "}
-          <Link href="/sign-up" className="text-blue-600 hover:underline dark:text-blue-400">
-            Sign up
-          </Link>
-        </p>
-      </form>
+      </div>
     </div>
   );
 }

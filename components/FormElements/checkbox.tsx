@@ -28,7 +28,7 @@ export function Checkbox({
       <label
         htmlFor={id}
         className={cn(
-          "flex cursor-pointer select-none items-center",
+          "flex cursor-pointer select-none items-center text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]",
           !minimal && "text-body-sm font-medium",
         )}
       >
@@ -43,23 +43,23 @@ export function Checkbox({
 
           <div
             className={cn(
-              "mr-2 flex size-5 items-center justify-center rounded border border-dark-5 peer-checked:border-primary dark:border-dark-6 peer-checked:[&>*]:block",
+              "mr-2 flex size-5 items-center justify-center rounded-[calc(var(--radius)*0.5)] border border-[hsl(var(--muted-foreground))] peer-checked:border-[hsl(var(--sidebar-primary))] dark:border-[hsl(var(--muted-foreground))] peer-checked:[&>*]:block",
               withBg
-                ? "peer-checked:bg-primary [&>*]:text-white"
-                : "peer-checked:bg-gray-2 dark:peer-checked:bg-transparent",
-              minimal && "mr-3 border-stroke dark:border-dark-3",
+                ? "peer-checked:bg-[hsl(var(--sidebar-primary))] [&>*]:text-[hsl(var(--sidebar-primary-foreground))]"
+                : "peer-checked:bg-[hsl(var(--muted))] dark:peer-checked:bg-transparent",
+              minimal && "mr-3 border-[hsl(var(--border))] dark:border-[hsl(var(--sidebar-border))]",
               radius === "md" && "rounded-md",
             )}
           >
             {!withIcon && (
-              <span className="hidden size-2.5 rounded-sm bg-primary" />
+              <span className="hidden size-2.5 rounded-sm bg-[hsl(var(--sidebar-primary))]" />
             )}
 
             {withIcon === "check" && (
-              <CheckIcon className="hidden text-primary" />
+              <CheckIcon className="hidden text-[hsl(var(--sidebar-primary))]" />
             )}
 
-            {withIcon === "x" && <XIcon className="hidden text-primary" />}
+            {withIcon === "x" && <XIcon className="hidden text-[hsl(var(--sidebar-primary))]" />}
           </div>
         </div>
         <span>{label}</span>

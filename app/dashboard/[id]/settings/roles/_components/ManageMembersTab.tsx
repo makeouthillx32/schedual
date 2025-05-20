@@ -127,25 +127,25 @@ export default function ManageMembersTab({
   return (
     <div className="h-full flex flex-col">
       {/* Search */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-[hsl(var(--border))]">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))]" size={18} />
           <input
             type="text"
             placeholder="Search members..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border border-[hsl(var(--input))] rounded-[var(--radius)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary))]"
           />
         </div>
       </div>
       
       {/* Debug info */}
       {debugInfo && process.env.NODE_ENV !== 'production' && (
-        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-900/30">
+        <div className="p-3 bg-[hsl(var(--chart-4))/0.1] border-b border-[hsl(var(--chart-4))/0.2]">
           <div className="flex items-start">
-            <Info className="mr-2 flex-shrink-0 text-yellow-500" size={18} />
-            <div className="text-xs font-mono text-yellow-800 dark:text-yellow-200 overflow-x-auto">
+            <Info className="mr-2 flex-shrink-0 text-[hsl(var(--chart-4))]" size={18} />
+            <div className="text-xs font-[var(--font-mono)] text-[hsl(var(--chart-4))] overflow-x-auto">
               <p>Debug info:</p>
               <pre>{debugInfo}</pre>
             </div>
@@ -155,10 +155,10 @@ export default function ManageMembersTab({
       
       {/* Error display */}
       {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-900/30">
+        <div className="p-3 bg-[hsl(var(--destructive))/0.1] border-b border-[hsl(var(--destructive))/0.2]">
           <div className="flex items-start">
-            <AlertTriangle className="mr-2 flex-shrink-0 text-red-500" size={18} />
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            <AlertTriangle className="mr-2 flex-shrink-0 text-[hsl(var(--destructive))]" size={18} />
+            <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
           </div>
         </div>
       )}
@@ -167,15 +167,15 @@ export default function ManageMembersTab({
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center p-8">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+            <div className="animate-spin h-8 w-8 border-4 border-[hsl(var(--sidebar-primary))] border-t-transparent rounded-full"></div>
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-6 text-center text-[hsl(var(--muted-foreground))]">
             <Users size={48} className="mx-auto mb-4 opacity-30" />
             <p>{error ? 'Unable to load members' : 'No members assigned to this role.'}</p>
             <button 
               onClick={onAddClick}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="mt-4 px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded-[var(--radius)] hover:bg-[hsl(var(--sidebar-primary))/0.9]"
             >
               Add Members
             </button>
@@ -183,23 +183,23 @@ export default function ManageMembersTab({
         ) : (
           <div>
             {filteredMembers.map(member => (
-              <div key={member.id} className="flex items-center justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700">
+              <div key={member.id} className="flex items-center justify-between p-3 hover:bg-[hsl(var(--accent))]">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center overflow-hidden mr-3">
+                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center overflow-hidden mr-3">
                     {member.avatar_url ? (
                       <img src={member.avatar_url} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
-                      <User size={20} className="text-gray-500 dark:text-gray-400" />
+                      <User size={20} className="text-[hsl(var(--muted-foreground))]" />
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900 dark:text-white">{member.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{member.email}</div>
+                    <div className="font-medium text-[hsl(var(--foreground))]">{member.name}</div>
+                    <div className="text-sm text-[hsl(var(--muted-foreground))]">{member.email}</div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleRemoveMember(member.id)}
-                  className="ml-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  className="ml-2 p-1 rounded-full hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                   title="Remove from role"
                 >
                   <X size={18} />
@@ -210,13 +210,13 @@ export default function ManageMembersTab({
         )}
       </div>
       
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))] flex justify-between items-center">
+        <div className="text-sm text-[hsl(var(--muted-foreground))]">
           {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''} in {roleName}
         </div>
         <button
           onClick={onAddClick}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          className="px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded-[var(--radius)] hover:bg-[hsl(var(--sidebar-primary))/0.9] shadow-[var(--shadow-xs)]"
         >
           Add Members
         </button>

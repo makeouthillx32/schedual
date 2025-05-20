@@ -82,6 +82,15 @@ export default function ChatRightSidebar({
     }
   });
 
+  // Chart colors from design system for avatar backgrounds
+  const chartColors = [
+    'bg-[hsl(var(--chart-1))]',
+    'bg-[hsl(var(--chart-2))]',
+    'bg-[hsl(var(--chart-3))]',
+    'bg-[hsl(var(--chart-4))]',
+    'bg-[hsl(var(--chart-5))]'
+  ];
+
   const renderAvatar = (avatar: string, name: string) => {
     if (avatar.startsWith('http')) {
       return (
@@ -92,10 +101,14 @@ export default function ChatRightSidebar({
         />
       );
     }
+    
+    // Calculate a deterministic index based on avatar string
+    const index = avatar.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % chartColors.length;
+    
     return (
       <div
-        className={`w-full h-full flex items-center justify-center text-white ${
-          avatarColors[avatar] || 'bg-gray-500'
+        className={`w-full h-full flex items-center justify-center text-[hsl(var(--primary-foreground))] ${
+          chartColors[index]
         }`}
       >
         <span className="text-xs font-semibold uppercase">{avatar}</span>
@@ -105,11 +118,11 @@ export default function ChatRightSidebar({
 
   if (!isOpen) {
     return (
-      <div className="w-12 hidden lg:flex flex-col border-l">
-        <button onClick={() => setIsOpen(true)} className="p-2">
+      <div className="w-12 hidden lg:flex flex-col border-l border-[hsl(var(--border))]">
+        <button onClick={() => setIsOpen(true)} className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] rounded-[var(--radius)]">
           <Pencil size={16} />
         </button>
-        <button onClick={() => setIsOpen(true)} className="p-2">
+        <button onClick={() => setIsOpen(true)} className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] rounded-[var(--radius)]">
           <Image size={16} />
         </button>
       </div>
@@ -117,52 +130,52 @@ export default function ChatRightSidebar({
   }
 
   return (
-    <div className="chat-right-sidebar-content h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
-      <div className="p-4 flex justify-between items-center border-b">
+    <div className="chat-right-sidebar-content h-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex flex-col shadow-[var(--shadow-md)]">
+      <div className="p-4 flex justify-between items-center border-b border-[hsl(var(--border))]">
         <h3 className="font-semibold">{isGroup ? 'Group Info' : 'Chat Info'}</h3>
         <div className="flex space-x-2">
-          <button onClick={() => setIsOpen(false)} className="hidden lg:block">
+          <button onClick={() => setIsOpen(false)} className="hidden lg:block text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <X size={16} />
           </button>
-          <button onClick={onClose} className="lg:hidden">
+          <button onClick={onClose} className="lg:hidden text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
             <X size={16} />
           </button>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col items-center border-b">
-        <div className="w-16 h-16 rounded-full overflow-hidden bg-blue-500 mb-2 flex items-center justify-center">
+      <div className="p-4 flex flex-col items-center border-b border-[hsl(var(--border))]">
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-[hsl(var(--sidebar-primary))] mb-2 flex items-center justify-center shadow-[var(--shadow-sm)]">
           {isGroup ? (
-            <span className="text-2xl font-semibold text-white">G</span>
+            <span className="text-2xl font-semibold text-[hsl(var(--sidebar-primary-foreground))]">G</span>
           ) : (
-            <span className="text-2xl text-white font-semibold">
+            <span className="text-2xl text-[hsl(var(--sidebar-primary-foreground))] font-semibold">
               {selectedChatName.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
         <h3 className="font-semibold text-lg text-center">{selectedChatName}</h3>
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center">
           {participants.length}{' '}
           {participants.length === 1 ? 'participant' : 'participants'}
         </p>
       </div>
 
-      <div className="participants-list p-4 border-b overflow-y-auto">
-        <h4 className="mb-3 font-semibold text-sm">
+      <div className="participants-list p-4 border-b border-[hsl(var(--border))] overflow-y-auto">
+        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">
           {isGroup ? 'Participants' : 'About'}
         </h4>
         <div className="space-y-3">
           {participants.map((p) => (
             <div key={p.id} className="participant flex items-center">
-              <div className="participant-avatar w-8 h-8 rounded-full overflow-hidden relative mr-2">
+              <div className="participant-avatar w-8 h-8 rounded-full overflow-hidden relative mr-2 shadow-[var(--shadow-xs)]">
                 {renderAvatar(p.avatar, p.name)}
                 {p.online && (
-                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-white"></div>
+                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-[hsl(var(--chart-2))] rounded-full border border-[hsl(var(--background))]"></div>
                 )}
               </div>
               <div className="participant-info flex-1 min-w-0">
                 <p className="name font-medium">{p.name}</p>
-                <p className="status text-xs text-gray-500">
+                <p className="status text-xs text-[hsl(var(--muted-foreground))]">
                   {p.online ? 'Online' : 'Offline'}
                 </p>
               </div>
@@ -171,38 +184,38 @@ export default function ChatRightSidebar({
         </div>
       </div>
 
-      <div className="p-4 border-b">
-        <h4 className="mb-3 font-semibold text-sm">Actions</h4>
+      <div className="p-4 border-b border-[hsl(var(--border))]">
+        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">Actions</h4>
         <div className="space-y-2">
-          <button className="w-full py-2 px-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
             Search in conversation
           </button>
-          <button className="w-full py-2 px-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
             Notification settings
           </button>
           {isGroup && (
-            <button className="w-full py-2 px-3 text-left rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
               Add participants
             </button>
           )}
-          <button className="w-full py-2 px-3 text-left text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+          <button className="w-full py-2 px-3 text-left text-[hsl(var(--destructive))] rounded-[var(--radius)] hover:bg-[hsl(var(--destructive))/0.1] transition-colors">
             {isGroup ? 'Leave group' : 'Delete conversation'}
           </button>
         </div>
       </div>
 
-      <div className="p-4 border-b">
-        <h4 className="mb-3 font-semibold text-sm">Shared Media</h4>
+      <div className="p-4 border-b border-[hsl(var(--border))]">
+        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">Shared Media</h4>
         <div className="grid grid-cols-3 gap-2">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center"
+              className="aspect-square bg-[hsl(var(--muted))] rounded-[var(--radius)] flex items-center justify-center shadow-[var(--shadow-xs)]"
             >
-              <Image size={20} className="text-gray-400" />
+              <Image size={20} className="text-[hsl(var(--muted-foreground))]" />
             </div>
           ))}
-          <button className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400">
+          <button className="aspect-square rounded-[var(--radius)] border-2 border-dashed border-[hsl(var(--border))] flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--sidebar-primary))] transition-colors">
             <span>+</span>
           </button>
         </div>

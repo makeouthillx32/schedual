@@ -68,22 +68,22 @@ export function UploadPhotoForm() {
           width={55}
           height={55}
           alt="User"
-          className="size-14 rounded-full object-cover"
+          className="size-14 rounded-full object-cover shadow-[var(--shadow-xs)]"
           quality={90}
         />
 
         <div>
-          <span className="mb-1.5 font-medium text-dark dark:text-white">
+          <span className="mb-1.5 font-medium text-[hsl(var(--foreground))]">
             Edit your photo
           </span>
           <span className="flex gap-3">
-            <button type="button" className="text-body-sm hover:text-red">
+            <button type="button" className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))]">
               Delete
             </button>
             <button
               type="button"
               onClick={handleUpload}
-              className="text-body-sm hover:text-primary"
+              className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sidebar-primary))]"
             >
               {uploading ? "Uploading..." : "Update"}
             </button>
@@ -91,7 +91,7 @@ export function UploadPhotoForm() {
         </div>
       </div>
 
-      <div className="relative mb-5.5 block w-full rounded-xl border border-dashed border-gray-4 bg-gray-2 hover:border-primary dark:border-dark-3 dark:bg-dark-2 dark:hover:border-primary">
+      <div className="relative mb-5.5 block w-full rounded-[var(--radius)] border border-dashed border-[hsl(var(--border))] bg-[hsl(var(--muted))] hover:border-[hsl(var(--sidebar-primary))] shadow-[var(--shadow-sm)]">
         <input
           type="file"
           name="profilePhoto"
@@ -106,15 +106,15 @@ export function UploadPhotoForm() {
           htmlFor="profilePhoto"
           className="flex cursor-pointer flex-col items-center justify-center p-4 sm:py-7.5"
         >
-          <div className="flex size-13.5 items-center justify-center rounded-full border border-stroke bg-white dark:border-dark-3 dark:bg-gray-dark">
+          <div className="flex size-13.5 items-center justify-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-[var(--shadow-xs)]">
             <UploadIcon />
           </div>
 
           <p className="mt-2.5 text-body-sm font-medium">
-            <span className="text-primary">Click to upload</span> or drag and drop
+            <span className="text-[hsl(var(--sidebar-primary))]">Click to upload</span> or drag and drop
           </p>
 
-          <p className="mt-1 text-body-xs">
+          <p className="mt-1 text-body-xs text-[hsl(var(--muted-foreground))]">
             PNG, JPG or GIF format supported.
           </p>
         </label>

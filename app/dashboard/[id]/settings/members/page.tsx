@@ -133,7 +133,10 @@ export default function MembersPage() {
   if (isLoading) {
     return (
       <ShowcaseSection title="Members Management">
-        <div className="text-center py-10">Loading users...</div>
+        <div className="text-center py-10">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[hsl(var(--sidebar-primary))] border-t-transparent"></div>
+          <p className="mt-2 text-[hsl(var(--foreground))]">Loading users...</p>
+        </div>
       </ShowcaseSection>
     );
   }
@@ -141,7 +144,7 @@ export default function MembersPage() {
   if (error) {
     return (
       <ShowcaseSection title="Members Management">
-        <div className="text-center py-10 text-red-500">
+        <div className="text-center py-10 text-[hsl(var(--destructive))]">
           {error}
         </div>
       </ShowcaseSection>
@@ -157,15 +160,15 @@ export default function MembersPage() {
             placeholder="Search by username or email"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg bg-gray-2 dark:bg-gray-dark text-dark dark:text-white border-stroke dark:border-dark-3"
+            className="w-full pl-10 pr-4 py-2 border rounded-[var(--radius)] bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] border-[hsl(var(--border))]"
           />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-4 dark:text-dark-6" size={20} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" size={20} />
         </div>
         <div className="flex space-x-4">
-          <button className="flex items-center gap-2 rounded-lg px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white border border-stroke dark:border-dark-3 hover:bg-gray-100 dark:hover:bg-dark-3 transition-colors">
+          <button className="flex items-center gap-2 rounded-[var(--radius)] px-4 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] border border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors">
             Sort <ChevronDown size={16} />
           </button>
-          <button className="rounded-lg px-4 py-2 bg-red-500 text-white hover:bg-red-600 transition-colors">
+          <button className="rounded-[var(--radius)] px-4 py-2 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] hover:bg-[hsl(var(--destructive))/0.9] transition-colors shadow-[var(--shadow-xs)]">
             Prune
           </button>
         </div>
@@ -173,62 +176,62 @@ export default function MembersPage() {
 
       <div className="overflow-x-auto members-table">
         <table className="w-full text-sm">
-          <thead className="bg-gray-2 dark:bg-gray-dark border-b border-stroke dark:border-dark-3">
+          <thead className="bg-[hsl(var(--muted))] border-b border-[hsl(var(--border))]">
             <tr>
               <th className="p-3 text-left">
                 <input 
                   type="checkbox" 
                   checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
                   onChange={toggleSelectAll}
-                  className="form-checkbox rounded text-primary dark:text-primary-light"
+                  className="form-checkbox rounded-[calc(var(--radius)_-_2px)] text-[hsl(var(--sidebar-primary))] border-[hsl(var(--border))]"
                 />
               </th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">NAME</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">EMAIL</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">ROLE</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">CREATED</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">LAST LOGIN</th>
-              <th className="p-3 text-left text-dark-4 dark:text-dark-6 uppercase">AUTH PROVIDERS</th>
-              <th className="p-3 text-right text-dark-4 dark:text-dark-6 uppercase">ACTIONS</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">NAME</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">EMAIL</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">ROLE</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">CREATED</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">LAST LOGIN</th>
+              <th className="p-3 text-left text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">AUTH PROVIDERS</th>
+              <th className="p-3 text-right text-[hsl(var(--muted-foreground))] uppercase font-[var(--font-sans)]">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
               <tr 
                 key={user.id} 
-                className="border-b border-stroke dark:border-dark-3 hover:bg-gray-2 dark:hover:bg-gray-dark transition-colors"
+                className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--accent))] transition-colors"
               >
                 <td className="p-3">
                   <input 
                     type="checkbox" 
                     checked={selectedUsers.includes(user.id)}
                     onChange={() => toggleUserSelection(user.id)}
-                    className="form-checkbox rounded text-primary dark:text-primary-light"
+                    className="form-checkbox rounded-[calc(var(--radius)_-_2px)] text-[hsl(var(--sidebar-primary))] border-[hsl(var(--border))]"
                   />
                 </td>
                 <td className="p-3 flex items-center space-x-3">
                   <img 
                     src={user.avatar_url} 
                     alt={user.display_name} 
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover shadow-[var(--shadow-xs)]"
                   />
-                  <span className="font-medium text-dark dark:text-white">{user.display_name}</span>
+                  <span className="font-medium text-[hsl(var(--foreground))]">{user.display_name}</span>
                 </td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{user.email}</td>
+                <td className="p-3 text-[hsl(var(--muted-foreground))]">{user.email}</td>
                 <td className="p-3">
                   <span 
-                    className="bg-gray-2 dark:bg-gray-dark text-dark-4 dark:text-dark-5 px-2 py-1 rounded-full text-xs"
+                    className="bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] px-2 py-1 rounded-full text-xs"
                   >
                     {user.role_label}
                   </span>
                 </td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{formatDate(user.created_at)}</td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">{formatDate(user.last_sign_in_at)}</td>
-                <td className="p-3 text-dark-4 dark:text-dark-5">
+                <td className="p-3 text-[hsl(var(--muted-foreground))]">{formatDate(user.created_at)}</td>
+                <td className="p-3 text-[hsl(var(--muted-foreground))]">{formatDate(user.last_sign_in_at)}</td>
+                <td className="p-3 text-[hsl(var(--muted-foreground))]">
                   {user.auth_providers.join(', ')}
                 </td>
                 <td className="p-3 text-right">
-                  <button className="text-dark-4 dark:text-dark-5 hover:bg-gray-2 dark:hover:bg-gray-dark p-2 rounded transition-colors">
+                  <button className="text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] p-2 rounded-[var(--radius)] transition-colors">
                     <MoreHorizontal size={20} />
                   </button>
                 </td>
@@ -239,15 +242,15 @@ export default function MembersPage() {
       </div>
 
       <div className="flex justify-between items-center mt-6">
-        <span className="text-dark-4 dark:text-dark-5">
+        <span className="text-[hsl(var(--muted-foreground))]">
           Showing {filteredUsers.length} of {users.length} members
         </span>
         <div className="flex space-x-2 pagination">
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">
+          <button className="px-4 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-[var(--radius)] page-btn shadow-[var(--shadow-xs)]">
             Back
           </button>
-          <button className="px-4 py-2 bg-primary text-white rounded active-page">1</button>
-          <button className="px-4 py-2 bg-gray-2 dark:bg-gray-dark text-dark dark:text-white rounded page-btn">
+          <button className="px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded-[var(--radius)] active-page shadow-[var(--shadow-xs)]">1</button>
+          <button className="px-4 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-[var(--radius)] page-btn shadow-[var(--shadow-xs)]">
             Next
           </button>
         </div>

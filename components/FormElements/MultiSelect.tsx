@@ -96,7 +96,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
 
   return (
     <div className="relative z-50">
-      <label className="mb-3 block text-body-sm font-medium text-dark dark:text-white">
+      <label className="mb-3 block text-body-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
         Multiselect Dropdown
       </label>
       <div>
@@ -112,20 +112,20 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
           <div className="relative z-20 inline-block w-full">
             <div className="relative flex flex-col items-center">
               <div ref={trigger} onClick={open} className="w-full">
-                <div className="mb-2 flex rounded-[7px] border-[1.5px] border-stroke py-[9px] pl-3 pr-3 outline-none transition focus:border-primary active:border-primary dark:border-dark-3 dark:bg-dark-2">
+                <div className="mb-2 flex rounded-[var(--radius)] border-[1.5px] border-[hsl(var(--border))] py-[9px] pl-3 pr-3 outline-none transition focus:border-[hsl(var(--sidebar-primary))] active:border-[hsl(var(--sidebar-primary))] dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))]">
                   <div className="flex flex-auto flex-wrap gap-3">
                     {selected.map((index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-center rounded-[5px] border-[.5px] border-stroke bg-gray-2 px-2.5 py-[3px] text-body-sm font-medium dark:border-dark-3 dark:bg-dark"
+                        className="flex items-center justify-center rounded-[calc(var(--radius)*0.5)] border-[.5px] border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-2.5 py-[3px] text-body-sm font-medium dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--secondary))]"
                       >
-                        <div className="max-w-full flex-initial">
+                        <div className="max-w-full flex-initial text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
                           {options[index].text}
                         </div>
                         <div className="flex flex-auto flex-row-reverse">
                           <div
                             onClick={() => remove(index)}
-                            className="cursor-pointer pl-1 hover:text-red"
+                            className="cursor-pointer pl-1 hover:text-[hsl(var(--destructive))]"
                           >
                             <svg
                               className="fill-current"
@@ -151,7 +151,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                       <div className="flex-1">
                         <input
                           placeholder="Select an option"
-                          className="h-full w-full appearance-none bg-transparent p-1 px-2 text-dark-5 outline-none dark:text-dark-6"
+                          className="h-full w-full appearance-none bg-transparent p-1 px-2 text-[hsl(var(--muted-foreground))] outline-none dark:text-[hsl(var(--muted-foreground))]"
                           defaultValue={selectedValues()}
                         />
                       </div>
@@ -161,7 +161,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                     <button
                       type="button"
                       onClick={open}
-                      className="cursor-pointer text-dark-4 outline-none focus:outline-none dark:text-dark-6"
+                      className="cursor-pointer text-[hsl(var(--muted-foreground))] outline-none focus:outline-none dark:text-[hsl(var(--muted-foreground))]"
                     >
                       <svg
                         className="fill-current"
@@ -184,7 +184,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
               </div>
               <div className="w-full px-4">
                 <div
-                  className={`max-h-select absolute left-0 top-full z-40 w-full overflow-y-auto rounded bg-white shadow-1 dark:bg-dark-2 dark:shadow-card ${
+                  className={`max-h-select absolute left-0 top-full z-40 w-full overflow-y-auto rounded-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-md)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-lg)] ${
                     isOpen() ? "" : "hidden"
                   }`}
                   ref={dropdownRef}
@@ -195,16 +195,16 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                     {options.map((option, index) => (
                       <div key={index}>
                         <div
-                          className="w-full cursor-pointer rounded-t border-b border-stroke hover:bg-primary/5 dark:border-dark-3"
+                          className="w-full cursor-pointer rounded-t border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--sidebar-accent))] dark:border-[hsl(var(--sidebar-border))]"
                           onClick={(event) => select(index, event)}
                         >
                           <div
                             className={`relative flex w-full items-center border-l-2 border-transparent p-2 pl-2 ${
-                              option.selected ? "border-primary" : ""
+                              option.selected ? "border-[hsl(var(--sidebar-primary))]" : ""
                             }`}
                           >
                             <div className="flex w-full items-center">
-                              <div className="mx-2 leading-6">
+                              <div className="mx-2 leading-6 text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
                                 {option.text}
                               </div>
                             </div>

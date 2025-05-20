@@ -18,10 +18,10 @@ const SwitcherOne = () => {
               setEnabled(!enabled);
             }}
           />
-          <div className="block h-8 w-14 rounded-full bg-gray-3 dark:bg-[#5A616B]"></div>
+          <div className="block h-8 w-14 rounded-full bg-[hsl(var(--muted))] dark:bg-[hsl(var(--secondary))]"></div>
           <div
-            className={`absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-switch-1 transition ${
-              enabled && "!right-1 !translate-x-full !bg-primary dark:!bg-white"
+            className={`absolute left-1 top-1 h-6 w-6 rounded-full bg-[hsl(var(--background))] shadow-[var(--shadow-sm)] transition ${
+              enabled && "!right-1 !translate-x-full !bg-[hsl(var(--sidebar-primary))] dark:!bg-[hsl(var(--background))]"
             }`}
           ></div>
         </div>

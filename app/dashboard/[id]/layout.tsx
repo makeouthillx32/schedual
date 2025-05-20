@@ -3,6 +3,7 @@
 
 import "@/css/satoshi.css";
 import "@/css/style.css";
+import "@/app/globals.css"; // Import the global CSS that contains your CSS variables
 
 import { Sidebar } from "@/components/Layouts/sidebar";
 import { Header } from "@/components/Layouts/header";
@@ -17,10 +18,10 @@ import type { PropsWithChildren } from "react";
 export default function DashboardLayout({ children }: PropsWithChildren) {
   return (
     <Providers>
-      <NextTopLoader color="#5750F1" showSpinner={false} />
+      <NextTopLoader color="hsl(var(--sidebar-primary))" showSpinner={false} />
       <div className="flex min-h-screen">
         <Sidebar />
-        <div className="w-full bg-gray-2 dark:bg-[#020d1a]">
+        <div className="w-full bg-gray-2 dark:bg-[hsl(var(--background))]">
           <Header />
           <main className="isolate mx-auto w-full max-w-screen-2xl overflow-hidden p-4 md:p-6 2xl:p-10">
             {children}

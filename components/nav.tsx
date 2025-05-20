@@ -10,19 +10,20 @@ interface NavProps {
 }
 
 const Nav: React.FC<NavProps> = ({ pageTitle }) => {
-  const { themeType } = useTheme(); // toggleTheme is no longer needed
+  const { themeType } = useTheme();
+  const isDark = themeType === "dark";
 
   return (
     <nav
-      className="flex justify-between items-center p-4 transition-colors"
-      style={{
-        backgroundColor: "var(--hnf-background)",
-        color: "var(--hnf-foreground)",
-      }}
+      className={`flex justify-between items-center p-4 transition-colors ${
+        isDark 
+          ? "bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]" 
+          : "bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"
+      } shadow-[var(--shadow-sm)]`}
     >
-      <h1 className="text-lg font-bold">
+      <h1 className="text-lg font-bold font-[var(--font-sans)]">
         CMS Schedule App
-        {pageTitle && <span className="ml-2 text-lg font-bold">{pageTitle}</span>}
+        {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
       </h1>
       <div className="flex items-center gap-4">
         {/* Theme toggle */}

@@ -5,11 +5,12 @@
 
 /* ───────── VARIABLES ───────── */
 $ribbon-light: #2563eb;     // blue-500
-$ribbon-dark: var(--ribbon-dark);
-$ribbon-edge: var(--ribbon-edge);
-$ribbon-text: var(--ribbon-text);
-$ribbon-shadow: var(--ribbon-shadow);
-$home-bg: var(--home-background); 
+$ribbon-dark:  #2563eb;     // blue-600
+$ribbon-edge: hsl(222, 100%, 34%);
+$ribbon-text: var(--secondary-foreground);
+$ribbon-shadow: rgba(104, 103, 103, 0.45);
+$home-bg: var(--home-background);
+
 
 // /* ───────── PANEL & CARD LAYOUT  dosnt do anything to i marked it out ───────── */
 // .panel {

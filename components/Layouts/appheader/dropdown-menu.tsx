@@ -9,7 +9,6 @@ import { usePathname } from "next/navigation";
 import useLoginSession from "@/lib/useLoginSession";
 import LogoutButton from "@/components/Layouts/appheader/LogoutButton";
 import SignInButton from "@/components/Layouts/appheader/SignInButton";
-// — Replaced ProfileButton with DashboardButton —
 import DashboardButton from "@/components/Layouts/appheader/DashboardButton";
 import SettingsButton from "@/components/Layouts/appheader/SettingsButton";
 import ScheduleButton from "@/components/Layouts/appheader/ScheduleButton";
@@ -23,6 +22,7 @@ const DropdownMenuContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => {
   const { themeType } = useTheme();
+  const isDark = themeType === "dark";
 
   return (
     <DropdownMenuPrimitive.Portal>
@@ -30,10 +30,10 @@ const DropdownMenuContent = React.forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          `z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in ${
-            themeType === "dark"
-              ? "bg-gray-900 text-white border-gray-700"
-              : "bg-white text-black border-gray-300"
+          `z-50 min-w-[8rem] overflow-hidden rounded-[var(--radius)] border border-[hsl(var(--border))] p-1 shadow-[var(--shadow-md)] data-[state=open]:animate-in ${
+            isDark
+              ? "bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]"
+              : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
           }`,
           className
         )}
@@ -51,16 +51,17 @@ const DropdownMenuItem = React.forwardRef<
   }
 >(({ className, variant = "default", ...props }, ref) => {
   const { themeType } = useTheme();
+  const isDark = themeType === "dark";
 
   const baseStyle = `flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm transition-colors focus:outline-none`;
   const colorStyle =
     variant === "danger"
-      ? themeType === "dark"
-        ? "text-red-500 hover:bg-red-900"
-        : "text-red-600 hover:bg-red-100"
-      : themeType === "dark"
-      ? "text-white focus:bg-gray-800"
-      : "text-black focus:bg-gray-200";
+      ? isDark
+        ? "text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))]/10"
+        : "text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive))]/10"
+      : isDark
+      ? "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))] focus:bg-[hsl(var(--accent))]"
+      : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))] focus:bg-[hsl(var(--accent))]";
 
   return (
     <DropdownMenuPrimitive.Item
@@ -74,6 +75,7 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
 const CustomDropdown: React.FC = () => {
   const { themeType } = useTheme();
+  const isDark = themeType === "dark";
   const [open, setOpen] = React.useState(false);
   const pathname = usePathname();
   const session = useLoginSession();
@@ -85,36 +87,39 @@ const CustomDropdown: React.FC = () => {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex items-center justify-center w-8 h-8"
+          className={`flex items-center justify-center w-8 h-8 rounded-md hover:bg-[hsl(var(--accent))] transition-colors duration-200`}
           aria-label="Toggle menu"
         >
           <div className="space-y-1.5">
             <div
               className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
+                isDark ? "bg-[hsl(var(--foreground))]" : "bg-[hsl(var(--foreground))]"
+              } transition-colors duration-200`}
             />
             <div
               className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
+                isDark ? "bg-[hsl(var(--foreground))]" : "bg-[hsl(var(--foreground))]"
+              } transition-colors duration-200`}
             />
             <div
               className={`w-6 h-0.5 ${
-                themeType === "dark" ? "bg-white" : "bg-black"
-              }`}
+                isDark ? "bg-[hsl(var(--foreground))]" : "bg-[hsl(var(--foreground))]"
+              } transition-colors duration-200`}
             />
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <CurrentDateTime />
+      <DropdownMenuContent className="w-56">
+        <div className="p-2 mb-1 border-b border-[hsl(var(--border))]">
+          <CurrentDateTime />
+        </div>
         <HomeButton onClick={handleMenuClick} />
         <ScheduleButton onClick={handleMenuClick} />
         <SettingsButton activePage={activePage} onClick={handleMenuClick} />
         {session?.user?.id && (
           <DashboardButton onClick={handleMenuClick} />
         )}
+        <div className="h-px my-1 bg-[hsl(var(--border))]" />
         {!session && <SignInButton onClick={handleMenuClick} />}
         {session && <LogoutButton />}
       </DropdownMenuContent>

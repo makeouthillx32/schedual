@@ -26,8 +26,8 @@ export function ThemeColorHandler({ isDarkMode }: ThemeColorHandlerProps) {
           : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff"
       } else {
         color = isDarkMode
-          ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
-          : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb"
+          ? computedStyle.getPropertyValue("--muted")?.trim() || "#111827"
+          : computedStyle.getPropertyValue("--muted")?.trim() || "#f9fafb"
       }
 
       // Update the existing meta tag

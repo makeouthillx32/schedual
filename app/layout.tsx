@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,31 +32,38 @@ export default function RootLayout({
         setCookie("lastPage", pathname, { path: "/" });
       }
 
+      // Get theme from localStorage
       const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      const computedStyle = getComputedStyle(document.documentElement);
-      let color = "#ffffff";
+      // Set theme-color meta tag based on CSS variables
+      const root = document.documentElement;
+      let themeColor;
 
       if (isHome) {
-        color =
-          theme === "dark"
-            ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
-            : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff";
+        themeColor = theme === "dark" 
+          ? getComputedStyle(root).getPropertyValue('--sidebar').trim() // Use sidebar color for home dark
+          : getComputedStyle(root).getPropertyValue('--background').trim(); // Use background color for home light
       } else {
-        color =
-          theme === "dark"
-            ? computedStyle.getPropertyValue("--hnf-background")?.trim() || "#111827"
-            : computedStyle.getPropertyValue("--hnf-background")?.trim() || "#f9fafb";
+        themeColor = theme === "dark" 
+          ? getComputedStyle(root).getPropertyValue('--background').trim()
+          : getComputedStyle(root).getPropertyValue('--background').trim();
       }
 
+      // Ensure the color is in proper format
+      if (!themeColor.startsWith('#') && !themeColor.startsWith('hsl') && !themeColor.startsWith('rgb')) {
+        // Default fallbacks if variables aren't properly formatted
+        themeColor = theme === "dark" ? "hsl(var(--background))" : "hsl(var(--background))";
+      }
+
+      // Update meta tag
       const metaTag = document.querySelector("meta[name='theme-color']");
       if (metaTag) {
-        metaTag.setAttribute("content", color);
+        metaTag.setAttribute("content", themeColor);
       } else {
         const newMeta = document.createElement("meta");
         newMeta.name = "theme-color";
-        newMeta.content = color;
+        newMeta.content = themeColor;
         document.head.appendChild(newMeta);
       }
     }
@@ -68,11 +76,18 @@ export default function RootLayout({
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Playfair+Display:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
       </head>
-      <body>
+      <body className={`min-h-screen font-[var(--font-sans)] ${
+        isDarkMode 
+          ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]" 
+          : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
+      }`}>
         <Providers>
           {showNav && <Nav />}
-          <main>{children}</main>
+          <main className="flex-1">{children}</main>
           {showFooter && <Footer />}
         </Providers>
       </body>

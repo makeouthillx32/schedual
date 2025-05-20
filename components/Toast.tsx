@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { useTheme } from "@/app/provider";
+import { X } from "lucide-react";
 
 interface ToastProps {
   business_name: string;
@@ -10,38 +12,50 @@ interface ToastProps {
 }
 
 const Toast: React.FC<ToastProps> = ({ business_name, address, before_open, onClose }) => {
+  const { themeType } = useTheme();
+  const isDark = themeType === "dark";
+  
   return (
     <div
-      className="fixed top-5 right-5 p-5 rounded-lg shadow-lg max-w-xs w-full border"
-      style={{
-        backgroundColor: "var(--app-card)",
-        color: "var(--app-card-foreground)",
-        borderColor: "var(--app-border)",
-        zIndex: 1000,
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-      }}
+      className={`fixed top-5 right-5 p-5 rounded-lg max-w-xs w-full border border-[hsl(var(--border))] shadow-[var(--shadow-lg)] z-[1000] ${
+        isDark 
+          ? "bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]" 
+          : "bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]"
+      } animate-fade-in`}
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 w-5 h-5 rounded-full text-center flex items-center justify-center bg-red-500 text-white"
+        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] hover:bg-[hsl(var(--destructive))]/90 transition-colors"
       >
-        X
+        <X size={14} />
       </button>
-      <h4 className="text-lg font-bold">{business_name}</h4>
-      <p className="mt-2">
-        <strong>Address:</strong>{" "}
-        <a
-          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[var(--app-accent)] underline"
-        >
-          {address}
-        </a>
-      </p>
-      <p>
-        <strong>Before Open:</strong> {before_open ? "Yes" : "No"}
-      </p>
+      
+      <h4 className="text-lg font-bold mb-2">{business_name}</h4>
+      
+      <div className="space-y-2">
+        <div>
+          <span className="font-medium">Address:</span>{" "}
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[hsl(var(--sidebar-primary))] hover:underline"
+          >
+            {address}
+          </a>
+        </div>
+        
+        <div className="flex items-center">
+          <span className="font-medium mr-2">Cleaning Time:</span>
+          <span className={`px-2 py-1 text-xs rounded-full ${
+            before_open 
+              ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]" 
+              : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
+          }`}>
+            {before_open ? "Before Opening Hours" : "After Closing Hours"}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

@@ -100,25 +100,34 @@ const Hero = () => {
       (member) => member[day as keyof typeof member]
     );
 
+    // Color classes for member avatars using CSS variables
+    const avatarColors = [
+      "bg-[hsl(var(--chart-1))]",
+      "bg-[hsl(var(--chart-2))]", 
+      "bg-[hsl(var(--chart-3))]",
+      "bg-[hsl(var(--chart-4))]",
+      "bg-[hsl(var(--chart-5))]"
+    ];
+
     return (
       <div className={`rounded-lg ${
-        isDark ? "bg-[#141f38] shadow-card" : "bg-white shadow-1"
+        isDark ? "bg-[hsl(var(--card))] shadow-[var(--shadow-md)]" : "bg-[hsl(var(--background))] shadow-[var(--shadow-sm)]"
       } p-4`}>
         <h3 className="text-xl font-bold mb-4">Available Team Members</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {availableMembers.map((member, index) => (
             <div key={index} className={`p-4 rounded-lg ${
-              isDark ? "bg-[#1a2639]" : "bg-gray-50"
+              isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
             }`}>
               <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${
-                  ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-pink-500", "bg-yellow-500"][index % 5]
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[hsl(var(--primary-foreground))] ${
+                  avatarColors[index % avatarColors.length]
                 }`}>
                   {member.name.charAt(0)}
                 </div>
                 <div className="ml-3">
                   <h4 className="font-medium">{member.name}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
                     {Object.entries(member)
                       .filter(([key, value]) => value === true && key !== day)
                       .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1))
@@ -135,18 +144,18 @@ const Hero = () => {
 
   return (
     <div className={`p-4 ${
-      isDark ? "bg-[#0f172a] text-white" : "bg-gray-50 text-dark"
+      isDark ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]"
     }`}>
       {/* Page Title */}
       <div className="mb-6">
         <h2 className={`text-2xl font-bold ${
-          isDark ? "text-white" : "text-gray-900"
+          isDark ? "text-[hsl(var(--foreground))]" : "text-[hsl(var(--foreground))]"
         }`}>
           Cleaning Schedule
         </h2>
         <div className="flex items-center mt-2">
-          <Calendar size={18} className="mr-2 text-blue-500" />
-          <span className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+          <Calendar size={18} className="mr-2 text-[hsl(var(--sidebar-primary))]" />
+          <span className={`${isDark ? "text-[hsl(var(--muted-foreground))]" : "text-[hsl(var(--muted-foreground))]"}`}>
             Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
           </span>
         </div>
@@ -163,7 +172,7 @@ const Hero = () => {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 border-b border-gray-600">
+      <div className="mb-6 border-b border-[hsl(var(--border))]">
         <ul className="flex flex-wrap -mb-px">
           <li className="mr-6">
             <button
@@ -171,9 +180,9 @@ const Hero = () => {
               className={`inline-block py-2 ${
                 activeTab === "schedule"
                   ? isDark 
-                    ? "text-blue-400 border-b-2 border-blue-400" 
-                    : "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500 dark:text-gray-400"
+                    ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]" 
+                    : "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
+                  : "text-[hsl(var(--muted-foreground))]"
               }`}
             >
               Schedule
@@ -185,9 +194,9 @@ const Hero = () => {
               className={`inline-block py-2 ${
                 activeTab === "team"
                   ? isDark 
-                    ? "text-blue-400 border-b-2 border-blue-400" 
-                    : "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500 dark:text-gray-400"
+                    ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]" 
+                    : "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
+                  : "text-[hsl(var(--muted-foreground))]"
               }`}
             >
               Team Members
@@ -199,7 +208,7 @@ const Hero = () => {
       {/* Content */}
       {error ? (
         <div className={`rounded-lg ${
-          isDark ? "bg-green-900/20 text-green-200" : "bg-green-50 text-green-700"
+          isDark ? "bg-[hsl(var(--destructive))/0.2] text-[hsl(var(--destructive-foreground))]" : "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
         } p-8 text-center mb-6`}>
           <h3 className="text-2xl font-bold mb-2">Good News!</h3>
           <p className="text-lg">{error}</p>

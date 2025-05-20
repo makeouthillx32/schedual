@@ -42,8 +42,8 @@ $header-height: 70px; // Define header height for consistent spacing
   width: 100%;
   overflow: hidden;
   position: relative;
-  background-color: var(--app-background);
-  color: var(--app-foreground);
+  background-color: var(--background);
+  color: var(--foreground);
 
   @media (min-width: $breakpoint-md) {
     flex-direction: row;
@@ -59,7 +59,7 @@ $header-height: 70px; // Define header height for consistent spacing
   position: relative;
   height: 100%;
   overflow: hidden; // Important: prevent content from overflowing
-  background-color: var(--app-background);
+  background-color: var(--background);
 }
 
 // =======================================
@@ -69,8 +69,8 @@ $header-height: 70px; // Define header height for consistent spacing
   width: 100%;
   height: 100%;
   z-index: 10;
-  background-color: var(--app-card);
-  color: var(--app-card-foreground);
+  background-color: var(--card);
+  color: var(--card-foreground);
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -79,7 +79,7 @@ $header-height: 70px; // Define header height for consistent spacing
   @media (min-width: $breakpoint-md) {
     width: 280px;
     flex-shrink: 0;
-    border-right: 1px solid var(--app-border);
+    border-right: 1px solid var(--border);
   }
   
   &.hidden-mobile {
@@ -119,8 +119,8 @@ $header-height: 70px; // Define header height for consistent spacing
     width: 50px;
     height: 50px;
     border-radius: 25px;
-    background-color: var(--button1-background);
-    color: var(--button1-foreground);
+    background-color: var(--card-foreground);
+    color: var(--card-foreground);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -147,8 +147,8 @@ $header-height: 70px; // Define header height for consistent spacing
   transition: transform 0.3s ease;
   z-index: 40; // Higher than everything except modals
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-  background-color: var(--app-card);
-  border-left: 1px solid var(--app-border);
+  background-color: var(--card);
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   
@@ -203,9 +203,9 @@ $header-height: 70px; // Define header height for consistent spacing
   padding: 12px 16px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--app-border);
-  background-color: var(--app-card);
-  color: var(--app-card-foreground);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
+  color: var(--card-foreground);
   z-index: 5;
   flex-shrink: 0; // Prevent header from shrinking
   
@@ -309,8 +309,8 @@ $header-height: 70px; // Define header height for consistent spacing
 // =======================================
 .message-input {
   padding: 12px;
-  border-top: 1px solid var(--app-border);
-  background-color: var(--app-card);
+  border-top: 1px solid var(--border);
+  background-color: var(--card);
   position: relative;
   z-index: 5; // Keep above other elements
   flex-shrink: 0; // Prevent from being collapsed
@@ -322,7 +322,7 @@ $header-height: 70px; // Define header height for consistent spacing
   &-form {
     display: flex;
     align-items: center;
-    background-color: var(--app-muted);
+    background-color: var(--muted);
     border-radius: 24px;
     padding: 4px;
   }
@@ -372,7 +372,7 @@ $header-height: 70px; // Define header height for consistent spacing
     }
     
     &.disabled {
-      color: var(--app-subtle-text);
+      color: var(--muted-foreground);
       opacity: 0.5;
     }
   }
@@ -395,8 +395,8 @@ $header-height: 70px; // Define header height for consistent spacing
     width: 100%;
     max-width: 500px;
     max-height: 85vh;
-    background-color: var(--app-card);
-    color: var(--app-card-foreground);
+    background-color: var(--card);
+    color: var(--card-foreground);
     border-radius: 12px;
     overflow: hidden;
     display: flex;
@@ -405,7 +405,7 @@ $header-height: 70px; // Define header height for consistent spacing
   
   &-header {
     padding: 16px;
-    border-bottom: 1px solid var(--app-border);
+    border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -421,7 +421,7 @@ $header-height: 70px; // Define header height for consistent spacing
   
   &-footer {
     padding: 16px;
-    border-top: 1px solid var(--app-border);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: flex-end;
     gap: 12px;

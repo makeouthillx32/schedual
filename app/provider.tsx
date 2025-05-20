@@ -46,7 +46,7 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
     if (!isLoading && isProtected && !user) {
       router.push("/sign-in");
     }
-  }, [isLoading, user, pathname]);
+  }, [isLoading, user, pathname, router]);
 
   async function signIn(email: string, password: string) {
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -56,6 +56,7 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   async function signOut() {
     const { error } = await supabaseClient.auth.signOut();
     if (error) console.error("Sign-out error:", error.message);
+    else router.push("/");
   }
 
   return (
@@ -70,30 +71,68 @@ export const Providers: React.FC<{
   session?: Session | null;
 }> = ({ children, session }) => {
   const [themeType, setThemeType] = useState<"light" | "dark">("light");
+  const [mounted, setMounted] = useState(false);
 
+  // Initialize theme from cookie or system preference
   useEffect(() => {
-    const savedTheme = getCookie("theme") || "light";
-    setThemeType(savedTheme as "light" | "dark");
+    // Only run on client
+    if (typeof window !== "undefined") {
+      setMounted(true);
+      
+      // First check for saved preference
+      const savedTheme = localStorage.getItem("theme") || getCookie("theme");
+      
+      // If no saved preference, check system preference
+      if (!savedTheme) {
+        const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        setThemeType(systemPrefersDark ? "dark" : "light");
+      } else {
+        setThemeType(savedTheme as "light" | "dark");
+      }
+    }
   }, []);
 
+  // Apply theme changes
   useEffect(() => {
+    if (!mounted) return;
+    
+    // Apply to HTML element
     const html = document.documentElement;
     html.classList.remove("light", "dark");
     html.classList.add(themeType);
+    
+    // Save in both localStorage and cookie for persistence
+    localStorage.setItem("theme", themeType);
     setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
 
+    // Get appropriate color for theme-color meta tag
     const isHome = window.location.pathname === "/";
-    const cssVar = isHome ? "--home-nav-bg" : "--hnf-background";
-    const color = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
-
+    let themeColor;
+    
+    if (themeType === "dark") {
+      themeColor = isHome 
+        ? getComputedStyle(html).getPropertyValue("--sidebar").trim() 
+        : getComputedStyle(html).getPropertyValue("--background").trim();
+    } else {
+      themeColor = isHome 
+        ? getComputedStyle(html).getPropertyValue("--background").trim() 
+        : getComputedStyle(html).getPropertyValue("--background").trim();
+    }
+    
+    // Convert HSL variable format to actual color if needed
+    if (themeColor.startsWith("var(--")) {
+      themeColor = getComputedStyle(html).getPropertyValue(themeColor.slice(4, -1)).trim();
+    }
+    
+    // Set meta tag
     let metaTag = document.querySelector("meta[name='theme-color']");
     if (!metaTag) {
       metaTag = document.createElement("meta");
       metaTag.setAttribute("name", "theme-color");
       document.head.appendChild(metaTag);
     }
-    metaTag.setAttribute("content", color);
-  }, [themeType]);
+    metaTag.setAttribute("content", themeColor);
+  }, [themeType, mounted]);
 
   const toggleTheme = () => {
     setThemeType((prev) => (prev === "light" ? "dark" : "light"));

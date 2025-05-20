@@ -54,7 +54,7 @@ export default async function SettingsPage(
     redirect(`/sign-in?redirect_to=${encodeURIComponent(target)}`, RedirectType.replace);
   }
 
-  // Handle settings navigation
+  // Handle settings component selection
   const SettingsComponent = settingsMap[settingPath];
   if (!SettingsComponent) {
     redirect("/settings/profile", RedirectType.replace);
@@ -64,9 +64,9 @@ export default async function SettingsPage(
   const settingIcon = settingIcons[settingPath] || <Settings size={20} />;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center mb-4">
+    <div className="p-6 max-w-4xl mx-auto">
+      <div className="mb-6">
+        <div className="flex items-center mb-3">
           <div className="p-2 rounded-full bg-[hsl(var(--sidebar-primary))]/10 text-[hsl(var(--sidebar-primary))] mr-3">
             {settingIcon}
           </div>
@@ -75,22 +75,12 @@ export default async function SettingsPage(
           </h1>
         </div>
         <p className="text-[hsl(var(--muted-foreground))] font-[var(--font-sans)] leading-[1.5]">
-          Manage your {settingPath || "account"} settings and preferences
+          {getSettingDescription(settingPath)}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <nav className="space-y-1 sticky top-4">
-            <SettingsNavigation currentPath={settingPath} />
-          </nav>
-        </div>
-        
-        <div className="lg:col-span-3">
-          <div className="p-6 rounded-[var(--radius)] shadow-[var(--shadow-md)] bg-[hsl(var(--card))]">
-            <SettingsComponent />
-          </div>
-        </div>
+      <div className="p-6 rounded-[var(--radius)] shadow-[var(--shadow-md)] bg-[hsl(var(--card))]">
+        <SettingsComponent />
       </div>
     </div>
   );
@@ -110,36 +100,15 @@ function getSettingTitle(settingPath: string): string {
   return titles[settingPath] || "Settings";
 }
 
-// Settings Navigation Component
-function SettingsNavigation({ currentPath }: { currentPath: string }) {
-  const navItems = [
-    { path: "profile", label: "Profile" },
-    { path: "catalog", label: "Catalog" },
-    { path: "CMS", label: "CMS" },
-    { path: "CMS/schedule", label: "Schedule" },
-  ];
+// Helper function to generate setting descriptions
+function getSettingDescription(settingPath: string): string {
+  const descriptions: Record<string, string> = {
+    "": "Manage your account preferences and personal information",
+    profile: "Update your profile information and account preferences",
+    catalog: "Manage your product catalog and inventory settings",
+    CMS: "Configure your content management system settings",
+    "CMS/schedule": "Customize your cleaning schedule and team assignments"
+  };
   
-  return (
-    <div className="rounded-[var(--radius)] overflow-hidden shadow-[var(--shadow-sm)] bg-[hsl(var(--card))]">
-      <div className="p-3 bg-[hsl(var(--sidebar-primary))]/10 font-medium font-[var(--font-sans)] text-[hsl(var(--sidebar-primary))]">
-        Settings
-      </div>
-      <div className="p-2">
-        {navItems.map((item) => (
-          <a
-            key={item.path}
-            href={`/settings/${item.path}`}
-            className={`flex items-center px-3 py-2 rounded-[calc(var(--radius)_-_2px)] font-[var(--font-sans)] transition-colors ${
-              currentPath === item.path
-                ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]"
-                : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
-            }`}
-          >
-            {settingIcons[item.path]}
-            <span className="ml-2">{item.label}</span>
-          </a>
-        ))}
-      </div>
-    </div>
-  );
+  return descriptions[settingPath] || "Manage your settings and preferences";
 }

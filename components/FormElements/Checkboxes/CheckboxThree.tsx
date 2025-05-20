@@ -7,7 +7,7 @@ const CheckboxThree = () => {
     <div>
       <label
         htmlFor="checkboxLabelThree"
-        className="flex cursor-pointer select-none items-center text-body-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]"
+        className="flex cursor-pointer select-none items-center text-body-sm font-medium text-[hsl(var(--foreground))]"
       >
         <div className="relative">
           <input
@@ -19,10 +19,10 @@ const CheckboxThree = () => {
             }}
           />
           <div
-            className={`box mr-2 flex h-5 w-5 items-center justify-center rounded-[calc(var(--radius)*0.5)] border ${
+            className={`box mr-2 flex h-5 w-5 items-center justify-center rounded-[calc(var(--radius)*0.375)] border ${
               isChecked
                 ? "border-[hsl(var(--sidebar-primary))] bg-[hsl(var(--muted))] dark:bg-transparent"
-                : "border-[hsl(var(--muted-foreground))] dark:border-[hsl(var(--muted-foreground))]"
+                : "border-[hsl(var(--border))] dark:border-[hsl(var(--border))]"
             }`}
           >
             <span

@@ -3,6 +3,111 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Our new CSS variables */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.92%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.92%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.92%;
+    --primary: 0 0% 9.02%;
+    --primary-foreground: 0 0% 98.04%;
+    --secondary: 0 0% 96.08%;
+    --secondary-foreground: 0 0% 9.02%;
+    --muted: 0 0% 96.08%;
+    --muted-foreground: 0 0% 45.10%;
+    --accent: 0 0% 96.08%;
+    --accent-foreground: 0 0% 9.02%;
+    --destructive: 0 84.24% 60.20%;
+    --destructive-foreground: 0 0% 98.04%;
+    --border: 0 0% 89.80%;
+    --input: 0 0% 89.80%;
+    --ring: 0 0% 3.92%;
+    --chart-1: 11.92 75.88% 60.98%;
+    --chart-2: 173.22 57.79% 39.02%;
+    --chart-3: 197.33 36.59% 24.12%;
+    --chart-4: 43.13 73.56% 65.88%;
+    --chart-5: 27.12 86.90% 67.06%;
+    --sidebar: 250.00 100% 97.65%;
+    --sidebar-foreground: 242.17 47.43% 34.31%;
+    --sidebar-primary: 258.31 89.53% 66.27%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214.29 94.59% 92.75%;
+    --sidebar-accent-foreground: 225.93 70.73% 40.20%;
+    --sidebar-border: 226.45 100% 93.92%;
+    --sidebar-ring: 258.31 89.53% 66.27%;
+    --font-sans: Roboto, sans-serif;
+    --font-serif: Playfair Display, serif;
+    --font-mono: Fira Code, monospace;
+    --radius: 0.5rem;
+    --shadow-2xs: 2px 2px 4px 0px hsl(255 86% 66% / 0.10);
+    --shadow-xs: 2px 2px 4px 0px hsl(255 86% 66% / 0.10);
+    --shadow-sm: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 1px 2px -1px hsl(255 86% 66% / 0.20);
+    --shadow: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 1px 2px -1px hsl(255 86% 66% / 0.20);
+    --shadow-md: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 2px 4px -1px hsl(255 86% 66% / 0.20);
+    --shadow-lg: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 4px 6px -1px hsl(255 86% 66% / 0.20);
+    --shadow-xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 8px 10px -1px hsl(255 86% 66% / 0.20);
+    --shadow-2xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.50);
+
+    /* Custom weather variables */
+    --weather-temp: #ef4444;
+    --weather-wind: #3b82f6;
+    --weather-condition: #10b981;
+
+    /* Map older theme colors to new CSS variables */
+    --hnf-background: hsl(var(--sidebar));
+    --hnf-foreground: hsl(var(--sidebar-foreground));
+    --hnf-heading: hsl(var(--sidebar-primary));
+    --hnf-muted: hsl(var(--muted-foreground));
+    --hnf-muted-hover: hsl(var(--sidebar-primary));
+    --button1-background: hsl(var(--sidebar-primary));
+    --button1-foreground: hsl(var(--sidebar-primary-foreground));
+    --home-nav-bg: hsl(var(--sidebar));
+    --app-muted: hsl(var(--muted));
+  }
+  
+  .dark {
+    --background: 229.41 71.05% 8.63%;
+    --foreground: 0 0% 97.65%;
+    --card: 231.58 41.18% 14.12%;
+    --card-foreground: 0 0% 97.65%;
+    --popover: 231.58 41.18% 14.12%;
+    --popover-foreground: 0 0% 97.65%;
+    --primary: 0 0% 97.65%;
+    --primary-foreground: 0 0% 9.02%;
+    --secondary: 226.67 38.30% 17.25%;
+    --secondary-foreground: 0 0% 97.65%;
+    --muted: 231.58 41.18% 14.12%;
+    --muted-foreground: 0 0% 63.53%;
+    --accent: 226.67 38.30% 17.25%;
+    --accent-foreground: 0 0% 97.65%;
+    --destructive: 0 84.24% 60.20%;
+    --destructive-foreground: 0 0% 98.04%;
+    --border: 226.67 38.30% 17.25%;
+    --input: 226.67 38.30% 17.25%;
+    --ring: 231.58 41.18% 14.12%;
+    --sidebar: 231.58 41.18% 14.12%;
+    --sidebar-foreground: 0 0% 97.65%;
+    --sidebar-primary: 258.31 89.53% 66.27%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 226.67 38.30% 17.25%;
+    --sidebar-accent-foreground: 0 0% 97.65%;
+    --sidebar-border: 226.67 38.30% 17.25%;
+    --sidebar-ring: 258.31 89.53% 66.27%;
+
+    /* Map older theme colors to new CSS variables for dark mode */
+    --hnf-background: hsl(var(--sidebar));
+    --hnf-foreground: hsl(var(--sidebar-foreground));
+    --hnf-heading: hsl(var(--sidebar-primary));
+    --hnf-muted: hsl(var(--muted-foreground));
+    --hnf-muted-hover: hsl(var(--sidebar-primary));
+    --button1-background: hsl(var(--sidebar-primary));
+    --button1-foreground: hsl(var(--sidebar-primary-foreground));
+    --home-nav-bg: hsl(var(--sidebar));
+    --app-muted: hsl(var(--muted));
+  }
+  
   body {
     @apply bg-gray-2 text-dark-5 dark:bg-[#020D1A] dark:text-dark-6;
   }

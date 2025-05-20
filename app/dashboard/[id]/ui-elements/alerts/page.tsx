@@ -12,7 +12,7 @@ export default function Page() {
     <>
       <Breadcrumb pageName="Alerts" />
 
-      <div className="space-y-7.5 rounded-[10px] bg-white p-4 shadow-1 dark:bg-gray-dark dark:shadow-card md:p-6 xl:p-9">
+      <div className="space-y-7.5 rounded-[calc(var(--radius)*1.25)] bg-[hsl(var(--card))] p-4 shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)] md:p-6 xl:p-9">
         <Alert
           variant="warning"
           title="Attention Needed"

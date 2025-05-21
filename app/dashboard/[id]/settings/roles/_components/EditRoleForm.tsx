@@ -15,17 +15,18 @@ interface EditRoleFormProps {
   onSave: (role: Role) => void;
 }
 
+// Using chart colors from design system instead of hardcoded colors
 const DEFAULT_COLORS = [
-  '#10b981', // emerald
-  '#3b82f6', // blue
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#f59e0b', // amber
-  '#ef4444', // red
+  'hsl(var(--chart-1))', // emerald equivalent
+  'hsl(var(--chart-2))', // blue equivalent
+  'hsl(var(--chart-3))', // violet equivalent
+  'hsl(var(--chart-4))', // amber equivalent
+  'hsl(var(--chart-5))', // red equivalent
   '#6366f1', // indigo
   '#14b8a6', // teal
   '#f97316', // orange
   '#84cc16', // lime
+  '#ec4899', // pink
 ];
 
 const ROLE_TYPES = ['admin', 'jobcoach', 'client', 'user'];
@@ -139,7 +140,7 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
     <form id="role-form" onSubmit={handleSubmit} className="p-4 overflow-y-auto max-h-[calc(90vh-130px)]">
       {/* Role Name */}
       <div className="mb-4">
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label htmlFor="name" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
           Role Name*
         </label>
         <input
@@ -148,17 +149,20 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className={`w-full px-3 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+          className={`w-full px-3 py-2 border rounded-[var(--radius)] shadow-[var(--shadow-xs)] 
+            ${errors.name ? 'border-[hsl(var(--destructive))]' : 'border-[hsl(var(--input))]'} 
+            bg-[hsl(var(--background))] text-[hsl(var(--foreground))]
+            focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary))]`}
           placeholder="Enter Role name"
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+          <p className="mt-1 text-sm text-[hsl(var(--destructive))]">{errors.name}</p>
         )}
       </div>
       
       {/* Role Type */}
       <div className="mb-4">
-        <label htmlFor="role_type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label htmlFor="role_type" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
           Associated Role Type*
         </label>
         <select
@@ -166,7 +170,10 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
           name="role_type"
           value={formData.role_type}
           onChange={handleChange}
-          className={`w-full px-3 py-2 border ${errors.role_type ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
+          className={`w-full px-3 py-2 border rounded-[var(--radius)] shadow-[var(--shadow-xs)]
+            ${errors.role_type ? 'border-[hsl(var(--destructive))]' : 'border-[hsl(var(--input))]'} 
+            bg-[hsl(var(--background))] text-[hsl(var(--foreground))]
+            focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary))]`}
         >
           <option value="">Select a role type</option>
           {ROLE_TYPES.map(type => (
@@ -174,13 +181,13 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
           ))}
         </select>
         {errors.role_type && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.role_type}</p>
+          <p className="mt-1 text-sm text-[hsl(var(--destructive))]">{errors.role_type}</p>
         )}
       </div>
       
       {/* Role Description */}
       <div className="mb-4">
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label htmlFor="description" className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">
           Description
         </label>
         <textarea
@@ -189,14 +196,14 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
           value={formData.description}
           onChange={handleChange}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          className="w-full px-3 py-2 border border-[hsl(var(--input))] rounded-[var(--radius)] shadow-[var(--shadow-xs)] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary))]"
           placeholder="Enter Role description (optional)"
         />
       </div>
       
       {/* Role Color */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
           Role Color
         </label>
         <div className="grid grid-cols-5 gap-2 mb-3">
@@ -204,7 +211,7 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
             <button
               key={color}
               type="button"
-              className={`w-full h-8 rounded-md border-2 ${selectedColor === color ? 'border-blue-500 dark:border-blue-400' : 'border-transparent'}`}
+              className={`w-full h-8 rounded-[var(--radius)] border-2 transition-all ${selectedColor === color ? 'border-[hsl(var(--sidebar-primary))]' : 'border-transparent'}`}
               style={{ backgroundColor: color }}
               onClick={() => handleColorSelect(color)}
               aria-label={`Select color ${color}`}
@@ -217,17 +224,17 @@ export default function EditRoleForm({ role, onSave }: EditRoleFormProps) {
             value={customColor}
             onChange={handleCustomColorChange}
             placeholder="#HEX color"
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="flex-1 px-3 py-2 border border-[hsl(var(--input))] rounded-[var(--radius)] shadow-[var(--shadow-xs)] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary))]"
           />
           {customColor && (
             <div 
-              className={`w-8 h-8 rounded-md border ${isValidHexColor(customColor) ? 'border-transparent' : 'border-red-500'}`}
+              className={`w-8 h-8 rounded-[var(--radius)] border ${isValidHexColor(customColor) ? 'border-transparent' : 'border-[hsl(var(--destructive))]'}`}
               style={{ backgroundColor: isValidHexColor(customColor) ? customColor : '#ffffff' }}
             />
           )}
         </div>
         {customColor && !isValidHexColor(customColor) && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">Please enter a valid hex color (e.g., #FF5500)</p>
+          <p className="mt-1 text-sm text-[hsl(var(--destructive))]">Please enter a valid hex color (e.g., #FF5500)</p>
         )}
       </div>
     </form>

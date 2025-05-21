@@ -174,14 +174,16 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   
   return (
     <>
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)]">
         <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />
         <ChatSidebarSearch
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
         />
         {error ? (
-          <div className="p-4 text-center text-gray-400">{error}</div>
+          <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
+            {error}
+          </div>
         ) : (
           <ConversationList
             conversations={conversations}

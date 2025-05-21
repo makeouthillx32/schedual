@@ -1,14 +1,18 @@
+// app/dashboard/[id]/settings/roles/page.tsx
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, XCircle, Users } from 'lucide-react';
-import { ShowcaseSection } from "@/components/Layouts/showcase-section";
+import { ShowcaseSection } from '@/components/Layouts/showcase-section';
 import RoleModal from './_components/RoleModal';
 import DeleteConfirmModal from './_components/DeleteConfirmModal';
-import './_components/roles.scss';
+import RolesSearchBar from './_components/RolesSearchBar';
+import RolesActionBar from './_components/RolesActionBar';
+import LoadingState from './_components/LoadingState';
+import ErrorAlert from './_components/ErrorAlert';
+import RolesTable from './_components/RolesTable';
 import { toast } from 'react-hot-toast';
 
-// Define types for role/specialization data
 interface Role {
   id: string;
   name: string;
@@ -16,14 +20,6 @@ interface Role {
   color: string;
   role_type: string;
   member_count: number;
-}
-
-// Define member type
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  avatar_url: string | null;
 }
 
 export default function RolesManagementPage() {
@@ -37,77 +33,58 @@ export default function RolesManagementPage() {
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
   const [loadingMemberCounts, setLoadingMemberCounts] = useState(false);
 
-  // Fetch roles on component mount
+  // Fetch all roles and then their member counts
   const fetchRoles = async () => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/profile/specializations/get-all');
-      if (!res.ok) {
-        throw new Error(`Failed to fetch roles: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Failed to fetch roles: ${res.status}`);
       const data = await res.json();
-      
-      // Transform data to match our expected format
-      const transformedData = data.map((role: any) => ({
-        id: role.id,
-        name: role.name,
-        description: role.description || '',
-        color: role.color || '#94a3b8',
-        role_type: role.role || 'Unassigned',
-        member_count: role.member_count || 0
+      const transformed: Role[] = data.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description || '',
+        color: r.color || 'hsl(var(--chart-5))', // Default to a chart color instead of hardcoded gray
+        role_type: r.role || 'Unassigned',
+        member_count: 0
       }));
-      
-      setRoles(transformedData);
-      
-      // After fetching roles, update member counts
-      await fetchMemberCounts(transformedData);
-      
+      setRoles(transformed);
+      await fetchMemberCounts(transformed);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching roles:', err);
+    } catch (err: any) {
+      console.error(err);
       setError('Failed to load roles. Please try again later.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch member counts for all roles
-  const fetchMemberCounts = async (rolesList: Role[]) => {
-    if (!rolesList.length) return;
-    
+  const fetchMemberCounts = async (list: Role[]) => {
+    if (!list.length) return;
     setLoadingMemberCounts(true);
     try {
-      // Create an array of promises for fetching member counts
-      const countPromises = rolesList.map(async (role) => {
-        try {
-          const res = await fetch(`/api/profile/specializations/get-members?id=${role.id}`);
-          if (!res.ok) {
-            console.warn(`Failed to fetch members for role ${role.id}: ${res.status}`);
+      const counts = await Promise.all(
+        list.map(async (role) => {
+          try {
+            const res = await fetch(
+              `/api/profile/specializations/get-members?id=${role.id}`
+            );
+            if (!res.ok) return { id: role.id, count: 0 };
+            const members = await res.json();
+            return { id: role.id, count: Array.isArray(members) ? members.length : 0 };
+          } catch {
             return { id: role.id, count: 0 };
           }
-          const members = await res.json();
-          return { id: role.id, count: Array.isArray(members) ? members.length : 0 };
-        } catch (err) {
-          console.warn(`Error fetching members for role ${role.id}:`, err);
-          return { id: role.id, count: 0 };
-        }
-      });
-      
-      // Wait for all counts to be fetched
-      const memberCounts = await Promise.all(countPromises);
-      
-      // Update role objects with member counts
-      setRoles(prevRoles => 
-        prevRoles.map(role => {
-          const countData = memberCounts.find(item => item.id === role.id);
-          return {
-            ...role,
-            member_count: countData ? countData.count : 0
-          };
+        })
+      );
+      setRoles((prev) =>
+        prev.map((r) => {
+          const found = counts.find((c) => c.id === r.id);
+          return found ? { ...r, member_count: found.count } : r;
         })
       );
     } catch (err) {
-      console.error('Error fetching member counts:', err);
+      console.error(err);
     } finally {
       setLoadingMemberCounts(false);
     }
@@ -117,289 +94,127 @@ export default function RolesManagementPage() {
     fetchRoles();
   }, []);
 
-  // Filter roles based on search query
-  const filteredRoles = roles.filter(role => 
-    role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    role.role_type.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRoles = roles.filter((r) =>
+    [r.name, r.description, r.role_type]
+      .join(' ')
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
   );
 
-  // Handler for opening the create role modal
   const handleCreateRole = () => {
     setCurrentRole(null);
     setIsCreateModalOpen(true);
   };
-
-  // Handler for opening the edit role modal
   const handleEditRole = (role: Role) => {
     setCurrentRole(role);
     setIsEditModalOpen(true);
   };
-
-  // Handler for opening the delete role modal
   const handleDeleteRole = (role: Role) => {
     setCurrentRole(role);
     setIsDeleteModalOpen(true);
   };
 
-  // Handler for saving a new or edited role
   const handleSaveRole = async (updatedRole: Role) => {
     setIsLoading(true);
     try {
-      // Determine if we're creating or updating
-      const isCreating = !updatedRole.id;
-      const endpoint = isCreating 
-        ? '/api/profile/specializations/create' 
+      const isNew = !updatedRole.id;
+      const endpoint = isNew
+        ? '/api/profile/specializations/create'
         : '/api/profile/specializations/update';
-      
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updatedRole)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRole),
       });
-      
-      const responseData = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(responseData.error || `Failed to ${isCreating ? 'create' : 'update'} role: ${res.status}`);
-      }
-      
-      // Update the local state
-      if (isCreating) {
-        // For new roles, add to the list with member_count of 0
-        const newRole = {
-          ...responseData,
-          member_count: 0
-        };
-        setRoles(prevRoles => [...prevRoles, newRole]);
-        toast.success(`Role "${responseData.name}" created successfully!`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Failed to ${isNew ? 'create' : 'update'} role`);
+      if (isNew) {
+        setRoles((prev) => [...prev, { ...json, member_count: 0 }]);
+        toast.success(`Role "${json.name}" created!`);
       } else {
-        // For updated roles, preserve the existing member_count
-        setRoles(prevRoles => 
-          prevRoles.map(role => 
-            role.id === responseData.id 
-              ? { ...responseData, member_count: role.member_count } 
-              : role
-          )
+        setRoles((prev) =>
+          prev.map((r) => (r.id === json.id ? { ...json, member_count: r.member_count } : r))
         );
-        toast.success(`Role "${responseData.name}" updated successfully!`);
+        toast.success(`Role "${json.name}" updated!`);
       }
-      
-      // Close the modal
       setIsCreateModalOpen(false);
       setIsEditModalOpen(false);
-      
+      setError(null);
     } catch (err: any) {
-      console.error(`Error ${currentRole ? 'updating' : 'creating'} role:`, err);
-      setError(err.message || `Failed to ${currentRole ? 'update' : 'create'} role. Please try again.`);
-      toast.error(err.message || `Failed to ${currentRole ? 'update' : 'create'} role`);
+      console.error(err);
+      setError(err.message || 'Save failed. Please try again.');
+      toast.error(err.message || 'Save failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handler for deleting a role
   const handleConfirmDelete = async () => {
     if (!currentRole) return;
-    
     setIsLoading(true);
     try {
       const res = await fetch(`/api/profile/specializations/delete`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: currentRole.id })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentRole.id }),
       });
-      
-      const responseData = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(responseData.error || `Failed to delete role: ${res.status}`);
-      }
-      
-      // Update local state
-      setRoles(prevRoles => prevRoles.filter(role => role.id !== currentRole.id));
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Delete failed');
+      setRoles((prev) => prev.filter((r) => r.id !== currentRole.id));
+      toast.success(`Role "${currentRole.name}" deleted!`);
       setIsDeleteModalOpen(false);
-      toast.success(`Role "${currentRole.name}" deleted successfully!`);
-      
+      setError(null);
     } catch (err: any) {
-      console.error('Error deleting role:', err);
-      setError(err.message || 'Failed to delete role. Please try again.');
-      toast.error(err.message || 'Failed to delete role');
+      console.error(err);
+      setError(err.message || 'Delete failed. Please try again.');
+      toast.error(err.message || 'Delete failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to get the role type badge class
-  const getRoleTypeBadgeClass = (roleType: string) => {
-    switch (roleType.toLowerCase()) {
-      case 'admin':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-      case 'jobcoach':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'client':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'user':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
-    }
-  };
-
-  // Handle error dismiss
-  const handleDismissError = () => {
-    setError(null);
-  };
-
-  // Handle refresh of member counts
-  const handleRefreshMemberCounts = async () => {
+  const handleDismissError = () => setError(null);
+  const handleRefreshCounts = async () => {
     await fetchMemberCounts(roles);
     toast.success('Member counts refreshed');
-  };
-
-  // Render member count with loading indicator if needed
-  const renderMemberCount = (role: Role) => {
-    return (
-      <span className={`px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs rounded-full ${loadingMemberCounts ? 'opacity-50' : ''}`}>
-        {loadingMemberCounts ? '...' : role.member_count}
-      </span>
-    );
   };
 
   return (
     <ShowcaseSection title="Role Management">
       <div className="roles-management">
-        {/* Header with search and create button */}
+        {/* Search + Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div className="search-input flex-grow relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Search roles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700"
-            />
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={handleRefreshMemberCounts}
-              disabled={loadingMemberCounts}
-              className="refresh-counts-btn flex items-center justify-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-            >
-              <Users size={18} className="mr-2" />
-              Refresh Counts
-            </button>
-            <button 
-              onClick={handleCreateRole}
-              className="create-role-btn flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={18} className="mr-2" />
-              Create Role
-            </button>
-          </div>
+          <RolesSearchBar
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+          />
+          <RolesActionBar
+            onCreateRole={handleCreateRole}
+            onRefreshCounts={handleRefreshCounts}
+            isRefreshing={loadingMemberCounts}
+          />
         </div>
 
-        {/* Status indicators */}
-        {isLoading && (
-          <div className="text-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p>Loading roles...</p>
-          </div>
-        )}
+        {/* Status */}
+        {isLoading && <LoadingState message="Loading roles..." />}
 
         {error && (
-          <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 p-4 rounded-lg mb-6 flex items-start justify-between">
-            <p>{error}</p>
-            <button 
-              onClick={handleDismissError}
-              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-4"
-            >
-              <XCircle size={20} />
-            </button>
-          </div>
+          <ErrorAlert message={error} onDismiss={handleDismissError} />
         )}
 
-        {/* Roles table */}
+        {/* Roles Table */}
         {!isLoading && !error && (
-          <>
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-12 p-4 bg-gray-50 dark:bg-gray-900 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-                <div className="col-span-3 md:col-span-2">Color</div>
-                <div className="col-span-5 md:col-span-3">Name</div>
-                <div className="hidden md:block md:col-span-2">Type</div>
-                <div className="hidden md:block md:col-span-3">Description</div>
-                <div className="col-span-2 md:col-span-1 text-center">Members</div>
-                <div className="col-span-2 md:col-span-1 text-center">Actions</div>
-              </div>
-
-              {filteredRoles.length === 0 ? (
-                <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                  {searchQuery ? 'No roles match your search.' : 'No roles found.'}
-                </div>
-              ) : (
-                filteredRoles.map((role) => (
-                  <div 
-                    key={role.id} 
-                    className="role-item grid grid-cols-12 p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-900/50"
-                  >
-                    <div className="col-span-3 md:col-span-2 flex items-center">
-                      <div 
-                        className="role-color w-6 h-6 rounded-full flex-shrink-0" 
-                        style={{ backgroundColor: role.color }}
-                      />
-                      <span className="ml-2 font-medium text-xs text-gray-500 dark:text-gray-400 hidden md:block">
-                        {role.color}
-                      </span>
-                    </div>
-                    <div className="col-span-5 md:col-span-3 flex items-center">
-                      <span className="font-medium text-gray-900 dark:text-white truncate">
-                        {role.name}
-                      </span>
-                    </div>
-                    <div className="hidden md:flex md:col-span-2 items-center">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getRoleTypeBadgeClass(role.role_type)}`}>
-                        {role.role_type}
-                      </span>
-                    </div>
-                    <div className="hidden md:block md:col-span-3 text-gray-500 dark:text-gray-400 truncate">
-                      {role.description || 'No description available'}
-                    </div>
-                    <div className="col-span-2 md:col-span-1 flex items-center justify-center">
-                      {renderMemberCount(role)}
-                    </div>
-                    <div className="col-span-2 md:col-span-1 flex items-center justify-center space-x-2">
-                      <button 
-                        onClick={() => handleEditRole(role)}
-                        className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                        title="Edit role"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteRole(role)}
-                        className="p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        title="Delete role"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              Showing {filteredRoles.length} of {roles.length} roles
-            </div>
-          </>
+          <RolesTable
+            roles={filteredRoles}
+            allRolesCount={roles.length}
+            loadingMemberCounts={loadingMemberCounts}
+            onEdit={handleEditRole}
+            onDelete={handleDeleteRole}
+          />
         )}
       </div>
 
-      {/* Create Role Modal */}
+      {/* Modals */}
       {isCreateModalOpen && (
         <RoleModal
           title="Create New Role"
@@ -408,8 +223,6 @@ export default function RolesManagementPage() {
           onSave={handleSaveRole}
         />
       )}
-
-      {/* Edit Role Modal */}
       {isEditModalOpen && currentRole && (
         <RoleModal
           title={`Edit Role: ${currentRole.name}`}
@@ -418,12 +231,10 @@ export default function RolesManagementPage() {
           onSave={handleSaveRole}
         />
       )}
-
-      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && currentRole && (
         <DeleteConfirmModal
           title="Delete Role"
-          message={`Are you sure you want to delete the role "${currentRole.name}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${currentRole.name}"? This cannot be undone.`}
           onConfirm={handleConfirmDelete}
           onCancel={() => setIsDeleteModalOpen(false)}
         />

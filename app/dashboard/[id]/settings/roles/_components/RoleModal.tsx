@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -53,25 +52,25 @@ export default function RoleModal({ title, role, onClose, onSave }: RoleModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(var(--foreground))/0.3]">
+      <div className="bg-[hsl(var(--background))] rounded-[var(--radius)] shadow-[var(--shadow-lg)] max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">{title}</h2>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100"
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
           >
             <X size={20} />
           </button>
         </div>
         
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-[hsl(var(--border))]">
           <button
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'edit'
-                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]'
+                : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors'
             }`}
             onClick={() => setActiveTab('edit')}
           >
@@ -80,8 +79,8 @@ export default function RoleModal({ title, role, onClose, onSave }: RoleModalPro
           <button
             className={`px-4 py-2 font-medium text-sm ${
               activeTab === 'members'
-                ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]'
+                : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors'
             }`}
             onClick={() => setActiveTab('members')}
             disabled={!role?.id}
@@ -106,18 +105,18 @@ export default function RoleModal({ title, role, onClose, onSave }: RoleModalPro
         
         {/* Footer */}
         {activeTab === 'edit' && (
-          <div className="flex justify-end p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="flex justify-end p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 mr-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="px-4 py-2 mr-2 border border-[hsl(var(--border))] rounded-[var(--radius)] shadow-[var(--shadow-sm)] text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--background))] hover:bg-[hsl(var(--accent))] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               form="role-form"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="px-4 py-2 border border-transparent rounded-[var(--radius)] shadow-[var(--shadow-sm)] text-sm font-medium text-[hsl(var(--sidebar-primary-foreground))] bg-[hsl(var(--sidebar-primary))] hover:bg-[hsl(var(--sidebar-primary))/0.9] transition-colors"
             >
               {role ? 'Update Specialization' : 'Create Specialization'}
             </button>

@@ -20,7 +20,6 @@ interface ThemePreset {
 
 const AccessibilityOverlay = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'accessibility' | 'themes'>('accessibility');
   const { themeType, toggleTheme, themeId, setThemeId, availableThemes, getTheme } = useTheme();
   
   const [accessibilityPresets, setAccessibilityPresets] = useState<AccessibilityPreset[]>([
@@ -46,6 +45,18 @@ const AccessibilityOverlay = () => {
   
   // Generate theme presets from available themes
   const [themePresets, setThemePresets] = useState<ThemePreset[]>([]);
+  
+  // Effect for ESC key to close overlay
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
   
   useEffect(() => {
     // Load theme presets when component mounts
@@ -108,6 +119,11 @@ const AccessibilityOverlay = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(var(--foreground))/0.5]">
       <div className="relative w-full max-w-md mx-4 rounded-[var(--radius)] overflow-hidden">
+        {/* Keyboard shortcut reminder */}
+        <div className="absolute top-2 right-2 z-10 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] text-xs py-1 px-2 rounded-md opacity-70">
+          Press ESC to close
+        </div>
+        
         {/* Main Blue Section */}
         <div className="bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] p-6 pb-12">
           <div className="flex justify-between items-center mb-6">
@@ -131,7 +147,7 @@ const AccessibilityOverlay = () => {
             </div>
           </div>
           
-          <h2 className="text-2xl font-bold text-center mb-6">Accessibility Adjustments</h2>
+          <h2 className="text-2xl font-bold text-center mb-6">Accessibility & Theme Settings</h2>
           
           <div className="space-y-3">
             <button 
@@ -147,7 +163,10 @@ const AccessibilityOverlay = () => {
               Statement
             </button>
             
-            <button className="w-full py-3 px-4 bg-[hsl(var(--sidebar-primary-foreground))] text-[hsl(var(--sidebar-primary))] rounded-full flex items-center justify-center font-medium transition-colors shadow-[var(--shadow-sm)]">
+            <button 
+              onClick={toggleOverlay}
+              className="w-full py-3 px-4 bg-[hsl(var(--sidebar-primary-foreground))] text-[hsl(var(--sidebar-primary))] rounded-full flex items-center justify-center font-medium transition-colors shadow-[var(--shadow-sm)]"
+            >
               <EyeOff size={18} className="mr-2" />
               Hide Interface
             </button>
@@ -162,108 +181,82 @@ const AccessibilityOverlay = () => {
           </div>
         </div>
         
-        {/* White Section with Tabs */}
-        <div className="absolute bottom-0 left-0 right-0 rounded-t-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-lg)]">
-          {/* Tabs */}
-          <div className="flex border-b border-[hsl(var(--border))]">
-            <button
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
-                activeTab === 'accessibility' 
-                  ? 'text-[hsl(var(--foreground))] border-b-2 border-[hsl(var(--sidebar-primary))]' 
-                  : 'text-[hsl(var(--muted-foreground))]'
-              }`}
-              onClick={() => setActiveTab('accessibility')}
-            >
-              Accessibility
-            </button>
-            <button
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
-                activeTab === 'themes' 
-                  ? 'text-[hsl(var(--foreground))] border-b-2 border-[hsl(var(--sidebar-primary))]' 
-                  : 'text-[hsl(var(--muted-foreground))]'
-              }`}
-              onClick={() => setActiveTab('themes')}
-            >
-              Theme Presets
-            </button>
-          </div>
-
+        {/* White Section with unified content */}
+        <div className="absolute bottom-0 left-0 right-0 rounded-t-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-lg)] max-h-[70vh] overflow-y-auto">
           <div className="p-6">
-            {activeTab === 'accessibility' && (
-              <>
-                <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
-                  Choose accessibility presets
-                </h3>
-                
-                <div className="space-y-6">
-                  {accessibilityPresets.map(preset => (
-                    <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
-                      <div className="flex-shrink-0 w-20">
-                        <div className={`relative inline-flex h-8 items-center rounded-full border-2 transition-colors ${preset.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
-                          <button
-                            type="button"
-                            className={`border-2 duration-100 absolute ${preset.enabled ? 'bg-white border-[hsl(var(--sidebar-primary))] translate-x-10' : 'bg-white border-[hsl(var(--border))] translate-x-0'} h-7 w-10 rounded-full transition-transform`}
-                            onClick={() => togglePreset(preset.id)}
-                          />
-                          <span className={`absolute ${preset.enabled ? 'left-2 opacity-0' : 'left-2 opacity-100'} text-xs font-medium transition-opacity`}>
-                            OFF
-                          </span>
-                          <span className={`absolute ${preset.enabled ? 'right-2 opacity-100' : 'right-2 opacity-0'} text-xs font-medium transition-opacity`}>
-                            ON
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name}</h4>
-                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
-                      </div>
+            {/* Theme Presets Section */}
+            <section className="mb-8">
+              <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
+                Theme Presets
+              </h3>
+              
+              <div className="space-y-6">
+                {themePresets.map(preset => (
+                  <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
+                    <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center">
+                      <div 
+                        className={`w-10 h-10 rounded-full border-2 ${
+                          themeId === preset.id 
+                            ? 'border-[hsl(var(--sidebar-primary))]' 
+                            : 'border-[hsl(var(--border))]'
+                        }`}
+                        style={{ backgroundColor: preset.previewColor }}
+                      />
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {activeTab === 'themes' && (
-              <>
-                <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
-                  Choose a theme preset
-                </h3>
-                
-                <div className="space-y-6">
-                  {themePresets.map(preset => (
-                    <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
-                      <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center">
-                        <div 
-                          className={`w-10 h-10 rounded-full border-2 ${
-                            themeId === preset.id 
-                              ? 'border-[hsl(var(--sidebar-primary))]' 
-                              : 'border-[hsl(var(--border))]'
-                          }`}
-                          style={{ backgroundColor: preset.previewColor }}
-                        />
-                      </div>
-                      <div className="ml-4 flex-grow">
-                        <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name} Preset</h4>
-                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
-                      </div>
-                      <div className="ml-auto">
+                    <div className="ml-4 flex-grow">
+                      <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name} Preset</h4>
+                      <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
+                    </div>
+                    <div className="ml-auto">
+                      <button
+                        className={`px-4 py-2 rounded-full text-sm font-medium ${
+                          themeId === preset.id
+                            ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
+                            : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
+                        }`}
+                        onClick={() => setThemeId(preset.id)}
+                        disabled={themeId === preset.id}
+                      >
+                        {themeId === preset.id ? 'Active' : 'Apply'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+            
+            {/* Accessibility Presets Section */}
+            <section>
+              <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
+                Accessibility Presets
+              </h3>
+              
+              <div className="space-y-6">
+                {accessibilityPresets.map(preset => (
+                  <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
+                    <div className="flex-shrink-0 w-20">
+                      <div className={`relative inline-flex h-8 items-center rounded-full border-2 transition-colors ${preset.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
                         <button
-                          className={`px-4 py-2 rounded-full text-sm font-medium ${
-                            themeId === preset.id
-                              ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
-                              : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
-                          }`}
-                          onClick={() => setThemeId(preset.id)}
-                          disabled={themeId === preset.id}
-                        >
-                          {themeId === preset.id ? 'Active' : 'Apply'}
-                        </button>
+                          type="button"
+                          className={`border-2 duration-100 absolute ${preset.enabled ? 'bg-white border-[hsl(var(--sidebar-primary))] translate-x-10' : 'bg-white border-[hsl(var(--border))] translate-x-0'} h-7 w-10 rounded-full transition-transform`}
+                          onClick={() => togglePreset(preset.id)}
+                        />
+                        <span className={`absolute ${preset.enabled ? 'left-2 opacity-0' : 'left-2 opacity-100'} text-xs font-medium transition-opacity`}>
+                          OFF
+                        </span>
+                        <span className={`absolute ${preset.enabled ? 'right-2 opacity-100' : 'right-2 opacity-0'} text-xs font-medium transition-opacity`}>
+                          ON
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                    <div className="ml-4">
+                      <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name}</h4>
+                      <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
           
           <div className="p-4 bg-[hsl(var(--sidebar-primary))] text-center text-[hsl(var(--sidebar-primary-foreground))]">

@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, RefreshCw, FileText, EyeOff, Search, ChevronDown, Globe, Palette, Moon, Sun } from 'lucide-react';
+import { X, RefreshCw, FileText, EyeOff, Search, ChevronDown, Globe, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/app/provider';
 
-interface AccessibilityProfile {
+interface AccessibilityPreset {
   id: string;
   name: string;
   description: string;
   enabled: boolean;
 }
 
-interface ThemeOption {
+interface ThemePreset {
   id: string;
   name: string;
   description: string;
@@ -20,49 +20,49 @@ interface ThemeOption {
 
 const AccessibilityOverlay = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profiles' | 'themes'>('profiles');
+  const [activeTab, setActiveTab] = useState<'accessibility' | 'themes'>('accessibility');
   const { themeType, toggleTheme, themeId, setThemeId, availableThemes, getTheme } = useTheme();
   
-  const [profiles, setProfiles] = useState<AccessibilityProfile[]>([
+  const [accessibilityPresets, setAccessibilityPresets] = useState<AccessibilityPreset[]>([
     {
       id: 'seizure',
-      name: 'Seizure Safe Profile',
+      name: 'Seizure Safe Preset',
       description: 'Clear flashes & reduces color',
       enabled: false
     },
     {
       id: 'vision',
-      name: 'Vision Impaired Profile',
+      name: 'Vision Impaired Preset',
       description: 'Enhances website\'s visuals',
       enabled: false
     },
     {
       id: 'adhd',
-      name: 'ADHD Friendly Profile',
+      name: 'ADHD Friendly Preset',
       description: 'More focus & fewer distractions',
       enabled: false
     }
   ]);
   
-  // Generate theme options from available themes
-  const [themeOptions, setThemeOptions] = useState<ThemeOption[]>([]);
+  // Generate theme presets from available themes
+  const [themePresets, setThemePresets] = useState<ThemePreset[]>([]);
   
   useEffect(() => {
-    // Load theme options when component mounts
-    const loadedThemes: ThemeOption[] = availableThemes.map(id => {
+    // Load theme presets when component mounts
+    const loadedThemes: ThemePreset[] = availableThemes.map(id => {
       const theme = getTheme();
       return {
         id,
         name: id.charAt(0).toUpperCase() + id.slice(1), // Capitalize first letter
-        description: theme.description || `${id} theme`,
+        description: theme.description || `${id} theme preset`,
         previewColor: theme.previewColor
       };
     });
-    setThemeOptions(loadedThemes);
+    setThemePresets(loadedThemes);
   }, [availableThemes, getTheme]);
 
   const resetSettings = () => {
-    // Reset themes to default
+    // Reset theme to default preset
     setThemeId('default');
     
     // Reset dark/light mode based on system preference
@@ -72,13 +72,13 @@ const AccessibilityOverlay = () => {
       if (themeType !== 'light') toggleTheme();
     }
     
-    // Reset accessibility profiles
-    setProfiles(profiles.map(profile => ({ ...profile, enabled: false })));
+    // Reset accessibility presets
+    setAccessibilityPresets(accessibilityPresets.map(preset => ({ ...preset, enabled: false })));
   };
 
-  const toggleProfile = (id: string) => {
-    setProfiles(profiles.map(profile => 
-      profile.id === id ? { ...profile, enabled: !profile.enabled } : profile
+  const togglePreset = (id: string) => {
+    setAccessibilityPresets(accessibilityPresets.map(preset => 
+      preset.id === id ? { ...preset, enabled: !preset.enabled } : preset
     ));
   };
 
@@ -156,25 +156,25 @@ const AccessibilityOverlay = () => {
           <div className="mt-4 relative">
             <div className="flex items-center px-4 py-3 bg-[hsl(var(--sidebar-primary))/0.8] rounded-full border border-[hsl(var(--sidebar-primary-foreground))/0.3]">
               <Search size={18} className="mr-2 text-[hsl(var(--sidebar-primary-foreground))]" />
-              <span className="text-[hsl(var(--sidebar-primary-foreground))/0.9]">Unclear content? Search in dictionary...</span>
+              <span className="text-[hsl(var(--sidebar-primary-foreground))/0.9]">Need help? Search features...</span>
               <ChevronDown size={18} className="ml-auto text-[hsl(var(--sidebar-primary-foreground))]" />
             </div>
           </div>
         </div>
         
-        {/* White Section with Profiles/Themes Tabs */}
+        {/* White Section with Tabs */}
         <div className="absolute bottom-0 left-0 right-0 rounded-t-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-lg)]">
           {/* Tabs */}
           <div className="flex border-b border-[hsl(var(--border))]">
             <button
               className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
-                activeTab === 'profiles' 
+                activeTab === 'accessibility' 
                   ? 'text-[hsl(var(--foreground))] border-b-2 border-[hsl(var(--sidebar-primary))]' 
                   : 'text-[hsl(var(--muted-foreground))]'
               }`}
-              onClick={() => setActiveTab('profiles')}
+              onClick={() => setActiveTab('accessibility')}
             >
-              Profiles
+              Accessibility
             </button>
             <button
               className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${
@@ -184,38 +184,38 @@ const AccessibilityOverlay = () => {
               }`}
               onClick={() => setActiveTab('themes')}
             >
-              Themes
+              Theme Presets
             </button>
           </div>
 
           <div className="p-6">
-            {activeTab === 'profiles' && (
+            {activeTab === 'accessibility' && (
               <>
                 <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
-                  Choose the right accessibility profile for you
+                  Choose accessibility presets
                 </h3>
                 
                 <div className="space-y-6">
-                  {profiles.map(profile => (
-                    <div key={profile.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
+                  {accessibilityPresets.map(preset => (
+                    <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
                       <div className="flex-shrink-0 w-20">
-                        <div className={`relative inline-flex h-8 items-center rounded-full border-2 transition-colors ${profile.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
+                        <div className={`relative inline-flex h-8 items-center rounded-full border-2 transition-colors ${preset.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
                           <button
                             type="button"
-                            className={`border-2 duration-100 absolute ${profile.enabled ? 'bg-white border-[hsl(var(--sidebar-primary))] translate-x-10' : 'bg-white border-[hsl(var(--border))] translate-x-0'} h-7 w-10 rounded-full transition-transform`}
-                            onClick={() => toggleProfile(profile.id)}
+                            className={`border-2 duration-100 absolute ${preset.enabled ? 'bg-white border-[hsl(var(--sidebar-primary))] translate-x-10' : 'bg-white border-[hsl(var(--border))] translate-x-0'} h-7 w-10 rounded-full transition-transform`}
+                            onClick={() => togglePreset(preset.id)}
                           />
-                          <span className={`absolute ${profile.enabled ? 'left-2 opacity-0' : 'left-2 opacity-100'} text-xs font-medium transition-opacity`}>
+                          <span className={`absolute ${preset.enabled ? 'left-2 opacity-0' : 'left-2 opacity-100'} text-xs font-medium transition-opacity`}>
                             OFF
                           </span>
-                          <span className={`absolute ${profile.enabled ? 'right-2 opacity-100' : 'right-2 opacity-0'} text-xs font-medium transition-opacity`}>
+                          <span className={`absolute ${preset.enabled ? 'right-2 opacity-100' : 'right-2 opacity-0'} text-xs font-medium transition-opacity`}>
                             ON
                           </span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <h4 className="font-medium text-[hsl(var(--foreground))]">{profile.name}</h4>
-                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{profile.description}</p>
+                        <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name}</h4>
+                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
                       </div>
                     </div>
                   ))}
@@ -226,37 +226,37 @@ const AccessibilityOverlay = () => {
             {activeTab === 'themes' && (
               <>
                 <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
-                  Choose your preferred theme
+                  Choose a theme preset
                 </h3>
                 
                 <div className="space-y-6">
-                  {themeOptions.map(theme => (
-                    <div key={theme.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
+                  {themePresets.map(preset => (
+                    <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
                       <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center">
                         <div 
                           className={`w-10 h-10 rounded-full border-2 ${
-                            themeId === theme.id 
+                            themeId === preset.id 
                               ? 'border-[hsl(var(--sidebar-primary))]' 
                               : 'border-[hsl(var(--border))]'
                           }`}
-                          style={{ backgroundColor: theme.previewColor }}
+                          style={{ backgroundColor: preset.previewColor }}
                         />
                       </div>
                       <div className="ml-4 flex-grow">
-                        <h4 className="font-medium text-[hsl(var(--foreground))]">{theme.name}</h4>
-                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{theme.description}</p>
+                        <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name} Preset</h4>
+                        <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
                       </div>
                       <div className="ml-auto">
                         <button
                           className={`px-4 py-2 rounded-full text-sm font-medium ${
-                            themeId === theme.id
+                            themeId === preset.id
                               ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
                               : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
                           }`}
-                          onClick={() => setThemeId(theme.id)}
-                          disabled={themeId === theme.id}
+                          onClick={() => setThemeId(preset.id)}
+                          disabled={themeId === preset.id}
                         >
-                          {themeId === theme.id ? 'Active' : 'Apply'}
+                          {themeId === preset.id ? 'Active' : 'Apply'}
                         </button>
                       </div>
                     </div>

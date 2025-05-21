@@ -2,7 +2,6 @@
 "use client";
 
 import "@/css/satoshi.css";
-import "@/css/style.css";
 import "@/app/globals.css"; // Import the global CSS that contains your CSS variables
 
 import { Sidebar } from "@/components/Layouts/sidebar";

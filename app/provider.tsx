@@ -9,12 +9,23 @@ import {
 } from "@supabase/auth-helpers-react";
 import { setCookie, getCookie } from "@/lib/cookieUtils";
 import { usePathname, useRouter } from "next/navigation";
+import { Theme } from "@/types/theme"; 
+import { defaultThemeId, themeMap } from "@/themes";
 
-interface ThemeContextType {
+// Enhanced theme context with theme ID and other properties
+interface EnhancedThemeContextType {
   themeType: "light" | "dark";
   toggleTheme: () => void;
+  
+  // New theme properties
+  themeId: string;
+  setThemeId: (id: string) => void;
+  getTheme: () => Theme;
+  availableThemes: string[];
 }
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const ThemeContext = createContext<EnhancedThemeContextType | undefined>(undefined);
+
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used within a ThemeProvider");
@@ -26,7 +37,9 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
@@ -70,8 +83,30 @@ export const Providers: React.FC<{
   children: React.ReactNode;
   session?: Session | null;
 }> = ({ children, session }) => {
+  // Theme state (light/dark)
   const [themeType, setThemeType] = useState<"light" | "dark">("light");
+  
+  // Theme ID state (which theme preset to use)
+  const [themeId, setThemeIdState] = useState<string>(defaultThemeId);
+  
   const [mounted, setMounted] = useState(false);
+
+  // Get current theme object
+  const getTheme = (): Theme => {
+    return themeMap[themeId] || themeMap[defaultThemeId];
+  };
+
+  // Set theme ID and save to cookies
+  const setThemeId = (id: string) => {
+    if (themeMap[id]) {
+      setThemeIdState(id);
+      localStorage.setItem("themeId", id);
+      setCookie("themeId", id, { path: "/", maxAge: 31536000 });
+    }
+  };
+
+  // Get list of available theme IDs
+  const availableThemes = Object.keys(themeMap);
 
   // Initialize theme from cookie or system preference
   useEffect(() => {
@@ -79,15 +114,21 @@ export const Providers: React.FC<{
     if (typeof window !== "undefined") {
       setMounted(true);
       
-      // First check for saved preference
-      const savedTheme = localStorage.getItem("theme") || getCookie("theme");
+      // Get theme preset ID
+      const savedThemeId = localStorage.getItem("themeId") || getCookie("themeId");
+      if (savedThemeId && themeMap[savedThemeId]) {
+        setThemeIdState(savedThemeId);
+      }
+      
+      // Get color mode (light/dark)
+      const savedThemeType = localStorage.getItem("theme") || getCookie("theme");
       
       // If no saved preference, check system preference
-      if (!savedTheme) {
+      if (!savedThemeType) {
         const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         setThemeType(systemPrefersDark ? "dark" : "light");
       } else {
-        setThemeType(savedTheme as "light" | "dark");
+        setThemeType(savedThemeType as "light" | "dark");
       }
     }
   }, []);
@@ -96,10 +137,28 @@ export const Providers: React.FC<{
   useEffect(() => {
     if (!mounted) return;
     
+    // Get the current theme
+    const theme = getTheme();
+    
+    // Get the CSS variables for the current theme and mode
+    const variables = themeType === "dark" ? theme.dark : theme.light;
+    
     // Apply to HTML element
     const html = document.documentElement;
+    
+    // Apply theme CSS variables
+    for (const [key, value] of Object.entries(variables)) {
+      html.style.setProperty(key, value);
+    }
+    
+    // Apply tailwind dark class
     html.classList.remove("light", "dark");
     html.classList.add(themeType);
+    
+    // Apply letter-spacing if it exists
+    if (theme.typography?.trackingNormal) {
+      document.body.style.letterSpacing = theme.typography.trackingNormal;
+    }
     
     // Save in both localStorage and cookie for persistence
     localStorage.setItem("theme", themeType);
@@ -132,7 +191,7 @@ export const Providers: React.FC<{
       document.head.appendChild(metaTag);
     }
     metaTag.setAttribute("content", themeColor);
-  }, [themeType, mounted]);
+  }, [themeType, themeId, mounted]);
 
   const toggleTheme = () => {
     setThemeType((prev) => (prev === "light" ? "dark" : "light"));
@@ -146,7 +205,14 @@ export const Providers: React.FC<{
   return (
     <SessionContextProvider supabaseClient={supabase} initialSession={session}>
       <InternalAuthProvider>
-        <ThemeContext.Provider value={{ themeType, toggleTheme }}>
+        <ThemeContext.Provider value={{ 
+          themeType, 
+          toggleTheme,
+          themeId,
+          setThemeId,
+          getTheme,
+          availableThemes
+        }}>
           {children}
         </ThemeContext.Provider>
       </InternalAuthProvider>

@@ -43,7 +43,7 @@ export default function RWmembers() {
   const fetchMembers = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/members");
+      const res = await fetch("/api/schedule/members");
       if (!res.ok) throw new Error("Failed to fetch members");
       const data = await res.json();
       setMembers(data);
@@ -61,7 +61,7 @@ export default function RWmembers() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("/api/members", {
+      const res = await fetch("/api/schedule/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -90,7 +90,7 @@ export default function RWmembers() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("/api/members", {
+      const res = await fetch("/api/schedule/members", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -118,7 +118,7 @@ export default function RWmembers() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("/api/members", {
+      const res = await fetch("/api/schedule/members", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: selectedId }),

@@ -20,7 +20,10 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['"Satoshi"', ...defaultTheme.fontFamily.sans],
+        // use the CSS custom-property you defined in your globals.css
+        sans : ['var(--font-sans)',  ...defaultTheme.fontFamily.sans],
+        serif: ['var(--font-serif)', ...defaultTheme.fontFamily.serif],
+        mono : ['var(--font-mono)',  ...defaultTheme.fontFamily.mono],
       },
       screens: {
         "2xsm": "375px",

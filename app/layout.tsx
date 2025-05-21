@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
+import AccessibilityOverlay from "@/components/theme/accessibility";
 import "./globals.css";
 import { setCookie } from "@/lib/cookieUtils";
 
@@ -71,6 +71,10 @@ export default function RootLayout({
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
   const showFooter = !isHome && !isDashboardPage;
+  // Show accessibility on all pages except auth pages
+  const showAccessibility = !pathname.startsWith("/auth") && 
+                            pathname !== "/sign-in" && 
+                            pathname !== "/sign-up";
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
@@ -89,6 +93,7 @@ export default function RootLayout({
           {showNav && <Nav />}
           <main className="flex-1">{children}</main>
           {showFooter && <Footer />}
+          {showAccessibility && <AccessibilityOverlay />}
         </Providers>
       </body>
     </html>

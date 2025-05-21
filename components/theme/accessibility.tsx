@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+// Import Lucide React components
 import { X, RefreshCw, FileText, EyeOff, Search, ChevronDown, Globe, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/app/provider';
 
@@ -20,6 +21,7 @@ interface ThemePreset {
 
 const AccessibilityOverlay = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const { themeType, toggleTheme, themeId, setThemeId, availableThemes, getTheme } = useTheme();
   
   const [accessibilityPresets, setAccessibilityPresets] = useState<AccessibilityPreset[]>([
@@ -56,6 +58,18 @@ const AccessibilityOverlay = () => {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+  
+  // Lock body scroll when overlay is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
   
   useEffect(() => {
@@ -97,11 +111,18 @@ const AccessibilityOverlay = () => {
     setIsOpen(!isOpen);
   };
 
+  // Click outside to close
+  const handleOutsideClick = (e: React.MouseEvent) => {
+    if (overlayRef.current && e.target === overlayRef.current) {
+      setIsOpen(false);
+    }
+  };
+
   if (!isOpen) {
     return (
       <button 
         onClick={toggleOverlay}
-        className="fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-[hsl(var(--sidebar-primary))] text-white flex items-center justify-center shadow-[var(--shadow-md)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary-foreground))]"
+        className="fixed bottom-4 left-4 z-50 w-12 h-12 rounded-full bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--sidebar-primary-foreground))]"
         aria-label="Open accessibility menu"
       >
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -117,83 +138,56 @@ const AccessibilityOverlay = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(var(--foreground))/0.5]">
-      <div className="relative w-full max-w-md mx-4 rounded-[var(--radius)] overflow-hidden">
-        {/* Keyboard shortcut reminder */}
-        <div className="absolute top-2 right-2 z-10 bg-[hsl(var(--background))] text-[hsl(var(--muted-foreground))] text-xs py-1 px-2 rounded-md opacity-70">
-          Press ESC to close
+    <div 
+      ref={overlayRef}
+      onClick={handleOutsideClick}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(var(--foreground))/0.5] p-4 overflow-auto"
+    >
+      <div className="relative max-w-md w-full rounded-[var(--radius)] overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header with close button - fixed */}
+        <div className="bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] p-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold">Accessibility & Theme</h2>
+          <button 
+            onClick={() => setIsOpen(false)}
+            className="p-2 hover:bg-[hsl(var(--sidebar-primary-foreground))/0.2] rounded-full"
+            aria-label="Close overlay"
+          >
+            <X size={24} />
+          </button>
         </div>
         
-        {/* Main Blue Section */}
-        <div className="bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] p-6 pb-12">
-          <div className="flex justify-between items-center mb-6">
-            <button 
-              onClick={toggleOverlay}
-              className="p-1 text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))/0.8] rounded-full"
-            >
-              <X size={24} />
-            </button>
-            <div className="flex items-center">
-              <button
-                onClick={toggleTheme}
-                className="flex items-center mr-4 p-1 hover:bg-[hsl(var(--sidebar-primary))/0.8] rounded-full"
-                aria-label={themeType === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {themeType === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-              <Globe size={20} className="mr-2" />
-              <span className="font-medium">ENGLISH</span>
-              <ChevronDown size={20} className="ml-1" />
-            </div>
-          </div>
+        {/* Controls section - fixed */}
+        <div className="bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] px-4 pb-4 flex space-x-3">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-center gap-2 py-2 px-3 bg-[hsl(var(--sidebar-primary-foreground))/0.2] rounded-md flex-1"
+          >
+            {themeType === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <span>{themeType === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
           
-          <h2 className="text-2xl font-bold text-center mb-6">Accessibility & Theme Settings</h2>
-          
-          <div className="space-y-3">
-            <button 
-              onClick={resetSettings}
-              className="w-full py-3 px-4 bg-[hsl(var(--sidebar-primary-foreground))] text-[hsl(var(--sidebar-primary))] rounded-full flex items-center justify-center font-medium transition-colors shadow-[var(--shadow-sm)]"
-            >
-              <RefreshCw size={18} className="mr-2" />
-              Reset Settings
-            </button>
-            
-            <button className="w-full py-3 px-4 bg-[hsl(var(--sidebar-primary-foreground))] text-[hsl(var(--sidebar-primary))] rounded-full flex items-center justify-center font-medium transition-colors shadow-[var(--shadow-sm)]">
-              <FileText size={18} className="mr-2" />
-              Statement
-            </button>
-            
-            <button 
-              onClick={toggleOverlay}
-              className="w-full py-3 px-4 bg-[hsl(var(--sidebar-primary-foreground))] text-[hsl(var(--sidebar-primary))] rounded-full flex items-center justify-center font-medium transition-colors shadow-[var(--shadow-sm)]"
-            >
-              <EyeOff size={18} className="mr-2" />
-              Hide Interface
-            </button>
-          </div>
-          
-          <div className="mt-4 relative">
-            <div className="flex items-center px-4 py-3 bg-[hsl(var(--sidebar-primary))/0.8] rounded-full border border-[hsl(var(--sidebar-primary-foreground))/0.3]">
-              <Search size={18} className="mr-2 text-[hsl(var(--sidebar-primary-foreground))]" />
-              <span className="text-[hsl(var(--sidebar-primary-foreground))/0.9]">Need help? Search features...</span>
-              <ChevronDown size={18} className="ml-auto text-[hsl(var(--sidebar-primary-foreground))]" />
-            </div>
-          </div>
+          <button
+            onClick={resetSettings}
+            className="flex items-center justify-center gap-2 py-2 px-3 bg-[hsl(var(--sidebar-primary-foreground))/0.2] rounded-md flex-1"
+          >
+            <RefreshCw size={18} />
+            <span>Reset All</span>
+          </button>
         </div>
         
-        {/* White Section with unified content */}
-        <div className="absolute bottom-0 left-0 right-0 rounded-t-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-lg)] max-h-[70vh] overflow-y-auto">
-          <div className="p-6">
+        {/* Scrollable content area */}
+        <div className="bg-[hsl(var(--background))] overflow-y-auto flex-1">
+          <div className="p-5">
             {/* Theme Presets Section */}
             <section className="mb-8">
-              <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
+              <h3 className="text-lg font-semibold mb-5 text-[hsl(var(--foreground))]">
                 Theme Presets
               </h3>
               
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {themePresets.map(preset => (
                   <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
-                    <div className="flex-shrink-0 w-16 h-16 flex items-center justify-center">
+                    <div className="flex-shrink-0 mr-4">
                       <div 
                         className={`w-10 h-10 rounded-full border-2 ${
                           themeId === preset.id 
@@ -203,13 +197,13 @@ const AccessibilityOverlay = () => {
                         style={{ backgroundColor: preset.previewColor }}
                       />
                     </div>
-                    <div className="ml-4 flex-grow">
+                    <div className="flex-grow">
                       <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name} Preset</h4>
                       <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto pl-2">
                       <button
-                        className={`px-4 py-2 rounded-full text-sm font-medium ${
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium ${
                           themeId === preset.id
                             ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
                             : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]'
@@ -223,33 +217,36 @@ const AccessibilityOverlay = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* Placeholder for more themes */}
+              <div className="mt-6 p-4 bg-[hsl(var(--muted))/0.5] rounded-lg">
+                <p className="text-[hsl(var(--muted-foreground))] text-sm">
+                  More theme presets coming soon. Check back for updates!
+                </p>
+              </div>
             </section>
             
             {/* Accessibility Presets Section */}
             <section>
-              <h3 className="text-xl font-semibold mb-6 text-[hsl(var(--foreground))]">
+              <h3 className="text-lg font-semibold mb-5 text-[hsl(var(--foreground))]">
                 Accessibility Presets
               </h3>
               
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {accessibilityPresets.map(preset => (
                   <div key={preset.id} className="flex items-center border-b border-[hsl(var(--border))] pb-4">
-                    <div className="flex-shrink-0 w-20">
-                      <div className={`relative inline-flex h-8 items-center rounded-full border-2 transition-colors ${preset.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
+                    <div className="flex-shrink-0 w-14">
+                      <div className={`relative inline-flex h-7 w-12 items-center rounded-full border transition-colors ${preset.enabled ? 'bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))]' : 'bg-[hsl(var(--muted))] border-[hsl(var(--border))]'}`}>
                         <button
                           type="button"
-                          className={`border-2 duration-100 absolute ${preset.enabled ? 'bg-white border-[hsl(var(--sidebar-primary))] translate-x-10' : 'bg-white border-[hsl(var(--border))] translate-x-0'} h-7 w-10 rounded-full transition-transform`}
+                          className={`absolute inset-0.5 aspect-square rounded-full bg-white transition ${
+                            preset.enabled ? 'translate-x-5' : 'translate-x-0'
+                          }`}
                           onClick={() => togglePreset(preset.id)}
                         />
-                        <span className={`absolute ${preset.enabled ? 'left-2 opacity-0' : 'left-2 opacity-100'} text-xs font-medium transition-opacity`}>
-                          OFF
-                        </span>
-                        <span className={`absolute ${preset.enabled ? 'right-2 opacity-100' : 'right-2 opacity-0'} text-xs font-medium transition-opacity`}>
-                          ON
-                        </span>
                       </div>
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-2">
                       <h4 className="font-medium text-[hsl(var(--foreground))]">{preset.name}</h4>
                       <p className="text-[hsl(var(--muted-foreground))] text-sm">{preset.description}</p>
                     </div>
@@ -259,11 +256,10 @@ const AccessibilityOverlay = () => {
             </section>
           </div>
           
-          <div className="p-4 bg-[hsl(var(--sidebar-primary))] text-center text-[hsl(var(--sidebar-primary-foreground))]">
-            <div className="flex items-center justify-center">
-              <span className="mr-2">Theme System By</span>
-              <strong className="font-bold">Your Brand Name</strong>
-            </div>
+          <div className="p-4 bg-[hsl(var(--sidebar-primary))] text-center text-sm text-[hsl(var(--sidebar-primary-foreground))]">
+            <span className="mr-1">Theme System By</span>
+            <strong className="font-bold">Your Brand Name</strong>
+            <p className="text-xs mt-1 opacity-80">Press ESC to close this panel</p>
           </div>
         </div>
       </div>

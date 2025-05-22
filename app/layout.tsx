@@ -80,9 +80,10 @@ export default function RootLayout({
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
+        {/* Only preconnect to Google Fonts - fonts will be loaded dynamically by theme system */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Playfair+Display:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+        {/* REMOVED: Hardcoded Google Fonts link - fonts now loaded dynamically by theme */}
       </head>
       <body className={`min-h-screen font-[var(--font-sans)] ${
         isDarkMode 

@@ -1,9 +1,10 @@
+// components/theme/_components/ThemeSelector.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/app/provider';
-import ThemeToggle from './ThemeToggle';
+import AccessibilityIcon from '@/assets/logos/asesablity.svg';  // ← your new SVG
 import ThemePresetCard from './ThemePresetCard';
 import AccessibilityToggle from './AccessibilityToggle';
 import ThemeColorMode from './ThemeColorMode';
@@ -25,101 +26,73 @@ const ThemeSelector: React.FC = () => {
   const { themeType, toggleTheme, themeId, setThemeId, availableThemes, getTheme } = useTheme();
   
   const [accessibilityPresets, setAccessibilityPresets] = useState<AccessibilityPreset[]>([
-    {
-      id: 'seizure',
-      name: 'Seizure Safe Preset',
-      description: 'Clear flashes & reduces color',
-      enabled: false
-    },
-    {
-      id: 'vision',
-      name: 'Vision Impaired Preset',
-      description: 'Enhances website\'s visuals',
-      enabled: false
-    },
-    {
-      id: 'adhd',
-      name: 'ADHD Friendly Preset',
-      description: 'More focus & fewer distractions',
-      enabled: false
-    }
+    { id: 'seizure', name: 'Seizure Safe Preset', description: 'Clear flashes & reduces color', enabled: false },
+    { id: 'vision',  name: 'Vision Impaired Preset', description: 'Enhances website\'s visuals', enabled: false },
+    { id: 'adhd',    name: 'ADHD Friendly Preset', description: 'More focus & fewer distractions', enabled: false }
   ]);
   
-  // Generate theme presets from available themes
   const [themePresets, setThemePresets] = useState<any[]>([]);
   
-  // Effect for ESC key to close overlay
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false);
-      }
+      if (e.key === 'Escape' && isOpen) setIsOpen(false);
     };
-    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
   
-  // Lock body scroll when overlay is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
   
   useEffect(() => {
-    // Load theme presets when component mounts
-    const loadedThemes = availableThemes.map(id => {
+    const loaded = availableThemes.map(id => {
       const theme = getTheme();
       return {
         id,
-        name: id.charAt(0).toUpperCase() + id.slice(1), // Capitalize first letter
+        name: id.charAt(0).toUpperCase() + id.slice(1),
         description: theme.description || `${id} theme preset`,
         previewColor: theme.previewColor
       };
     });
-    setThemePresets(loadedThemes);
+    setThemePresets(loaded);
   }, [availableThemes, getTheme]);
 
   const resetSettings = () => {
-    // Reset theme to default preset
     setThemeId('default');
-    
-    // Reset dark/light mode based on system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       if (themeType !== 'dark') toggleTheme();
     } else {
       if (themeType !== 'light') toggleTheme();
     }
-    
-    // Reset accessibility presets
-    setAccessibilityPresets(accessibilityPresets.map(preset => ({ ...preset, enabled: false })));
+    setAccessibilityPresets(accessibilityPresets.map(p => ({ ...p, enabled: false })));
   };
 
   const togglePreset = (id: string) => {
-    setAccessibilityPresets(accessibilityPresets.map(preset => 
-      preset.id === id ? { ...preset, enabled: !preset.enabled } : preset
+    setAccessibilityPresets(accessibilityPresets.map(p =>
+      p.id === id ? { ...p, enabled: !p.enabled } : p
     ));
   };
 
-  const toggleOverlay = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleOverlay = () => setIsOpen(o => !o);
 
-  // Click outside to close
   const handleOutsideClick = (e: React.MouseEvent) => {
-    if (overlayRef.current && e.target === overlayRef.current) {
-      setIsOpen(false);
-    }
+    if (overlayRef.current && e.target === overlayRef.current) setIsOpen(false);
   };
 
+  // ← TRIGGER BUTTON WHEN CLOSED
   if (!isOpen) {
-    return <ThemeToggle onClick={toggleOverlay} />;
+    return (
+      <button
+        type="button"
+        className="theme-selector__trigger"
+        onClick={toggleOverlay}
+        aria-label="Open accessibility & theme panel"
+      >
+        <AccessibilityIcon className="theme-selector__trigger-icon" />
+      </button>
+    );
   }
 
   return (
@@ -147,7 +120,6 @@ const ThemeSelector: React.FC = () => {
             mode={themeType as 'light' | 'dark'} 
             onToggle={toggleTheme} 
           />
-          
           <button
             onClick={resetSettings}
             className="theme-selector__control-button"
@@ -162,10 +134,7 @@ const ThemeSelector: React.FC = () => {
         <div className="theme-selector__content">
           {/* Theme Presets Section */}
           <section className="theme-selector__section">
-            <h3 className="theme-selector__section-title">
-              Theme Presets
-            </h3>
-            
+            <h3 className="theme-selector__section-title">Theme Presets</h3>
             <div>
               {themePresets.map(preset => (
                 <ThemePresetCard
@@ -178,8 +147,6 @@ const ThemeSelector: React.FC = () => {
                   onApply={setThemeId}
                 />
               ))}
-              
-              {/* Placeholder for more themes */}
               <div className="theme-presets-placeholder">
                 <p className="theme-presets-placeholder__text">
                   More theme presets coming soon. Check back for updates!
@@ -190,10 +157,7 @@ const ThemeSelector: React.FC = () => {
           
           {/* Accessibility Presets Section */}
           <section className="theme-selector__section">
-            <h3 className="theme-selector__section-title">
-              Accessibility Presets
-            </h3>
-            
+            <h3 className="theme-selector__section-title">Accessibility Presets</h3>
             <div>
               {accessibilityPresets.map(preset => (
                 <AccessibilityToggle

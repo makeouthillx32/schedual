@@ -3,7 +3,6 @@
 
 import React from 'react';
 import './theme.scss';
-import AccessibilityIcon from '@/assets/logos/asesablity.svg';
 
 interface ThemeToggleProps {
   onClick: () => void;
@@ -19,7 +18,11 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ onClick }) => {
       className="theme-toggle"
       aria-label="Open accessibility and theme settings"
     >
-      <AccessibilityIcon className="theme-toggle__icon" />
+      <img
+        src="/images/icon/asesablity.svg"
+        alt="Accessibility settings"
+        className="theme-toggle__icon"
+      />
     </button>
   );
 };

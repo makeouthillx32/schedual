@@ -49,13 +49,14 @@
 // Mobile
 @media (max-width: 480px) {
   .accessibility-toggle-btn {
-    bottom: 5rem;
-    width: 4rem;               // 64px - much bigger
-    height: 4rem;              // 64px
-    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3)); // Stronger shadow for visibility
+    bottom: 1rem;              // Normal bottom position
+    right: 1rem;
+    width: 1.75rem;            // 28px - much smaller
+    height: 1.75rem;           // 28px
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)); // Small shadow
     
     &__icon {
-      transform: scale(2.8);   // Scale up more on mobile
+      transform: scale(2.2);   // Slightly less scale
     }
   }
 }

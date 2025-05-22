@@ -5,8 +5,8 @@
   bottom: 1rem;
   right: 1rem;
   z-index: 50;
-  width: 1.25rem;              // Much smaller: 20px
-  height: 1.25rem;             // Much smaller: 20px
+  width: 2.5rem;               // 40px - good desktop size
+  height: 2.5rem;              // 40px
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
@@ -37,8 +37,8 @@
   .accessibility-toggle-btn {
     z-index: 9999;
     bottom: 4rem;
-    width: 1rem;               // Tiny: 16px
-    height: 1rem;              // Tiny: 16px
+    width: 2.75rem;            // 44px - bigger for touch
+    height: 2.75rem;           // 44px
     
     &__icon {
       transform: scale(2.3);
@@ -50,11 +50,12 @@
 @media (max-width: 480px) {
   .accessibility-toggle-btn {
     bottom: 5rem;
-    width: 0.875rem;           // Super tiny: 14px
-    height: 0.875rem;          // Super tiny: 14px
+    width: 4rem;               // 64px - much bigger
+    height: 4rem;              // 64px
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3)); // Stronger shadow for visibility
     
     &__icon {
-      transform: scale(2.1);
+      transform: scale(2.8);   // Scale up more on mobile
     }
   }
 }

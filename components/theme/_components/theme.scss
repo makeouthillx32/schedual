@@ -30,35 +30,32 @@
   box-shadow: var(--theme-box-shadow);
 }
 
-// --------------------------------------
-// Theme Toggle Button (floating button)
-// --------------------------------------
-.theme-toggle {
+.theme-selector__trigger {
   position: fixed;
   bottom: 1rem;
   left: 1rem;
-  z-index: 50;
+  z-index: 60;
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
   background-color: hsl(var(--sidebar-primary));
   color: hsl(var(--sidebar-primary-foreground));
-  @include flex-center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-shadow: var(--theme-box-shadow);
   border: var(--theme-stroke-width) solid hsla(var(--sidebar-primary-foreground), 0.2);
   cursor: pointer;
-  transition: all var(--theme-transition-speed) ease;
+  transition: transform var(--theme-transition-speed) ease;
 
-  &:hover, &:focus {
+  &:hover {
     transform: scale(1.05);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
-    outline: none;
   }
+}
 
-  &:focus-visible {
-    box-shadow: 0 0 0 3px hsl(var(--sidebar-primary-foreground)),
-                0 10px 40px rgba(0, 0, 0, 0.2);
-  }
+.theme-selector__trigger-icon {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 // --------------------------------------

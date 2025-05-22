@@ -10,7 +10,7 @@ interface ThemeToggleProps {
 }
 
 /**
- * ThemeToggle - The floating button that opens the accessibility & theme overlay
+ * ThemeToggle - The floating button that opens the accessibility overlay
  */
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ onClick }) => {
   return (

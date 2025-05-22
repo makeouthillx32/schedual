@@ -37,28 +37,16 @@
   position: fixed;
   bottom: 1rem;
   left: 1rem;
-  z-index: 50;
+  z-index: 50;                 // desktop default
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
-  background-color: hsl(var(--sidebar-primary));
-  color: hsl(var(--sidebar-primary-foreground));
+  background-color: transparent;  // remove since SVG has backdrop
   @include flex-center;
   box-shadow: var(--theme-box-shadow);
   border: var(--theme-stroke-width) solid hsla(var(--sidebar-primary-foreground), 0.2);
   cursor: pointer;
   transition: all var(--theme-transition-speed) ease;
-
-  &:hover, &:focus {
-    transform: scale(1.05);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
-    outline: none;
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 3px hsl(var(--sidebar-primary-foreground)),
-                0 10px 40px rgba(0, 0, 0, 0.2);
-  }
 
   &__icon {
     width: 1.5rem;
@@ -66,6 +54,8 @@
     display: block;
   }
 }
+
+
 
 // --------------------------------------
 // Icon sizing for the new SVG
@@ -422,66 +412,72 @@
       max-width: 68%;
       max-height: 80vh;
     }
-    
+
     &__controls {
       flex-direction: column;
     }
-    
+
     &__section {
       padding: 1rem;
     }
-    
+
     &__section-title {
       font-size: 1rem;
     }
   }
-  
+
   .theme-preset-card {
     flex-wrap: wrap;
-    
+
     &__actions {
       margin-top: 0.5rem;
       width: 100%;
       display: flex;
       justify-content: flex-end;
     }
-    
+
     &__swatch {
       width: 2rem;
       height: 2rem;
     }
-    
+
     &__title {
       font-size: 0.9rem;
     }
-    
+
     &__description {
       font-size: 0.8rem;
     }
   }
-  
+
   .accessibility-toggle {
     &__track {
       width: 2.5rem;
       height: 1.5rem;
     }
-    
+
     &__thumb {
       width: 1.25rem;
       height: 1.25rem;
-      
+
       &--enabled {
         transform: translateX(1rem);
       }
     }
-    
+
     &__title {
       font-size: 0.9rem;
     }
-    
+
     &__description {
       font-size: 0.8rem;
     }
+  }
+
+  // <-- ensure your floating button is on top and nudged up on tablet/mobile
+  .theme-toggle {
+    z-index: 9999;
+    bottom: 4rem;
   }
 }
 
@@ -491,19 +487,24 @@
     &__container {
       max-width: 90%;
     }
-    
+
     &__title {
       font-size: 1.1rem;
     }
-    
+
     &__control-button {
       padding: 0.4rem 0.5rem;
       font-size: 0.8rem;
-      
+
       svg {
         width: 1rem;
         height: 1rem;
       }
     }
+  }
+
+  // push it even higher on very small screens if needed
+  .theme-toggle {
+    bottom: 5rem;
   }
 }

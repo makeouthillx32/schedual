@@ -3,25 +3,23 @@ import type { Theme } from '@/types/theme';
 import { defaultFonts } from './fonts';
 import { defaultRadii, defaultShadows, defaultTypography, getAllThemeVariables } from './utils';
 
+const exactDefaultFonts = {
+  sans: 'Plus Jakarta Sans, sans-serif',
+  serif: 'Source Serif 4, serif',
+  mono: 'JetBrains Mono, monospace',
+};
+
 const defaultTheme: Theme = {
   id: 'default',
   name: 'Default',
   description: 'The default application theme',
   previewColor: 'hsl(139.66 52.73% 43.14%)',
-  
-  // Font configuration
-  fonts: defaultFonts,
-  
-  // Border radius
+  fonts: exactDefaultFonts,
   radii: defaultRadii,
-  
-  // Shadows
   shadows: defaultShadows,
-  
-  // Typography
-  typography: defaultTypography,
-  
-  // Light mode variables (from your current CSS)
+  typography: {
+    trackingNormal: '0.5px',
+  },
   light: {
     '--background': '240 9.09% 97.84%',
     '--foreground': '0 0% 20%',
@@ -55,12 +53,20 @@ const defaultTheme: Theme = {
     '--sidebar-accent-foreground': '0 0% 20%',
     '--sidebar-border': '0 0% 83.14%',
     '--sidebar-ring': '139.66 52.73% 43.14%',
-    
-    // Add font, radii, shadow, and typography variables
-    ...getAllThemeVariables(defaultFonts, defaultRadii, defaultShadows, defaultTypography),
+    '--font-sans': 'Plus Jakarta Sans, sans-serif',
+    '--font-serif': 'Source Serif 4, serif',
+    '--font-mono': 'JetBrains Mono, monospace',
+    '--radius': '0.5rem',
+    '--shadow-2xs': '0 1px 3px 0px hsl(0 0% 0% / 0.05)',
+    '--shadow-xs': '0 1px 3px 0px hsl(0 0% 0% / 0.05)',
+    '--shadow-sm': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-md': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-lg': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-xl': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-2xl': '0 1px 3px 0px hsl(0 0% 0% / 0.25)',
+    '--tracking-normal': '0.5px',
   },
-  
-  // Dark mode variables (from your current CSS)
   dark: {
     '--background': '220.00 14.75% 11.96%',
     '--foreground': '0 0% 89.80%',
@@ -94,9 +100,19 @@ const defaultTheme: Theme = {
     '--sidebar-accent-foreground': '0 0% 89.80%',
     '--sidebar-border': '0 0% 26.67%',
     '--sidebar-ring': '139.66 52.73% 43.14%',
-    
-    // Add font, radii, shadow, and typography variables
-    ...getAllThemeVariables(defaultFonts, defaultRadii, defaultShadows, defaultTypography),
+    '--font-sans': 'Plus Jakarta Sans, sans-serif',
+    '--font-serif': 'Source Serif 4, serif',
+    '--font-mono': 'JetBrains Mono, monospace',
+    '--radius': '0.5rem',
+    '--shadow-2xs': '0 1px 3px 0px hsl(0 0% 0% / 0.05)',
+    '--shadow-xs': '0 1px 3px 0px hsl(0 0% 0% / 0.05)',
+    '--shadow-sm': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-md': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-lg': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-xl': '0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10)',
+    '--shadow-2xl': '0 1px 3px 0px hsl(0 0% 0% / 0.25)',
+    '--tracking-normal': '0.5px',
   }
 };
 

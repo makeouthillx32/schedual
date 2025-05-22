@@ -1,38 +1,33 @@
 // themes/monochrome.ts
 import type { Theme } from '@/types/theme';
-import { defaultFonts } from './fonts';
-import { defaultRadii, defaultShadows, defaultTypography, getAllThemeVariables } from './utils';
 
-// Monochrome theme based on your provided CSS variables
 const monochromeTheme: Theme = {
   id: 'monochrome',
   name: 'Monochrome',
   description: 'A clean black and white theme with Architects Daughter font',
   previewColor: 'hsl(0 0% 20%)',
-  
-  // Font configuration (with Architects Daughter as sans-serif)
   fonts: {
     sans: 'Architects Daughter, sans-serif',
     serif: '"Times New Roman", Times, serif',
     mono: '"Courier New", Courier, monospace',
   },
-  
-  // Border radius
   radii: {
     radius: '0.625rem',
   },
-  
-  // Shadows
-  shadows: defaultShadows,
-  
-  // Typography
+  shadows: {
+    shadow2xs: '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    shadowXs: '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    shadowSm: '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    shadow: '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    shadowMd: '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 2px 4px -1px hsl(0 0% 0% / 0.03)',
+    shadowLg: '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 4px 6px -1px hsl(0 0% 0% / 0.03)',
+    shadowXl: '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 8px 10px -1px hsl(0 0% 0% / 0.03)',
+    shadow2xl: '1px 4px 5px 0px hsl(0 0% 0% / 0.07)',
+  },
   typography: {
     trackingNormal: '0.5px',
   },
-  
-  // Light mode variables
   light: {
-    // Base colors
     '--background': '0 0% 97.65%',
     '--foreground': '0 0% 22.75%',
     '--card': '0 0% 100%',
@@ -52,15 +47,11 @@ const monochromeTheme: Theme = {
     '--border': '0 0.87% 45.10%',
     '--input': '0 0% 100%',
     '--ring': '0 0% 62.75%',
-    
-    // Chart colors
     '--chart-1': '0 0% 20%',
     '--chart-2': '0 0% 33.33%',
     '--chart-3': '0 0% 46.67%',
     '--chart-4': '0 0% 60%',
     '--chart-5': '0 0% 73.33%',
-    
-    // Sidebar
     '--sidebar': '0 0% 94.12%',
     '--sidebar-foreground': '0 0% 22.75%',
     '--sidebar-primary': '0 0% 37.65%',
@@ -69,23 +60,21 @@ const monochromeTheme: Theme = {
     '--sidebar-accent-foreground': '14.21 25.68% 29.02%',
     '--sidebar-border': '0 0% 75.29%',
     '--sidebar-ring': '0 0% 62.75%',
-    
-    // Add font, radii, shadow, and typography variables
-    ...getAllThemeVariables(
-      {
-        sans: 'Architects Daughter, sans-serif',
-        serif: '"Times New Roman", Times, serif',
-        mono: '"Courier New", Courier, monospace',
-      },
-      { radius: '0.625rem' },
-      defaultShadows,
-      { trackingNormal: '0.5px' }
-    ),
+    '--font-sans': 'Architects Daughter, sans-serif',
+    '--font-serif': '"Times New Roman", Times, serif',
+    '--font-mono': '"Courier New", Courier, monospace',
+    '--radius': '0.625rem',
+    '--shadow-2xs': '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    '--shadow-xs': '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    '--shadow-sm': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-md': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 2px 4px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-lg': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 4px 6px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-xl': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 8px 10px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-2xl': '1px 4px 5px 0px hsl(0 0% 0% / 0.07)',
+    '--tracking-normal': '0.5px',
   },
-  
-  // Dark mode variables
   dark: {
-    // Base colors
     '--background': '0 0% 16.86%',
     '--foreground': '0 0% 86.27%',
     '--card': '0 0% 20%',
@@ -105,15 +94,11 @@ const monochromeTheme: Theme = {
     '--border': '0 0% 30.98%',
     '--input': '0 0% 20%',
     '--ring': '0 0% 75.29%',
-    
-    // Chart colors
     '--chart-1': '0 0% 93.73%',
     '--chart-2': '0 0% 81.57%',
     '--chart-3': '0 0% 69.02%',
     '--chart-4': '0 0% 56.47%',
     '--chart-5': '0 0% 43.92%',
-    
-    // Sidebar
     '--sidebar': '0 0% 12.94%',
     '--sidebar-foreground': '0 0% 86.27%',
     '--sidebar-primary': '0 0% 69.02%',
@@ -122,18 +107,19 @@ const monochromeTheme: Theme = {
     '--sidebar-accent-foreground': '0 0% 20%',
     '--sidebar-border': '0 0% 30.98%',
     '--sidebar-ring': '0 0% 75.29%',
-    
-    // Add font, radii, shadow, and typography variables
-    ...getAllThemeVariables(
-      {
-        sans: 'Architects Daughter, sans-serif',
-        serif: 'Georgia, serif',
-        mono: '"Fira Code", "Courier New", monospace',
-      },
-      { radius: '0.625rem' },
-      defaultShadows,
-      { trackingNormal: '0.5px' }
-    ),
+    '--font-sans': 'Architects Daughter, sans-serif',
+    '--font-serif': 'Georgia, serif',
+    '--font-mono': '"Fira Code", "Courier New", monospace',
+    '--radius': '0.625rem',
+    '--shadow-2xs': '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    '--shadow-xs': '1px 4px 5px 0px hsl(0 0% 0% / 0.01)',
+    '--shadow-sm': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 1px 2px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-md': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 2px 4px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-lg': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 4px 6px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-xl': '1px 4px 5px 0px hsl(0 0% 0% / 0.03), 1px 8px 10px -1px hsl(0 0% 0% / 0.03)',
+    '--shadow-2xl': '1px 4px 5px 0px hsl(0 0% 0% / 0.07)',
+    '--tracking-normal': '0.5px',
   }
 };
 

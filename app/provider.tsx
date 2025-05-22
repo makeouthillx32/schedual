@@ -79,6 +79,56 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Theme inspector function for console logging
+function logThemeInfo(themeId: string, themeType: "light" | "dark") {
+  if (typeof window === "undefined") return;
+  
+  const root = document.documentElement;
+  const getVar = (name: string) => getComputedStyle(root).getPropertyValue(name).trim();
+  
+  // Get key CSS variables
+  const fontSans = getVar('--font-sans');
+  const background = getVar('--background');
+  const primary = getVar('--primary');
+  const radius = getVar('--radius');
+  
+  // Format a nice console output with styling
+  console.log(
+    "%cTheme Inspector%c\n\n" + 
+    "Theme ID: %c" + themeId + "%c\n" +
+    "Theme Mode: %c" + themeType + "%c\n\n" +
+    "Font Sans: %c" + fontSans + "%c\n" +
+    "Background: %c" + background + "%c\n" +
+    "Primary: %c" + primary + "%c\n" +
+    "Border Radius: %c" + radius + "%c\n",
+    "font-size: 16px; font-weight: bold; color: #3b82f6;", "", 
+    "color: #10b981; font-weight: bold", "",
+    themeType === "dark" ? "color: #6366f1; font-weight: bold" : "color: #eab308; font-weight: bold", "",
+    "color: #f97316;", "",
+    "color: #f97316;", "",
+    "color: #f97316;", "",
+    "color: #f97316;", ""
+  );
+  
+  // Display color swatches for key colors
+  console.log("%cCurrent Theme Colors", "font-size: 14px; font-weight: bold;");
+  
+  const colorVars = [
+    'background', 'foreground', 'card', 'card-foreground',
+    'primary', 'primary-foreground', 'secondary', 'secondary-foreground',
+    'muted', 'muted-foreground', 'accent', 'accent-foreground'
+  ];
+  
+  colorVars.forEach(name => {
+    const value = getVar(`--${name}`);
+    console.log(
+      `%c    %c --${name}: ${value}`,
+      `background: hsl(${value}); padding: 10px; margin-right: 5px; border: 1px solid #ccc;`,
+      "font-family: monospace;"
+    );
+  });
+}
+
 export const Providers: React.FC<{
   children: React.ReactNode;
   session?: Session | null;
@@ -102,6 +152,11 @@ export const Providers: React.FC<{
       setThemeIdState(id);
       localStorage.setItem("themeId", id);
       setCookie("themeId", id, { path: "/", maxAge: 31536000 });
+      
+      // Log theme change to console
+      if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+        console.log(`Theme changed to: ${id}`);
+      }
     }
   };
 
@@ -191,6 +246,11 @@ export const Providers: React.FC<{
       document.head.appendChild(metaTag);
     }
     metaTag.setAttribute("content", themeColor);
+    
+    // Log theme details to console (only in development)
+    if (process.env.NODE_ENV === "development") {
+      logThemeInfo(themeId, themeType);
+    }
   }, [themeType, themeId, mounted]);
 
   const toggleTheme = () => {

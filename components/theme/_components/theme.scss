@@ -29,41 +29,6 @@
   border: var(--theme-stroke-width) solid hsla(var(--border), 0.6);
   box-shadow: var(--theme-box-shadow);
 }
-
-// --------------------------------------
-// Theme Toggle Button (floating button)
-// --------------------------------------
-.theme-toggle {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 50;                 // desktop default
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background-color: transparent;  // remove since SVG has backdrop
-  @include flex-center;
-  box-shadow: var(--theme-box-shadow);
-  border: var(--theme-stroke-width) solid hsla(var(--sidebar-primary-foreground), 0.2);
-  cursor: pointer;
-  transition: all var(--theme-transition-speed) ease;
-
-  &__icon {
-    width: 1.5rem;
-    height: 1.5rem;
-    display: block;
-  }
-}
-
-
-
-// --------------------------------------
-// Icon sizing for the new SVG
-// --------------------------------------
-.theme-toggle__icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
 // --------------------------------------
 // Theme Selector Overlay
 // --------------------------------------

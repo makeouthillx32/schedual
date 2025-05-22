@@ -2,26 +2,26 @@
 'use client';
 
 import React from 'react';
-import './theme.scss';
+import './button.scss';
 
 interface ThemeToggleProps {
   onClick: () => void;
 }
 
 /**
- * ThemeToggle - The floating button that opens the accessibility overlay
+ * ThemeToggle - The floating accessibility icon button
  */
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ onClick }) => {
   return (
     <button 
       onClick={onClick}
-      className="theme-toggle"
+      className="accessibility-toggle-btn"
       aria-label="Open accessibility and theme settings"
     >
       <img
         src="/images/icon/asesablity.svg"
         alt="Accessibility settings"
-        className="theme-toggle__icon"
+        className="accessibility-toggle-btn__icon"
       />
     </button>
   );

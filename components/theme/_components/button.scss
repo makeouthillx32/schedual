@@ -1,0 +1,60 @@
+// button.scss - Accessibility toggle button styles
+
+.accessibility-toggle-btn {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 50;
+  width: 1.25rem;              // Much smaller: 20px
+  height: 1.25rem;             // Much smaller: 20px
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  padding: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); // Always-on shadow
+  
+  &:hover {
+    transform: scale(1.15);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)); // Bigger shadow on hover
+  }
+  
+  &:active {
+    transform: scale(1.05);
+  }
+  
+  &__icon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    // Scale up to compensate for SVG whitespace
+    transform: scale(2.5);
+  }
+}
+
+// Tablet
+@media (max-width: 768px) {
+  .accessibility-toggle-btn {
+    z-index: 9999;
+    bottom: 4rem;
+    width: 1rem;               // Tiny: 16px
+    height: 1rem;              // Tiny: 16px
+    
+    &__icon {
+      transform: scale(2.3);
+    }
+  }
+}
+
+// Mobile
+@media (max-width: 480px) {
+  .accessibility-toggle-btn {
+    bottom: 5rem;
+    width: 0.875rem;           // Super tiny: 14px
+    height: 0.875rem;          // Super tiny: 14px
+    
+    &__icon {
+      transform: scale(2.1);
+    }
+  }
+}

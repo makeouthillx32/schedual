@@ -1,62 +1,52 @@
-// button.scss - Accessibility toggle button styles
+// components/theme/_components/button.scss
 
 .accessibility-toggle-btn {
   position: fixed;
   bottom: 1rem;
   right: 1rem;
-  z-index: 50;
-  width: 2.5rem;               // 40px - good desktop size
-  height: 2.5rem;              // 40px
+  z-index: 9999;
+  width: 3rem;            // 48px
+  height: 3rem;           // 48px
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  background: none;
   padding: 0;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); // Always-on shadow
-  
+  background: none;
+  border: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.2s ease, filter 0.2s ease;
+
   &:hover {
-    transform: scale(1.15);
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)); // Bigger shadow on hover
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   }
-  
+
   &:active {
     transform: scale(1.05);
   }
-  
+
   &__icon {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    // Scale up to compensate for SVG whitespace
-    transform: scale(2.5);
+    display: block;
+    /* remove transform – let the SVG scale crisply */
+    transform: none;
   }
 }
 
-// Tablet
+// Tablet & up
 @media (max-width: 768px) {
   .accessibility-toggle-btn {
-    z-index: 9999;
-    bottom: 4rem;
-    width: 2.75rem;            // 44px - bigger for touch
-    height: 2.75rem;           // 44px
-    
-    &__icon {
-      transform: scale(2.3);
-    }
+    bottom: 4rem;        // lift above nav bar
+    width: 3.5rem;       // 56px
+    height: 3.5rem;      // 56px
   }
 }
 
 // Mobile
 @media (max-width: 480px) {
   .accessibility-toggle-btn {
-    bottom: 1rem;              // Normal bottom position
+    bottom: 1rem;
     right: 1rem;
-    width: 1.75rem;            // 28px - much smaller
-    height: 1.75rem;           // 28px
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)); // Small shadow
-    
-    &__icon {
-      transform: scale(2.2);   // Slightly less scale
-    }
+    width: 3rem;         // 48px
+    height: 3rem;        // 48px
   }
 }

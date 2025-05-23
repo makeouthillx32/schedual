@@ -53,7 +53,7 @@ $header-height: 70px; // Define header height for consistent spacing
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 70px); // Subtract header height
   width: 100%;
   overflow: hidden;
   position: relative;
@@ -65,16 +65,31 @@ $header-height: 70px; // Define header height for consistent spacing
   }
 }
 
-// Main chat content area
-.chat-content {
-  flex: 1;
+// Mobile conversation list (full page)
+.mobile-conversation-list {
+  width: 100%;
+  height: calc(100vh - 70px); // Subtract header height
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  position: relative;
-  height: 100%;
-  overflow: hidden; // Important: prevent content from overflowing
+  background-color: var(--card);
+  
+  @media (min-width: $breakpoint-md) {
+    display: none; // Hide on desktop
+  }
+}
+
+// Mobile chat view (full page)
+.mobile-chat-view {
+  width: 100%;
+  height: calc(100vh - 70px); // Subtract header height
+  display: flex;
+  flex-direction: column;
   background-color: var(--background);
+  position: relative;
+  
+  @media (min-width: $breakpoint-md) {
+    display: none; // Hide on desktop
+  }
 }
 
 // =======================================

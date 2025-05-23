@@ -5,6 +5,7 @@ $breakpoint-sm: 640px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
 $header-height: 70px; // Define header height for consistent spacing
+
 // =======================================
 // RIGHT SIDEBAR COMPONENT
 // =======================================
@@ -53,5 +54,21 @@ $header-height: 70px; // Define header height for consistent spacing
   .p-4 {
     padding: 16px;
     padding-top: max(16px, env(safe-area-inset-top));
+  }
+}
+
+// Target the actual class used in the component
+.chat-right-sidebar-content {
+  background-color: var(--card) !important;
+  color: var(--card-foreground) !important;
+  
+  // Override any Tailwind inline styles
+  * {
+    color: inherit;
+  }
+  
+  // Ensure all sections inherit proper background
+  > div {
+    background-color: inherit;
   }
 }

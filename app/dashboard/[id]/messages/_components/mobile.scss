@@ -65,34 +65,18 @@ $header-height: 70px; // Define header height for consistent spacing
   }
 }
 
-// Mobile conversation list (full page)
-.mobile-conversation-list {
-  width: 100%;
-  height: calc(100vh - 90px); // Increased from 70px to 90px
+// Main chat content area
+.chat-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--card);
-  margin-top: 70px; // Keep this as is
-  
-  @media (min-width: $breakpoint-md) {
-    display: none; // Hide on desktop
-  }
+  min-width: 0;
+  position: relative;
+  height: 100%;
+  overflow: hidden; // Important: prevent content from overflowing
+  background-color: var(--background);
 }
 
-// Mobile chat view (full page)
-.mobile-chat-view {
-  width: 100%;
-  height: calc(100vh - 90px); // Increased from 70px to 90px
-  display: flex;
-  flex-direction: column;
-  background-color: var(--background);
-  position: relative;
-  margin-top: 70px; // Keep this as is
-  
-  @media (min-width: $breakpoint-md) {
-    display: none; // Hide on desktop
-  }
-}
 // =======================================
 // MOBILE-SPECIFIC LAYOUTS
 // =======================================
@@ -100,11 +84,11 @@ $header-height: 70px; // Define header height for consistent spacing
 // Mobile conversation list (full page)
 .mobile-conversation-list {
   width: 100%;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 90px);
   display: flex;
   flex-direction: column;
   background-color: var(--card);
-  margin-top: 70px; // Push down by header height
+  margin-top: 70px;
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
@@ -114,12 +98,12 @@ $header-height: 70px; // Define header height for consistent spacing
 // Mobile chat view (full page)
 .mobile-chat-view {
   width: 100%;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 90px);
   display: flex;
   flex-direction: column;
   background-color: var(--background);
   position: relative;
-  margin-top: 70px; // Push down by header height
+  margin-top: 70px;
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
@@ -166,7 +150,6 @@ $header-height: 70px; // Define header height for consistent spacing
     padding-top: env(safe-area-inset-top);
   }
 }
-
 // =======================================
 // LEFT SIDEBAR COMPONENT
 // =======================================

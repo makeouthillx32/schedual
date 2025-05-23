@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { UploadIcon } from "@/assets/icons";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
-import { supabase } from "@/lib/supabaseClient";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 
 export function UploadPhotoForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
+  const { supabaseClient } = useSessionContext();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,8 +33,10 @@ export function UploadPhotoForm() {
 
     const filePath = `${userId}.png`;
     setUploading(true);
-    await supabase.storage.from("avatars").remove([filePath]);
-    const { error: uploadError } = await supabase.storage
+
+    await supabaseClient.storage.from("avatars").remove([filePath]);
+
+    const { error: uploadError } = await supabaseClient.storage
       .from("avatars")
       .upload(filePath, selectedFile, { upsert: true });
 
@@ -45,7 +48,8 @@ export function UploadPhotoForm() {
 
     const timestamp = Date.now();
     const publicUrl = `https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/${filePath}?t=${timestamp}`;
-    const { error: updateError } = await supabase
+
+    const { error: updateError } = await supabaseClient
       .from("profiles")
       .update({ avatar_url: publicUrl })
       .eq("id", userId);
@@ -71,19 +75,26 @@ export function UploadPhotoForm() {
           className="size-14 rounded-full object-cover shadow-[var(--shadow-xs)]"
           quality={90}
         />
-
         <div>
           <span className="mb-1.5 font-medium text-[hsl(var(--foreground))]">
             Edit your photo
           </span>
           <span className="flex gap-3">
-            <button type="button" className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))]">
+            <button
+              type="button"
+              className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))]"
+              onClick={() => {
+                setSelectedFile(null);
+                setAvatarUrl("");
+              }}
+            >
               Delete
             </button>
             <button
               type="button"
               onClick={handleUpload}
               className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sidebar-primary))]"
+              disabled={uploading}
             >
               {uploading ? "Uploading..." : "Update"}
             </button>
@@ -101,7 +112,6 @@ export function UploadPhotoForm() {
           onChange={handleFileChange}
           disabled={uploading}
         />
-
         <label
           htmlFor="profilePhoto"
           className="flex cursor-pointer flex-col items-center justify-center p-4 sm:py-7.5"
@@ -109,11 +119,9 @@ export function UploadPhotoForm() {
           <div className="flex size-13.5 items-center justify-center rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-[var(--shadow-xs)]">
             <UploadIcon />
           </div>
-
           <p className="mt-2.5 text-body-sm font-medium">
             <span className="text-[hsl(var(--sidebar-primary))]">Click to upload</span> or drag and drop
           </p>
-
           <p className="mt-1 text-body-xs text-[hsl(var(--muted-foreground))]">
             PNG, JPG or GIF format supported.
           </p>

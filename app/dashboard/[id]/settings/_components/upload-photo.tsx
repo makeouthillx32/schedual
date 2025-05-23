@@ -5,9 +5,11 @@ import { UploadIcon } from "@/assets/icons";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import Image from "next/image";
 import { useSessionContext } from "@supabase/auth-helpers-react";
+import toast from "react-hot-toast";
 
 export function UploadPhotoForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
@@ -25,7 +27,13 @@ export function UploadPhotoForm() {
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedFile(e.target.files?.[0] || null);
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setPreviewUrl("");
+    }
   };
 
   const handleUpload = async () => {
@@ -33,6 +41,7 @@ export function UploadPhotoForm() {
 
     const filePath = `${userId}.png`;
     setUploading(true);
+    toast.loading("Uploading avatar...", { id: "avatar" });
 
     await supabaseClient.storage.from("avatars").remove([filePath]);
 
@@ -41,7 +50,7 @@ export function UploadPhotoForm() {
       .upload(filePath, selectedFile, { upsert: true });
 
     if (uploadError) {
-      alert("Upload failed: " + uploadError.message);
+      toast.error("Upload failed: " + uploadError.message, { id: "avatar" });
       setUploading(false);
       return;
     }
@@ -57,9 +66,9 @@ export function UploadPhotoForm() {
     setUploading(false);
 
     if (updateError) {
-      alert("Upload succeeded, but profile update failed: " + updateError.message);
+      toast.error("Uploaded but failed to update profile.", { id: "avatar" });
     } else {
-      alert("Avatar uploaded and profile updated!");
+      toast.success("Avatar updated!", { id: "avatar" });
       location.reload();
     }
   };
@@ -68,7 +77,7 @@ export function UploadPhotoForm() {
     <ShowcaseSection title="Your Photo" className="!p-7">
       <div className="mb-4 flex items-center gap-3">
         <Image
-          src={avatarUrl || "/images/user/user-03.png"}
+          src={previewUrl || avatarUrl || "/images/user/user-03.png"}
           width={55}
           height={55}
           alt="User"
@@ -85,7 +94,7 @@ export function UploadPhotoForm() {
               className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))]"
               onClick={() => {
                 setSelectedFile(null);
-                setAvatarUrl("");
+                setPreviewUrl("");
               }}
             >
               Delete
@@ -93,10 +102,14 @@ export function UploadPhotoForm() {
             <button
               type="button"
               onClick={handleUpload}
-              className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sidebar-primary))]"
-              disabled={uploading}
+              disabled={uploading || !selectedFile}
+              className={`text-body-sm font-semibold px-3 py-1.5 rounded transition ${
+                uploading || !selectedFile
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
-              {uploading ? "Uploading..." : "Update"}
+              {uploading ? "Uploading..." : "Upload"}
             </button>
           </span>
         </div>

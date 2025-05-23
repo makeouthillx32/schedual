@@ -1,63 +1,85 @@
 // app/api/notifications/route.ts
-import { createServerSupabaseClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  // initialize Supabase with incoming request (cookies/session)
-  const supabase = createServerSupabaseClient({ req });
+const API_DISABLED = process.env.NOTIFICATIONS_API_ENABLED === "false";
 
-  // get the logged-in user
+export async function GET() {
+  if (API_DISABLED) {
+    return NextResponse.json(
+      { message: "Notifications temporarily disabled." },
+      { status: 503 }
+    );
+  }
+
+  const supabase = await createClient();
+  
+  // Get authenticated user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
+
   if (userError || !user) {
+    console.error("Auth error in notifications route:", userError);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // fetch the user's role from your profiles table
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  try {
+    // Get user's profile to determine role
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
 
-  if (profileError || !profile?.role) {
-    return NextResponse.json(
-      { error: "Profile role not found" },
-      { status: 404 }
-    );
+    if (profileError) {
+      console.error("Profile error:", profileError);
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    // Role-based column mapping
+    const roleColumnMap: Record<string, string> = {
+      admin1: "role_admin",
+      coachx7: "role_jobcoach", 
+      client7x: "role_client",
+      user0x: "role_anonymous",
+    };
+
+    const roleColumn = roleColumnMap[profile.role];
+
+    // Build query - get notifications targeted to this user specifically OR to their role
+    let query = supabase
+      .from("notifications")
+      .select("id, title, subtitle, image_url, action_url, created_at, receiver_id")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (roleColumn) {
+      // User-specific notifications OR role-based notifications
+      query = query.or(`receiver_id.eq.${user.id},${roleColumn}.is.true`);
+    } else {
+      // Only user-specific notifications if role unknown
+      query = query.eq("receiver_id", user.id);
+    }
+
+    const { data: notifications, error } = await query;
+
+    if (error) {
+      console.error("Database error fetching notifications:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    console.log(`Fetched ${notifications?.length || 0} notifications for user ${user.id} (role: ${profile.role})`);
+    
+    return NextResponse.json({ 
+      notifications: notifications || [],
+      user_id: user.id,
+      user_role: profile.role
+    });
+
+  } catch (error) {
+    console.error("Unexpected error in notifications route:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  // map your profile.role values to the boolean columns on notifications
-  const roleColumnMap = {
-    admin: "role_admin",
-    jobcoach: "role_jobcoach",
-    client: "role_client",
-    user: "role_user",
-  } as const;
-
-  const roleColumn = roleColumnMap[profile.role];
-  if (!roleColumn) {
-    return NextResponse.json({ error: "Unknown role" }, { status: 403 });
-  }
-
-  // pull the latest 10 notifications either sent directly to you
-  // or flagged for your role
-  const { data: notifications, error } = await supabase
-    .from("notifications")
-    .select(
-      "id, title, subtitle, image_url, action_url, created_at"
-    )
-    .or(
-      `receiver_id.eq.${user.id},${roleColumn}.eq.true`
-    )
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ notifications });
 }

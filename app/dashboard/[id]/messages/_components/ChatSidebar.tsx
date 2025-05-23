@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { storage, CACHE_KEYS } from '@/lib/cookieUtils';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRealtime, useRealtimeInsert } from '@/hooks/useRealtimeInsert';
-import './mobile.scss';
+import './ChatRightSidebar.scss';
 
 export interface Participant {
   user_id:      string;

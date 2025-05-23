@@ -74,22 +74,29 @@ export const signUpAction = async (formData: FormData) => {
   }
   
   // Fetch the user's profile to get display_name for notification
-  const { data: profileData } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("display_name, avatar_url")
     .eq("id", data.user.id)
     .single();
 
+  console.log("📧 Profile data fetched:", profileData);
+  console.log("📧 Profile error:", profileError);
+
   // Send notification to admins about the new sign-up
   try {
+    console.log("📧 About to send notification for:", email);
+    
     await sendNotification({
       title: `${profileData?.display_name || email} joined the team!`,
       subtitle: "Tell them welcome!",
       imageUrl: profileData?.avatar_url || "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
       role_admin: true,
     });
+    
+    console.log("📧 Notification sent successfully!");
   } catch (error) {
-    console.error("Failed to send notification:", error);
+    console.error("📧 Failed to send notification:", error);
   }
   
   return encodedRedirect(

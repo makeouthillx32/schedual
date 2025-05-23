@@ -293,16 +293,11 @@ export default function ChatPage() {
           isLoadingRef.current = false;
         }
       }
-   
-      // Keep sidebar visible on mobile when a chat is selected
-      if (isMobile) {
-        setShowSidebar(false);
-      }
     };
 
     fetchMessages();
     
-  }, [selectedChat?.id, isMobile]); 
+  }, [selectedChat?.id]); // Removed isMobile dependency
 
   // 3️⃣ Send new message - FIXED FUNCTION
   const handleSendMessage = async (e) => {
@@ -390,51 +385,47 @@ export default function ChatPage() {
     }
   };
 
-  // Handle chat selection with sidebar toggle
+  // Handle chat selection - simplified for new mobile flow
   const handleSelectChat = (chat) => {
     console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
-    // Keep sidebar visible on desktop, hide on mobile when chat selected
-    if (isMobile) setShowSidebar(false);
     
     toast.success(`Chat opened: ${chat.channel_name || 'New conversation'}`);
   };
 
-  // 4️⃣ If no chat selected, show prompt or sidebar on mobile
+  // Handle back to conversations
+  const handleBackToConversations = () => {
+    console.log("[ChatPage] Returning to conversation list");
+    setSelectedChat(null);
+    setMessages([]);
+  };
+
+  // 4️⃣ Mobile: Show full-page conversation list when no chat selected
   if (!selectedChat) {
     return (
       <div className="chat-container">
-        {/* Mobile sidebar toggle button - always visible */}
-        {isMobile && (
-          <button 
-            className="chat-sidebar-toggle"
-            onClick={() => setShowSidebar(!showSidebar)}
-          >
-            {showSidebar ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        )}
-        
-        <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
-          <ChatSidebar 
-            selectedChat={null} 
-            onSelectChat={handleSelectChat} 
-          />
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center">
-          {isMobile && !showSidebar ? (
-            <div className="text-center p-4">
-              <button 
-                onClick={() => setShowSidebar(true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg"
-              >
-                Select a conversation
-              </button>
+        {/* Desktop: Show sidebar + placeholder */}
+        {!isMobile ? (
+          <>
+            <div className="chat-sidebar">
+              <ChatSidebar 
+                selectedChat={null} 
+                onSelectChat={handleSelectChat} 
+              />
             </div>
-          ) : !isMobile && (
-            <h2>Select a conversation</h2>
-          )}
-        </div>
+            <div className="flex-1 flex items-center justify-center">
+              <h2>Select a conversation</h2>
+            </div>
+          </>
+        ) : (
+          /* Mobile: Show full-page conversation list */
+          <div className="mobile-conversation-list">
+            <ChatSidebar 
+              selectedChat={null} 
+              onSelectChat={handleSelectChat} 
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -460,63 +451,103 @@ export default function ChatPage() {
 
   return (
     <div className="chat-container">
-      {/* Mobile sidebar toggle button - always visible */}
-      {isMobile && (
-        <button 
-          className="chat-sidebar-toggle"
-          onClick={() => setShowSidebar(!showSidebar)}
-        >
-          {showSidebar ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      )}
-      
-      {/* Sidebar with responsive visibility */}
-      <div className={`chat-sidebar ${!showSidebar && isMobile ? 'hidden-mobile' : ''}`}>
-        <ChatSidebar 
-          selectedChat={selectedChat} 
-          onSelectChat={handleSelectChat} 
-        />
-      </div>
-
-      <div className="chat-content">
-        <ChatHeader
-          name={resolvedName}
-          timestamp={selectedChat.last_message_at || ''}
-          isGroup={selectedChat.is_group}
-          currentUserId={currentUserId || ''}
-          onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
-        />
-        {loadingMessages ? (
-          <div className="flex items-center justify-center h-full">
-            <LoadingSVG />
+      {/* Desktop: Normal layout with sidebars */}
+      {!isMobile ? (
+        <>
+          {/* Desktop sidebar */}
+          <div className="chat-sidebar">
+            <ChatSidebar 
+              selectedChat={selectedChat} 
+              onSelectChat={handleSelectChat} 
+            />
           </div>
-          ) : (
-            <>
-            <ChatMessages
-              messages={messages}
-              currentUserId={currentUserId}
-              messagesEndRef={messagesEndRef}
-              avatarColors={avatarColors}
-            />
-            <MessageInput
-              message={messageText}
-              onSetMessage={setMessageText}
-              handleSendMessage={handleSendMessage}
-            />
-            </>
-        )}
-      </div>
 
-      {/* Right sidebar with mobile drawer behavior */}
-      <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
-        <ChatRightSidebar
-          selectedChatName={resolvedName}
-          participants={sidebarParticipants}
-          avatarColors={avatarColors}
-          isGroup={selectedChat.is_group}
-          onClose={() => setShowRightSidebar(false)}
-        />
-      </div>
+          <div className="chat-content">
+            <ChatHeader
+              name={resolvedName}
+              timestamp={selectedChat.last_message_at || ''}
+              isGroup={selectedChat.is_group}
+              currentUserId={currentUserId || ''}
+              onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
+            />
+            {loadingMessages ? (
+              <div className="flex items-center justify-center h-full">
+                <LoadingSVG />
+              </div>
+              ) : (
+                <>
+                <ChatMessages
+                  messages={messages}
+                  currentUserId={currentUserId}
+                  messagesEndRef={messagesEndRef}
+                  avatarColors={avatarColors}
+                />
+                <MessageInput
+                  message={messageText}
+                  onSetMessage={setMessageText}
+                  handleSendMessage={handleSendMessage}
+                />
+                </>
+            )}
+          </div>
+
+          {/* Desktop right sidebar */}
+          <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
+            <ChatRightSidebar
+              selectedChatName={resolvedName}
+              participants={sidebarParticipants}
+              avatarColors={avatarColors}
+              isGroup={selectedChat.is_group}
+              onClose={() => setShowRightSidebar(false)}
+            />
+          </div>
+        </>
+      ) : (
+        /* Mobile: Full-page chat view */
+        <div className="mobile-chat-view">
+          <ChatHeader
+            name={resolvedName}
+            timestamp={selectedChat.last_message_at || ''}
+            isGroup={selectedChat.is_group}
+            currentUserId={currentUserId || ''}
+            onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
+            onBackClick={handleBackToConversations} // New prop for back navigation
+            showBackButton={true} // New prop to show back button on mobile
+          />
+          {loadingMessages ? (
+            <div className="flex items-center justify-center h-full">
+              <LoadingSVG />
+            </div>
+            ) : (
+              <>
+              <ChatMessages
+                messages={messages}
+                currentUserId={currentUserId}
+                messagesEndRef={messagesEndRef}
+                avatarColors={avatarColors}
+              />
+              <MessageInput
+                message={messageText}
+                onSetMessage={setMessageText}
+                handleSendMessage={handleSendMessage}
+              />
+              </>
+          )}
+
+          {/* Mobile right sidebar overlay */}
+          {showRightSidebar && (
+            <div className="mobile-right-sidebar-overlay">
+              <ChatRightSidebar
+                selectedChatName={resolvedName}
+                participants={sidebarParticipants}
+                avatarColors={avatarColors}
+                isGroup={selectedChat.is_group}
+                onClose={() => setShowRightSidebar(false)}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

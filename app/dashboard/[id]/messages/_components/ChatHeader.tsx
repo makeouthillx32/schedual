@@ -1,6 +1,6 @@
 'use client';
 
-import { Info, Phone, Video } from 'lucide-react';
+import { Info, Phone, Video, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import './mobile.scss';
 
@@ -16,6 +16,8 @@ interface ChatHeaderProps {
   participants?: Participant[];
   currentUserId: string;
   onInfoClick?: () => void;
+  onBackClick?: () => void; // New prop for back navigation
+  showBackButton?: boolean; // New prop to control back button visibility
 }
 
 export default function ChatHeader({
@@ -24,7 +26,9 @@ export default function ChatHeader({
   isGroup,
   participants,
   currentUserId,
-  onInfoClick
+  onInfoClick,
+  onBackClick,
+  showBackButton = false
 }: ChatHeaderProps) {
   let title = name ?? 'Unnamed Chat';
 
@@ -37,6 +41,17 @@ export default function ChatHeader({
 
   return (
     <header className="chat-header">
+      {/* Back button for mobile */}
+      {showBackButton && onBackClick && (
+        <button 
+          onClick={onBackClick}
+          className="chat-header-back-button mr-2 md:hidden"
+          aria-label="Back to conversations"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
+      
       <div className="chat-header-title">
         <h2 className="text-xl font-semibold truncate">{title}</h2>
         {timestamp && (
@@ -45,6 +60,7 @@ export default function ChatHeader({
           </p>
         )}
       </div>
+      
       <div className="chat-header-actions">
         <button className="hidden md:flex">
           <Video size={20} />

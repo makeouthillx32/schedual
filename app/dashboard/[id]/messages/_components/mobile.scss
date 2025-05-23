@@ -65,35 +65,51 @@ $header-height: 70px; // Define header height for consistent spacing
 // =======================================
 // LEFT SIDEBAR COMPONENT
 // =======================================
+// =======================================
+// LEFT SIDEBAR COMPONENT - UPDATED
+// =======================================
 .chat-sidebar {
   width: 100%;
   height: 100%;
   z-index: 10;
   background-color: var(--card);
   color: var(--card-foreground);
-  transition: transform 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  overflow: hidden; // Important for nested scrollable content
+  overflow: hidden;
   
   @media (min-width: $breakpoint-md) {
     width: 280px;
     flex-shrink: 0;
     border-right: 1px solid var(--border);
+    position: relative;
+    transform: translateX(0) !important;
   }
   
-  &.hidden-mobile {
-    position: absolute;
+  // Mobile sidebar styling
+  &.mobile-sidebar {
+    position: fixed;
     top: 0;
     left: 0;
-    height: 100%;
-    transform: translateX(-100%);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    height: 100vh;
+    z-index: 50;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    border-right: 1px solid var(--border);
     
     @media (min-width: $breakpoint-md) {
       position: relative;
-      transform: translateX(0);
       box-shadow: none;
+      z-index: 10;
+    }
+  }
+  
+  // Hidden state for mobile
+  &.hidden-mobile {
+    transform: translateX(-100%);
+    
+    @media (min-width: $breakpoint-md) {
+      transform: translateX(0);
     }
   }
   
@@ -107,32 +123,204 @@ $header-height: 70px; // Define header height for consistent spacing
     // Scrollable area for chat list
     .overflow-y-auto {
       flex: 1;
-      -webkit-overflow-scrolling: touch; // Smooth iOS scrolling
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain; // Prevent pull-to-refresh
     }
   }
   
-  // Toggle button
+  // Enhanced interaction area for mobile
+  &.mobile-sidebar {
+    // Add a subtle glow effect when open on mobile
+    &:not(.hidden-mobile) {
+      box-shadow: 
+        4px 0 24px rgba(0, 0, 0, 0.15),
+        0 0 0 1px var(--border);
+    }
+    
+    // Improve touch targets
+    .participant,
+    .conversation-item,
+    button {
+      min-height: 48px;
+      touch-action: manipulation;
+      
+      // Remove sticky hover states on touch devices
+      @media (hover: none) {
+        &:hover {
+          background-color: transparent !important;
+        }
+      }
+    }
+  }
+  
+  // Toggle button - improved positioning and accessibility
   &-toggle {
     position: fixed;
     bottom: 20px;
-    left: 20px; // Changed from right to left to avoid overlap
-    width: 50px;
-    height: 50px;
-    border-radius: 25px;
-    background-color: var(--card-foreground);
-    color: var(--card-foreground);
+    left: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 30;
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 60;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
+    // Ensure proper touch target size
+    min-height: 56px;
+    min-width: 56px;
+    touch-action: manipulation;
+    
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.2),
+        0 3px 6px rgba(0, 0, 0, 0.15);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+    
+    // Hide on desktop
     @media (min-width: $breakpoint-md) {
       display: none;
+    }
+    
+    // Safe area adjustments for notched devices
+    @supports (padding: max(0px)) {
+      bottom: max(20px, env(safe-area-inset-bottom) + 10px);
+      left: max(20px, env(safe-area-inset-left) + 10px);
+    }
+    
+    // Icon styling
+    svg {
+      width: 24px;
+      height: 24px;
+      stroke-width: 2;
     }
   }
 }
 
+// Mobile overlay for sidebar (similar to right sidebar)
+.chat-sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.3s ease;
+  
+  // Only show on mobile
+  @media (min-width: $breakpoint-md) {
+    display: none !important;
+  }
+}
+
+// Enhanced mobile responsiveness
+@media (max-width: #{$breakpoint-md - 1px}) {
+  .chat-sidebar {
+    // Ensure sidebar takes full height on mobile
+    height: 100vh;
+    height: 100dvh; // Dynamic viewport height for mobile browsers
+    
+    // Improve performance on mobile
+    will-change: transform;
+    
+    // Better scrolling on iOS
+    -webkit-overflow-scrolling: touch;
+    
+    // Prevent accidental selections during swipe gestures
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    
+    // Allow text selection within conversation items
+    .conversation-item,
+    .participant {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      user-select: text;
+    }
+  }
+  
+  // Enhanced touch interactions
+  .conversation-item {
+    // Larger touch targets
+    padding: 12px 16px;
+    
+    // Visual feedback for touch
+    &:active {
+      background-color: var(--sidebar-accent);
+      transform: scale(0.98);
+      transition: all 0.1s ease;
+    }
+  }
+  
+  // Improve input focus behavior on mobile
+  input, textarea {
+    font-size: 16px; // Prevents zoom on iOS
+    
+    &:focus {
+      // Prevent viewport shifting on focus
+      transform: translateZ(0);
+    }
+  }
+}
+
+// Dark mode adjustments for mobile sidebar
+.dark .chat-sidebar.mobile-sidebar:not(.hidden-mobile) {
+  box-shadow: 
+    4px 0 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px var(--border);
+}
+
+// Animation improvements
+@keyframes sidebar-slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.8;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes sidebar-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0.8;
+  }
+}
+
+// Apply animations only on mobile
+@media (max-width: #{$breakpoint-md - 1px}) {
+  .chat-sidebar.mobile-sidebar {
+    &:not(.hidden-mobile) {
+      animation: sidebar-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    &.hidden-mobile {
+      animation: sidebar-slide-out 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+}
 // =======================================
 // RIGHT SIDEBAR COMPONENT
 // =======================================

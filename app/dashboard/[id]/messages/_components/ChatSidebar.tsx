@@ -34,28 +34,24 @@ export interface Conversation {
 interface ChatSidebarProps {
   selectedChat: Conversation | null;
   onSelectChat: (chat: Conversation) => void;
-  isSidebarOpen?: boolean;
-  onSidebarToggle?: () => void;
+  className?: string;
 }
 
 export default function ChatSidebar({ 
   selectedChat, 
-  onSelectChat, 
-  isSidebarOpen = true, 
-  onSidebarToggle 
+  onSelectChat,
+  className = ""
 }: ChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const isMounted = useRef(true);
   const lastFetchTime = useRef(0);
   const hasFetched = useRef(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -63,40 +59,10 @@ export default function ChatSidebar({
   );
 
   useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
     return () => {
-      window.removeEventListener('resize', checkIsMobile);
       isMounted.current = false;
     };
   }, []);
-
-  // Handle click outside to close sidebar on mobile - SIMPLIFIED
-  useEffect(() => {
-    if (!isMobile || !isSidebarOpen || !onSidebarToggle) return;
-
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node;
-      
-      // Only close if clicking completely outside the sidebar
-      if (sidebarRef.current && !sidebarRef.current.contains(target)) {
-        onSidebarToggle();
-      }
-    };
-
-    // Add listeners after a small delay to prevent immediate closing
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside, { passive: true });
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [isMobile, isSidebarOpen, onSidebarToggle]);
   
   useEffect(() => {
     const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
@@ -153,21 +119,24 @@ export default function ChatSidebar({
     if (!forceRefresh && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
       return;
     }
+    
     const cachedData = storage.get(CACHE_KEYS.CONVERSATIONS);
     if (!forceRefresh && cachedData && !hasFetched.current) {
       setConversations(cachedData);
       setIsLoading(false);
-      if (cachedData.length > 0 && !selectedChat) {
-        onSelectChat(cachedData[0]);
-      }
+      // REMOVED: Auto-selection of first conversation
+      return;
     }
+    
     try {
       hasFetched.current = true;
       lastFetchTime.current = Date.now();
       if (!cachedData || forceRefresh) setIsLoading(true);
+      
       const res = await fetch('/api/messages/get-conversations');
       if (!isMounted.current) return;
       if (!res.ok) throw new Error('Failed to fetch conversations');
+      
       const raw = await res.json();
       const mapped: Conversation[] = raw.map((c: any) => ({
         id:              c.id ?? c.channel_id,
@@ -185,13 +154,13 @@ export default function ChatSidebar({
           online:       p.online ?? false,
         })),
       }));
+      
       if (!isMounted.current) return;
       storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300);
       setConversations(mapped);
       setError(null);
-      if (mapped.length > 0 && !selectedChat) {
-        onSelectChat(mapped[0]);
-      }
+      // REMOVED: Auto-selection of first conversation
+      
     } catch (err) {
       if (!cachedData || forceRefresh) {
         setError("You don't have any chats yet.");
@@ -201,62 +170,57 @@ export default function ChatSidebar({
     }
   };
   
-  useEffect(() => { fetchConversations(); }, [selectedChat, onSelectChat]);
+  // REMOVED: Dependency on selectedChat to prevent auto-fetching
+  useEffect(() => { 
+    fetchConversations(); 
+  }, []);
   
   const formatTimestamp = (ts: string | null) =>
     ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
 
-  // Simple chat selection - no auto-close on mobile
   const handleChatSelect = (chat: Conversation) => {
     onSelectChat(chat);
   };
+
+  const handleNewConversation = (conversation: Conversation) => {
+    // Add new conversation to the list and select it
+    setConversations(prev => [conversation, ...prev]);
+    onSelectChat(conversation);
+  };
   
   return (
-    <>
-      {/* Mobile overlay */}
-      {isMobile && isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={onSidebarToggle}
+    <div className={`h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)] ${className}`}>
+      <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />
+      <ChatSidebarSearch
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+      />
+      {error ? (
+        <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
+          <p className="mb-3">{error}</p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-[var(--radius)] hover:opacity-90 transition-opacity"
+          >
+            Start a new chat
+          </button>
+        </div>
+      ) : (
+        <ConversationList
+          conversations={conversations}
+          isLoading={isLoading}
+          searchQuery={searchQuery}
+          selectedChat={selectedChat}
+          onSelectChat={handleChatSelect}
+          formatTimestamp={formatTimestamp}
         />
       )}
-      
-      <div 
-        ref={sidebarRef}
-        className={`
-          chat-sidebar
-          ${isMobile && !isSidebarOpen ? 'hidden-mobile' : ''}
-          ${isMobile ? 'mobile-sidebar' : ''}
-        `}
-      >
-        <div className="h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)]">
-          <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />
-          <ChatSidebarSearch
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-          />
-          {error ? (
-            <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
-              {error}
-            </div>
-          ) : (
-            <ConversationList
-              conversations={conversations}
-              isLoading={isLoading}
-              searchQuery={searchQuery}
-              selectedChat={selectedChat}
-              onSelectChat={handleChatSelect}
-              formatTimestamp={formatTimestamp}
-            />
-          )}
-        </div>
-      </div>
       
       <NewChatModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onConversationCreated={handleChatSelect}
+        onConversationCreated={handleNewConversation}
       />
-    </>
+    </div>
   );
 }

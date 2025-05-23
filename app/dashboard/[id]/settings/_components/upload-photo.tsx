@@ -9,7 +9,6 @@ import toast from "react-hot-toast";
 
 export function UploadPhotoForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
@@ -29,11 +28,6 @@ export function UploadPhotoForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSelectedFile(file);
-    if (file) {
-      setPreviewUrl(URL.createObjectURL(file));
-    } else {
-      setPreviewUrl("");
-    }
   };
 
   const handleUpload = async () => {
@@ -77,7 +71,7 @@ export function UploadPhotoForm() {
     <ShowcaseSection title="Your Photo" className="!p-7">
       <div className="mb-4 flex items-center gap-3">
         <Image
-          src={previewUrl || avatarUrl || "/images/user/user-03.png"}
+          src={avatarUrl || "/images/user/user-03.png"}
           width={55}
           height={55}
           alt="User"
@@ -92,10 +86,7 @@ export function UploadPhotoForm() {
             <button
               type="button"
               className="text-body-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))]"
-              onClick={() => {
-                setSelectedFile(null);
-                setPreviewUrl("");
-              }}
+              onClick={() => setSelectedFile(null)}
             >
               Delete
             </button>
@@ -106,7 +97,7 @@ export function UploadPhotoForm() {
               className={`text-body-sm font-semibold px-3 py-1.5 rounded transition ${
                 uploading || !selectedFile
                   ? "bg-gray-400 cursor-not-allowed text-white"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:brightness-95"
               }`}
             >
               {uploading ? "Uploading..." : "Upload"}

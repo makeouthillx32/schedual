@@ -84,11 +84,11 @@ export default function ChatRightSidebar({
 
   // Chart colors from design system for avatar backgrounds
   const chartColors = [
-    'bg-[hsl(var(--chart-1))]',
-    'bg-[hsl(var(--chart-2))]',
-    'bg-[hsl(var(--chart-3))]',
-    'bg-[hsl(var(--chart-4))]',
-    'bg-[hsl(var(--chart-5))]'
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))'
   ];
 
   const renderAvatar = (avatar: string, name: string) => {
@@ -97,7 +97,11 @@ export default function ChatRightSidebar({
         <img
           src={avatar}
           alt={`${name}'s avatar`}
-          className="w-full h-full object-cover"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
         />
       );
     }
@@ -106,23 +110,63 @@ export default function ChatRightSidebar({
     const index = avatar.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % chartColors.length;
     
     return (
-      <div
-        className={`w-full h-full flex items-center justify-center text-[hsl(var(--primary-foreground))] ${
-          chartColors[index]
-        }`}
-      >
-        <span className="text-xs font-semibold uppercase">{avatar}</span>
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: chartColors[index]
+      }}>
+        <span style={{
+          fontSize: '12px',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          color: 'hsl(var(--primary-foreground))'
+        }}>
+          {avatar}
+        </span>
       </div>
     );
   };
 
   if (!isOpen) {
     return (
-      <div className="w-12 hidden lg:flex flex-col border-l border-[hsl(var(--border))]">
-        <button onClick={() => setIsOpen(true)} className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] rounded-[var(--radius)]">
+      <div style={{
+        width: '48px',
+        display: 'none',
+        flexDirection: 'column',
+        borderLeft: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))'
+      }} className="lg:flex">
+        <button 
+          onClick={() => setIsOpen(true)} 
+          style={{
+            padding: '8px',
+            background: 'transparent',
+            border: 'none',
+            color: 'hsl(var(--foreground))',
+            cursor: 'pointer',
+            borderRadius: 'var(--radius)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
           <Pencil size={16} />
         </button>
-        <button onClick={() => setIsOpen(true)} className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] rounded-[var(--radius)]">
+        <button 
+          onClick={() => setIsOpen(true)} 
+          style={{
+            padding: '8px',
+            background: 'transparent',
+            border: 'none',
+            color: 'hsl(var(--foreground))',
+            cursor: 'pointer',
+            borderRadius: 'var(--radius)'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
           <Image size={16} />
         </button>
       </div>
@@ -130,52 +174,183 @@ export default function ChatRightSidebar({
   }
 
   return (
-    <div className="chat-right-sidebar-content h-full bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex flex-col shadow-[var(--shadow-md)]">
-      <div className="p-4 flex justify-between items-center border-b border-[hsl(var(--border))]">
-        <h3 className="font-semibold">{isGroup ? 'Group Info' : 'Chat Info'}</h3>
-        <div className="flex space-x-2">
-          <button onClick={() => setIsOpen(false)} className="hidden lg:block text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+    <div style={{
+      height: '100%',
+      backgroundColor: 'hsl(var(--card))',
+      color: 'hsl(var(--card-foreground))',
+      display: 'flex',
+      flexDirection: 'column',
+      boxShadow: 'var(--shadow-md)'
+    }}>
+      <div style={{
+        padding: '16px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))'
+      }}>
+        <h3 style={{
+          fontWeight: '600',
+          color: 'hsl(var(--card-foreground))',
+          margin: 0
+        }}>
+          {isGroup ? 'Group Info' : 'Chat Info'}
+        </h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            onClick={() => setIsOpen(false)} 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'hsl(var(--muted-foreground))',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: 'var(--radius)',
+              display: window.innerWidth >= 1024 ? 'block' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'hsl(var(--foreground))';
+              e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
             <X size={16} />
           </button>
-          <button onClick={onClose} className="lg:hidden text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+          <button 
+            onClick={onClose} 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'hsl(var(--muted-foreground))',
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: 'var(--radius)',
+              display: window.innerWidth < 1024 ? 'block' : 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'hsl(var(--foreground))';
+              e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
             <X size={16} />
           </button>
         </div>
       </div>
 
-      <div className="p-4 flex flex-col items-center border-b border-[hsl(var(--border))]">
-        <div className="w-16 h-16 rounded-full overflow-hidden bg-[hsl(var(--sidebar-primary))] mb-2 flex items-center justify-center shadow-[var(--shadow-sm)]">
+      <div style={{
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        borderBottom: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))'
+      }}>
+        <div style={{
+          width: '64px',
+          height: '64px',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          backgroundColor: 'hsl(var(--sidebar-primary))',
+          marginBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
           {isGroup ? (
-            <span className="text-2xl font-semibold text-[hsl(var(--sidebar-primary-foreground))]">G</span>
+            <span style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: 'hsl(var(--sidebar-primary-foreground))'
+            }}>G</span>
           ) : (
-            <span className="text-2xl text-[hsl(var(--sidebar-primary-foreground))] font-semibold">
+            <span style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: 'hsl(var(--sidebar-primary-foreground))'
+            }}>
               {selectedChatName.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
-        <h3 className="font-semibold text-lg text-center">{selectedChatName}</h3>
-        <p className="text-sm text-[hsl(var(--muted-foreground))] text-center">
+        <h3 style={{
+          fontWeight: '600',
+          fontSize: '18px',
+          textAlign: 'center',
+          color: 'hsl(var(--card-foreground))',
+          margin: '0 0 4px 0'
+        }}>{selectedChatName}</h3>
+        <p style={{
+          fontSize: '14px',
+          color: 'hsl(var(--muted-foreground))',
+          textAlign: 'center',
+          margin: 0
+        }}>
           {participants.length}{' '}
           {participants.length === 1 ? 'participant' : 'participants'}
         </p>
       </div>
 
-      <div className="participants-list p-4 border-b border-[hsl(var(--border))] overflow-y-auto">
-        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">
+      <div style={{
+        padding: '16px',
+        borderBottom: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))',
+        overflowY: 'auto'
+      }}>
+        <h4 style={{
+          marginBottom: '12px',
+          fontWeight: '600',
+          fontSize: '14px',
+          color: 'hsl(var(--foreground))',
+          margin: '0 0 12px 0'
+        }}>
           {isGroup ? 'Participants' : 'About'}
         </h4>
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {participants.map((p) => (
-            <div key={p.id} className="participant flex items-center">
-              <div className="participant-avatar w-8 h-8 rounded-full overflow-hidden relative mr-2 shadow-[var(--shadow-xs)]">
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                position: 'relative',
+                marginRight: '8px',
+                boxShadow: 'var(--shadow-xs)'
+              }}>
                 {renderAvatar(p.avatar, p.name)}
                 {p.online && (
-                  <div className="absolute bottom-0 right-0 w-2 h-2 bg-[hsl(var(--chart-2))] rounded-full border border-[hsl(var(--background))]"></div>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: 'hsl(var(--chart-2))',
+                    borderRadius: '50%',
+                    border: '1px solid hsl(var(--background))'
+                  }}></div>
                 )}
               </div>
-              <div className="participant-info flex-1 min-w-0">
-                <p className="name font-medium">{p.name}</p>
-                <p className="status text-xs text-[hsl(var(--muted-foreground))]">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  fontWeight: '500',
+                  color: 'hsl(var(--card-foreground))',
+                  margin: 0
+                }}>{p.name}</p>
+                <p style={{
+                  fontSize: '12px',
+                  color: 'hsl(var(--muted-foreground))',
+                  margin: 0
+                }}>
                   {p.online ? 'Online' : 'Offline'}
                 </p>
               </div>
@@ -184,38 +359,136 @@ export default function ChatRightSidebar({
         </div>
       </div>
 
-      <div className="p-4 border-b border-[hsl(var(--border))]">
-        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">Actions</h4>
-        <div className="space-y-2">
-          <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
+      <div style={{
+        padding: '16px',
+        borderBottom: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))'
+      }}>
+        <h4 style={{
+          marginBottom: '12px',
+          fontWeight: '600',
+          fontSize: '14px',
+          color: 'hsl(var(--foreground))',
+          margin: '0 0 12px 0'
+        }}>Actions</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button style={{
+            width: '100%',
+            padding: '8px 12px',
+            textAlign: 'left',
+            borderRadius: 'var(--radius)',
+            background: 'transparent',
+            border: 'none',
+            color: 'hsl(var(--foreground))',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
             Search in conversation
           </button>
-          <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
+          <button style={{
+            width: '100%',
+            padding: '8px 12px',
+            textAlign: 'left',
+            borderRadius: 'var(--radius)',
+            background: 'transparent',
+            border: 'none',
+            color: 'hsl(var(--foreground))',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
             Notification settings
           </button>
           {isGroup && (
-            <button className="w-full py-2 px-3 text-left rounded-[var(--radius)] hover:bg-[hsl(var(--accent))] transition-colors">
+            <button style={{
+              width: '100%',
+              padding: '8px 12px',
+              textAlign: 'left',
+              borderRadius: 'var(--radius)',
+              background: 'transparent',
+              border: 'none',
+              color: 'hsl(var(--foreground))',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
               Add participants
             </button>
           )}
-          <button className="w-full py-2 px-3 text-left text-[hsl(var(--destructive))] rounded-[var(--radius)] hover:bg-[hsl(var(--destructive))/0.1] transition-colors">
+          <button style={{
+            width: '100%',
+            padding: '8px 12px',
+            textAlign: 'left',
+            borderRadius: 'var(--radius)',
+            background: 'transparent',
+            border: 'none',
+            color: 'hsl(var(--destructive))',
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--destructive) / 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
             {isGroup ? 'Leave group' : 'Delete conversation'}
           </button>
         </div>
       </div>
 
-      <div className="p-4 border-b border-[hsl(var(--border))]">
-        <h4 className="mb-3 font-semibold text-sm text-[hsl(var(--foreground))]">Shared Media</h4>
-        <div className="grid grid-cols-3 gap-2">
+      <div style={{
+        padding: '16px',
+        borderBottom: '1px solid hsl(var(--border))',
+        backgroundColor: 'hsl(var(--card))'
+      }}>
+        <h4 style={{
+          marginBottom: '12px',
+          fontWeight: '600',
+          fontSize: '14px',
+          color: 'hsl(var(--foreground))',
+          margin: '0 0 12px 0'
+        }}>Shared Media</h4>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '8px'
+        }}>
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="aspect-square bg-[hsl(var(--muted))] rounded-[var(--radius)] flex items-center justify-center shadow-[var(--shadow-xs)]"
+              style={{
+                aspectRatio: '1',
+                backgroundColor: 'hsl(var(--muted))',
+                borderRadius: 'var(--radius)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'var(--shadow-xs)'
+              }}
             >
-              <Image size={20} className="text-[hsl(var(--muted-foreground))]" />
+              <Image size={20} style={{ color: 'hsl(var(--muted-foreground))' }} />
             </div>
           ))}
-          <button className="aspect-square rounded-[var(--radius)] border-2 border-dashed border-[hsl(var(--border))] flex items-center justify-center text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--sidebar-primary))] transition-colors">
+          <button style={{
+            aspectRatio: '1',
+            borderRadius: 'var(--radius)',
+            border: '2px dashed hsl(var(--border))',
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'hsl(var(--muted-foreground))',
+            cursor: 'pointer',
+            transition: 'border-color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'hsl(var(--sidebar-primary))'}
+          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'hsl(var(--border))'}
+          >
             <span>+</span>
           </button>
         </div>

@@ -29,6 +29,11 @@ $header-height: 70px; // Define header height for consistent spacing
   to { transform: translateX(-100%); }
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 // =======================================
 // UTILITY CLASSES
 // =======================================
@@ -321,6 +326,87 @@ $header-height: 70px; // Define header height for consistent spacing
 }
 
 // =======================================
+// CHAT MESSAGES COMPONENT
+// =======================================
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch; // Smooth iOS scrolling
+  
+  @media (min-width: $breakpoint-md) {
+    padding: 16px;
+  }
+  
+  .message {
+    max-width: 85%;
+    margin-bottom: 12px;
+    
+    @media (min-width: $breakpoint-md) {
+      max-width: 70%;
+    }
+    
+    &-bubble {
+      border-radius: 18px;
+      padding: 8px 12px;
+      word-break: break-word;
+      transition: all 0.2s ease;
+      
+      @media (min-width: $breakpoint-md) {
+        padding: 10px 16px;
+      }
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+    }
+    
+    &-image {
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 300px;
+      max-height: 200px;
+      margin-top: 4px;
+      
+      img {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+        object-fit: cover;
+        display: block;
+      }
+    }
+    
+    &-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      overflow: hidden;
+      
+      @media (min-width: $breakpoint-md) {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  }
+  
+  // Desktop delete indicator
+  @media (min-width: $breakpoint-md) {
+    .message:hover .group-hover\:opacity-100 {
+      opacity: 1;
+    }
+  }
+  
+  // Mobile long press feedback
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    .message:active .message-bubble {
+      transform: scale(0.98);
+    }
+  }
+}
+
+// =======================================
 // MESSAGE CONTEXT MENU
 // =======================================
 .message-context-menu {
@@ -363,33 +449,6 @@ $header-height: 70px; // Define header height for consistent spacing
   }
 }
 
-// =======================================
-// MESSAGE HOVER EFFECTS
-// =======================================
-.message {
-  .message-bubble {
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-  }
-  
-  // Desktop delete indicator
-  @media (min-width: $breakpoint-md) {
-    &:hover .group-hover\:opacity-100 {
-      opacity: 1;
-    }
-  }
-  
-  // Mobile long press feedback
-  @media (max-width: #{$breakpoint-md - 1px}) {
-    &:active .message-bubble {
-      transform: scale(0.98);
-    }
-  }
-}
 // =======================================
 // MESSAGE INPUT COMPONENT
 // =======================================
@@ -657,6 +716,7 @@ $header-height: 70px; // Define header height for consistent spacing
     }
   }
 }
+
 // =======================================
 // NEW CHAT MODAL COMPONENT
 // =======================================

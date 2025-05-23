@@ -99,10 +99,11 @@ $header-height: 70px; // Define header height for consistent spacing
 // Mobile conversation list (full page)
 .mobile-conversation-list {
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
   background-color: var(--card);
+  margin-top: 70px; // Push down by header height
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
@@ -112,11 +113,12 @@ $header-height: 70px; // Define header height for consistent spacing
 // Mobile chat view (full page)
 .mobile-chat-view {
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
   background-color: var(--background);
   position: relative;
+  margin-top: 70px; // Push down by header height
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
@@ -126,7 +128,7 @@ $header-height: 70px; // Define header height for consistent spacing
 // Mobile right sidebar overlay (still needed for info panel)
 .mobile-right-sidebar-overlay {
   position: fixed;
-  top: 0;
+  top: 70px; // Start below header
   left: 0;
   right: 0;
   bottom: 0;

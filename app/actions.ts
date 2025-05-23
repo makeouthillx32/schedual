@@ -137,7 +137,11 @@ export const signInAction = async (formData: FormData) => {
 
   let lastPage = lastPageCookie?.value || "/";
 
-  if (["/sign-in", "/sign-up", "/forgot-password"].includes(lastPage)) {
+  // Clear the lastPage cookie after using it
+  store.delete("lastPage");
+
+  // Exclude auth pages and problematic pages from redirect
+  if (["/sign-in", "/sign-up", "/forgot-password", "/CMS"].includes(lastPage)) {
     lastPage = "/";
   }
 

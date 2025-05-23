@@ -10,8 +10,6 @@ $header-height: 70px;
 // RIGHT SIDEBAR COMPONENT
 // =======================================
 .chat-right-sidebar {
-  background-color: var(--card);
-  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   
@@ -35,7 +33,6 @@ $header-height: 70px;
       display: flex;
       width: 100%;
       height: 100%;
-      background-color: var(--card);
     }
   }
   
@@ -44,39 +41,5 @@ $header-height: 70px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: env(safe-area-inset-bottom);
-    background-color: var(--card);
-    opacity: 1;
-  }
-}
-
-// Force override the component's inline styles
-.chat-right-sidebar-content {
-  background-color: var(--card) !important;
-  color: var(--card-foreground) !important;
-  opacity: 1 !important;
-  
-  // Force all child elements to inherit proper styling
-  * {
-    background-color: inherit;
-    opacity: inherit;
-  }
-  
-  // Specific overrides for sections
-  .p-4, .participants-list, div[class*="p-4"] {
-    background-color: var(--card) !important;
-    opacity: 1 !important;
-  }
-  
-  // Override any transparent backgrounds
-  &[style*="background"] {
-    background-color: var(--card) !important;
-  }
-}
-
-// Override mobile overlay transparency
-.mobile-right-sidebar-overlay {
-  .chat-right-sidebar-content {
-    background-color: var(--card) !important;
-    opacity: 1 !important;
   }
 }

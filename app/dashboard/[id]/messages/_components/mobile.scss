@@ -626,7 +626,7 @@ $header-height: 70px; // Define header height for consistent spacing
     border: none;
     background: transparent;
     min-height: 20px; // Ensure there's always space to type
-    font-size: 14px;
+    font-size: 16px; // Changed from 14px to 16px to prevent iOS zoom
     max-height: 80px; // Prevent massive expansion
     color: var(--foreground);
     
@@ -717,7 +717,6 @@ $header-height: 70px; // Define header height for consistent spacing
     }
   }
 }
-
 // =======================================
 // NEW CHAT MODAL COMPONENT
 // =======================================

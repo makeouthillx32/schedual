@@ -419,6 +419,13 @@ export default function ChatPage() {
     toast.success(`Chat opened: ${chat.channel_name || 'New conversation'}`);
   };
 
+  // Handle back to conversations
+  const handleBackToConversations = () => {
+    console.log("[ChatPage] Returning to conversation list");
+    setSelectedChat(null);
+    setMessages([]);
+  };
+
   // Handle message deletion
   const handleMessageDelete = (messageId) => {
     console.log("[ChatPage] Deleting message:", messageId);

@@ -15,6 +15,8 @@ export const signUpAction = async (formData: FormData) => {
   const headerList = headers();
   const origin = (await headerList).get("origin");
 
+  console.log("🔥 SIGNUP STARTED for:", email);
+
   if (!email || !password) {
     return encodedRedirect("error", "/sign-up", "Email and password are required.");
   }
@@ -28,11 +30,17 @@ export const signUpAction = async (formData: FormData) => {
     },
   });
 
+  console.log("🔥 AUTH SIGNUP RESULT:", { data: !!data, error: error?.message });
+
   if (error || !data.user) {
+    console.error("🔥 SIGNUP FAILED:", error?.message);
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
   
+  console.log("🔥 USER CREATED:", data.user.id);
+
   if (inviteCode) {
+    console.log("🔥 PROCESSING INVITE CODE:", inviteCode);
     const { data: inviteData, error: inviteError } = await supabase
       .from("invites")
       .select("role_id")
@@ -55,6 +63,7 @@ export const signUpAction = async (formData: FormData) => {
         .eq("code", inviteCode);
     }
   } else {
+    console.log("🔥 NO INVITE CODE - SETTING DEFAULT ROLE");
     // If no invite code, fetch and assign default user role from roles table
     const { data: roleData, error: roleError } = await supabase
       .from("roles")
@@ -62,42 +71,47 @@ export const signUpAction = async (formData: FormData) => {
       .eq("role", "user")
       .maybeSingle();
     
+    console.log("🔥 DEFAULT ROLE QUERY:", { roleData, roleError: roleError?.message });
+    
     if (!roleError && roleData?.id) {
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({ 
           role: roleData.id,
           avatar_url: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png"
         })
         .eq("id", data.user.id);
+      
+      console.log("🔥 PROFILE UPDATE RESULT:", updateError?.message || "SUCCESS");
     }
   }
   
-  // Fetch the user's profile to get display_name for notification
+  // Get the user's avatar for the notification (skip display_name)
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
-    .select("display_name, avatar_url")
+    .select("avatar_url")
     .eq("id", data.user.id)
     .single();
 
-  console.log("📧 Profile data fetched:", profileData);
-  console.log("📧 Profile error:", profileError);
+  console.log("🔥 PROFILE FETCH:", { profileData, profileError: profileError?.message });
 
   // Send notification to admins about the new sign-up
   try {
-    console.log("📧 About to send notification for:", email);
+    console.log("🔥 SENDING NOTIFICATION...");
     
     await sendNotification({
-      title: `${profileData?.display_name || email} joined the team!`,
+      title: `${email} joined the team!`,
       subtitle: "Tell them welcome!",
       imageUrl: profileData?.avatar_url || "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
       role_admin: true,
     });
     
-    console.log("📧 Notification sent successfully!");
+    console.log("🔥 NOTIFICATION SENT SUCCESSFULLY!");
   } catch (error) {
-    console.error("📧 Failed to send notification:", error);
+    console.error("🔥 NOTIFICATION FAILED:", error);
   }
+  
+  console.log("🔥 SIGNUP COMPLETE - REDIRECTING");
   
   return encodedRedirect(
     "success",

@@ -7,7 +7,6 @@ import {
   DropdownTrigger,
 } from "@/components/Layouts/appheader/dropdown";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,10 +17,13 @@ interface Notification {
   id: string;
   sender_id: string | null;
   receiver_id: string | null;
+  type: string;
   title: string;
-  subtitle: string;
+  content: string;
+  metadata?: any;
   image_url: string | null;
   action_url: string | null;
+  is_read: boolean;
   created_at: string;
   role_admin: boolean;
   role_jobcoach: boolean;
@@ -29,9 +31,19 @@ interface Notification {
   role_user: boolean;
 }
 
-interface StackedNotification extends Notification {
-  count?: number;
-  isStacked?: boolean;
+interface StackedNotification {
+  id: string; // Use the latest notification's ID
+  type: string;
+  sender_id: string | null;
+  sender_name: string;
+  title: string;
+  content: string; // Latest message content
+  image_url: string | null;
+  action_url: string | null;
+  created_at: string; // Latest timestamp
+  count: number; // Number of notifications in this stack
+  isStacked: boolean;
+  notifications: Notification[]; // All notifications in this group
 }
 
 export function Notification() {
@@ -39,43 +51,76 @@ export function Notification() {
   const { notifications, newNotificationCount, markAsRead, loading } = useRealtimeNotifications();
   const isMobile = useIsMobile();
   
-  // Group and stack message notifications from the same sender
+  // Smart grouping and stacking logic
   const stackedNotifications = useMemo(() => {
     const stacked: StackedNotification[] = [];
     const messageGroups: { [key: string]: Notification[] } = {};
     
+    // First pass: Group message notifications by sender
     notifications.forEach((notification) => {
-      // Check if it's a message notification
-      if (notification.title.includes('sent you a message') && notification.sender_id) {
-        const groupKey = `${notification.sender_id}-${notification.receiver_id}`;
+      if (notification.type === 'message' && notification.sender_id) {
+        const groupKey = `message-${notification.sender_id}-${notification.receiver_id}`;
         
         if (!messageGroups[groupKey]) {
           messageGroups[groupKey] = [];
         }
         messageGroups[groupKey].push(notification);
       } else {
-        // Non-message notifications go straight through
-        stacked.push(notification);
+        // Non-message notifications (signup, payment, etc.) - show individually
+        const senderName = notification.metadata?.sender_name || 
+                          notification.title.split(' ')[0] || 
+                          'Someone';
+        
+        stacked.push({
+          id: notification.id,
+          type: notification.type,
+          sender_id: notification.sender_id,
+          sender_name: senderName,
+          title: notification.title,
+          content: notification.content || '',
+          image_url: notification.image_url,
+          action_url: notification.action_url,
+          created_at: notification.created_at,
+          count: 1,
+          isStacked: false,
+          notifications: [notification]
+        });
       }
     });
     
-    // Process message groups and create stacked notifications
+    // Second pass: Create stacked notifications for message groups
     Object.entries(messageGroups).forEach(([groupKey, group]) => {
-      // Always show only the most recent message from each sender
-      const latest = group.sort((a, b) => 
+      // Sort by created_at descending (newest first)
+      const sortedGroup = group.sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )[0];
+      );
+      
+      const latest = sortedGroup[0];
+      const senderName = latest.metadata?.sender_name || 
+                        latest.title.replace(' sent you a message', '') || 
+                        'Someone';
       
       const stackedNotification: StackedNotification = {
-        ...latest,
-        count: group.length > 1 ? group.length : undefined,
+        id: latest.id,
+        type: 'message',
+        sender_id: latest.sender_id,
+        sender_name: senderName,
+        title: group.length === 1 
+          ? `${senderName} sent you a message`
+          : `${senderName} sent you ${group.length} messages`,
+        content: latest.content || '',
+        image_url: latest.image_url,
+        action_url: latest.action_url,
+        created_at: latest.created_at,
+        count: group.length,
         isStacked: group.length > 1,
+        notifications: sortedGroup
       };
       
       stacked.push(stackedNotification);
     });
     
-    // Sort by created_at descending
+    // Final sort by created_at descending
     return stacked.sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
@@ -88,6 +133,11 @@ export function Notification() {
     }
   };
 
+  // Calculate total unread count (sum of all individual notifications)
+  const totalUnreadCount = useMemo(() => {
+    return stackedNotifications.reduce((total, stack) => total + stack.count, 0);
+  }, [stackedNotifications]);
+
   return (
     <Dropdown
       isOpen={isOpen}
@@ -99,7 +149,7 @@ export function Notification() {
       >
         <span className="relative">
           <BellIcon />
-          {newNotificationCount > 0 && (
+          {totalUnreadCount > 0 && (
             <span className="absolute right-0 top-0 z-1 size-2 rounded-full bg-[hsl(var(--destructive))] ring-2 ring-[hsl(var(--muted))] dark:ring-[hsl(var(--secondary))]">
               <span className="absolute inset-0 -z-1 animate-ping rounded-full bg-[hsl(var(--destructive))] opacity-75" />
             </span>
@@ -116,7 +166,7 @@ export function Notification() {
             Notifications
           </span>
           <span className="rounded-md bg-[hsl(var(--sidebar-primary))] px-[9px] py-0.5 text-xs font-medium text-[hsl(var(--sidebar-primary-foreground))]">
-            {stackedNotifications.length} new
+            {totalUnreadCount} new
           </span>
         </div>
 
@@ -146,8 +196,8 @@ export function Notification() {
                         height={200}
                         alt="User"
                       />
-                      {/* Notification count badge */}
-                      {item.isStacked && item.count && item.count > 1 && (
+                      {/* Count badge for stacked notifications */}
+                      {item.isStacked && item.count > 1 && (
                         <span className="absolute -top-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-[hsl(var(--destructive))] text-xs font-bold text-white ring-2 ring-[hsl(var(--background))]">
                           {item.count > 9 ? '9+' : item.count}
                         </span>
@@ -158,7 +208,10 @@ export function Notification() {
                         {item.title}
                       </strong>
                       <span className="block text-sm font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] truncate">
-                        {item.subtitle}
+                        {item.isStacked 
+                          ? `Latest: ${item.content}` 
+                          : item.content
+                        }
                       </span>
                     </div>
                   </Link>

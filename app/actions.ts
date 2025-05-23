@@ -30,26 +30,14 @@ export const signUpAction = async (formData: FormData) => {
     },
   });
 
-  console.log("🔥 AUTH SIGNUP RESULT:", { 
-    userCreated: !!data?.user, 
-    userConfirmed: data?.user?.email_confirmed_at ? true : false,
-    error: error?.message 
-  });
+  console.log("🔥 AUTH SIGNUP RESULT:", { data: !!data, error: error?.message });
 
-  if (error) {
-    console.error("🔥 SIGNUP FAILED:", error.message);
+  if (error || !data.user) {
+    console.error("🔥 SIGNUP FAILED:", error?.message);
     return encodedRedirect("error", "/sign-up", "Sign up failed.");
   }
-
-  if (!data.user) {
-    console.error("🔥 NO USER RETURNED");
-    return encodedRedirect("error", "/sign-up", "Sign up failed.");
-  }
-
+  
   console.log("🔥 USER CREATED:", data.user.id);
-
-  // ✅ Always create profile and notification, even for unconfirmed users
-  // The user exists in auth.users, we just need to set up their profile
 
   if (inviteCode) {
     console.log("🔥 PROCESSING INVITE CODE:", inviteCode);
@@ -60,21 +48,23 @@ export const signUpAction = async (formData: FormData) => {
       .maybeSingle();
   
     if (!inviteError && inviteData?.role_id) {
-      const { error: updateError } = await supabase
+      await supabase
         .from("profiles")
         .update({ 
           role: inviteData.role_id,
           avatar_url: "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png" 
         })
         .eq("id", data.user.id);
-      
-      console.log("🔥 PROFILE UPDATE (INVITE):", updateError?.message || "SUCCESS");
   
-      // Delete the invite after use
-      await supabase.from("invites").delete().eq("code", inviteCode);
+      // ✅ Here you DELETE the invite after use
+      await supabase
+        .from("invites")
+        .delete()
+        .eq("code", inviteCode);
     }
   } else {
     console.log("🔥 NO INVITE CODE - SETTING DEFAULT ROLE");
+    // If no invite code, fetch and assign default user role from roles table
     const { data: roleData, error: roleError } = await supabase
       .from("roles")
       .select("id")
@@ -92,11 +82,11 @@ export const signUpAction = async (formData: FormData) => {
         })
         .eq("id", data.user.id);
       
-      console.log("🔥 PROFILE UPDATE (DEFAULT):", updateError?.message || "SUCCESS");
+      console.log("🔥 PROFILE UPDATE RESULT:", updateError?.message || "SUCCESS");
     }
   }
   
-  // Get the user's avatar for the notification
+  // Get the user's avatar for the notification (skip display_name)
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("avatar_url")

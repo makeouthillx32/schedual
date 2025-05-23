@@ -34,9 +34,16 @@ export interface Conversation {
 interface ChatSidebarProps {
   selectedChat: Conversation | null;
   onSelectChat: (chat: Conversation) => void;
+  isSidebarOpen?: boolean;
+  onSidebarToggle?: () => void;
 }
 
-export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarProps) {
+export default function ChatSidebar({ 
+  selectedChat, 
+  onSelectChat, 
+  isSidebarOpen = true, 
+  onSidebarToggle 
+}: ChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +51,13 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isInteracting, setIsInteracting] = useState(false);
   
   const isMounted = useRef(true);
   const lastFetchTime = useRef(0);
   const hasFetched = useRef(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,6 +71,66 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
     return () => {
       window.removeEventListener('resize', checkIsMobile);
       isMounted.current = false;
+    };
+  }, []);
+
+  // Handle click outside to close sidebar on mobile
+  useEffect(() => {
+    if (!isMobile || !isSidebarOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      // Don't close if user is actively interacting with sidebar
+      if (isInteracting) return;
+      
+      // Don't close if clicking on the toggle button or sidebar content
+      if (
+        sidebarRef.current && 
+        !sidebarRef.current.contains(event.target as Node) &&
+        onSidebarToggle
+      ) {
+        // Add a small delay to prevent immediate closing
+        setTimeout(() => {
+          if (!isInteracting) {
+            onSidebarToggle();
+          }
+        }, 100);
+      }
+    };
+
+    // Use a small delay before adding the event listener to prevent immediate closing
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isMobile, isSidebarOpen, isInteracting, onSidebarToggle]);
+
+  // Handle interaction states to prevent accidental closing
+  const handleInteractionStart = () => {
+    setIsInteracting(true);
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+  };
+
+  const handleInteractionEnd = () => {
+    // Keep interaction state for a short period after user stops interacting
+    interactionTimeoutRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 500);
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+      }
     };
   }, []);
   
@@ -171,34 +241,70 @@ export default function ChatSidebar({ selectedChat, onSelectChat }: ChatSidebarP
   
   const formatTimestamp = (ts: string | null) =>
     ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
+
+  // Handle chat selection on mobile - close sidebar after selection
+  const handleChatSelect = (chat: Conversation) => {
+    onSelectChat(chat);
+    
+    // Close sidebar on mobile after selecting a chat
+    if (isMobile && onSidebarToggle && isSidebarOpen) {
+      setTimeout(() => {
+        onSidebarToggle();
+      }, 150); // Small delay to show selection feedback
+    }
+  };
   
   return (
     <>
-      <div className="h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)]">
-        <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />
-        <ChatSidebarSearch
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
+      {/* Mobile overlay */}
+      {isMobile && isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onSidebarToggle}
         />
-        {error ? (
-          <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
-            {error}
-          </div>
-        ) : (
-          <ConversationList
-            conversations={conversations}
-            isLoading={isLoading}
+      )}
+      
+      <div 
+        ref={sidebarRef}
+        className={`
+          chat-sidebar
+          ${isMobile && !isSidebarOpen ? 'hidden-mobile' : ''}
+          ${isMobile ? 'mobile-sidebar' : ''}
+        `}
+        onMouseEnter={isMobile ? handleInteractionStart : undefined}
+        onMouseLeave={isMobile ? handleInteractionEnd : undefined}
+        onTouchStart={isMobile ? handleInteractionStart : undefined}
+        onTouchEnd={isMobile ? handleInteractionEnd : undefined}
+        onFocus={isMobile ? handleInteractionStart : undefined}
+        onBlur={isMobile ? handleInteractionEnd : undefined}
+      >
+        <div className="h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)]">
+          <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />
+          <ChatSidebarSearch
             searchQuery={searchQuery}
-            selectedChat={selectedChat}
-            onSelectChat={onSelectChat}
-            formatTimestamp={formatTimestamp}
+            onSearchQueryChange={setSearchQuery}
           />
-        )}
+          {error ? (
+            <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
+              {error}
+            </div>
+          ) : (
+            <ConversationList
+              conversations={conversations}
+              isLoading={isLoading}
+              searchQuery={searchQuery}
+              selectedChat={selectedChat}
+              onSelectChat={handleChatSelect}
+              formatTimestamp={formatTimestamp}
+            />
+          )}
+        </div>
       </div>
+      
       <NewChatModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onConversationCreated={onSelectChat}
+        onConversationCreated={handleChatSelect}
       />
     </>
   );

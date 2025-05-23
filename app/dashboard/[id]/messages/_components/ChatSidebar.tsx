@@ -51,13 +51,11 @@ export default function ChatSidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isInteracting, setIsInteracting] = useState(false);
   
   const isMounted = useRef(true);
   const lastFetchTime = useRef(0);
   const hasFetched = useRef(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,65 +72,31 @@ export default function ChatSidebar({
     };
   }, []);
 
-  // Handle click outside to close sidebar on mobile
+  // Handle click outside to close sidebar on mobile - SIMPLIFIED
   useEffect(() => {
-    if (!isMobile || !isSidebarOpen) return;
+    if (!isMobile || !isSidebarOpen || !onSidebarToggle) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
-      // Don't close if user is actively interacting with sidebar
-      if (isInteracting) return;
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
       
-      // Don't close if clicking on the toggle button or sidebar content
-      if (
-        sidebarRef.current && 
-        !sidebarRef.current.contains(event.target as Node) &&
-        onSidebarToggle
-      ) {
-        // Add a small delay to prevent immediate closing
-        setTimeout(() => {
-          if (!isInteracting) {
-            onSidebarToggle();
-          }
-        }, 100);
+      // Only close if clicking completely outside the sidebar
+      if (sidebarRef.current && !sidebarRef.current.contains(target)) {
+        onSidebarToggle();
       }
     };
 
-    // Use a small delay before adding the event listener to prevent immediate closing
+    // Add listeners after a small delay to prevent immediate closing
     const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }, 300);
+      document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    }, 100);
 
     return () => {
       clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [isMobile, isSidebarOpen, isInteracting, onSidebarToggle]);
-
-  // Handle interaction states to prevent accidental closing
-  const handleInteractionStart = () => {
-    setIsInteracting(true);
-    if (interactionTimeoutRef.current) {
-      clearTimeout(interactionTimeoutRef.current);
-    }
-  };
-
-  const handleInteractionEnd = () => {
-    // Keep interaction state for a short period after user stops interacting
-    interactionTimeoutRef.current = setTimeout(() => {
-      setIsInteracting(false);
-    }, 500);
-  };
-
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (interactionTimeoutRef.current) {
-        clearTimeout(interactionTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [isMobile, isSidebarOpen, onSidebarToggle]);
   
   useEffect(() => {
     const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
@@ -242,16 +206,9 @@ export default function ChatSidebar({
   const formatTimestamp = (ts: string | null) =>
     ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
 
-  // Handle chat selection on mobile - close sidebar after selection
+  // Simple chat selection - no auto-close on mobile
   const handleChatSelect = (chat: Conversation) => {
     onSelectChat(chat);
-    
-    // Close sidebar on mobile after selecting a chat
-    if (isMobile && onSidebarToggle && isSidebarOpen) {
-      setTimeout(() => {
-        onSidebarToggle();
-      }, 150); // Small delay to show selection feedback
-    }
   };
   
   return (
@@ -271,12 +228,6 @@ export default function ChatSidebar({
           ${isMobile && !isSidebarOpen ? 'hidden-mobile' : ''}
           ${isMobile ? 'mobile-sidebar' : ''}
         `}
-        onMouseEnter={isMobile ? handleInteractionStart : undefined}
-        onMouseLeave={isMobile ? handleInteractionEnd : undefined}
-        onTouchStart={isMobile ? handleInteractionStart : undefined}
-        onTouchEnd={isMobile ? handleInteractionEnd : undefined}
-        onFocus={isMobile ? handleInteractionStart : undefined}
-        onBlur={isMobile ? handleInteractionEnd : undefined}
       >
         <div className="h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)]">
           <ChatSidebarHeader onNewChat={() => setIsModalOpen(true)} />

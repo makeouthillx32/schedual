@@ -37,14 +37,13 @@ export async function POST(req: NextRequest) {
     .from('channel_participants')
     .select('user_id')
     .eq('channel_id', channel_id)
-    .neq('user_id', user.id); // Exclude the sender
+    .neq('user_id', user.id);
 
   if (participantsError) {
     console.error('Failed to fetch channel participants:', participantsError.message);
-    // Continue anyway - message was sent successfully
   }
 
-  // 4️⃣ Derive display name from auth.user metadata
+  // 4️⃣ Get sender display name
   const metadata = (user.user_metadata as Record<string, any>) || {};
   const displayName =
     metadata.display_name ||
@@ -52,28 +51,77 @@ export async function POST(req: NextRequest) {
     user.email?.split('@')[0] ||
     'Someone';
 
-  // 5️⃣ Create notifications for each recipient
+  // 5️⃣ Create/update stacked notifications for each recipient
   if (participants && participants.length > 0) {
-    const notifications = participants.map(participant => ({
-      receiver_id: participant.user_id, // ✅ Use actual user ID, not channel ID
-      title: `${displayName} sent you a message`,
-      subtitle: content.length > 50 ? content.slice(0, 50) + '...' : content,
-      action_url: `/messages/${channel_id}`, // Adjust this URL to match your app routing
-      image_url: null, // You could add sender's avatar here if needed
-    }));
+    for (const participant of participants) {
+      // Check if there's already a recent notification from this sender to this recipient
+      const { data: existingNotification, error: checkError } = await supabase
+        .from('notifications')
+        .select('id, title')
+        .eq('receiver_id', participant.user_id)
+        .eq('sender_id', user.id)
+        .like('title', `%sent you%message%`) // Match message notifications
+        .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Within last 5 minutes
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    const { error: notifError } = await supabase
-      .from('notifications')
-      .insert(notifications);
+      if (checkError) {
+        console.error('Error checking existing notifications:', checkError);
+        continue;
+      }
 
-    if (notifError) {
-      console.error('Failed to create notifications:', notifError.message);
-      // Not fatal for the message send
-    } else {
-      console.log(`Created ${notifications.length} notification(s) for message in channel ${channel_id}`);
+      if (existingNotification) {
+        // Update existing notification with message count
+        const currentTitle = existingNotification.title;
+        let newTitle: string;
+        
+        // Extract current count if it exists
+        const countMatch = currentTitle.match(/^(\d+)\s/);
+        if (countMatch) {
+          // Already has a count, increment it
+          const currentCount = parseInt(countMatch[1]);
+          const newCount = currentCount + 1;
+          newTitle = `${newCount} ${displayName} sent you messages`;
+        } else {
+          // First stacked message
+          newTitle = `2 ${displayName} sent you messages`;
+        }
+
+        const { error: updateError } = await supabase
+          .from('notifications')
+          .update({
+            title: newTitle,
+            subtitle: `Latest: ${content.length > 50 ? content.slice(0, 50) + '...' : content}`,
+            created_at: new Date().toISOString(), // Update timestamp to keep it fresh
+          })
+          .eq('id', existingNotification.id);
+
+        if (updateError) {
+          console.error('Failed to update notification:', updateError);
+        } else {
+          console.log(`Updated stacked notification for ${participant.user_id}`);
+        }
+      } else {
+        // Create new notification
+        const { error: insertError } = await supabase
+          .from('notifications')
+          .insert({
+            sender_id: user.id,
+            receiver_id: participant.user_id,
+            title: `${displayName} sent you a message`,
+            subtitle: content.length > 50 ? content.slice(0, 50) + '...' : content,
+            action_url: `/messages/${channel_id}`,
+            image_url: null,
+          });
+
+        if (insertError) {
+          console.error('Failed to create notification:', insertError);
+        } else {
+          console.log(`Created new notification for ${participant.user_id}`);
+        }
+      }
     }
-  } else {
-    console.log('No other participants found in channel, no notifications created');
   }
 
   return NextResponse.json({ success: true });

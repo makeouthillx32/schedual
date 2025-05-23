@@ -282,16 +282,22 @@ export default function ChatMessages({
                     <p className="text-sm break-words">{message.content}</p>
                   )}
 
-                  {/* Display image */}
+                  {/* Display image - FIXED WITH PROPER CONSTRAINTS */}
                   {message.image && (
-                    <div className="mt-2 message-image">
+                    <div className="mt-2 message-image overflow-hidden rounded-[calc(var(--radius)_-_2px)]" style={{ maxHeight: '200px', maxWidth: '300px' }}>
                       <img
                         src={message.image}
                         alt="Shared"
-                        className="max-w-full rounded-[calc(var(--radius)_-_2px)] max-h-64 object-cover"
+                        style={{ 
+                          width: '100%', 
+                          height: 'auto', 
+                          maxHeight: '200px', 
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
-                            'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3d.org/2000/svg%22%20width=%22100%22%20height=%22100%22%20viewBox=%220%200%20100%20100%22%3E%3Cpath%20fill=%22%23CCC%22%20d=%22M0%200h100v100H0z%22/%3E%3Cpath%20fill=%22%23999%22%20d=%22M40%2040h20v20H40z%22/%3E%3C/svg%3E';
+                            'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%22%20height=%22100%22%20viewBox=%220%200%20100%20100%22%3E%3Cpath%20fill=%22%23CCC%22%20d=%22M0%200h100v100H0z%22/%3E%3Cpath%20fill=%22%23999%22%20d=%22M40%2040h20v20H40z%22/%3E%3C/svg%3E';
                         }}
                       />
                     </div>

@@ -115,14 +115,32 @@ $header-height: 70px; // Define header height for consistent spacing
   display: flex;
   animation: fade-in 0.3s ease;
   
+  // Close on backdrop click
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+  
   // Sidebar slides in from right
   .chat-right-sidebar-content {
     margin-left: auto;
     width: 85%;
     max-width: 320px;
     height: 100%;
+    background-color: var(--card);
+    border-left: 1px solid var(--border);
     transform: translateX(0);
     animation: slide-in-left 0.3s ease;
+    z-index: 2;
+    position: relative;
+    
+    // Ensure proper spacing from top
+    padding-top: env(safe-area-inset-top);
   }
 }
 
@@ -169,15 +187,30 @@ $header-height: 70px; // Define header height for consistent spacing
   display: flex;
   flex-direction: column;
   
+  // Desktop behavior
   @media (min-width: $breakpoint-lg) {
     position: relative;
     width: 280px;
     height: 100%;
     box-shadow: none;
+    
+    &.open {
+      transform: translateX(0);
+    }
   }
   
-  &.open {
-    transform: translateX(0);
+  // Mobile and tablet: only show when in overlay
+  @media (max-width: #{$breakpoint-lg - 1px}) {
+    // Hide the sidebar itself on mobile/tablet
+    // It will only be visible inside the overlay
+    display: none;
+    
+    // When inside overlay, show it
+    .mobile-right-sidebar-overlay & {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
   }
   
   &-content {
@@ -354,6 +387,153 @@ $header-height: 70px; // Define header height for consistent spacing
     padding: 16px;
   }
   
+  // Attachments preview (multiple files)
+  .attachments-preview {
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: var(--muted);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    
+    .attachments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      
+      .attachments-count {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted-foreground);
+      }
+      
+      .clear-all-attachments {
+        background: transparent;
+        border: none;
+        color: var(--destructive);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: background-color 0.2s ease;
+        
+        &:hover:not(:disabled) {
+          background-color: var(--destructive);
+          color: var(--destructive-foreground);
+        }
+        
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+    
+    .attachments-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  }
+  
+  // Individual attachment preview
+  .attachment-preview {
+    &-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      background-color: var(--background);
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .image-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      
+      .preview-image {
+        width: 32px;
+        height: 32px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+      }
+      
+      .image-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+    }
+    
+    .file-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      
+      .file-icon {
+        color: var(--muted-foreground);
+        flex-shrink: 0;
+      }
+      
+      .file-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+    }
+    
+    .file-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--foreground);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .file-size {
+      font-size: 10px;
+      color: var(--muted-foreground);
+    }
+    
+    .remove-attachment {
+      background: var(--destructive);
+      color: var(--destructive-foreground);
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      flex-shrink: 0;
+      
+      &:hover:not(:disabled) {
+        background: var(--destructive);
+        opacity: 0.8;
+      }
+      
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+  
   &-form {
     display: flex;
     align-items: center;
@@ -370,9 +550,19 @@ $header-height: 70px; // Define header height for consistent spacing
     min-height: 20px; // Ensure there's always space to type
     font-size: 14px;
     max-height: 80px; // Prevent massive expansion
+    color: var(--foreground);
     
     &:focus {
       outline: none;
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    &::placeholder {
+      color: var(--muted-foreground);
     }
   }
   
@@ -382,10 +572,26 @@ $header-height: 70px; // Define header height for consistent spacing
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    border-radius: 18px;
+    transition: all 0.2s ease;
     
     @media (min-width: $breakpoint-md) {
       width: 40px;
       height: 40px;
+    }
+    
+    &:hover:not(:disabled) {
+      background-color: var(--accent);
+      color: var(--foreground);
+    }
+    
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
   
@@ -396,6 +602,10 @@ $header-height: 70px; // Define header height for consistent spacing
     align-items: center;
     justify-content: center;
     border-radius: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
     
     @media (min-width: $breakpoint-md) {
       width: 40px;
@@ -403,16 +613,32 @@ $header-height: 70px; // Define header height for consistent spacing
     }
     
     &.active {
-      color: var(--button1-background);
+      background-color: var(--primary);
+      color: var(--primary-foreground);
+      
+      &:hover {
+        background-color: var(--primary);
+        opacity: 0.9;
+      }
     }
     
     &.disabled {
       color: var(--muted-foreground);
       opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    // Loading spinner
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--muted-foreground);
+      border-top: 2px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
   }
 }
-
 // =======================================
 // NEW CHAT MODAL COMPONENT
 // =======================================

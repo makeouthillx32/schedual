@@ -299,18 +299,19 @@ export default function ChatPage() {
     
   }, [selectedChat?.id]); // Removed isMobile dependency
 
-  // 3️⃣ Send new message - FIXED FUNCTION
-  const handleSendMessage = async (e) => {
+  // 3️⃣ Send new message - UPDATED FOR YOUR DATABASE SCHEMA
+  const handleSendMessage = async (e, attachments = null) => {
     e.preventDefault();
     
-    if (!messageText.trim() || !selectedChat || !currentUserId) {
+    if (!messageText.trim() && !attachments?.length || !selectedChat || !currentUserId) {
       console.log("[ChatPage] Cannot send message - missing data:", { 
         hasMessage: !!messageText.trim(), 
+        hasAttachments: !!attachments?.length,
         hasSelectedChat: !!selectedChat, 
         hasUser: !!currentUserId 
       });
       
-      if (!messageText.trim()) {
+      if (!messageText.trim() && !attachments?.length) {
         return; // Silent return for empty messages
       }
       
@@ -318,7 +319,7 @@ export default function ChatPage() {
       return;
     }
 
-    const messageContent = messageText.trim();
+    const messageContent = messageText.trim() || '';
     
     // Clear input right away for better UX
     setMessageText('');
@@ -338,7 +339,8 @@ export default function ChatPage() {
       content: messageContent,
       timestamp: new Date().toISOString(),
       likes: 0,
-      image: null,
+      image: attachments?.find(a => a.type === 'image')?.url || null,
+      attachments: attachments || [],
       sender: {
         id: currentUserId,
         name: userProfile.name,
@@ -361,21 +363,45 @@ export default function ChatPage() {
       console.log(`[ChatPage] Sending message to channel ${selectedChat.id}:`, messageContent);
       
       // Send message to Supabase
-      const { error } = await supabase
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
           channel_id: selectedChat.id,
           sender_id: currentUserId,
           content: messageContent
-        });
+        })
+        .select('id')
+        .single();
 
-      if (error) {
-        console.error('[ChatPage] Send error:', error);
+      if (messageError) {
+        console.error('[ChatPage] Message send error:', messageError);
         toast.error("Failed to send message");
-        
-        // Remove optimistic message on error
         setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
+        return;
       }
+
+      // If there are attachments, save them to message_attachments table
+      if (attachments?.length > 0) {
+        const attachmentInserts = attachments.map(attachment => ({
+          message_id: messageData.id,
+          file_url: attachment.url,
+          file_type: attachment.type,
+          file_name: attachment.name,
+          file_size: attachment.size
+        }));
+
+        const { error: attachmentError } = await supabase
+          .from('message_attachments')
+          .insert(attachmentInserts);
+
+        if (attachmentError) {
+          console.error('[ChatPage] Attachment save error:', attachmentError);
+          toast.error("Message sent but attachments failed to save");
+        } else {
+          toast.success(`Message sent with ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}!`);
+        }
+      }
+
     } catch (err) {
       console.error('[ChatPage] Error sending message:', err);
       toast.error("Failed to send message");
@@ -536,14 +562,24 @@ export default function ChatPage() {
 
           {/* Mobile right sidebar overlay */}
           {showRightSidebar && (
-            <div className="mobile-right-sidebar-overlay">
-              <ChatRightSidebar
-                selectedChatName={resolvedName}
-                participants={sidebarParticipants}
-                avatarColors={avatarColors}
-                isGroup={selectedChat.is_group}
-                onClose={() => setShowRightSidebar(false)}
-              />
+            <div 
+              className="mobile-right-sidebar-overlay"
+              onClick={(e) => {
+                // Close if clicking on backdrop (not the sidebar content)
+                if (e.target === e.currentTarget) {
+                  setShowRightSidebar(false);
+                }
+              }}
+            >
+              <div className="chat-right-sidebar-content">
+                <ChatRightSidebar
+                  selectedChatName={resolvedName}
+                  participants={sidebarParticipants}
+                  avatarColors={avatarColors}
+                  isGroup={selectedChat.is_group}
+                  onClose={() => setShowRightSidebar(false)}
+                />
+              </div>
             </div>
           )}
         </div>

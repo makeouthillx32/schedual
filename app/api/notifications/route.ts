@@ -48,12 +48,28 @@ export async function GET() {
 
     const roleColumn = roleColumnMap[profile.role];
 
-    // Build query - get notifications targeted to this user specifically OR to their role
+    // Build query with updated column names
     let query = supabase
       .from("notifications")
-      .select("id, title, subtitle, image_url, action_url, created_at, receiver_id")
+      .select(`
+        id, 
+        sender_id,
+        receiver_id,
+        type,
+        title, 
+        content,
+        metadata,
+        image_url, 
+        action_url, 
+        is_read,
+        created_at,
+        role_admin,
+        role_jobcoach,
+        role_client,
+        role_user
+      `)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50); // Increased limit since we're doing frontend grouping
 
     if (roleColumn) {
       // User-specific notifications OR role-based notifications
@@ -72,8 +88,28 @@ export async function GET() {
 
     console.log(`Fetched ${notifications?.length || 0} notifications for user ${user.id} (role: ${profile.role})`);
     
+    // Transform notifications to match frontend interface
+    const transformedNotifications = (notifications || []).map(notification => ({
+      id: notification.id,
+      sender_id: notification.sender_id,
+      receiver_id: notification.receiver_id,
+      type: notification.type || 'general', // Default type for old notifications
+      title: notification.title,
+      content: notification.content || '', // Use content instead of subtitle
+      subtitle: notification.content || '', // Keep subtitle for backward compatibility
+      metadata: notification.metadata || {},
+      image_url: notification.image_url,
+      action_url: notification.action_url,
+      is_read: notification.is_read || false,
+      created_at: notification.created_at,
+      role_admin: notification.role_admin || false,
+      role_jobcoach: notification.role_jobcoach || false,
+      role_client: notification.role_client || false,
+      role_user: notification.role_user || false,
+    }));
+    
     return NextResponse.json({ 
-      notifications: notifications || [],
+      notifications: transformedNotifications,
       user_id: user.id,
       user_role: profile.role
     });

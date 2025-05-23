@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { BellIcon } from "./icons";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -20,6 +21,7 @@ interface Notification {
   type: string;
   title: string;
   content: string;
+  subtitle: string;
   metadata?: any;
   image_url: string | null;
   action_url: string | null;
@@ -32,22 +34,23 @@ interface Notification {
 }
 
 interface StackedNotification {
-  id: string; // Use the latest notification's ID
+  id: string;
   type: string;
   sender_id: string | null;
   sender_name: string;
   title: string;
-  content: string; // Latest message content
+  content: string;
   image_url: string | null;
   action_url: string | null;
-  created_at: string; // Latest timestamp
-  count: number; // Number of notifications in this stack
+  created_at: string;
+  count: number;
   isStacked: boolean;
-  notifications: Notification[]; // All notifications in this group
+  notifications: Notification[];
 }
 
 export function Notification() {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedStacks, setExpandedStacks] = useState<Set<string>>(new Set());
   const { notifications, newNotificationCount, markAsRead, loading } = useRealtimeNotifications();
   const isMobile = useIsMobile();
   
@@ -58,7 +61,11 @@ export function Notification() {
     
     // First pass: Group message notifications by sender
     notifications.forEach((notification) => {
-      if (notification.type === 'message' && notification.sender_id) {
+      const isMessage = notification.type === 'message' || 
+                       notification.title?.includes('sent you a message') ||
+                       notification.title?.includes('sent you messages');
+      
+      if (isMessage && notification.sender_id) {
         const groupKey = `message-${notification.sender_id}-${notification.receiver_id}`;
         
         if (!messageGroups[groupKey]) {
@@ -66,18 +73,18 @@ export function Notification() {
         }
         messageGroups[groupKey].push(notification);
       } else {
-        // Non-message notifications (signup, payment, etc.) - show individually
+        // Non-message notifications - show individually
         const senderName = notification.metadata?.sender_name || 
                           notification.title.split(' ')[0] || 
                           'Someone';
         
         stacked.push({
           id: notification.id,
-          type: notification.type,
+          type: notification.type || 'general',
           sender_id: notification.sender_id,
           sender_name: senderName,
           title: notification.title,
-          content: notification.content || '',
+          content: notification.content || notification.subtitle || '',
           image_url: notification.image_url,
           action_url: notification.action_url,
           created_at: notification.created_at,
@@ -97,18 +104,18 @@ export function Notification() {
       
       const latest = sortedGroup[0];
       const senderName = latest.metadata?.sender_name || 
-                        latest.title.replace(' sent you a message', '') || 
+                        latest.title.replace(' sent you a message', '').replace(' sent you messages', '') || 
                         'Someone';
       
       const stackedNotification: StackedNotification = {
-        id: latest.id,
+        id: groupKey, // Use groupKey as ID for stack management
         type: 'message',
         sender_id: latest.sender_id,
         sender_name: senderName,
         title: group.length === 1 
           ? `${senderName} sent you a message`
           : `${senderName} sent you ${group.length} messages`,
-        content: latest.content || '',
+        content: latest.content || latest.subtitle || '',
         image_url: latest.image_url,
         action_url: latest.action_url,
         created_at: latest.created_at,
@@ -133,7 +140,33 @@ export function Notification() {
     }
   };
 
-  // Calculate total unread count (sum of all individual notifications)
+  const toggleStackExpansion = (stackId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setExpandedStacks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(stackId)) {
+        newSet.delete(stackId);
+      } else {
+        newSet.add(stackId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date().getTime();
+    const time = new Date(timestamp).getTime();
+    const diffInMinutes = Math.floor((now - time) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
+  // Calculate total unread count
   const totalUnreadCount = useMemo(() => {
     return stackedNotifications.reduce((total, stack) => total + stack.count, 0);
   }, [stackedNotifications]);
@@ -181,42 +214,90 @@ export function Notification() {
                 No notifications
               </li>
             ) : (
-              stackedNotifications.map((item, index) => (
-                <li key={`${item.id}-${index}`} role="menuitem">
-                  <Link
-                    href={item.action_url || "#"}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-4 rounded-[var(--radius)] px-2 py-1.5 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]"
-                  >
+              stackedNotifications.map((item, index) => {
+                const isExpanded = expandedStacks.has(item.id);
+                
+                return (
+                  <li key={`${item.id}-${index}`} role="menuitem">
+                    {/* Main notification */}
                     <div className="relative">
-                      <Image
-                        src={item.image_url || "/default-avatar.png"}
-                        className="size-14 rounded-full object-cover"
-                        width={200}
-                        height={200}
-                        alt="User"
-                      />
-                      {/* Count badge for stacked notifications */}
-                      {item.isStacked && item.count > 1 && (
-                        <span className="absolute -top-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-[hsl(var(--destructive))] text-xs font-bold text-white ring-2 ring-[hsl(var(--background))]">
-                          {item.count > 9 ? '9+' : item.count}
-                        </span>
+                      <Link
+                        href={item.action_url || "#"}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-4 rounded-[var(--radius)] px-2 py-1.5 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]"
+                      >
+                        <div className="relative">
+                          <Image
+                            src={item.image_url || "/default-avatar.png"}
+                            className="size-14 rounded-full object-cover"
+                            width={200}
+                            height={200}
+                            alt="User"
+                          />
+                          {/* Count badge for stacked notifications */}
+                          {item.isStacked && item.count > 1 && (
+                            <span className="absolute -top-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-[hsl(var(--destructive))] text-xs font-bold text-white ring-2 ring-[hsl(var(--background))]">
+                              {item.count > 9 ? '9+' : item.count}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <strong className="block text-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] truncate">
+                            {item.title}
+                          </strong>
+                          <span className="block text-sm font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] truncate">
+                            {item.isStacked 
+                              ? `Latest: ${item.content}` 
+                              : item.content
+                            }
+                          </span>
+                          <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                            {formatTimeAgo(item.created_at)}
+                          </span>
+                        </div>
+                      </Link>
+                      
+                      {/* Expand/Collapse button for stacked notifications */}
+                      {item.isStacked && (
+                        <button
+                          onClick={(e) => toggleStackExpansion(item.id, e)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] transition-colors"
+                          aria-label={isExpanded ? "Collapse messages" : "Expand messages"}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp size={16} className="text-[hsl(var(--muted-foreground))]" />
+                          ) : (
+                            <ChevronDown size={16} className="text-[hsl(var(--muted-foreground))]" />
+                          )}
+                        </button>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <strong className="block text-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] truncate">
-                        {item.title}
-                      </strong>
-                      <span className="block text-sm font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] truncate">
-                        {item.isStacked 
-                          ? `Latest: ${item.content}` 
-                          : item.content
-                        }
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              ))
+
+                    {/* Expanded individual notifications */}
+                    {item.isStacked && isExpanded && (
+                      <div className="ml-4 mt-2 space-y-1 border-l-2 border-[hsl(var(--border))] pl-4">
+                        {item.notifications.map((notification, notifIndex) => (
+                          <Link
+                            key={notification.id}
+                            href={notification.action_url || "#"}
+                            onClick={() => setIsOpen(false)}
+                            className="block rounded-[var(--radius)] px-2 py-2 text-sm hover:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] transition-colors"
+                          >
+                            <div className="flex justify-between items-start">
+                              <span className="text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] truncate flex-1">
+                                {notification.content || notification.subtitle}
+                              </span>
+                              <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2 whitespace-nowrap">
+                                {formatTimeAgo(notification.created_at)}
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })
             )}
           </ul>
         )}

@@ -4,7 +4,7 @@
 $breakpoint-sm: 640px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 1024px;
-$header-height: 70px; // Define header height for consistent spacing
+$header-height: 70px;
 
 // =======================================
 // RIGHT SIDEBAR COMPONENT
@@ -29,16 +29,13 @@ $header-height: 70px; // Define header height for consistent spacing
   
   // Mobile and tablet: only show when in overlay
   @media (max-width: #{$breakpoint-lg - 1px}) {
-    // Hide the sidebar itself on mobile/tablet
-    // It will only be visible inside the overlay
     display: none;
     
-    // When inside overlay, show it
     .mobile-right-sidebar-overlay & {
       display: flex;
       width: 100%;
       height: 100%;
-      background-color: var(--card); // Ensure background is set
+      background-color: var(--card);
     }
   }
   
@@ -46,29 +43,40 @@ $header-height: 70px; // Define header height for consistent spacing
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: env(safe-area-inset-bottom); // Safe area for iOS
-    background-color: var(--card); // Ensure background is set
-  }
-  
-  // Make sure sidebar header isn't cut off
-  .p-4 {
-    padding: 16px;
-    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: env(safe-area-inset-bottom);
+    background-color: var(--card);
+    opacity: 1;
   }
 }
 
-// Target the actual class used in the component
+// Force override the component's inline styles
 .chat-right-sidebar-content {
   background-color: var(--card) !important;
   color: var(--card-foreground) !important;
+  opacity: 1 !important;
   
-  // Override any Tailwind inline styles
+  // Force all child elements to inherit proper styling
   * {
-    color: inherit;
+    background-color: inherit;
+    opacity: inherit;
   }
   
-  // Ensure all sections inherit proper background
-  > div {
-    background-color: inherit;
+  // Specific overrides for sections
+  .p-4, .participants-list, div[class*="p-4"] {
+    background-color: var(--card) !important;
+    opacity: 1 !important;
+  }
+  
+  // Override any transparent backgrounds
+  &[style*="background"] {
+    background-color: var(--card) !important;
+  }
+}
+
+// Override mobile overlay transparency
+.mobile-right-sidebar-overlay {
+  .chat-right-sidebar-content {
+    background-color: var(--card) !important;
+    opacity: 1 !important;
   }
 }

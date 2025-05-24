@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Search, Users, UserCircle } from 'lucide-react';
 import { Conversation } from './ChatSidebar';
-import './mobile.scss';
+import './NewChatModal.scss';
 
 
 interface User {

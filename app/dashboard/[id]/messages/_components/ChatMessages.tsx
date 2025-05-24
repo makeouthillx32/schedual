@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { useState, useRef, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
-import './mobile.scss';
+import './ChatMessages.scss';
 
 // Create Supabase client
 const supabase = createBrowserClient(

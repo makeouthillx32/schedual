@@ -4,7 +4,7 @@ import { Image, X, Pencil } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRealtime } from '@/hooks/useRealtimeInsert';
-import './ChatRightSidebar.scss';
+import './mobile.scss';
 
 // Create Supabase client
 const supabase = createBrowserClient(

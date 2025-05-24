@@ -2,7 +2,6 @@
 
 import { Info, Phone, Video, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import './ChatHeader.scss';
 import './mobile.scss';
 
 interface Participant {

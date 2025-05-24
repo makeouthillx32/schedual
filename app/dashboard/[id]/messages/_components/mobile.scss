@@ -1,4 +1,14 @@
 // =======================================
+// COMPONENT IMPORTS
+// =======================================
+@import './ChatSidebar.scss';
+@import './ChatMessages.scss';
+@import './ChatHeader.scss';
+@import './ChatRightSidebar.scss';
+@import './MessageInput.scss';
+@import './NewChatModal.scss';
+
+// =======================================
 // VARIABLES AND BREAKPOINTS
 // =======================================
 $breakpoint-sm: 640px;
@@ -48,36 +58,6 @@ $header-height: 70px; // Define header height for consistent spacing
 }
 
 // =======================================
-// CONTAINER LAYOUT
-// =======================================
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 70px); // Subtract header height
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  background-color: var(--background);
-  color: var(--foreground);
-
-  @media (min-width: $breakpoint-md) {
-    flex-direction: row;
-  }
-}
-
-// Main chat content area
-.chat-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  position: relative;
-  height: 100%;
-  overflow: hidden; // Important: prevent content from overflowing
-  background-color: var(--background);
-}
-
-// =======================================
 // MOBILE-SPECIFIC LAYOUTS
 // =======================================
 
@@ -109,7 +89,6 @@ $header-height: 70px; // Define header height for consistent spacing
     display: none; // Hide on desktop
   }
 }
-
 
 // =======================================
 // RESPONSIVE FIXES FOR MOBILE

@@ -4,7 +4,7 @@ import { Smile, Paperclip, Send, X, Image, FileText } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
-import './MessageInput.scss';
+import './mobile.scss';
 
 // Create Supabase client
 const supabase = createBrowserClient(

@@ -1,12 +1,4 @@
 // =======================================
-// VARIABLES AND BREAKPOINTS
-// =======================================
-$breakpoint-sm: 640px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 1024px;
-$header-height: 70px;
-
-// =======================================
 // CHAT HEADER COMPONENT
 // =======================================
 .chat-header {
@@ -16,10 +8,22 @@ $header-height: 70px;
   border-bottom: 1px solid var(--border);
   background-color: var(--card);
   color: var(--card-foreground);
-  z-index: 10; // Increased from 5 to 10
+  z-index: 20; // Higher z-index for mobile sticky behavior
   flex-shrink: 0; // Prevent header from shrinking
   position: sticky; // Make it sticky
   top: 0; // Stick to top
+  
+  // Enhanced mobile sticky behavior
+  @media (max-width: 767px) {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background-color: var(--card) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
   
   &-back-button {
     display: flex;
@@ -67,7 +71,7 @@ $header-height: 70px;
     display: flex;
     gap: 8px;
     
-    @media (min-width: $breakpoint-md) {
+    @media (min-width: 768px) {
       gap: 16px;
     }
     
@@ -84,7 +88,7 @@ $header-height: 70px;
       cursor: pointer;
       transition: background-color 0.2s ease;
       
-      @media (min-width: $breakpoint-md) {
+      @media (min-width: 768px) {
         width: 40px;
         height: 40px;
       }

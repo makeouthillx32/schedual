@@ -88,6 +88,7 @@ $header-height: 70px; // Define header height for consistent spacing
     }
   }
 }
+
 // =======================================
 // MESSAGE CONTEXT MENU
 // =======================================
@@ -130,6 +131,7 @@ $header-height: 70px; // Define header height for consistent spacing
     }
   }
 }
+
 // =======================================
 // CONTAINER LAYOUT
 // =======================================
@@ -158,4 +160,22 @@ $header-height: 70px; // Define header height for consistent spacing
   height: 100%;
   overflow: hidden; // Important: prevent content from overflowing
   background-color: var(--background);
+}
+
+// =======================================
+// MOBILE RESPONSIVE FIXES
+// =======================================
+@media (max-width: #{$breakpoint-md - 1px}) {
+  // Fix iOS height issues for chat container
+  .chat-container {
+    height: 100dvh; // Use dynamic viewport height for better mobile support
+    min-height: 100%;
+  }
+  
+  // Improve mobile scrolling performance for messages
+  .chat-messages {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
 }

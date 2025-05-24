@@ -1,14 +1,4 @@
 // =======================================
-// COMPONENT IMPORTS
-// =======================================
-@import './ChatSidebar.scss';
-@import './ChatMessages.scss';
-@import './ChatHeader.scss';
-@import './ChatRightSidebar.scss';
-@import './MessageInput.scss';
-@import './NewChatModal.scss';
-
-// =======================================
 // VARIABLES AND BREAKPOINTS
 // =======================================
 $breakpoint-sm: 640px;
@@ -67,67 +57,6 @@ $header-height: 70px; // Define header height for consistent spacing
   font-weight: 600;
 }
 
-// =======================================
-// CONTAINER LAYOUT
-// =======================================
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - $header-height);
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  background-color: var(--background);
-  color: var(--foreground);
-
-  @media (min-width: $breakpoint-md) {
-    flex-direction: row;
-  }
-}
-
-// Main chat content area
-.chat-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--background);
-}
-
-// =======================================
-// SIDEBAR LAYOUTS
-// =======================================
-.chat-sidebar {
-  width: 100%;
-  height: 100%;
-  z-index: 10;
-  background-color: var(--card);
-  color: var(--card-foreground);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  
-  @media (min-width: $breakpoint-md) {
-    width: 280px;
-    flex-shrink: 0;
-    border-right: 1px solid var(--border);
-  }
-  
-  & > div {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    
-    .overflow-y-auto {
-      flex: 1;
-      -webkit-overflow-scrolling: touch;
-    }
-  }
-}
 
 // =======================================
 // MOBILE-SPECIFIC LAYOUTS
@@ -140,7 +69,7 @@ $header-height: 70px; // Define header height for consistent spacing
   display: flex;
   flex-direction: column;
   background-color: var(--card);
-  margin-top: $header-height;
+  margin-top: 0; // Remove margin-top since breadcrumbs handle spacing
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
@@ -155,124 +84,9 @@ $header-height: 70px; // Define header height for consistent spacing
   flex-direction: column;
   background-color: var(--background);
   position: relative;
-  margin-top: $header-height;
+  margin-top: 0; // Remove margin-top since breadcrumbs handle spacing
   
   @media (min-width: $breakpoint-md) {
     display: none; // Hide on desktop
-  }
-  
-  // Chat messages area should be scrollable with proper spacing
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    padding: 16px 12px;
-    
-    // Ensure content doesn't get hidden behind sticky header
-    &:first-child {
-      padding-top: 20px;
-    }
-  }
-  
-  // Message input should stick to bottom
-  .message-input {
-    position: sticky;
-    bottom: 0;
-    z-index: 15;
-    flex-shrink: 0;
-    background-color: var(--card);
-    border-top: 1px solid var(--border);
-  }
-}
-
-// Mobile right sidebar overlay
-.mobile-right-sidebar-overlay {
-  position: fixed;
-  top: $header-height;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 50;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  animation: fade-in 0.3s ease;
-  
-  .chat-right-sidebar-content {
-    margin-left: auto;
-    width: 85%;
-    max-width: 320px;
-    height: 100%;
-    background-color: var(--card);
-    border-left: 1px solid var(--border);
-    transform: translateX(0);
-    animation: slide-in-right 0.3s ease;
-    z-index: 2;
-    position: relative;
-    padding-top: env(safe-area-inset-top);
-  }
-}
-
-// =======================================
-// RESPONSIVE FIXES FOR MOBILE
-// =======================================
-@media (max-width: #{$breakpoint-md - 1px}) {
-  // Better tap targets for mobile
-  button, a, .participant, .message-input-icon {
-    min-height: 44px; // Apple's recommended minimum tap target size
-    touch-action: manipulation; // Remove 300ms delay
-  }
-  
-  // Fix for iOS input focus causing viewport shift
-  input, textarea {
-    font-size: 16px; // Prevents zoom on iOS when focusing inputs
-  }
-  
-  // Fix iOS height issues, especially with keyboard open
-  .chat-container {
-    height: 100dvh; // Use dynamic viewport height for better mobile support
-    min-height: 100%;
-  }
-  
-  // Add overscroll behavior to prevent pull-to-refresh
-  .chat-messages, .chat-sidebar > div .overflow-y-auto {
-    overscroll-behavior: contain;
-  }
-  
-  // Improve mobile scrolling performance
-  .chat-messages, .overflow-y-auto {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-}
-
-// =======================================
-// IOS SAFARI FIXES
-// =======================================
-
-// Safe area insets for notched devices
-@supports (padding: max(0px)) {
-  .message-input {
-    padding-bottom: max(12px, env(safe-area-inset-bottom) + 4px);
-  }
-  
-  .chat-right-sidebar {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  
-  .mobile-conversation-list,
-  .mobile-chat-view {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-// Fix for stuck hover states on iOS
-@media (pointer: coarse) {
-  .participant:hover,
-  .message-input-icon:hover,
-  .send-button:hover,
-  button:hover {
-    background-color: transparent !important;
   }
 }

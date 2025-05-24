@@ -44,10 +44,10 @@ $header-height: 70px;
   }
 }
 
-// Mobile right sidebar overlay (still needed for info panel)
+// Mobile right sidebar overlay
 .mobile-right-sidebar-overlay {
   position: fixed;
-  top: 70px; // Start below header
+  top: $header-height;
   left: 0;
   right: 0;
   bottom: 0;
@@ -76,7 +76,7 @@ $header-height: 70px;
     background-color: var(--card);
     border-left: 1px solid var(--border);
     transform: translateX(0);
-    animation: slide-in-left 0.3s ease;
+    animation: slide-in-right 0.3s ease;
     z-index: 2;
     position: relative;
     
@@ -85,5 +85,13 @@ $header-height: 70px;
   }
 }
 
+// =======================================
+// IOS SAFARI FIXES
+// =======================================
 
-
+// Safe area insets for notched devices
+@supports (padding: max(0px)) {
+  .chat-right-sidebar {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

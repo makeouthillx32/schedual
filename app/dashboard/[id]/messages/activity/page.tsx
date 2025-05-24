@@ -1,16 +1,16 @@
-// app/dashboard/[id]/messages/page.tsx
+// app/dashboard/[id]/messages/activity/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import Last4Weeks from "./_components/last_4weeks";
 import Last7d from "./_components/last_7d";
 import Last24h from "./_components/last_24hrs";
 import GeneralMessageDataCard from "./_components/general_data";
 import ChatBox from "./_components/ChatBox";
-
 
 export default function MessagesActivityPage() {
   return (
@@ -38,6 +38,7 @@ function ClientComponent() {
   if (loading) {
     return (
       <>
+        <Breadcrumb pageName="Messages Analytics" />
         <div className="mt-10 ml-10 text-2xl">Messages Analytics</div>
         <hr className="mt-2 mr-5 ml-5 w-50 sm:w-dvh" />
 
@@ -65,6 +66,7 @@ function ClientComponent() {
 
   return (
     <>
+      <Breadcrumb pageName="Messages Analytics" />
       <div className="mt-10 ml-10 text-2xl">Messages Analytics</div>
       <hr className="mt-2 mr-5 ml-5 w-50 sm:w-dvh" />
 

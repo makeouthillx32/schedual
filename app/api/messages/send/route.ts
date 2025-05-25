@@ -15,57 +15,71 @@ export async function POST(req: NextRequest) {
     content: string;
   } = await req.json();
 
+  console.log('🔥 MESSAGE SEND STARTED:', { channel_id, content: content.slice(0, 20) + '...' });
+
   // 1️⃣ Authenticate
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
   if (authError || !user) {
+    console.log('🔥 AUTH FAILED:', authError?.message);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  console.log('🔥 USER AUTHENTICATED:', user.id);
 
   // 2️⃣ Insert the message
   const { error: insertError } = await supabase
     .from('messages')
     .insert({ channel_id, sender_id: user.id, content });
   if (insertError) {
+    console.log('🔥 MESSAGE INSERT FAILED:', insertError.message);
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  // 3️⃣ Call the notification API to handle stacked notifications
+  console.log('🔥 MESSAGE INSERTED SUCCESSFULLY');
+
+  // 3️⃣ Call notification API with the EXACT same data the SQL trigger would have
   try {
-    // Get the base URL for the API call
-    const protocol = req.headers.get('x-forwarded-proto') || (req.url?.startsWith('https') ? 'https' : 'http');
-    const host = req.headers.get('host');
-    const baseUrl = `${protocol}://${host}`;
+    console.log('🔥 CALLING NOTIFICATION API...');
     
-    console.log(`Calling notification API: ${baseUrl}/api/notifications/create-message`);
+    // Call our notification API internally (same server)
+    const notificationApiUrl = `${req.nextUrl.origin}/api/notifications/create-message`;
     
-    const notificationResponse = await fetch(`${baseUrl}/api/notifications/create-message`, {
+    const notificationPayload = {
+      channel_id: channel_id,
+      sender_id: user.id,  // This is NEW.sender_id from the SQL trigger
+      content: content     // This is NEW.content from the SQL trigger
+    };
+    
+    console.log('🔥 NOTIFICATION PAYLOAD:', notificationPayload);
+    
+    const notificationResponse = await fetch(notificationApiUrl, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        // Forward any necessary auth headers
+        // Forward cookies for authentication
         'Cookie': req.headers.get('cookie') || '',
       },
-      body: JSON.stringify({
-        channel_id: channel_id,
-        sender_id: user.id,
-        content: content
-      })
+      body: JSON.stringify(notificationPayload)
     });
     
+    const responseText = await notificationResponse.text();
+    console.log('🔥 NOTIFICATION API RESPONSE STATUS:', notificationResponse.status);
+    console.log('🔥 NOTIFICATION API RESPONSE:', responseText);
+    
     if (!notificationResponse.ok) {
-      const errorText = await notificationResponse.text();
-      console.error('Failed to create notifications:', errorText);
+      console.error('🔥 NOTIFICATION API FAILED');
+      // Don't fail the message send, just log the error
     } else {
-      const result = await notificationResponse.json();
-      console.log('Notifications processed:', result);
+      console.log('🔥 NOTIFICATION API SUCCESS');
     }
   } catch (error) {
-    console.error('Error calling notification API:', error);
-    // Don't fail the message send if notifications fail
+    console.error('🔥 NOTIFICATION API ERROR:', error);
+    // Don't fail the message send, just log the error
   }
 
+  console.log('🔥 MESSAGE SEND COMPLETED');
   return NextResponse.json({ success: true });
 }

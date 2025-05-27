@@ -7,33 +7,16 @@ import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 import './ChatMessages.scss';
 
-// Create Supabase client
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-interface Attachment {
-  id: string;
-  url: string;
-  type: string;
-  name: string;
-  size: number;
-}
+const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 interface Message {
   id: string | number;
-  sender: {
-    id: string;
-    name: string;
-    avatar: string;
-    email: string;
-  };
+  sender: { id: string; name: string; avatar: string; email: string; };
   content: string;
   timestamp: string;
   likes: number;
   image: string | null;
-  attachments?: Attachment[];
+  attachments?: Array<{ id: string; url: string; type: string; name: string; size: number; }>;
 }
 
 interface ChatMessagesProps {
@@ -44,147 +27,81 @@ interface ChatMessagesProps {
   onMessageDelete?: (messageId: string | number) => void;
 }
 
-interface ContextMenuProps {
-  messageId: string | number;
-  messageContent: string;
-  messageElement: HTMLElement;
-  canDelete: boolean;
-  onDelete: () => void;
-  onCopy: (content: string) => void;
-  onClose: () => void;
-}
-
-// Context menu component that follows the message
-function MessageContextMenu({ 
-  messageId, 
-  messageContent, 
-  messageElement, 
-  canDelete, 
-  onDelete, 
-  onCopy, 
-  onClose 
-}: ContextMenuProps) {
+function ContextMenu({ x, y, messageContent, canDelete, onCopy, onDelete, onClose }: {
+  x: number; y: number; messageContent: string; canDelete: boolean;
+  onCopy: () => void; onDelete: () => void; onClose: () => void;
+}) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-
-  // Update position based on message element
-  const updatePosition = () => {
-    if (messageElement && menuRef.current) {
-      const messageRect = messageElement.getBoundingClientRect();
-      const menuRect = menuRef.current.getBoundingClientRect();
-      const viewport = {
-        width: window.innerWidth,
-        height: window.innerHeight
-      };
-
-      let x = messageRect.left + messageRect.width / 2 - menuRect.width / 2;
-      let y = messageRect.top - menuRect.height - 10; // 10px gap above message
-
-      // Adjust if menu would go off screen
-      if (x < 10) x = 10;
-      if (x + menuRect.width > viewport.width - 10) {
-        x = viewport.width - menuRect.width - 10;
-      }
-      
-      // If no room above, show below
-      if (y < 10) {
-        y = messageRect.bottom + 10;
-      }
-
-      setPosition({ x, y });
-    }
-  };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    const handleScroll = () => {
-      updatePosition();
-    };
-
-    // Initial position calculation
-    updatePosition();
-
-    // Add event listeners
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    document.addEventListener('scroll', handleScroll, true); // Capture scroll events
-    window.addEventListener('resize', updatePosition);
-
-    // Update position on animation frame for smooth following
-    const intervalId = setInterval(updatePosition, 16); // ~60fps
-
+    const handleKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', updatePosition);
-      clearInterval(intervalId);
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
     };
-  }, [messageElement, onClose]);
-
-  const handleCopy = () => {
-    onCopy(messageContent);
-    onClose();
-  };
-
-  const handleDelete = () => {
-    onDelete();
-    onClose();
-  };
+  }, [onClose]);
 
   return (
     <div
       ref={menuRef}
-      className="message-context-menu"
-      style={{ 
-        left: position.x, 
-        top: position.y,
+      style={{
+        position: 'fixed',
+        left: x,
+        top: y,
+        zIndex: 9999,
         backgroundColor: 'hsl(var(--card))',
         border: '1px solid hsl(var(--border))',
         borderRadius: 'var(--radius)',
         boxShadow: 'var(--shadow-lg)',
-        position: 'fixed',
-        zIndex: 9999 // Ensure it's always on top
+        padding: '6px',
+        minWidth: '160px'
       }}
     >
-      {/* Copy button - always available */}
       <button
-        onClick={handleCopy}
-        className="context-menu-item copy-item"
+        onClick={onCopy}
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          width: '100%',
+          padding: '10px 12px',
+          background: 'transparent',
+          border: 'none',
           borderRadius: 'calc(var(--radius) - 2px)',
-          color: 'hsl(var(--foreground))'
+          color: 'hsl(var(--foreground))',
+          fontSize: '14px',
+          cursor: 'pointer',
+          transition: 'background-color 0.15s'
         }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
       >
         <Copy size={16} />
         Copy Message
       </button>
-
-      {/* Delete button - only for own messages */}
+      
       {canDelete && (
         <button
-          onClick={handleDelete}
-          className="context-menu-item delete-item"
+          onClick={onDelete}
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            width: '100%',
+            padding: '10px 12px',
+            background: 'transparent',
+            border: 'none',
             borderRadius: 'calc(var(--radius) - 2px)',
-            color: 'hsl(var(--destructive))'
+            color: 'hsl(var(--destructive))',
+            fontSize: '14px',
+            cursor: 'pointer',
+            transition: 'all 0.15s'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'hsl(var(--destructive))';
@@ -203,366 +120,185 @@ function MessageContextMenu({
   );
 }
 
-export default function ChatMessages({
-  messages,
-  currentUserId,
-  messagesEndRef,
-  avatarColors,
-  onMessageDelete
-}: ChatMessagesProps) {
-  const [contextMenu, setContextMenu] = useState<{
-    messageId: string | number;
-    messageContent: string;
-    messageElement: HTMLElement;
-    canDelete: boolean;
-  } | null>(null);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | number | null>(null);
-
-  const formatMessageTime = (timestamp: string) => {
-    try {
-      return format(new Date(timestamp), 'h:mm a');
-    } catch {
-      return '';
-    }
-  };
+export default function ChatMessages({ messages, currentUserId, messagesEndRef, avatarColors, onMessageDelete }: ChatMessagesProps) {
+  const [menu, setMenu] = useState<{ x: number; y: number; content: string; canDelete: boolean; messageId: string | number; } | null>(null);
+  const [longPress, setLongPress] = useState<NodeJS.Timeout | null>(null);
+  const [deleting, setDeleting] = useState<string | number | null>(null);
 
   const renderAvatar = (avatar: string, name: string) => {
-    if (avatar.startsWith('http')) {
-      return (
-        <img
-          src={avatar}
-          alt={`${name}'s avatar`}
-          className="w-full h-full object-cover"
-        />
-      );
-    }
-    
-    const chartColors = [
-      'bg-[hsl(var(--chart-1))]',
-      'bg-[hsl(var(--chart-2))]',
-      'bg-[hsl(var(--chart-3))]',
-      'bg-[hsl(var(--chart-4))]',
-      'bg-[hsl(var(--chart-5))]'
-    ];
-    
-    const index = avatar.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % chartColors.length;
-    
-    return (
-      <div className={`avatar-initials ${chartColors[index]}`}>
-        <span className="text-xs font-semibold uppercase text-[hsl(var(--primary-foreground))]">{avatar}</span>
-      </div>
-    );
+    if (avatar.startsWith('http')) return <img src={avatar} alt={name} className="w-full h-full object-cover" />;
+    const colors = ['bg-[hsl(var(--chart-1))]', 'bg-[hsl(var(--chart-2))]', 'bg-[hsl(var(--chart-3))]', 'bg-[hsl(var(--chart-4))]', 'bg-[hsl(var(--chart-5))]'];
+    const idx = avatar.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length;
+    return <div className={`avatar-initials ${colors[idx]}`}><span className="text-xs font-semibold uppercase text-[hsl(var(--primary-foreground))]">{avatar}</span></div>;
   };
 
-  // Handle right-click context menu
-  const handleContextMenu = (e: React.MouseEvent, messageId: string | number, messageContent: string, senderId: string) => {
+  const showMenu = (e: React.MouseEvent | React.TouchEvent, msg: Message) => {
     e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const viewport = { w: window.innerWidth, h: window.innerHeight };
     
-    const canDelete = senderId === currentUserId;
-    const messageElement = e.currentTarget as HTMLElement;
+    let x = rect.left + rect.width / 2;
+    let y = rect.top - 10;
     
-    setContextMenu({
-      messageId,
-      messageContent,
-      messageElement,
-      canDelete
+    if (x > viewport.w - 100) x = viewport.w - 100;
+    if (x < 10) x = 10;
+    if (y < 50) y = rect.bottom + 10;
+    
+    setMenu({
+      x,
+      y,
+      content: msg.content,
+      canDelete: msg.sender.id === currentUserId,
+      messageId: msg.id
     });
   };
 
-  // Handle long press for mobile
-  const handleTouchStart = (messageId: string | number, messageContent: string, senderId: string, element: HTMLElement) => {
-    const timer = setTimeout(() => {
-      // Trigger haptic feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-      
-      const canDelete = senderId === currentUserId;
-      
-      setContextMenu({
-        messageId,
-        messageContent,
-        messageElement: element,
-        canDelete
-      });
-    }, 500); // 500ms long press
-    
-    setLongPressTimer(timer);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-  };
-
-  // Copy message function
-  const copyMessage = async (content: string) => {
+  const handleCopy = async () => {
+    if (!menu) return;
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(content);
-        toast.success('Message copied to clipboard');
-      } else {
-        // Fallback for older browsers or non-HTTPS
-        const textArea = document.createElement('textarea');
-        textArea.value = content;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          document.execCommand('copy');
-          toast.success('Message copied to clipboard');
-        } catch (err) {
-          toast.error('Failed to copy message');
-        } finally {
-          textArea.remove();
-        }
-      }
-    } catch (err) {
-      console.error('Copy error:', err);
-      toast.error('Failed to copy message');
+      await navigator.clipboard.writeText(menu.content);
+      toast.success('Copied to clipboard');
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = menu.content;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      toast.success('Copied to clipboard');
     }
+    setMenu(null);
   };
 
-  // Delete message function
-  const deleteMessage = async (messageId: string | number) => {
+  const handleDelete = async () => {
+    if (!menu) return;
     try {
-      setIsDeleting(messageId);
-      setContextMenu(null);
-
-      // Delete from Supabase
-      const { error } = await supabase
-        .from('messages')
-        .delete()
-        .eq('id', messageId);
-
-      if (error) {
-        console.error('Delete error:', error);
-        toast.error('Failed to delete message');
-        return;
-      }
-
-      // Call parent callback to update UI
-      if (onMessageDelete) {
-        onMessageDelete(messageId);
-      }
-
+      setDeleting(menu.messageId);
+      setMenu(null);
+      const { error } = await supabase.from('messages').delete().eq('id', menu.messageId);
+      if (error) throw error;
+      onMessageDelete?.(menu.messageId);
       toast.success('Message deleted');
-    } catch (err) {
-      console.error('Delete error:', err);
-      toast.error('Failed to delete message');
+    } catch {
+      toast.error('Failed to delete');
     } finally {
-      setIsDeleting(null);
+      setDeleting(null);
     }
-  };
-
-  // Format file size for attachments
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div 
-      className="chat-messages"
-      style={{
-        backgroundColor: 'hsl(var(--background))',
-        color: 'hsl(var(--foreground))'
-      }}
-    >
-      {messages.map((message) => {
-        const isCurrentUser = message.sender.id === currentUserId;
-        const canDelete = isCurrentUser;
-        const isBeingDeleted = isDeleting === message.id;
+    <div className="chat-messages" style={{ backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}>
+      {messages.map((msg) => {
+        const isMe = msg.sender.id === currentUserId;
+        const isDeleting = deleting === msg.id;
         
         return (
-          <div
-            key={String(message.id)}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-3 ${
-              isBeingDeleted ? 'opacity-50 pointer-events-none' : ''
-            }`}
-          >
-            {!isCurrentUser && (
+          <div key={String(msg.id)} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-3 ${isDeleting ? 'opacity-50' : ''}`}>
+            {!isMe && (
               <div className="flex-shrink-0 mr-2">
                 <div className="message-avatar rounded-full overflow-hidden shadow-[var(--shadow-xs)]">
-                  {renderAvatar(message.sender.avatar, message.sender.name)}
+                  {renderAvatar(msg.sender.avatar, msg.sender.name)}
                 </div>
               </div>
             )}
 
-            <div className={`message ${isCurrentUser ? 'order-1' : 'order-2'} relative group`}>
-              {!isCurrentUser && (
-                <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1 ml-1 font-[var(--font-sans)]">
-                  {message.sender.name}
-                </div>
-              )}
-
+            <div className={`message ${isMe ? 'order-1' : 'order-2'} relative group`}>
+              {!isMe && <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1 ml-1">{msg.sender.name}</div>}
+              
               <div className="flex flex-col">
                 <div
-                  className={`message-bubble shadow-[var(--shadow-xs)] relative ${
-                    isCurrentUser
-                      ? 'rounded-tr-none'
-                      : 'rounded-tl-none'
-                  } rounded-[var(--radius)] cursor-pointer`}
+                  className={`message-bubble cursor-pointer relative ${isMe ? 'rounded-tr-none' : 'rounded-tl-none'} rounded-[var(--radius)]`}
                   style={{
-                    backgroundColor: isCurrentUser 
-                      ? 'hsl(var(--sidebar-primary))' 
-                      : 'hsl(var(--muted))',
-                    color: isCurrentUser 
-                      ? 'hsl(var(--sidebar-primary-foreground))' 
-                      : 'hsl(var(--foreground))',
-                    boxShadow: 'var(--shadow-md)'
+                    backgroundColor: isMe ? 'hsl(var(--sidebar-primary))' : 'hsl(var(--muted))',
+                    color: isMe ? 'hsl(var(--sidebar-primary-foreground))' : 'hsl(var(--foreground))',
+                    boxShadow: 'var(--shadow-md)',
+                    padding: '8px 12px'
                   }}
-                  onContextMenu={(e) => handleContextMenu(e, message.id, message.content, message.sender.id)}
-                  onTouchStart={(e) => handleTouchStart(message.id, message.content, message.sender.id, e.currentTarget)}
-                  onTouchEnd={handleTouchEnd}
-                  onTouchCancel={handleTouchEnd}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                  onContextMenu={(e) => showMenu(e, msg)}
+                  onTouchStart={(e) => {
+                    const timer = setTimeout(() => {
+                      navigator.vibrate?.(50);
+                      showMenu(e, msg);
+                    }, 500);
+                    setLongPress(timer);
                   }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                  onTouchEnd={() => {
+                    if (longPress) {
+                      clearTimeout(longPress);
+                      setLongPress(null);
+                    }
+                  }}
+                  onTouchCancel={() => {
+                    if (longPress) {
+                      clearTimeout(longPress);
+                      setLongPress(null);
+                    }
                   }}
                 >
-                  {/* Action indicator for messages */}
-                  <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 md:block hidden">
-                    <div 
-                      className="rounded-full p-1 shadow-sm"
-                      style={{
-                        backgroundColor: 'hsl(var(--muted))'
-                      }}
-                    >
+                  <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                    <div className="rounded-full p-1" style={{ backgroundColor: 'hsl(var(--muted))' }}>
                       <MoreVertical size={12} className="text-[hsl(var(--muted-foreground))]" />
                     </div>
                   </div>
 
-                  {message.content && (
-                    <p className="text-sm break-words">{message.content}</p>
-                  )}
+                  {msg.content && <p className="text-sm break-words">{msg.content}</p>}
 
-                  {/* Display image - FIXED WITH PROPER CONSTRAINTS */}
-                  {message.image && (
-                    <div className="mt-2 message-image overflow-hidden rounded-[calc(var(--radius)_-_2px)]" style={{ maxHeight: '200px', maxWidth: '300px' }}>
-                      <img
-                        src={message.image}
-                        alt="Shared"
-                        style={{ 
-                          width: '100%', 
-                          height: 'auto', 
-                          maxHeight: '200px', 
-                          objectFit: 'cover',
-                          display: 'block'
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22100%22%20height=%22100%22%20viewBox=%220%200%20100%20100%22%3E%3Cpath%20fill=%22%23CCC%22%20d=%22M0%200h100v100H0z%22/%3E%3Cpath%20fill=%22%23999%22%20d=%22M40%2040h20v20H40z%22/%3E%3C/svg%3E';
-                        }}
-                      />
+                  {msg.image && (
+                    <div className="mt-2 overflow-hidden rounded" style={{ maxHeight: '200px', maxWidth: '300px' }}>
+                      <img src={msg.image} alt="Shared" style={{ width: '100%', height: 'auto', maxHeight: '200px', objectFit: 'cover' }} />
                     </div>
                   )}
 
-                  {/* Display attachments */}
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {message.attachments.map((attachment) => (
-                        <div
-                          key={attachment.id}
-                          className="flex items-center gap-2 p-2 rounded"
-                          style={{
-                            backgroundColor: 'hsl(var(--background) / 0.5)',
-                            border: '1px solid hsl(var(--border) / 0.5)',
-                            borderRadius: 'var(--radius)'
-                          }}
-                        >
-                          <div className="flex-shrink-0">
-                            {attachment.type === 'image' ? (
-                              <img
-                                src={attachment.url}
-                                alt={attachment.name}
-                                className="w-8 h-8 object-cover rounded"
-                              />
-                            ) : (
-                              <div 
-                                className="w-8 h-8 rounded flex items-center justify-center"
-                                style={{
-                                  backgroundColor: 'hsl(var(--muted))'
-                                }}
-                              >
-                                <span className="text-xs">📄</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <a
-                              href={attachment.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-medium hover:underline block truncate"
-                            >
-                              {attachment.name}
-                            </a>
-                            <p className="text-xs opacity-70">
-                              {formatFileSize(attachment.size)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                  {msg.attachments?.map((att) => (
+                    <div key={att.id} className="flex items-center gap-2 p-2 mt-2 rounded" style={{ backgroundColor: 'hsl(var(--background)/0.5)', border: '1px solid hsl(var(--border)/0.5)' }}>
+                      <div className="w-8 h-8 rounded flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--muted))' }}>
+                        {att.type === 'image' ? <img src={att.url} className="w-full h-full object-cover rounded" /> : <span>📄</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <a href={att.url} target="_blank" className="text-xs font-medium hover:underline block truncate">{att.name}</a>
+                        <p className="text-xs opacity-70">{Math.round(att.size / 1024)}KB</p>
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
 
                 <div className="flex items-center mt-1 ml-1">
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                    {formatMessageTime(message.timestamp)}
+                    {format(new Date(msg.timestamp), 'h:mm a')}
                   </span>
-
-                  {message.likes > 0 && (
+                  {msg.likes > 0 && (
                     <div className="ml-2 flex items-center text-xs text-[hsl(var(--destructive))]">
                       <Heart size={12} fill="currentColor" className="mr-1" />
-                      {message.likes}
+                      {msg.likes}
                     </div>
                   )}
-
-                  {isBeingDeleted && (
-                    <div className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
-                      Deleting...
-                    </div>
-                  )}
+                  {isDeleting && <div className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">Deleting...</div>}
                 </div>
               </div>
             </div>
 
-            {isCurrentUser && (
+            {isMe && (
               <div className="flex-shrink-0 ml-2">
                 <div className="message-avatar rounded-full overflow-hidden shadow-[var(--shadow-xs)]">
-                  {renderAvatar(message.sender.avatar, message.sender.name)}
+                  {renderAvatar(msg.sender.avatar, msg.sender.name)}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         );
       })}
       
-      {/* Context Menu that follows the message */}
-      {contextMenu && (
-        <MessageContextMenu
-          messageId={contextMenu.messageId}
-          messageContent={contextMenu.messageContent}
-          messageElement={contextMenu.messageElement}
-          canDelete={contextMenu.canDelete}
-          onDelete={() => deleteMessage(contextMenu.messageId)}
-          onCopy={copyMessage}
-          onClose={() => setContextMenu(null)}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          messageContent={menu.content}
+          canDelete={menu.canDelete}
+          onCopy={handleCopy}
+          onDelete={handleDelete}
+          onClose={() => setMenu(null)}
         />
       )}
       

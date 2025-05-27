@@ -13,15 +13,12 @@ import Breadcrumb from '@/components/Breadcrumbs/Breadcrumb';
 import './_components/mobile.scss';
 import LoadingSVG from '@/app/_components/_events/loading-page';
 import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
-import { useSelectConversation } from '@/hooks/useSelectConversation';
 
-// Create a single shared Supabase client instance
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Avatar-initial color map (used when no URL)
 const avatarColors = {
   AL: 'bg-blue-500',
   JA: 'bg-orange-500',
@@ -41,132 +38,76 @@ export default function ChatPage() {
   const [supabaseReady, setSupabaseReady] = useState(false);
   const isLoadingRef = useRef(false);
   const isMounted = useRef(true);
-  
-  // User profiles cache to solve the unknown user issue
   const [userProfiles, setUserProfiles] = useState({});
 
-  // Add the conversation selection hook
-  const {
-    selectConversationById,
-    getChatIdFromUrl,
-    clearChatIdFromUrl,
-    setConversations
-  } = useSelectConversation();
-
-  // Check if we're on mobile
   useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
       setShowSidebar(window.innerWidth >= 768);
     };
-    
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
-    
     return () => {
       window.removeEventListener('resize', checkIsMobile);
     };
   }, []);
 
-  // 1️⃣ Load current user and mark Supabase as ready
   useEffect(() => {
     console.log("[ChatPage] Initializing and fetching current user");
     supabase.auth.getUser().then(({ data, error }) => {
-      if (!isMounted.current) return; // Skip if component unmounted
-      
+      if (!isMounted.current) return;
       if (error) {
         console.error("[ChatPage] Auth error:", error);
         return;
       }
-      
       if (data.user?.id) {
         console.log("[ChatPage] User authenticated:", data.user.id);
         setCurrentUserId(data.user.id);
       } else {
         console.log("[ChatPage] No authenticated user found");
       }
-      
-      // Mark supabase as ready for realtime
       setSupabaseReady(true);
       console.log("[ChatPage] Supabase client ready for realtime");
     });
-
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  // Add auto-selection from URL parameter
-  useEffect(() => {
-    const chatId = getChatIdFromUrl();
-    if (chatId && !selectedChat && currentUserId) {
-      console.log("[ChatPage] Auto-selecting chat from URL:", chatId);
-      selectConversationById(chatId).then((conversation) => {
-        if (conversation) {
-          setSelectedChat(conversation);
-          toast.success(`Chat opened: ${conversation.channel_name || 'New conversation'}`);
-          // Optionally clear the URL parameter after selection
-          clearChatIdFromUrl();
-        } else {
-          console.warn("[ChatPage] Could not find conversation with ID:", chatId);
-          toast.error("Chat not found");
-        }
-      });
-    }
-  }, [selectConversationById, getChatIdFromUrl, clearChatIdFromUrl, selectedChat, currentUserId]);
-
-  // Helper function to get user profile from cache or participants
   const getUserProfile = (userId) => {
-    // First check our user profiles cache
     if (userProfiles[userId]) {
       return userProfiles[userId];
     }
-    
-    // Then try to find them in the participants list
     if (selectedChat && selectedChat.participants) {
       const participant = selectedChat.participants.find(p => p.user_id === userId);
       if (participant) {
-        // Create a profile object from participant data
         const profile = {
           id: participant.user_id,
           name: participant.display_name || 'User',
           avatar: participant.avatar_url || participant.display_name?.charAt(0)?.toUpperCase() || 'U',
           email: participant.email || ''
         };
-        
-        // Save to cache for future use
         setUserProfiles(prev => ({
           ...prev,
           [userId]: profile
         }));
-        
         return profile;
       }
     }
-    
-    // Default fallback
     return null;
   };
 
-  // Add real-time listener for incoming messages with shared Supabase client
   useRealtimeInsert({
     supabase,
     table: 'messages',
     filter: selectedChat ? `channel_id=eq.${selectedChat.id}` : undefined,
     onInsert: (newMsg) => {
-      if (!isMounted.current) return; // Skip if component unmounted
-      
+      if (!isMounted.current) return;
       console.log('[Realtime] Processing new message in component:', newMsg);
-      
-      // Show notification if message is from another user
       if (newMsg.sender_id !== currentUserId) {
         toast.success(`New message received!`);
       }
-      
-      // Try to get better user data from our cache/participants
       const senderProfile = getUserProfile(newMsg.sender_id);
-      
-      // Transform the raw message into the expected Message format
       const transformedMessage = {
         id: newMsg.id,
         content: newMsg.content,
@@ -175,41 +116,30 @@ export default function ChatPage() {
         image: null,
         sender: {
           id: newMsg.sender_id,
-          // Use cached profile data if available, otherwise fall back to realtime data
           name: senderProfile?.name || newMsg.sender_name || 'Unknown User',
           avatar: senderProfile?.avatar || newMsg.sender_avatar || '', 
           email: senderProfile?.email || newMsg.sender_email || '',
         }
       };
-      
       console.log('[Realtime] Adding message to state:', transformedMessage);
       setMessages(prev => {
-        // FIX 1: Check for temporary messages that match this real one
         const tempIndex = prev.findIndex(msg => 
           msg.sender.id === newMsg.sender_id && 
           msg.content === newMsg.content && 
           String(msg.id).startsWith('temp-')
         );
-        
         if (tempIndex >= 0) {
-          // Replace the temporary message with the real one
           console.log('[Realtime] Found matching temp message, replacing it');
           const newMessages = [...prev];
           newMessages[tempIndex] = transformedMessage;
           return newMessages;
         }
-        
-        // Check if message already exists to prevent duplicates
         if (prev.some(msg => msg.id === newMsg.id)) {
           console.log('[Realtime] Message already exists in state, skipping');
           return prev;
         }
-        
-        // Append message to end of array
         return [...prev, transformedMessage];
       });
-      
-      // Scroll to bottom after a tiny delay to ensure DOM update
       setTimeout(() => {
         if (isMounted.current && messagesEndRef.current) {
           console.log('[Realtime] Scrolling to bottom');
@@ -219,13 +149,9 @@ export default function ChatPage() {
     },
   });
 
-  // Build user profile cache when selectedChat changes
   useEffect(() => {
     if (!selectedChat || !selectedChat.participants) return;
-    
     console.log('[ChatPage] Building user profile cache from participants');
-    
-    // Create a new cache object from participants
     const newCache = {};
     selectedChat.participants.forEach(participant => {
       newCache[participant.user_id] = {
@@ -235,58 +161,42 @@ export default function ChatPage() {
         email: participant.email || ''
       };
     });
-    
-    // Update our user profiles cache
     setUserProfiles(prev => ({
       ...prev,
       ...newCache
     }));
   }, [selectedChat]);
 
-  // 2️⃣ Fetch messages on chat change with debounce protection
   useEffect(() => {
     if (!selectedChat) {
       console.log("[ChatPage] No chat selected, clearing messages");
       setMessages([]);
       return;
     }
-    
-    // Skip if already loading
     if (isLoadingRef.current) {
       console.log("[ChatPage] Already loading messages, skipping");
       return;
     }
-    
     console.log(`[ChatPage] Fetching messages for chat: ${selectedChat.id}`);
-    
     const fetchMessages = async () => {
       isLoadingRef.current = true;
       setLoadingMessages(true);
-      
       try {
         console.log(`[ChatPage] Requesting messages from API: /api/messages/${selectedChat.id}`);
         const res = await fetch(`/api/messages/${selectedChat.id}`);
-        
-        if (!isMounted.current) return; // Skip if component unmounted
-        
+        if (!isMounted.current) return;
         if (!res.ok) {
           const errorText = await res.text();
           console.error(`[ChatPage] Failed to load messages: ${res.status}`, errorText);
           toast.error("Failed to load messages");
           return;
         }
-        
         const messageData = await res.json();
         console.log(`[ChatPage] Received ${messageData.length} messages from API`);
-        
-        if (!isMounted.current) return; // Check again after async operation
-        
-        // Sort messages to ensure chronological order (oldest first)
+        if (!isMounted.current) return;
         const sortedMessages = [...messageData].sort((a, b) => 
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
-        
-        // Update user profile cache with message sender data
         const newProfiles = {};
         sortedMessages.forEach(message => {
           if (message.sender && message.sender.id) {
@@ -298,15 +208,11 @@ export default function ChatPage() {
             };
           }
         });
-        
         setUserProfiles(prev => ({
           ...prev,
           ...newProfiles
         }));
-        
         setMessages(sortedMessages);
-        
-        // Scroll to bottom after a tiny delay to ensure DOM update
         setTimeout(() => {
           if (isMounted.current && messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -323,15 +229,11 @@ export default function ChatPage() {
         }
       }
     };
-
     fetchMessages();
-    
-  }, [selectedChat?.id]); // Removed isMobile dependency
+  }, [selectedChat?.id]);
 
-  // 3️⃣ Send new message - UPDATED FOR YOUR DATABASE SCHEMA
   const handleSendMessage = async (e, attachments = null) => {
     e.preventDefault();
-    
     if (!messageText.trim() && !attachments?.length || !selectedChat || !currentUserId) {
       console.log("[ChatPage] Cannot send message - missing data:", { 
         hasMessage: !!messageText.trim(), 
@@ -339,29 +241,20 @@ export default function ChatPage() {
         hasSelectedChat: !!selectedChat, 
         hasUser: !!currentUserId 
       });
-      
       if (!messageText.trim() && !attachments?.length) {
-        return; // Silent return for empty messages
+        return;
       }
-      
       toast.error("Cannot send message - please try again");
       return;
     }
-
     const messageContent = messageText.trim() || '';
-    
-    // Clear input right away for better UX
     setMessageText('');
-    
-    // Get current user profile for better optimistic update
     const userProfile = getUserProfile(currentUserId) || {
       id: currentUserId,
       name: 'You',
       avatar: '',
       email: ''
     };
-    
-    // Create optimistic message with temp- prefix
     const optimisticId = `temp-${Date.now()}`;
     const optimisticMessage = {
       id: optimisticId,
@@ -377,21 +270,14 @@ export default function ChatPage() {
         email: userProfile.email
       }
     };
-    
-    // Update UI immediately
     setMessages(prev => [...prev, optimisticMessage]);
-    
-    // Scroll to bottom
     setTimeout(() => {
       if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     }, 50);
-    
     try {
       console.log(`[ChatPage] Sending message to channel ${selectedChat.id}:`, messageContent);
-      
-      // Send message to Supabase
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
@@ -401,15 +287,12 @@ export default function ChatPage() {
         })
         .select('id')
         .single();
-
       if (messageError) {
         console.error('[ChatPage] Message send error:', messageError);
         toast.error("Failed to send message");
         setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
         return;
       }
-
-      // If there are attachments, save them to message_attachments table
       if (attachments?.length > 0) {
         const attachmentInserts = attachments.map(attachment => ({
           message_id: messageData.id,
@@ -418,11 +301,9 @@ export default function ChatPage() {
           file_name: attachment.name,
           file_size: attachment.size
         }));
-
         const { error: attachmentError } = await supabase
           .from('message_attachments')
           .insert(attachmentInserts);
-
         if (attachmentError) {
           console.error('[ChatPage] Attachment save error:', attachmentError);
           toast.error("Message sent but attachments failed to save");
@@ -430,47 +311,30 @@ export default function ChatPage() {
           toast.success(`Message sent with ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}!`);
         }
       }
-
     } catch (err) {
       console.error('[ChatPage] Error sending message:', err);
       toast.error("Failed to send message");
-      
-      // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
     }
   };
 
-  // Handle chat selection - updated to also cache conversations
   const handleSelectChat = (chat) => {
     console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
-    
-    // Cache this conversation for future use
-    setConversations(prev => {
-      const exists = prev.find(c => c.id === chat.id);
-      if (!exists) {
-        return [...prev, chat];
-      }
-      return prev;
-    });
-    
     toast.success(`Chat opened: ${chat.channel_name || 'New conversation'}`);
   };
 
-  // Handle back to conversations
   const handleBackToConversations = () => {
     console.log("[ChatPage] Returning to conversation list");
     setSelectedChat(null);
     setMessages([]);
   };
 
-  // Handle message deletion
   const handleMessageDelete = (messageId) => {
     console.log("[ChatPage] Deleting message:", messageId);
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
-  // Get the page title based on current state
   const getPageTitle = () => {
     if (selectedChat) {
       const resolvedName = selectedChat.channel_name ||
@@ -485,13 +349,11 @@ export default function ChatPage() {
     return 'Messages';
   };
 
-  // 4️⃣ Mobile: Show full-page conversation list when no chat selected
   if (!selectedChat) {
     return (
       <>
         <Breadcrumb pageName="Messages" />
         <div className="chat-container">
-          {/* Desktop: Show sidebar + placeholder */}
           {!isMobile ? (
             <>
               <div className="chat-sidebar">
@@ -505,7 +367,6 @@ export default function ChatPage() {
               </div>
             </>
           ) : (
-            /* Mobile: Show full-page conversation list */
             <div className="mobile-conversation-list">
               <ChatSidebar 
                 selectedChat={null} 
@@ -518,7 +379,6 @@ export default function ChatPage() {
     );
   }
 
-  // 5️⃣ Resolve display name
   const resolvedName =
     selectedChat.channel_name ||
     (!selectedChat.is_group
@@ -528,7 +388,6 @@ export default function ChatPage() {
           .join(', ')
       : 'Unnamed Group');
 
-  // 6️⃣ Map participants into ChatRightSidebar's shape
   const sidebarParticipants = selectedChat.participants.map((p) => ({
     id:     p.user_id,
     name:   p.display_name,
@@ -541,17 +400,14 @@ export default function ChatPage() {
     <>
       <Breadcrumb pageName={getPageTitle()} />
       <div className="chat-container">
-        {/* Desktop: Normal layout with sidebars */}
         {!isMobile ? (
           <>
-            {/* Desktop sidebar */}
             <div className="chat-sidebar">
               <ChatSidebar 
                 selectedChat={selectedChat} 
                 onSelectChat={handleSelectChat} 
               />
             </div>
-
             <div className="chat-content">
               <ChatHeader
                 name={resolvedName}
@@ -581,8 +437,6 @@ export default function ChatPage() {
                   </>
               )}
             </div>
-
-            {/* Desktop right sidebar */}
             <div className={`chat-right-sidebar ${showRightSidebar ? 'open' : ''}`}>
               <ChatRightSidebar
                 selectedChatName={resolvedName}
@@ -594,7 +448,6 @@ export default function ChatPage() {
             </div>
           </>
         ) : (
-          /* Mobile: Full-page chat view */
           <div className="mobile-chat-view">
             <ChatHeader
               name={resolvedName}
@@ -602,8 +455,8 @@ export default function ChatPage() {
               isGroup={selectedChat.is_group}
               currentUserId={currentUserId || ''}
               onInfoClick={() => setShowRightSidebar(!showRightSidebar)}
-              onBackClick={handleBackToConversations} // New prop for back navigation
-              showBackButton={true} // New prop to show back button on mobile
+              onBackClick={handleBackToConversations}
+              showBackButton={true}
             />
             {loadingMessages ? (
               <div className="flex items-center justify-center h-full">
@@ -625,13 +478,10 @@ export default function ChatPage() {
                 />
                 </>
             )}
-
-            {/* Mobile right sidebar overlay */}
             {showRightSidebar && (
               <div 
                 className="mobile-right-sidebar-overlay"
                 onClick={(e) => {
-                  // Close if clicking on backdrop (not the sidebar content)
                   if (e.target === e.currentTarget) {
                     setShowRightSidebar(false);
                   }

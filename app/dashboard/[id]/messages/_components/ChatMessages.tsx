@@ -81,11 +81,30 @@ function MessageContextMenu({ x, y, onDelete, onClose }: ContextMenuProps) {
     <div
       ref={menuRef}
       className="message-context-menu"
-      style={{ left: x, top: y }}
+      style={{ 
+        left: x, 
+        top: y,
+        backgroundColor: 'hsl(var(--card))',
+        border: '1px solid hsl(var(--border))',
+        borderRadius: 'var(--radius)',
+        boxShadow: 'var(--shadow-lg)'
+      }}
     >
       <button
         onClick={onDelete}
         className="context-menu-item delete-item"
+        style={{
+          borderRadius: 'calc(var(--radius) - 2px)',
+          color: 'hsl(var(--destructive))'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'hsl(var(--destructive))';
+          e.currentTarget.style.color = 'hsl(var(--destructive-foreground))';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = 'hsl(var(--destructive))';
+        }}
       >
         <Trash2 size={16} />
         Delete Message
@@ -229,7 +248,13 @@ export default function ChatMessages({
   };
 
   return (
-    <div className="chat-messages">
+    <div 
+      className="chat-messages"
+      style={{
+        backgroundColor: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))'
+      }}
+    >
       {messages.map((message) => {
         const isCurrentUser = message.sender.id === currentUserId;
         const canDelete = isCurrentUser;
@@ -261,18 +286,38 @@ export default function ChatMessages({
                 <div
                   className={`message-bubble shadow-[var(--shadow-xs)] relative ${
                     isCurrentUser
-                      ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded-tr-none'
-                      : 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] rounded-tl-none'
+                      ? 'rounded-tr-none'
+                      : 'rounded-tl-none'
                   } rounded-[var(--radius)] ${canDelete ? 'cursor-pointer' : ''}`}
+                  style={{
+                    backgroundColor: isCurrentUser 
+                      ? 'hsl(var(--sidebar-primary))' 
+                      : 'hsl(var(--muted))',
+                    color: isCurrentUser 
+                      ? 'hsl(var(--sidebar-primary-foreground))' 
+                      : 'hsl(var(--foreground))',
+                    boxShadow: 'var(--shadow-md)'
+                  }}
                   onContextMenu={(e) => handleContextMenu(e, message.id, message.sender.id)}
                   onTouchStart={() => handleTouchStart(message.id, message.sender.id)}
                   onTouchEnd={handleTouchEnd}
                   onTouchCancel={handleTouchEnd}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                  }}
                 >
                   {/* Delete indicator for own messages */}
                   {canDelete && (
                     <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 md:block hidden">
-                      <div className="bg-[hsl(var(--muted))] rounded-full p-1 shadow-sm">
+                      <div 
+                        className="rounded-full p-1 shadow-sm"
+                        style={{
+                          backgroundColor: 'hsl(var(--muted))'
+                        }}
+                      >
                         <MoreVertical size={12} className="text-[hsl(var(--muted-foreground))]" />
                       </div>
                     </div>
@@ -309,7 +354,12 @@ export default function ChatMessages({
                       {message.attachments.map((attachment) => (
                         <div
                           key={attachment.id}
-                          className="flex items-center gap-2 p-2 rounded bg-[hsl(var(--background))/0.5] border border-[hsl(var(--border))/0.5]"
+                          className="flex items-center gap-2 p-2 rounded"
+                          style={{
+                            backgroundColor: 'hsl(var(--background) / 0.5)',
+                            border: '1px solid hsl(var(--border) / 0.5)',
+                            borderRadius: 'var(--radius)'
+                          }}
                         >
                           <div className="flex-shrink-0">
                             {attachment.type === 'image' ? (
@@ -319,7 +369,12 @@ export default function ChatMessages({
                                 className="w-8 h-8 object-cover rounded"
                               />
                             ) : (
-                              <div className="w-8 h-8 bg-[hsl(var(--muted))] rounded flex items-center justify-center">
+                              <div 
+                                className="w-8 h-8 rounded flex items-center justify-center"
+                                style={{
+                                  backgroundColor: 'hsl(var(--muted))'
+                                }}
+                              >
                                 <span className="text-xs">📄</span>
                               </div>
                             )}

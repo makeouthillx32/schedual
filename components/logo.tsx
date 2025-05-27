@@ -1,19 +1,27 @@
-// components/Logo.tsx
+import darkLogo from "@/assets/logos/dark.svg";
+import logo from "@/assets/logos/main.svg";
+import Image from "next/image";
+
 export function Logo() {
   return (
     <div className="relative h-15 max-w-[10.847rem]">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 1021.45 375.7"
-        fill="hsl(var(--foreground))"
-        role="img"
-        aria-label="DART logo"
-        className="w-full h-auto"
-      >
-        {/* Path data copied straight from your SVG; no .cls-1 or <defs> needed */}
-        <path d="M489.7,1.62c160.33,0,320.66,0,480.99-.04,2.61,0,5.43-.13,7.76-1.12,2.67-1.13,3.95-.01,4.72,1.91.72,1.79,1.01,3.86,1.01,5.81.05,94.67.04,189.33.04,284,0,.83.28,1.89-.12,2.45-1.03,1.47-2.18,3.53-3.63,3.86-2.34.54-4.07-1.08-4.15-3.77-.06-1.83-.06-3.67-.06-5.5,0-90.17,0-180.33,0-270.5,0-1.5.02-3,0-4.5-.09-5.38-.23-5.52-5.73-5.57-2-.02-4,0-6,0-316,0-631.99,0-947.99.01-9.97,0-9.17-1.04-9.18,9.1-.01,113.83,0,227.66,0,341.5,0,1.33-.03,2.67.01,4,.13,4.66.46,4.97,5.27,5.08,1.67.04,3.33.01,5,.01,171.5,0,343,0,514.49,0,2.33,0,4.76-.26,6.95.32,1.2.31,2.76,2.11,2.79,3.26.03,1.14-1.46,2.75-2.69,3.37-1.22.62-2.93.33-4.43.33-174.83,0-349.66.01-524.49,0-10.22,0-10.22-.07-10.22-10.54C.03,246.26.02,127.43,0,8.59,0,2,.37,1.62,7.7,1.62c99,0,198,0,297,0,61.67,0,123.33,0,185,0Z"/>
-        {/* …all the other <path> elements… */}
-      </svg>
+      <Image
+        src={logo}
+        fill
+        className="dark:hidden"
+        alt="DART logo"
+        role="presentation"
+        quality={100}
+      />
+
+      <Image
+        src={darkLogo}
+        fill
+        className="hidden dark:block"
+        alt="DART logo"
+        role="presentation"
+        quality={100}
+      />
     </div>
-  )
+  );
 }

@@ -13,6 +13,7 @@ import Breadcrumb from '@/components/Breadcrumbs/Breadcrumb';
 import './_components/mobile.scss';
 import LoadingSVG from '@/app/_components/_events/loading-page';
 import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
+import { useSelectConversation } from '@/hooks/useSelectConversation';
 
 // Create a single shared Supabase client instance
 const supabase = createBrowserClient(
@@ -43,6 +44,14 @@ export default function ChatPage() {
   
   // User profiles cache to solve the unknown user issue
   const [userProfiles, setUserProfiles] = useState({});
+
+  // Add the conversation selection hook
+  const {
+    selectConversationById,
+    getChatIdFromUrl,
+    clearChatIdFromUrl,
+    setConversations
+  } = useSelectConversation();
 
   // Check if we're on mobile
   useEffect(() => {
@@ -86,6 +95,25 @@ export default function ChatPage() {
       isMounted.current = false;
     };
   }, []);
+
+  // Add auto-selection from URL parameter
+  useEffect(() => {
+    const chatId = getChatIdFromUrl();
+    if (chatId && !selectedChat && currentUserId) {
+      console.log("[ChatPage] Auto-selecting chat from URL:", chatId);
+      selectConversationById(chatId).then((conversation) => {
+        if (conversation) {
+          setSelectedChat(conversation);
+          toast.success(`Chat opened: ${conversation.channel_name || 'New conversation'}`);
+          // Optionally clear the URL parameter after selection
+          clearChatIdFromUrl();
+        } else {
+          console.warn("[ChatPage] Could not find conversation with ID:", chatId);
+          toast.error("Chat not found");
+        }
+      });
+    }
+  }, [selectConversationById, getChatIdFromUrl, clearChatIdFromUrl, selectedChat, currentUserId]);
 
   // Helper function to get user profile from cache or participants
   const getUserProfile = (userId) => {
@@ -412,10 +440,19 @@ export default function ChatPage() {
     }
   };
 
-  // Handle chat selection - simplified for new mobile flow
+  // Handle chat selection - updated to also cache conversations
   const handleSelectChat = (chat) => {
     console.log("[ChatPage] Selected new chat:", chat.id);
     setSelectedChat(chat);
+    
+    // Cache this conversation for future use
+    setConversations(prev => {
+      const exists = prev.find(c => c.id === chat.id);
+      if (!exists) {
+        return [...prev, chat];
+      }
+      return prev;
+    });
     
     toast.success(`Chat opened: ${chat.channel_name || 'New conversation'}`);
   };

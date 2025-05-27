@@ -1,13 +1,24 @@
-// app/dashboard/[id]/messages/_components/chats-card.tsx
+'use client';
+
 import Image from "next/image";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { formatMessageTime } from "@/lib/format-message-time";
 import { DotIcon } from "@/assets/icons";
 import { getChatsData, ConversationSummary } from "./fetch";
+import { useSelectConversation } from "@/hooks/useSelectConversation";
+import { useEffect, useState } from "react";
 
-export async function ChatsCard() {
-  const data: ConversationSummary[] = await getChatsData();
+export default function ChatsCard() {
+  const [data, setData] = useState<ConversationSummary[]>([]);
+  const { openConversation } = useSelectConversation();
+
+  useEffect(() => {
+    getChatsData().then(setData);
+  }, []);
+
+  const handleChatClick = (chat: ConversationSummary) => {
+    openConversation(chat.channel_id);
+  };
 
   return (
     <div className="col-span-12 rounded-[var(--radius)] bg-[hsl(var(--background))] py-6 shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)] xl:col-span-4">
@@ -18,9 +29,9 @@ export async function ChatsCard() {
       <ul>
         {data.map((chat) => (
           <li key={chat.channel_id}>
-            <Link
-              href={`/dashboard/${chat.channel_id}/messages`}
-              className="flex items-center gap-4.5 px-7.5 py-3 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]"
+            <button
+              onClick={() => handleChatClick(chat)}
+              className="w-full flex items-center gap-4.5 px-7.5 py-3 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))] text-left"
             >
               <div className="relative shrink-0">
                 <Image
@@ -69,7 +80,7 @@ export async function ChatsCard() {
                   </div>
                 )}
               </div>
-            </Link>
+            </button>
           </li>
         ))}
       </ul>

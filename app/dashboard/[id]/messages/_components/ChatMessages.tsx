@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, Trash2, MoreVertical } from 'lucide-react';
+import { Heart, Trash2, MoreVertical, Copy } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useRef, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
@@ -45,15 +45,55 @@ interface ChatMessagesProps {
 }
 
 interface ContextMenuProps {
-  x: number;
-  y: number;
+  messageId: string | number;
+  messageContent: string;
+  messageElement: HTMLElement;
+  canDelete: boolean;
   onDelete: () => void;
+  onCopy: (content: string) => void;
   onClose: () => void;
 }
 
-// Context menu component
-function MessageContextMenu({ x, y, onDelete, onClose }: ContextMenuProps) {
+// Context menu component that follows the message
+function MessageContextMenu({ 
+  messageId, 
+  messageContent, 
+  messageElement, 
+  canDelete, 
+  onDelete, 
+  onCopy, 
+  onClose 
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // Update position based on message element
+  const updatePosition = () => {
+    if (messageElement && menuRef.current) {
+      const messageRect = messageElement.getBoundingClientRect();
+      const menuRect = menuRef.current.getBoundingClientRect();
+      const viewport = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      };
+
+      let x = messageRect.left + messageRect.width / 2 - menuRect.width / 2;
+      let y = messageRect.top - menuRect.height - 10; // 10px gap above message
+
+      // Adjust if menu would go off screen
+      if (x < 10) x = 10;
+      if (x + menuRect.width > viewport.width - 10) {
+        x = viewport.width - menuRect.width - 10;
+      }
+      
+      // If no room above, show below
+      if (y < 10) {
+        y = messageRect.bottom + 10;
+      }
+
+      setPosition({ x, y });
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -68,47 +108,97 @@ function MessageContextMenu({ x, y, onDelete, onClose }: ContextMenuProps) {
       }
     };
 
+    const handleScroll = () => {
+      updatePosition();
+    };
+
+    // Initial position calculation
+    updatePosition();
+
+    // Add event listeners
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
+    document.addEventListener('scroll', handleScroll, true); // Capture scroll events
+    window.addEventListener('resize', updatePosition);
+
+    // Update position on animation frame for smooth following
+    const intervalId = setInterval(updatePosition, 16); // ~60fps
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', updatePosition);
+      clearInterval(intervalId);
     };
-  }, [onClose]);
+  }, [messageElement, onClose]);
+
+  const handleCopy = () => {
+    onCopy(messageContent);
+    onClose();
+  };
+
+  const handleDelete = () => {
+    onDelete();
+    onClose();
+  };
 
   return (
     <div
       ref={menuRef}
       className="message-context-menu"
       style={{ 
-        left: x, 
-        top: y,
+        left: position.x, 
+        top: position.y,
         backgroundColor: 'hsl(var(--card))',
         border: '1px solid hsl(var(--border))',
         borderRadius: 'var(--radius)',
-        boxShadow: 'var(--shadow-lg)'
+        boxShadow: 'var(--shadow-lg)',
+        position: 'fixed',
+        zIndex: 9999 // Ensure it's always on top
       }}
     >
+      {/* Copy button - always available */}
       <button
-        onClick={onDelete}
-        className="context-menu-item delete-item"
+        onClick={handleCopy}
+        className="context-menu-item copy-item"
         style={{
           borderRadius: 'calc(var(--radius) - 2px)',
-          color: 'hsl(var(--destructive))'
+          color: 'hsl(var(--foreground))'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'hsl(var(--destructive))';
-          e.currentTarget.style.color = 'hsl(var(--destructive-foreground))';
+          e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
-          e.currentTarget.style.color = 'hsl(var(--destructive))';
         }}
       >
-        <Trash2 size={16} />
-        Delete Message
+        <Copy size={16} />
+        Copy Message
       </button>
+
+      {/* Delete button - only for own messages */}
+      {canDelete && (
+        <button
+          onClick={handleDelete}
+          className="context-menu-item delete-item"
+          style={{
+            borderRadius: 'calc(var(--radius) - 2px)',
+            color: 'hsl(var(--destructive))'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'hsl(var(--destructive))';
+            e.currentTarget.style.color = 'hsl(var(--destructive-foreground))';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = 'hsl(var(--destructive))';
+          }}
+        >
+          <Trash2 size={16} />
+          Delete Message
+        </button>
+      )}
     </div>
   );
 }
@@ -121,9 +211,10 @@ export default function ChatMessages({
   onMessageDelete
 }: ChatMessagesProps) {
   const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
     messageId: string | number;
+    messageContent: string;
+    messageElement: HTMLElement;
+    canDelete: boolean;
   } | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | number | null>(null);
@@ -165,34 +256,35 @@ export default function ChatMessages({
   };
 
   // Handle right-click context menu
-  const handleContextMenu = (e: React.MouseEvent, messageId: string | number, senderId: string) => {
-    // Only allow deletion of own messages
-    if (senderId !== currentUserId) return;
-    
+  const handleContextMenu = (e: React.MouseEvent, messageId: string | number, messageContent: string, senderId: string) => {
     e.preventDefault();
+    
+    const canDelete = senderId === currentUserId;
+    const messageElement = e.currentTarget as HTMLElement;
+    
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      messageId
+      messageId,
+      messageContent,
+      messageElement,
+      canDelete
     });
   };
 
   // Handle long press for mobile
-  const handleTouchStart = (messageId: string | number, senderId: string) => {
-    // Only allow deletion of own messages
-    if (senderId !== currentUserId) return;
-    
+  const handleTouchStart = (messageId: string | number, messageContent: string, senderId: string, element: HTMLElement) => {
     const timer = setTimeout(() => {
       // Trigger haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
       
-      // Show context menu at center of screen for mobile
+      const canDelete = senderId === currentUserId;
+      
       setContextMenu({
-        x: window.innerWidth / 2 - 100, // Center horizontally
-        y: window.innerHeight / 2 - 50, // Center vertically
-        messageId
+        messageId,
+        messageContent,
+        messageElement: element,
+        canDelete
       });
     }, 500); // 500ms long press
     
@@ -203,6 +295,38 @@ export default function ChatMessages({
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
+    }
+  };
+
+  // Copy message function
+  const copyMessage = async (content: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(content);
+        toast.success('Message copied to clipboard');
+      } else {
+        // Fallback for older browsers or non-HTTPS
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          toast.success('Message copied to clipboard');
+        } catch (err) {
+          toast.error('Failed to copy message');
+        } finally {
+          textArea.remove();
+        }
+      }
+    } catch (err) {
+      console.error('Copy error:', err);
+      toast.error('Failed to copy message');
     }
   };
 
@@ -288,7 +412,7 @@ export default function ChatMessages({
                     isCurrentUser
                       ? 'rounded-tr-none'
                       : 'rounded-tl-none'
-                  } rounded-[var(--radius)] ${canDelete ? 'cursor-pointer' : ''}`}
+                  } rounded-[var(--radius)] cursor-pointer`}
                   style={{
                     backgroundColor: isCurrentUser 
                       ? 'hsl(var(--sidebar-primary))' 
@@ -298,8 +422,8 @@ export default function ChatMessages({
                       : 'hsl(var(--foreground))',
                     boxShadow: 'var(--shadow-md)'
                   }}
-                  onContextMenu={(e) => handleContextMenu(e, message.id, message.sender.id)}
-                  onTouchStart={() => handleTouchStart(message.id, message.sender.id)}
+                  onContextMenu={(e) => handleContextMenu(e, message.id, message.content, message.sender.id)}
+                  onTouchStart={(e) => handleTouchStart(message.id, message.content, message.sender.id, e.currentTarget)}
                   onTouchEnd={handleTouchEnd}
                   onTouchCancel={handleTouchEnd}
                   onMouseEnter={(e) => {
@@ -309,19 +433,17 @@ export default function ChatMessages({
                     e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                   }}
                 >
-                  {/* Delete indicator for own messages */}
-                  {canDelete && (
-                    <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 md:block hidden">
-                      <div 
-                        className="rounded-full p-1 shadow-sm"
-                        style={{
-                          backgroundColor: 'hsl(var(--muted))'
-                        }}
-                      >
-                        <MoreVertical size={12} className="text-[hsl(var(--muted-foreground))]" />
-                      </div>
+                  {/* Action indicator for messages */}
+                  <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 md:block hidden">
+                    <div 
+                      className="rounded-full p-1 shadow-sm"
+                      style={{
+                        backgroundColor: 'hsl(var(--muted))'
+                      }}
+                    >
+                      <MoreVertical size={12} className="text-[hsl(var(--muted-foreground))]" />
                     </div>
-                  )}
+                  </div>
 
                   {message.content && (
                     <p className="text-sm break-words">{message.content}</p>
@@ -425,17 +547,21 @@ export default function ChatMessages({
                   {renderAvatar(message.sender.avatar, message.sender.name)}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
         );
       })}
       
-      {/* Context Menu */}
+      {/* Context Menu that follows the message */}
       {contextMenu && (
         <MessageContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
+          messageId={contextMenu.messageId}
+          messageContent={contextMenu.messageContent}
+          messageElement={contextMenu.messageElement}
+          canDelete={contextMenu.canDelete}
           onDelete={() => deleteMessage(contextMenu.messageId)}
+          onCopy={copyMessage}
           onClose={() => setContextMenu(null)}
         />
       )}

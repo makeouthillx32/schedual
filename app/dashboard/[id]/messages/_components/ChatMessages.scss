@@ -71,7 +71,6 @@ $header-height: 70px; // Define header height for consistent spacing
       
       &:hover {
         transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
       }
     }
     
@@ -145,10 +144,6 @@ $header-height: 70px; // Define header height for consistent spacing
 .message-context-menu {
   position: fixed;
   z-index: 1000;
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
   padding: 4px;
   min-width: 150px;
   animation: fade-in 0.15s ease;
@@ -167,8 +162,6 @@ $header-height: 70px; // Define header height for consistent spacing
     padding: 8px 12px;
     background: transparent;
     border: none;
-    border-radius: calc(var(--radius) - 2px);
-    color: var(--foreground);
     font-size: 14px;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -178,19 +171,6 @@ $header-height: 70px; // Define header height for consistent spacing
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    
-    &:hover {
-      background-color: var(--accent);
-    }
-    
-    &.delete-item {
-      color: var(--destructive);
-      
-      &:hover {
-        background-color: var(--destructive);
-        color: var(--destructive-foreground);
-      }
-    }
   }
 }
 
@@ -204,8 +184,6 @@ $header-height: 70px; // Define header height for consistent spacing
   width: 100%;
   overflow: hidden;
   position: relative;
-  background-color: var(--background);
-  color: var(--foreground);
 
   @media (min-width: $breakpoint-md) {
     flex-direction: row;
@@ -221,7 +199,6 @@ $header-height: 70px; // Define header height for consistent spacing
   position: relative;
   height: 100%;
   overflow: hidden; // Important: prevent content from overflowing
-  background-color: var(--background);
 }
 
 // =======================================

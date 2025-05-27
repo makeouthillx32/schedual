@@ -7,7 +7,6 @@ import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 import './ChatMessages.scss';
 
-// Create Supabase client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -54,7 +53,6 @@ interface ContextMenuProps {
   onClose: () => void;
 }
 
-// Context menu component that follows the message
 function MessageContextMenu({ 
   messageId, 
   messageContent, 
@@ -67,7 +65,6 @@ function MessageContextMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  // Update position based on message element
   const updatePosition = () => {
     if (messageElement && menuRef.current) {
       const messageRect = messageElement.getBoundingClientRect();
@@ -78,15 +75,13 @@ function MessageContextMenu({
       };
 
       let x = messageRect.left + messageRect.width / 2 - menuRect.width / 2;
-      let y = messageRect.top - menuRect.height - 10; // 10px gap above message
+      let y = messageRect.top - menuRect.height - 10;
 
-      // Adjust if menu would go off screen
       if (x < 10) x = 10;
       if (x + menuRect.width > viewport.width - 10) {
         x = viewport.width - menuRect.width - 10;
       }
       
-      // If no room above, show below
       if (y < 10) {
         y = messageRect.bottom + 10;
       }
@@ -112,17 +107,14 @@ function MessageContextMenu({
       updatePosition();
     };
 
-    // Initial position calculation
     updatePosition();
 
-    // Add event listeners
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
-    document.addEventListener('scroll', handleScroll, true); // Capture scroll events
+    document.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', updatePosition);
 
-    // Update position on animation frame for smooth following
-    const intervalId = setInterval(updatePosition, 16); // ~60fps
+    const intervalId = setInterval(updatePosition, 16);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -155,10 +147,9 @@ function MessageContextMenu({
         borderRadius: 'var(--radius)',
         boxShadow: 'var(--shadow-lg)',
         position: 'fixed',
-        zIndex: 9999 // Ensure it's always on top
+        zIndex: 9999
       }}
     >
-      {/* Copy button - always available */}
       <button
         onClick={handleCopy}
         className="context-menu-item copy-item"
@@ -176,8 +167,6 @@ function MessageContextMenu({
         <Copy size={16} />
         Copy Message
       </button>
-
-      {/* Delete button - only for own messages */}
       {canDelete && (
         <button
           onClick={handleDelete}
@@ -255,7 +244,6 @@ export default function ChatMessages({
     );
   };
 
-  // Handle right-click context menu
   const handleContextMenu = (e: React.MouseEvent, messageId: string | number, messageContent: string, senderId: string) => {
     e.preventDefault();
     
@@ -270,10 +258,8 @@ export default function ChatMessages({
     });
   };
 
-  // Handle long press for mobile
   const handleTouchStart = (messageId: string | number, messageContent: string, senderId: string, element: HTMLElement) => {
     const timer = setTimeout(() => {
-      // Trigger haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
@@ -286,7 +272,7 @@ export default function ChatMessages({
         messageElement: element,
         canDelete
       });
-    }, 500); // 500ms long press
+    }, 500);
     
     setLongPressTimer(timer);
   };
@@ -298,14 +284,12 @@ export default function ChatMessages({
     }
   };
 
-  // Copy message function
   const copyMessage = async (content: string) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(content);
         toast.success('Message copied to clipboard');
       } else {
-        // Fallback for older browsers or non-HTTPS
         const textArea = document.createElement('textarea');
         textArea.value = content;
         textArea.style.position = 'fixed';
@@ -330,13 +314,11 @@ export default function ChatMessages({
     }
   };
 
-  // Delete message function
   const deleteMessage = async (messageId: string | number) => {
     try {
       setIsDeleting(messageId);
       setContextMenu(null);
 
-      // Delete from Supabase
       const { error } = await supabase
         .from('messages')
         .delete()
@@ -348,7 +330,6 @@ export default function ChatMessages({
         return;
       }
 
-      // Call parent callback to update UI
       if (onMessageDelete) {
         onMessageDelete(messageId);
       }
@@ -362,7 +343,6 @@ export default function ChatMessages({
     }
   };
 
-  // Format file size for attachments
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -398,14 +378,12 @@ export default function ChatMessages({
                 </div>
               </div>
             )}
-
             <div className={`message ${isCurrentUser ? 'order-1' : 'order-2'} relative group`}>
               {!isCurrentUser && (
                 <div className="text-xs text-[hsl(var(--muted-foreground))] mb-1 ml-1 font-[var(--font-sans)]">
                   {message.sender.name}
                 </div>
               )}
-
               <div className="flex flex-col">
                 <div
                   className={`message-bubble shadow-[var(--shadow-xs)] relative ${
@@ -433,7 +411,6 @@ export default function ChatMessages({
                     e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                   }}
                 >
-                  {/* Action indicator for messages */}
                   <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 md:block hidden">
                     <div 
                       className="rounded-full p-1 shadow-sm"
@@ -444,12 +421,9 @@ export default function ChatMessages({
                       <MoreVertical size={12} className="text-[hsl(var(--muted-foreground))]" />
                     </div>
                   </div>
-
                   {message.content && (
                     <p className="text-sm break-words">{message.content}</p>
                   )}
-
-                  {/* Display image - FIXED WITH PROPER CONSTRAINTS */}
                   {message.image && (
                     <div className="mt-2 message-image overflow-hidden rounded-[calc(var(--radius)_-_2px)]" style={{ maxHeight: '200px', maxWidth: '300px' }}>
                       <img
@@ -469,8 +443,6 @@ export default function ChatMessages({
                       />
                     </div>
                   )}
-
-                  {/* Display attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="mt-2 space-y-2">
                       {message.attachments.map((attachment) => (
@@ -519,19 +491,16 @@ export default function ChatMessages({
                     </div>
                   )}
                 </div>
-
                 <div className="flex items-center mt-1 ml-1">
                   <span className="text-xs text-[hsl(var(--muted-foreground))]">
                     {formatMessageTime(message.timestamp)}
                   </span>
-
                   {message.likes > 0 && (
                     <div className="ml-2 flex items-center text-xs text-[hsl(var(--destructive))]">
                       <Heart size={12} fill="currentColor" className="mr-1" />
                       {message.likes}
                     </div>
                   )}
-
                   {isBeingDeleted && (
                     <div className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
                       Deleting...
@@ -540,20 +509,16 @@ export default function ChatMessages({
                 </div>
               </div>
             </div>
-
             {isCurrentUser && (
               <div className="flex-shrink-0 ml-2">
                 <div className="message-avatar rounded-full overflow-hidden shadow-[var(--shadow-xs)]">
                   {renderAvatar(message.sender.avatar, message.sender.name)}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         );
       })}
-      
-      {/* Context Menu that follows the message */}
       {contextMenu && (
         <MessageContextMenu
           messageId={contextMenu.messageId}
@@ -565,7 +530,6 @@ export default function ChatMessages({
           onClose={() => setContextMenu(null)}
         />
       )}
-      
       <div ref={messagesEndRef} />
     </div>
   );

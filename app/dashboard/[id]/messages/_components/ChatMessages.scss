@@ -72,6 +72,17 @@ $header-height: 70px; // Define header height for consistent spacing
       &:hover {
         transform: translateY(-1px);
       }
+      
+      // Enhanced cursor for interactive messages
+      &.cursor-pointer {
+        cursor: pointer;
+      }
+      
+      // Active state for touch feedback
+      &:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+      }
     }
     
     &-image {
@@ -123,7 +134,7 @@ $header-height: 70px; // Define header height for consistent spacing
     }
   }
   
-  // Desktop delete indicator
+  // Desktop action indicator
   @media (min-width: $breakpoint-md) {
     .message:hover .group-hover\:opacity-100 {
       opacity: 1;
@@ -139,14 +150,15 @@ $header-height: 70px; // Define header height for consistent spacing
 }
 
 // =======================================
-// MESSAGE CONTEXT MENU
+// FLOATING CONTEXT MENU
 // =======================================
 .message-context-menu {
   position: fixed;
-  z-index: 1000;
-  padding: 4px;
-  min-width: 150px;
-  animation: fade-in 0.15s ease;
+  z-index: 9999; // Highest priority to stay above everything
+  padding: 6px;
+  min-width: 160px;
+  animation: context-menu-appear 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center top;
   
   // Disable selection on context menu
   -webkit-user-select: none;
@@ -154,23 +166,84 @@ $header-height: 70px; // Define header height for consistent spacing
   -ms-user-select: none;
   user-select: none;
   
+  // Prevent menu from being affected by scroll momentum
+  position: fixed !important;
+  
   .context-menu-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 12px;
     background: transparent;
     border: none;
     font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.15s ease;
+    white-space: nowrap;
     
     // Disable selection on menu items
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    
+    // Better touch targets for mobile
+    @media (max-width: #{$breakpoint-md - 1px}) {
+      padding: 12px 16px;
+      font-size: 16px; // Prevent iOS zoom
+      min-height: 44px; // Apple's recommended touch target
+    }
+    
+    // Icon styling
+    svg {
+      flex-shrink: 0;
+    }
+    
+    // Hover and active states
+    &:hover {
+      transform: translateX(2px);
+    }
+    
+    &:active {
+      transform: scale(0.98);
+    }
+    
+    // Copy button specific styling
+    &.copy-item {
+      // No specific styles needed, colors handled in TSX
+    }
+    
+    // Delete button specific styling  
+    &.delete-item {
+      // No specific styles needed, colors handled in TSX
+    }
+  }
+}
+
+// =======================================
+// CONTEXT MENU ANIMATIONS
+// =======================================
+@keyframes context-menu-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes context-menu-disappear {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
   }
 }
 
@@ -216,5 +289,55 @@ $header-height: 70px; // Define header height for consistent spacing
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+  }
+  
+  // Enhanced mobile context menu
+  .message-context-menu {
+    // Slightly larger on mobile for better touch interaction
+    min-width: 180px;
+    padding: 8px;
+    
+    // Add backdrop blur effect on mobile for better visibility
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  // Better mobile feedback for message interactions
+  .message-bubble {
+    // Add slight scale feedback on touch
+    &:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
+}
+
+// =======================================
+// ACCESSIBILITY IMPROVEMENTS
+// =======================================
+@media (prefers-reduced-motion: reduce) {
+  .message-context-menu {
+    animation: none;
+  }
+  
+  .message-bubble,
+  .context-menu-item {
+    transition: none;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .message-context-menu {
+    border-width: 2px;
+  }
+  
+  .context-menu-item {
+    border: 1px solid transparent;
+    
+    &:focus,
+    &:hover {
+      border: 1px solid currentColor;
+    }
   }
 }

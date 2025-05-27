@@ -1,83 +1,74 @@
-export async function getOverviewData() {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from 'next/server';
 
-  return {
-    views: {
-      value: 3456,
-      growthRate: 0.43,
-    },
-    profit: {
-      value: 4220,
-      growthRate: 4.35,
-    },
-    products: {
-      value: 3456,
-      growthRate: 2.59,
-    },
-    users: {
-      value: 3456,
-      growthRate: -0.95,
-    },
-  };
-}
-
-export async function getChatsData() {
+export async function GET() {
   try {
-    const response = await fetch('/api/messages/get-conversations', {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const supabase = await createClient();
 
-    if (!response.ok) {
-      console.error('Failed to fetch conversations:', response.status);
-      return [];
+    // Ensure the user is authenticated
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const conversations = await response.json();
-    
-    return conversations.map((conv: any) => {
-      const isGroup = conv.is_group;
-      const displayName = conv.channel_name || 'Unnamed Chat';
-      
-      const getAvatarUrl = () => {
-        if (isGroup) {
-          return '/images/user/group-default.png';
-        }
-        
-        const otherParticipant = conv.participants?.find((p: any) => p.user_id !== conv.current_user_id);
-        return otherParticipant?.avatar_url || '/images/user/user-default.png';
-      };
-      
-      const checkIfActive = () => {
-        if (isGroup) {
-          return conv.participants?.some((p: any) => p.online) || false;
-        }
-        
-        const otherParticipant = conv.participants?.find((p: any) => p.user_id !== conv.current_user_id);
-        return otherParticipant?.online || false;
-      };
+    // Get total user count from auth.users (if you have access) or profiles table
+    const { count: totalUsers, error: countError } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
 
-      return {
-        id: conv.id || conv.channel_id,
-        name: displayName,
-        profile: getAvatarUrl(),
-        isActive: checkIfActive(),
-        lastMessage: {
-          content: conv.last_message_content || conv.last_message || 'No messages yet',
-          type: 'text',
-          timestamp: conv.last_message_at || new Date().toISOString(),
-          isRead: (conv.unread_count || 0) === 0,
-        },
-        unreadCount: conv.unread_count || 0,
-        isGroup: isGroup,
-        participants: conv.participants || [],
-      };
+    if (countError) {
+      console.error('Error fetching user count:', countError);
+      return NextResponse.json({ error: 'Failed to fetch user statistics' }, { status: 500 });
+    }
+
+    // Calculate growth rate by comparing this month vs last month
+    const now = new Date();
+    const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    // Users created this month
+    const { count: thisMonthUsers, error: thisMonthError } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayThisMonth.toISOString());
+
+    // Users created last month
+    const { count: lastMonthUsers, error: lastMonthError } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayLastMonth.toISOString())
+      .lt('created_at', firstDayThisMonth.toISOString());
+
+    if (thisMonthError || lastMonthError) {
+      console.error('Error fetching monthly user data:', thisMonthError || lastMonthError);
+      // Return basic stats without growth rate
+      return NextResponse.json({
+        totalUsers: totalUsers || 0,
+        growthRate: 0,
+      });
+    }
+
+    // Calculate growth rate percentage
+    let growthRate = 0;
+    if (lastMonthUsers && lastMonthUsers > 0) {
+      growthRate = ((thisMonthUsers || 0) - lastMonthUsers) / lastMonthUsers;
+    } else if (thisMonthUsers && thisMonthUsers > 0) {
+      growthRate = 1; // 100% growth if no users last month but some this month
+    }
+
+    return NextResponse.json({
+      totalUsers: totalUsers || 0,
+      thisMonthUsers: thisMonthUsers || 0,
+      lastMonthUsers: lastMonthUsers || 0,
+      growthRate: Math.round(growthRate * 10000) / 100, // Convert to percentage with 2 decimal places
     });
+
   } catch (error) {
-    console.error('Error fetching chats data:', error);
-    return [];
+    console.error('Unexpected error in users stats API:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

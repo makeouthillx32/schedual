@@ -1,6 +1,6 @@
 import { PeriodPicker } from "@/components/period-picker";
 import { cn } from "@/lib/utils";
-import { getWeeksProfitData } from "@/services/profit.services";
+import { getWeeksProfitData } from "@/services/profit.service";
 import { WeeksProfitChart } from "./chart";
 
 type PropsType = {

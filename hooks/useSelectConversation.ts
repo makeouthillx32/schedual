@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 
@@ -8,10 +8,13 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Global state for pending conversation selection
+let pendingConversationId: string | null = null;
+let conversationSelectCallback: ((conversationId: string) => Promise<void>) | null = null;
+
 export function useSelectConversation() {
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   // Function to fetch a conversation by ID from the API
@@ -77,7 +80,7 @@ export function useSelectConversation() {
     return conversation;
   }, []);
 
-  // Function to select by ID (fetches if needed)
+  // Function to select conversation by ID (fetches if needed)
   const selectConversationById = useCallback(async (conversationId) => {
     // First check if we already have it cached
     const cachedConversation = conversations.find(
@@ -97,37 +100,55 @@ export function useSelectConversation() {
     return null;
   }, [conversations, fetchConversationById, selectConversation]);
 
-  // Function to navigate to messages page with a specific conversation
-  const openConversation = useCallback((conversationId) => {
-    router.push(`/dashboard/me/messages?chatId=${conversationId}`);
+  // Function to navigate to messages page and auto-select a conversation
+  const openConversation = useCallback((conversationId: string) => {
+    // Store the conversation ID we want to open
+    pendingConversationId = conversationId;
+    
+    // Navigate to messages page
+    router.push('/dashboard/me/messages');
   }, [router]);
 
-  // Function to get chatId from URL params
-  const getChatIdFromUrl = useCallback(() => {
-    return searchParams.get('chatId');
-  }, [searchParams]);
+  // Function for the messages page to register its conversation selector
+  const registerConversationSelector = useCallback((callback: (conversationId: string) => Promise<void>) => {
+    conversationSelectCallback = callback;
+    
+    // If there's a pending conversation, select it now
+    if (pendingConversationId) {
+      callback(pendingConversationId);
+      pendingConversationId = null; // Clear it after use
+    }
+  }, []);
 
-  // Function to clear chatId from URL (useful after auto-selection)
-  const clearChatIdFromUrl = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('chatId');
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-    router.replace(newUrl);
-  }, [searchParams, router]);
+  // Function to get any pending conversation ID (and clear it)
+  const getPendingConversationId = useCallback(() => {
+    const id = pendingConversationId;
+    pendingConversationId = null; // Clear after getting
+    return id;
+  }, []);
+
+  // Function to clear any pending conversation
+  const clearPendingConversation = useCallback(() => {
+    pendingConversationId = null;
+  }, []);
 
   return {
     // State
     conversations,
     isLoading,
     
-    // Actions
-    selectConversation,
-    selectConversationById,
+    // Actions for external components (like dashboard)
     openConversation,
     
-    // URL helpers
-    getChatIdFromUrl,
-    clearChatIdFromUrl,
+    // Actions for internal conversation management
+    selectConversation,
+    selectConversationById,
+    fetchConversationById,
+    
+    // Messages page integration
+    registerConversationSelector,
+    getPendingConversationId,
+    clearPendingConversation,
     
     // Cache management
     setConversations,

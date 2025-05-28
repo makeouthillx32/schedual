@@ -5,7 +5,6 @@ import { X, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/app/provider';
 import ThemePresetCard from '@/components/theme/_components/ThemePresetCard';
 import ThemeToggle from '@/components/theme/_components/ThemeToggle';
-import ThemeColorMode from '@/components/theme/_components/ThemeColorMode';
 
 // Import Sass styles
 import '@/components/theme/_components/theme.scss';
@@ -96,13 +95,13 @@ const AccessibilityOverlay = () => {
       onClick={handleOutsideClick}
       className="theme-selector"
     >
-      <div className="theme-selector__container border border-[hsl(var(--border))] shadow-[var(--shadow-6)] bg-[hsl(var(--card))] rounded-lg">
+      <div className="theme-selector__container">
         {/* Header */}
-        <div className="theme-selector__header border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))/0.3] rounded-t-lg">
-          <h2 className="theme-selector__title">Accessibility & Theme</h2>
+        <div className="theme-selector__header">
+          <h2 className="theme-selector__title">Theme Selector</h2>
           <button 
             onClick={() => setIsOpen(false)}
-            className="theme-selector__close border border-[hsl(var(--border))] shadow-[var(--shadow-2)] hover:shadow-[var(--shadow-3)] bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted))] transition-all duration-200 rounded-md"
+            className="theme-selector__close"
             aria-label="Close overlay"
           >
             <X size={24} />
@@ -110,49 +109,41 @@ const AccessibilityOverlay = () => {
         </div>
         
         {/* Controls */}
-        <div className="theme-selector__controls border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))/0.2] p-4">
-          <div className="border border-[hsl(var(--border))] rounded-lg p-3 bg-[hsl(var(--card))] shadow-[var(--shadow-1)]">
-            <ThemeColorMode 
-              mode={themeType as 'light' | 'dark'} 
-              onToggle={toggleTheme} 
-            />
-          </div>
-          
+        <div className="theme-selector__controls">
           <button
             onClick={resetSettings}
-            className="theme-selector__control-button border border-[hsl(var(--border))] shadow-[var(--shadow-2)] hover:shadow-[var(--shadow-3)] bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted))] transition-all duration-200 rounded-md mt-3 px-4 py-2 flex items-center gap-2"
+            className="theme-selector__control-button"
             aria-label="Reset all settings"
           >
             <RefreshCw size={18} />
-            <span>Reset All</span>
+            <span>Reset to Default</span>
           </button>
         </div>
         
         {/* Content Area */}
-        <div className="theme-selector__content p-4">
+        <div className="theme-selector__content">
           {/* Theme Presets Section */}
-          <section className="theme-selector__section border border-[hsl(var(--border))] rounded-lg p-4 bg-[hsl(var(--card))] shadow-[var(--shadow-1)]">
-            <h3 className="theme-selector__section-title border-b border-[hsl(var(--border))] pb-3 mb-4 text-lg font-semibold">
+          <section className="theme-selector__section">
+            <h3 className="theme-selector__section-title">
               Theme Presets
             </h3>
             
-            <div className="space-y-3">
+            <div>
               {themePresets.map(preset => (
-                <div key={preset.id} className="border border-[hsl(var(--border))] rounded-md shadow-[var(--shadow-1)] overflow-hidden">
-                  <ThemePresetCard
-                    id={preset.id}
-                    name={preset.name}
-                    description={preset.description}
-                    previewColor={preset.previewColor}
-                    isActive={themeId === preset.id}
-                    onApply={setThemeId}
-                  />
-                </div>
+                <ThemePresetCard
+                  key={preset.id}
+                  id={preset.id}
+                  name={preset.name}
+                  description={preset.description}
+                  previewColor={preset.previewColor}
+                  isActive={themeId === preset.id}
+                  onApply={setThemeId}
+                />
               ))}
               
               {/* Placeholder for more themes */}
-              <div className="mt-6 p-4 bg-[hsl(var(--muted))/0.5] border border-[hsl(var(--border))] rounded-lg shadow-[var(--shadow-1)]">
-                <p className="text-[hsl(var(--muted-foreground))] text-sm">
+              <div className="theme-presets-placeholder">
+                <p className="theme-presets-placeholder__text">
                   More theme presets coming soon. Check back for updates!
                 </p>
               </div>
@@ -161,14 +152,10 @@ const AccessibilityOverlay = () => {
         </div>
         
         {/* Footer */}
-        <div className="theme-selector__footer border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))/0.3] rounded-b-lg p-4">
-          <div className="text-center">
-            <span className="text-[hsl(var(--muted-foreground))]"> Better accessibility By </span>
-            <strong className="theme-selector__brand text-[hsl(var(--primary))] font-bold">unenter</strong>
-          </div>
-          <p className="theme-selector__keyboard-hint text-center text-sm text-[hsl(var(--muted-foreground))] mt-2 border border-[hsl(var(--border))] bg-[hsl(var(--background))] rounded-md py-2 px-3 shadow-[var(--shadow-1)]">
-            Press ESC to close this panel😄
-          </p>
+        <div className="theme-selector__footer">
+          <span> Better accessibility By </span>
+          <strong className="theme-selector__brand">unenter</strong>
+          <p className="theme-selector__keyboard-hint">Press ESC to close this panel😄</p>
         </div>
       </div>
     </div>

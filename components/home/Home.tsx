@@ -58,7 +58,7 @@ export default function Home() {
   const { Component, backKey, backLabel, anchorId } = config;
 
   return (
-    <div className="flex min-h-screen flex-col home-page bg-[var(--home-background)] text-[var(--home-text)] dark:text-white">
+    <div className="flex min-h-screen flex-col home-page bg-[var(--background)] text-[var(--foreground)] dark:text-white">
       <Header
         theme="light"
         mobileMenuOpen={mobileMenuOpen}

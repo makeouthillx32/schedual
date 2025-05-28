@@ -27,7 +27,7 @@ const BackButton: React.FC<BackButtonProps> = ({
     <div className="mb-4">
       <button
         onClick={navigateTo(backKey)}
-        className="flex items-center gap-1 text-[var(--home-accent)] text-sm underline hover:opacity-80"
+        className="flex items-center gap-1 text-[var(--accent)] text-sm underline hover:opacity-80"
       >
         <FiArrowLeft /> {displayLabel}
       </button>

@@ -2,7 +2,7 @@
 
 export default function Shredding() {
   return (
-    <div className="space-y-6 p-6 text-[var(--home-text)] bg-[var(--home-background)]">
+    <div className="space-y-6 p-6 text-[var(--foreground)] bg-[var(--background)]">
       <h1 className="text-2xl md:text-3xl font-bold">Secure Document Shredding</h1>
 
       <div className="space-y-4 text-base leading-relaxed">

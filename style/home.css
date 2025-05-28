@@ -44,23 +44,6 @@
   --home-shadow-lg: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 4px 6px -1px hsl(255 86% 66% / 0.20);
   --home-shadow-xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 8px 10px -1px hsl(255 86% 66% / 0.20);
   --home-shadow-2xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.50);
-  /* mine not gen */
-  
-  --home-light: #6c757d;
-  --home-dark: #0b2545;
-  --home-text: #1e1e1e;
-  --home-header: #ffffff;
-  --home-header-text: #1e1e1e;
-  --home-heading: #14213d;
-  --home-section-heading: #003566;
-  --home-nav-bg: #ffffff;
-  --home-nav-text: #212529;
-  --home-content-heading: #14213d;
-  --home-logo-color: #0b2545;
-  --home-danger: #fb7185;
-  --home-blob: #f0f2f5;
-  --home-backgrounds: #1a1c23;
-  --home-trans: #00000000;
 }
 
 .dark .home-page {
@@ -108,29 +91,7 @@
   --home-shadow-lg: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 4px 6px -1px hsl(255 86% 66% / 0.20);
   --home-shadow-xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.20), 2px 8px 10px -1px hsl(255 86% 66% / 0.20);
   --home-shadow-2xl: 2px 2px 4px 0px hsl(255 86% 66% / 0.50);
-  /* mine not gen */
-  --home-header: #252934;
-  --home-header-text: #fefefe;
-  --home-text: #e2e8f0;
-  --home-heading: #ffffff;
-  --home-section-heading: #7dd3fc;
-  --home-nav-bg: #2d3142;
-  --home-nav-text: #f1f5f9;
-  --home-content-heading: #fafafa;
-  --home-logo-color: #93c5fd;
-  --home-danger: #fb7185;
-  --home-light: #4b5563;
-  --home-dark: #0b2545;
-  --home-blob: #d32e2a;
-  --home-backgrounds: #f0f2f5;
-  --home-trans: #00000000;
 }
-
-/* This appears to be related to home page theming */
-.dark {
-  --home-nav-bg: #2d3142;
-}
-
 /* ========== Navigation (Desktop) ========== */
 /* Top-level nav link */
 .nav-top-link {
@@ -152,12 +113,12 @@
 /* Dropdown panel */
 .nav-dropdown {
   @apply hidden absolute top-full mt-2 z-50 rounded-b-xl shadow-lg p-3
-         bg-[var(--home-nav-bg)] dark:bg-[var(--home-nav-bg)]
+         bg-[var(--home-background)] dark:bg-[var(--home-background)]
          left-1/2 -translate-x-1/2 max-w-[90vw] w-max;
 }
 
 .nav-dropdown[data-state="open"] {
-  @apply block ring-1 ring-[var(--home-nav-bg)] ring-opacity-30;
+  @apply block ring-1 ring-[var(--home-background)] ring-opacity-30;
 }
 
 /* Desktop auth buttons */
@@ -178,7 +139,7 @@
 }
 
 .drawer-link {
-  @apply block px-4 py-2 text-sm font-medium hover:bg-[var(--home-nav-bg)]
+  @apply block px-4 py-2 text-sm font-medium hover:bg-[var(--home-background)]
          text-[var(--home-text)];
 }
 

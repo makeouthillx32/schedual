@@ -8,7 +8,7 @@ interface AboutUsPageProps {
 
 export default function AboutUsPage({ navigateTo }: AboutUsPageProps) {
   return (
-    <div className="space-y-8 text-[var(--home-text)] bg-[var(--home-background)]">
+    <div className="space-y-8 text-[var(--foreground)] bg-[var(--background)]">
       <div className="text-sm space-y-4">
         <p className="text-lg font-medium">Serving the community since 1961</p>
         <p>

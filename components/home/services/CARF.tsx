@@ -2,7 +2,7 @@
 
 export default function CARF() {
   return (
-    <div className="space-y-6 p-6 text-[var(--home-text)] bg-[var(--home-background)]">
+    <div className="space-y-6 p-6 text-[var(--foreground)] bg-[var(--background)]">
       <h1 className="text-2xl md:text-3xl font-bold">
         Commission for the Accreditation of Rehabilitation Facilities
       </h1>

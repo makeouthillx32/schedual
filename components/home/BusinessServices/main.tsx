@@ -10,7 +10,7 @@ interface BusinessServicesProps {
 
 const BusinessServices: React.FC<BusinessServicesProps> = ({ navigateTo }) => {
   return (
-    <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-8">
       <h1 className="text-3xl font-bold mb-6">Business Services</h1>
       <p className="text-lg mb-8">
         Allow Desert Area Resources and Training to handle a variety of business services for your organization,
@@ -38,7 +38,7 @@ const BusinessServices: React.FC<BusinessServicesProps> = ({ navigateTo }) => {
               />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--home-content-heading)]">{title}</h3>
+              <h3 className="font-semibold text-[var(-foreground)]">{title}</h3>
             </div>
           </button>
         ))}

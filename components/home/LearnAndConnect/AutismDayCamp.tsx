@@ -12,13 +12,13 @@ export default function AutismDayCamp() {
   return (
     <div
       // Container styles: max width, centered, text and background colors, vertical spacing
-      className="max-w-3xl mx-auto text-center text-[var(--home-text)] bg-[var(--home-background)] space-y-6"
+      className="max-w-3xl mx-auto text-center text-[var(--foreground)] bg-[var(--background)] space-y-6"
     >
       {/* Section heading */}
       <h2
         className="
           text-2xl md:text-3xl font-bold
-          text-[var(--home-content-heading)]
+          text-[var(--foreground)]
           mt-8
         "
       >

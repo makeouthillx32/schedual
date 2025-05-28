@@ -24,7 +24,7 @@ const ProgramsAndServices: React.FC<ProgramsAndServicesProps> = ({ navigateTo })
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-8">
       {/* Top‑level anchor for /#programs */}
       <AnchorSection id="programs" />
 
@@ -52,7 +52,7 @@ const ProgramsAndServices: React.FC<ProgramsAndServicesProps> = ({ navigateTo })
               />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--home-content-heading)]">{title}</h3>
+              <h3 className="font-semibold text-[var(--foreground)]">{title}</h3>
             </div>
           </button>
         ))}

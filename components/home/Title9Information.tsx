@@ -382,7 +382,7 @@ export default function Title9Page() {
       {/* Notice to Public */}
       <div className="mb-6">
         <h3 className="font-bold text-lg mb-2">Notice to Public</h3>
-        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-4 mb-4 border border-[var(--home-background)]">
+        <div className="bg-[var(--background)] text-[var(--foreground)] p-4 mb-4 border border-[var(--background)]">
           <h4 className="font-semibold mb-2">NOTIFYING THE PUBLIC OF RIGHTS UNDER TITLE VI</h4>
           <h4 className="font-semibold mb-2">DESERT AREA RESOURCES AND TRAINING, also known as DART</h4>
           <ul className="list-disc pl-5 mb-3">
@@ -407,7 +407,7 @@ export default function Title9Page() {
           </ul>
         </div>
 
-        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-4 border border-[var(--home-background)]">
+        <div className="bg-[var(--background)] text-[var(--foregorund)] p-4 border border-[var(--secondary)]">
           <h4 className="font-semibold mb-2">Notificando al público sobre los derechos bajo el titulo VI</h4>
           <h4 className="font-semibold mb-2">DESERT AREA RESOURCES AND TRAINING, también conocido como DART</h4>
           <ul className="list-disc pl-5 mb-3">
@@ -439,7 +439,7 @@ export default function Title9Page() {
         <h3 className="font-bold text-lg mb-2">List of Locations Where Title VI Notice is Posted</h3>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Location Name</th>
               <th className="border p-2 text-left">Address</th>
               <th className="border p-2 text-left">City</th>
@@ -656,7 +656,7 @@ export default function Title9Page() {
         </p>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Type of Process</th>
               <th className="border p-2 text-left">Date</th>
               <th className="border p-2 text-left">Summary (including basis of complaint)</th>
@@ -777,7 +777,7 @@ export default function Title9Page() {
           individuals.
         </p>
         <p className="mb-3">Desert Area Resource and Training's Title VI Program Administrator is:</p>
-        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-3 mb-3 border border-[var(--home-background)]">
+        <div className="bg-[var(--background)] text-[var(--foreground)] p-3 mb-3 border border-[var(--secondary)]">
           <p>Jeannie Luke, Human Resources Manager</p>
           <p>201 East Ridgecrest Blvd.</p>
           <p>Ridgecrest, CA 93555</p>
@@ -820,7 +820,7 @@ export default function Title9Page() {
         <table className="w-full border-collapse mb-4">
           <caption className="text-left font-semibold mb-2">American FactFinder: Race or Latino Origin: 2010</caption>
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left"></th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -845,7 +845,7 @@ export default function Title9Page() {
             Ridgecrest (city) QuickFacts from the US Census Bureau: 2012 Estimate
           </caption>
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left"></th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -870,7 +870,7 @@ export default function Title9Page() {
             American FactFinder: Selected Social Characteristics 2008-2012 American Community Survey 5-Year Estimates
           </caption>
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Ability to Speak English</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -900,7 +900,7 @@ export default function Title9Page() {
             American FactFinder: Language Spoken at Home 2008-2012 American survey 5-Year Estimates
           </caption>
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Ability to Speak English</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -945,7 +945,7 @@ export default function Title9Page() {
             Ridgecrest Chamber of Commerce: Population by Origin and Race
           </caption>
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">By Origin</th>
               <th className="border p-2 text-left">Population</th>
               <th className="border p-2 text-left">Percentage</th>
@@ -1048,7 +1048,7 @@ export default function Title9Page() {
           Our Limited English Proficiency Policy is posted, in both Spanish and English, beside the Public Notice of
           Title VI policy in all areas listed in this plan:
         </p>
-        <div className="bg-[var(--home-header)] text-[var(--home-text)] p-3 mb-3 border border-[var(--home-background)]">
+        <div className="bg-[var(--background)] text-[var(--foreground)] p-3 mb-3 border border-[var(--secondary)]">
           <p>
             Desert Area Resources and Training also known as DART strives to ensure that all clients, volunteers and
             staff members have access to all of its programs and services free of charge. DART provides support to all
@@ -1114,7 +1114,7 @@ export default function Title9Page() {
         </p>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">TRANSLATION ITEM</th>
               <th className="border p-2 text-center">Now</th>
               <th className="border p-2 text-center">Next Year (after July 1)</th>
@@ -1199,7 +1199,7 @@ export default function Title9Page() {
         </h4>
         <table className="w-full border-collapse mb-3">
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Name</th>
               <th className="border p-2 text-left">Race</th>
             </tr>
@@ -1255,7 +1255,7 @@ export default function Title9Page() {
         <h4 className="font-semibold mt-3 mb-1">Desert Area Resources and Training Board of Directors by origin:</h4>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[var(--home-background)]">
+            <tr className="bg-[var(--background)]">
               <th className="border p-2 text-left">Origin</th>
               <th className="border p-2 text-left">Percentage</th>
             </tr>
@@ -1288,7 +1288,7 @@ export default function Title9Page() {
       </div>
 
       {/* Footer */}
-      <div className="mt-12 pt-6 border-t border-[var(--home-background)] text-xs text-[var(--home-text)]">
+      <div className="mt-12 pt-6 border-t border-[var(--background)] text-xs text-[var(--foreground)]">
         <p>© 2023 Desert Area Resources and Training (DART)</p>
         <p>201 East Ridgecrest Blvd.</p>
         <p>Ridgecrest, CA 93555</p>

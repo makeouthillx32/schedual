@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const { themeType } = useTheme(); // get live theme from context
 
   return (
-    <header className="border-b border-gray-200 py-2 px-4 relative bg-[var(--home-header)] text-[var(--home-header-text)]">
+    <header className="border-b border-gray-200 py-2 px-4 relative bg-[var(--background)] text-[var(--foreground)]">
       <div className="max-w-7xl mx-auto flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2">
         {/* Left: Logo */}
         <div className="flex-shrink-0">
@@ -49,14 +49,14 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
             {!session ? (
               <a
                 href="/sign-in"
-                className="auth-link text-[var(--home-accent)] font-semibold whitespace-nowrap"
+                className="auth-link text-[var(--accent)] font-semibold whitespace-nowrap"
               >
                 Sign In
               </a>
             ) : (
               <button
                 onClick={() => (window.location.href = "/auth/logout")}
-                className="auth-link text-[var(--home-danger)] font-semibold whitespace-nowrap"
+                className="auth-link text-[var(--destructive)] font-semibold whitespace-nowrap"
               >
                 Log Out
               </button>

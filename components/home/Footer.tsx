@@ -17,7 +17,7 @@ const Footer: React.FC = () => {
   const session = useLoginSession();
 
   return (
-    <footer className="bg-[var(--home-header)] text-[var(--home-header-text)] border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-6 text-sm">
+    <footer className="bg-[var(--background)] text-[var(--foreground)] border-t border-gray-200 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 py-6 text-sm">
       {session?.user?.id ? (
         <div className="max-w-7xl mx-auto flex flex-col gap-6">
           {/* Job Coaches & Tools side-by-side */}
@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-full hover:bg-[var(--home-nav-bg)] transition"
+                className="p-2 rounded-full hover:bg-[var(--background)] transition"
               >
                 {link.icon}
               </a>
@@ -84,7 +84,7 @@ const Footer: React.FC = () => {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-full hover:bg-[var(--home-nav-bg)] transition"
+                className="p-2 rounded-full hover:bg-[var(--background)] transition"
               >
                 {link.icon}
               </a>

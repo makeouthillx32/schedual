@@ -9,7 +9,7 @@ interface DonateNowProps {
 
 export default function DonateNow({ navigateTo }: DonateNowProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--home-background)] text-[var(--home-text)]">
+    <div className="min-h-screen flex flex-col bg-[var(--background)] text-[var(--text)]">
       {/* Content wrapper with padding */}
       <div className="flex-grow max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-8">
         {/* Breadcrumb / Nav Links */}
@@ -31,7 +31,7 @@ export default function DonateNow({ navigateTo }: DonateNowProps) {
             onClick={navigateTo("donate-money")}
             className="flex items-center p-6 border border-gray-200 rounded-lg hover:shadow transition"
           >
-            <FiDollarSign className="h-6 w-6 mr-4 text-[var(--home-accent)]" />
+            <FiDollarSign className="h-6 w-6 mr-4 text-[var(--accent)]" />
             <span className="text-xl font-semibold">Make a Monetary Donation</span>
           </button>
 
@@ -39,7 +39,7 @@ export default function DonateNow({ navigateTo }: DonateNowProps) {
             onClick={navigateTo("donate-goods")}
             className="flex items-center p-6 border border-gray-200 rounded-lg hover:shadow transition"
           >
-            <FiGift className="h-6 w-6 mr-4 text-[var(--home-accent)]" />
+            <FiGift className="h-6 w-6 mr-4 text-[var(--accent)]" />
             <span className="text-xl font-semibold">Donate Goods</span>
           </button>
         </div>

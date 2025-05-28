@@ -10,11 +10,11 @@ interface CareersPageProps {
 
 export default function CareersPage({ navigateTo }: CareersPageProps) {
   return (
-    <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text)] p-8">
       {/* Top‑level anchor for /#careers */}
       <AnchorSection id="careers" />
 
-      <h1 className="text-3xl font-bold mb-4 text-[var(--home-content-heading)]">
+      <h1 className="text-3xl font-bold mb-4 text-[var(--foreground)]">
         Find a Meaningful Career
       </h1>
 
@@ -22,7 +22,7 @@ export default function CareersPage({ navigateTo }: CareersPageProps) {
 
       <button
         onClick={(e) => navigateTo("careers/jobs")(e)}
-        className="bg-[var(--home-accent)] text-white px-6 py-2 rounded hover:opacity-90 transition"
+        className="bg-[var(--accent)] text-white px-6 py-2 rounded hover:opacity-90 transition"
       >
         Current Openings
       </button>

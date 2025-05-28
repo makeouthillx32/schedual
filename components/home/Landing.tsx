@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="home-page min-h-screen bg-[var(--home-background)] text-[var(--home-text)] px-4 sm:px-6 lg:px-10 py-6">
+    <div className="home-page min-h-screen bg-[var(--background)] text-[var(--foreground)] px-4 sm:px-6 lg:px-10 py-6">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-12 mb-16 max-w-7xl mx-auto">
         {/* Dartboard SVG */}
@@ -17,7 +17,7 @@ export default function HomePage() {
 
         {/* Heading & Mission copy */}
         <div className="flex-1 text-center md:text-left max-w-2xl">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[var(--home-heading)] leading-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[var(--primary-foreground)] leading-tight mb-4">
             Welcome to Desert Area Resources and Training
           </h1>
           <h2 className="text-2xl sm:text-3xl font-semibold mb-3">Our Mission is to:</h2>
@@ -65,7 +65,7 @@ export default function HomePage() {
 
       {/* History Section */}
       <div className="space-y-4 text-base sm:text-lg max-w-5xl mx-auto">
-        <h3 className="font-semibold text-xl sm:text-2xl text-[var(--home-content-heading)]">
+        <h3 className="font-semibold text-xl sm:text-2xl text-[var(--foreground)]">
           The History of Desert Area Resources and Training
         </h3>
 

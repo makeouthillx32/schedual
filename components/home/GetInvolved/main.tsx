@@ -5,7 +5,7 @@ import "@/app/globals.css";
 
 export default function GetInvolved() {
   return (
-    <div className="min-h-screen bg-[var(--home-background)] text-[var(--home-text)] p-8">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] p-8">
       <h1 className="text-3xl font-bold mb-4">Get Involved</h1>
       <p className="text-lg">
         There are a wide variety of ways you can get involved with Desert Area Resources and Training –

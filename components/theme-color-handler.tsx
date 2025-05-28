@@ -22,8 +22,8 @@ export function ThemeColorHandler({ isDarkMode }: ThemeColorHandlerProps) {
 
       if (isHome) {
         color = isDarkMode
-          ? computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#2d3142"
-          : computedStyle.getPropertyValue("--home-nav-bg")?.trim() || "#ffffff"
+          ? computedStyle.getPropertyValue("--background")?.trim() || "#2d3142"
+          : computedStyle.getPropertyValue("--background")?.trim() || "#ffffff"
       } else {
         color = isDarkMode
           ? computedStyle.getPropertyValue("--muted")?.trim() || "#111827"

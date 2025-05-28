@@ -23,8 +23,8 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
     if (type === "home") {
       // For home pages, use home-prefixed variables
       color = isDark 
-        ? getCSSVariable('--home-sidebar') 
-        : getCSSVariable('--home-background');
+        ? getCSSVariable('--sidebar') 
+        : getCSSVariable('--background');
     } else {
       // For app pages, use standard variables
       color = isDark 

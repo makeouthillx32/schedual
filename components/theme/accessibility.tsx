@@ -51,15 +51,16 @@ const AccessibilityOverlay = () => {
   useEffect(() => {
     // Load theme presets when component mounts
     const loadedThemes: ThemePreset[] = availableThemes.map(id => {
+      const theme = getTheme();
       return {
         id,
-        name: id.charAt(0).toUpperCase() + id.slice(1),
-        description: `${id.charAt(0).toUpperCase() + id.slice(1)} color theme preset`,
-        previewColor: `hsl(var(--primary))` // Use the primary color variable that all themes have
+        name: id.charAt(0).toUpperCase() + id.slice(1), // Capitalize first letter
+        description: theme.description || `${id} theme preset`,
+        previewColor: theme.previewColor
       };
     });
     setThemePresets(loadedThemes);
-  }, [availableThemes]);
+  }, [availableThemes, getTheme]);
 
   const resetSettings = () => {
     // Reset theme to default preset

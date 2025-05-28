@@ -7,7 +7,7 @@
 $ribbon-light: #2563eb;     // blue-500
 $ribbon-dark:  #2563eb;     // blue-600
 $ribbon-edge: hsl(222, 100%, 34%);
-$ribbon-text: var(--secondary-foreground);
+$ribbon-text: var(--popover-foreground);
 $ribbon-shadow: rgba(104, 103, 103, 0.45);
 $home-bg: var(--background);
 
@@ -54,7 +54,6 @@ $home-bg: var(--background);
   box-sizing: border-box;
   color: #444;
   top: -3em;        /* overlap the ribbon */
-  font-family: Garamond, "Goudy Old Style", Times, "Times New Roman", serif;
 
   /* bottom‑only fade using mask – extended for smoother feather */
   -webkit-mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
@@ -115,7 +114,7 @@ $home-bg: var(--background);
   width: 0%;     /* Take full width does nothing Satoshi-Light */
   margin: 0 auto;
   padding: 0.4em 0;
-  font: 600 1rem/1 Charter, serif;
+
   color: $ribbon-text;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   text-align: center;

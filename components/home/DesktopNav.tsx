@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { navTree } from "@/lib/navTree";
+import "./_components/Desktop.scss";
 
 interface DesktopNavProps {
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;
@@ -11,11 +12,34 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const navRefs = useRef<(HTMLElement | null)[]>([]);
+  const dropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   
-  // Track whether the mouse is currently over the menu
   const [isMouseOver, setIsMouseOver] = useState(false);
 
-  // Close dropdown when clicking outside
+  // Smart dropdown positioning
+  const getDropdownAlignment = (index: number) => {
+    if (typeof window === 'undefined') return 'dropdown-align-center';
+    
+    const navItem = navRefs.current[index];
+    if (!navItem) return 'dropdown-align-center';
+    
+    const rect = navItem.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    
+    // If we're close to the right edge, right-align
+    if (rect.right > viewportWidth - 200) {
+      return 'dropdown-align-right';
+    }
+    
+    // If we're close to the left edge, left-align
+    if (rect.left < 200) {
+      return 'dropdown-align-left';
+    }
+    
+    // Otherwise, center-align
+    return 'dropdown-align-center';
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (openKey && !navRefs.current.some(ref => ref?.contains(event.target as Node))) {
@@ -29,19 +53,31 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
     };
   }, [openKey]);
 
-  // Handle keyboard navigation
+  // Reposition dropdown when window resizes
+  useEffect(() => {
+    const handleResize = () => {
+      // Force re-render to recalculate dropdown positions
+      if (openKey) {
+        const currentOpenKey = openKey;
+        setOpenKey(null);
+        setTimeout(() => setOpenKey(currentOpenKey), 10);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [openKey]);
+
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
         if (openKey === navTree[index].key) {
-          // Focus first dropdown item
           const dropdownItems = document.querySelectorAll(`[data-parent="${navTree[index].key}"] a`);
           if (dropdownItems.length > 0) {
             (dropdownItems[0] as HTMLElement).focus();
           }
         } else {
-          // Open dropdown
           setOpenKey(navTree[index].key);
         }
         break;
@@ -71,15 +107,13 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
     }
   };
 
-  // Handle keyboard navigation within dropdown
   const handleSubmenuKeyDown = (e: React.KeyboardEvent, parentKey: string, childIndex: number) => {
     const parentIndex = navTree.findIndex(node => node.key === parentKey);
-    const childItems = navTree[parentIndex].children || [];
     
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        if (childIndex < childItems.length - 1) {  // Adjusted to account for 0-based indexing
+        if (childIndex < (navTree[parentIndex].children || []).length - 1) {
           const nextChildItem = document.querySelector(`[data-parent="${parentKey}"] [data-index="${childIndex + 1}"] a`) as HTMLElement;
           nextChildItem?.focus();
         }
@@ -90,7 +124,6 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
           const prevChildItem = document.querySelector(`[data-parent="${parentKey}"] [data-index="${childIndex - 1}"] a`) as HTMLElement;
           prevChildItem?.focus();
         } else {
-          // Focus back on parent menu item
           navRefs.current[parentIndex]?.focus();
         }
         break;
@@ -102,12 +135,8 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
     }
   };
 
-  // Create a small delay before closing the dropdown
-  // This helps prevent accidental closing when moving from button to dropdown
   const handleMouseLeave = (key: string) => {
     setIsMouseOver(false);
-    
-    // Small delay before closing the dropdown
     setTimeout(() => {
       if (!isMouseOver && openKey === key) {
         setOpenKey(null);
@@ -116,81 +145,84 @@ export default function DesktopNav({ navigateTo }: DesktopNavProps) {
   };
 
   return (
-    <nav className="hidden md:flex items-center gap-8 nav-root relative z-50">
-      {navTree.map((node, index) => (
-        <div
-          key={node.key}
-          className="relative group"
-          onMouseEnter={() => {
-            setOpenKey(node.key);
-            setIsMouseOver(true);
-          }}
-          onMouseLeave={() => handleMouseLeave(node.key)}
-          ref={el => {
-            navRefs.current[index] = el;
-          }}
-        >
-          {node.children ? (
-            <>
-              <button
-                className="nav-top-link"
+    <nav className="nav-container">
+      <div className="nav-menu">
+        {navTree.map((node, index) => (
+          <div
+            key={node.key}
+            className="nav-item"
+            onMouseEnter={() => {
+              setOpenKey(node.key);
+              setIsMouseOver(true);
+            }}
+            onMouseLeave={() => handleMouseLeave(node.key)}
+            ref={el => {
+              navRefs.current[index] = el;
+            }}
+          >
+            {node.children ? (
+              <>
+                <button
+                  className="nav-top-link text-foreground hover:text-foreground bg-transparent border-none cursor-pointer"
+                  onClick={navigateTo(node.key)}
+                  onKeyDown={(e) => handleKeyDown(e, index)}
+                  aria-expanded={openKey === node.key}
+                  aria-haspopup="true"
+                  tabIndex={0}
+                  data-state={openKey === node.key ? "open" : "closed"}
+                >
+                  {node.label}
+                </button>
+                <div
+                  ref={el => {
+                    dropdownRefs.current[index] = el;
+                  }}
+                  className={`nav-dropdown bg-background border border-border ${getDropdownAlignment(index)} ${
+                    openKey === node.key ? "block" : "hidden"
+                  }`}
+                  data-state={openKey === node.key ? "open" : "closed"}
+                  data-parent={node.key}
+                  role="menu"
+                  aria-label={`${node.label} submenu`}
+                >
+                  <ul className="grid gap-1 min-w-[14rem]">
+                    {node.children.map((child, childIndex) => (
+                      <li key={child.key} data-index={childIndex}>
+                        <a
+                          href={`#${child.key}`}
+                          onClick={(e) => {
+                            navigateTo(child.key)(e);
+                            setOpenKey(null);
+                          }}
+                          className="nav-sub-link text-foreground hover:bg-secondary no-underline"
+                          onKeyDown={(e) => handleSubmenuKeyDown(e, node.key, childIndex)}
+                          role="menuitem"
+                          tabIndex={openKey === node.key ? 0 : -1}
+                        >
+                          {child.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <a
+                href={`#${node.key}`}
                 onClick={navigateTo(node.key)}
+                className="nav-top-link text-foreground hover:text-foreground no-underline"
                 onKeyDown={(e) => handleKeyDown(e, index)}
-                aria-expanded={openKey === node.key}
-                aria-haspopup="true"
                 ref={el => {
                   navRefs.current[index] = el;
                 }}
                 tabIndex={0}
-                data-state={openKey === node.key ? "open" : "closed"}
               >
                 {node.label}
-              </button>
-              <div
-                className="nav-dropdown"
-                data-state={openKey === node.key ? "open" : "closed"}
-                data-parent={node.key}
-                role="menu"
-                aria-label={`${node.label} submenu`}
-              >
-                <ul className="grid gap-1 min-w-[14rem]">
-                  {/* Removed redundant parent item */}
-                  {node.children.map((child, childIndex) => (
-                    <li key={child.key} data-index={childIndex}>
-                      <a
-                        href={`#${child.key}`}
-                        onClick={(e) => {
-                          navigateTo(child.key)(e);
-                          setOpenKey(null);
-                        }}
-                        className="nav-sub-link"
-                        onKeyDown={(e) => handleSubmenuKeyDown(e, node.key, childIndex)}
-                        role="menuitem"
-                        tabIndex={openKey === node.key ? 0 : -1}
-                      >
-                        {child.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          ) : (
-            <a
-              href={`#${node.key}`}
-              onClick={navigateTo(node.key)}
-              className="nav-top-link"
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              ref={el => {
-                navRefs.current[index] = el;
-              }}
-              tabIndex={0}
-            >
-              {node.label}
-            </a>
-          )}
-        </div>
-      ))}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
     </nav>
   );
 }

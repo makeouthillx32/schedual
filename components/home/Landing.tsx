@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="home-page min-h-screen bg-[var(--background)] text-[var(--foreground)] px-4 sm:px-6 lg:px-10 py-6">
+    <div className="min-h-screen bg-background text-foreground px-4 sm:px-6 lg:px-10 py-6">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-12 mb-16 max-w-7xl mx-auto">
         {/* Dartboard SVG */}
@@ -17,11 +17,11 @@ export default function HomePage() {
 
         {/* Heading & Mission copy */}
         <div className="flex-1 text-center md:text-left max-w-2xl">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[var(--primary-foreground)] leading-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-foreground leading-tight mb-4">
             Welcome to Desert Area Resources and Training
           </h1>
-          <h2 className="text-2xl sm:text-3xl font-semibold mb-3">Our Mission is to:</h2>
-          <p className="text-lg sm:text-xl leading-relaxed">
+          <h2 className="text-2xl sm:text-3xl font-semibold mb-3 text-foreground">Our Mission is to:</h2>
+          <p className="text-lg sm:text-xl leading-relaxed text-foreground">
             Provide services and opportunities to people who have intellectual or developmental disabilities or other
             special needs, so they and their families can pursue the dreams and lifestyles they choose.
           </p>
@@ -29,7 +29,7 @@ export default function HomePage() {
       </div>
 
       {/* Welcome Text */}
-      <div className="space-y-6 text-base sm:text-lg md:text-xl mb-16 max-w-3xl mx-auto px-1 text-justify">
+      <div className="space-y-6 text-base sm:text-lg md:text-xl mb-16 max-w-3xl mx-auto px-1 text-justify text-foreground">
         <p>
           DART offers programs and services to people with and without developmental disabilities or other special needs.
           Our staff is here to provide services and opportunities to meet the needs of the individual.
@@ -65,7 +65,7 @@ export default function HomePage() {
 
       {/* History Section */}
       <div className="space-y-4 text-base sm:text-lg max-w-5xl mx-auto">
-        <h3 className="font-semibold text-xl sm:text-2xl text-[var(--foreground)]">
+        <h3 className="font-semibold text-xl sm:text-2xl text-foreground">
           The History of Desert Area Resources and Training
         </h3>
 
@@ -80,7 +80,7 @@ export default function HomePage() {
             />
           </div>
           <div className="md:w-2/3">
-            <p>
+            <p className="text-foreground">
               Founded by visionary parents in 1961, Desert Area Resources and Training (DART) began as the Indian Wells Valley
               Council for Retarded Children. Over the decades, the organization has grown into a regional leader in services
               for individuals with intellectual and developmental disabilities.
@@ -88,11 +88,11 @@ export default function HomePage() {
           </div>
         </div>
 
-        <p>
+        <p className="text-foreground">
           In 1961, twenty parents of children with disabilities united to establish a recreation program for preschoolers.
           By 1966 the effort expanded into formal special‑education classes through the Kern County Superintendent of Schools.
         </p>
-        <p>
+        <p className="text-foreground">
           United Way joined as a partner in 1962, and the Sunshine House day‑care program launched in 1973. After a 1979 merger
           and a 1991 rebrand, the agency became Desert Area Resources and Training — continuing to expand its impact across
           surrounding counties.

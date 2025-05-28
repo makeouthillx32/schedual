@@ -21,7 +21,7 @@ export default function BoardPage() {
   }, []);
 
   return (
-    <div className="home-page space-y-8 text-[hsl(var(--foreground))] bg-[hsl(var(--background))] p-4 sm:p-8">
+    <div className="base space-y-8 text-[hsl(var(--foreground))] bg-[hsl(var(--background))] p-4 sm:p-8">
       <p className="text-center max-w-2xl mx-auto text-[hsl(var(--foreground))]">
         Our Board of Directors is comprised of dedicated community members who volunteer their time and expertise to guide our organization. They are committed to our mission and work tirelessly to ensure that DART continues to provide high-quality services.
       </p>

@@ -7,6 +7,7 @@ import {
   MdArrowForwardIos,
 } from "react-icons/md";
 import { navTree } from "@/lib/navTree";
+import "./_components/Mobile.scss";
 
 interface MobileDrawerProps {
   navigateTo: (id: string) => (e?: React.MouseEvent<HTMLAnchorElement>) => void;
@@ -42,7 +43,7 @@ export default function MobileDrawer({
     setTimeout(() => {
       setIsClosing(false);
       onClose();
-    }, 250); // must match animation duration
+    }, 250);
   };
 
   const handleClickAndClose = (key: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -53,25 +54,25 @@ export default function MobileDrawer({
   return (
     <div
       ref={menuRef}
-      className={`md:hidden absolute top-full left-0 right-0 z-40 bg-[var(--background)]
-        shadow-md border-b border-gray-200 rounded-b-xl overflow-hidden
+      className={`md:hidden absolute top-16 left-0 right-0 z-50 
+        bg-background border-b border-border shadow-lg rounded-b-xl overflow-hidden
         ${isClosing ? "animate-slide-up" : "animate-slide-down"}`}
     >
-      <div className="flex flex-col py-1 gap-[2px]">
+      <div className="flex flex-col py-1 gap-[2px] bg-background">
         {navTree.map((node) => (
           <div key={node.key}>
-            <div className="flex items-center justify-between px-4 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors">
+            <div className="flex items-center justify-between px-4 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors">
               <a
                 href="#"
                 onClick={handleClickAndClose(node.key)}
-                className="truncate w-full focus:outline-none"
+                className="truncate w-full focus:outline-none text-foreground no-underline"
               >
                 {node.label}
               </a>
               {node.children ? (
                 <button
                   onClick={() => toggleExpand(node.key)}
-                  className="pl-2 text-[var(--foreground)]"
+                  className="pl-2 text-foreground bg-transparent border-none cursor-pointer"
                   aria-label={`Toggle ${node.label}`}
                 >
                   {expanded === node.key ? (
@@ -83,19 +84,19 @@ export default function MobileDrawer({
               ) : (
                 <MdArrowForwardIos
                   size={14}
-                  className="ml-2 text-[var(--popover-foreground)]"
+                  className="ml-2 text-muted-foreground"
                 />
               )}
             </div>
 
             {node.children && expanded === node.key && (
-              <div className="pl-4 flex flex-col overflow-hidden transition-all duration-200">
+              <div className="pl-4 flex flex-col overflow-hidden transition-all duration-200 bg-background">
                 {node.children.map((child) => (
                   <a
                     key={child.key}
                     href="#"
                     onClick={handleClickAndClose(child.key)}
-                    className="px-4 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--background)] transition-colors"
+                    className="px-4 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors no-underline"
                   >
                     {child.label}
                   </a>
@@ -105,12 +106,12 @@ export default function MobileDrawer({
           </div>
         ))}
 
-        <div className="mt-1 border-t pt-2">
+        <div className="mt-1 border-t border-border pt-2 bg-background">
           {!session ? (
             <a
               href="/sign-in"
               onClick={handleClose}
-              className="px-4 py-1.5 text-sm text-[var(--accent)] font-semibold block hover:bg-[var(--background)]"
+              className="px-4 py-1.5 text-sm text-accent font-semibold block hover:bg-secondary transition-colors no-underline"
             >
               Sign In
             </a>
@@ -120,7 +121,7 @@ export default function MobileDrawer({
                 window.location.href = "/auth/logout";
                 handleClose();
               }}
-              className="px-4 py-1.5 text-sm text-[var(--destructive)] font-semibold block w-full text-left hover:bg-[var(--background)]"
+              className="px-4 py-1.5 text-sm text-destructive font-semibold block w-full text-left hover:bg-secondary bg-transparent border-none cursor-pointer transition-colors"
             >
               Log Out
             </button>

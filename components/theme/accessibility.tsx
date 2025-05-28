@@ -55,7 +55,7 @@ const AccessibilityOverlay = () => {
         id,
         name: id.charAt(0).toUpperCase() + id.slice(1),
         description: `${id.charAt(0).toUpperCase() + id.slice(1)} color theme preset`,
-        previewColor: '#8B5CF6' // Temporary static color until we fix the theme system
+        previewColor: `hsl(var(--primary))` // Use the primary color variable that all themes have
       };
     });
     setThemePresets(loadedThemes);

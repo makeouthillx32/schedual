@@ -49,13 +49,13 @@ const AccessibilityOverlay = () => {
   }, [isOpen]);
   
   useEffect(() => {
-    // Load theme presets when component mounts - don't call getTheme at all to avoid active theme interference
+    // Load theme presets when component mounts
     const loadedThemes: ThemePreset[] = availableThemes.map(id => {
       return {
         id,
         name: id.charAt(0).toUpperCase() + id.slice(1),
         description: `${id.charAt(0).toUpperCase() + id.slice(1)} color theme preset`,
-        previewColor: getThemePreviewColor(id) // Use a different method to get preview color
+        previewColor: '#8B5CF6' // Temporary static color until we fix the theme system
       };
     });
     setThemePresets(loadedThemes);

@@ -93,15 +93,15 @@ const AccessibilityOverlay = () => {
     <div 
       ref={overlayRef}
       onClick={handleOutsideClick}
-      className="theme-selector"
+      className="theme-selector bg-black/50"
     >
-      <div className="theme-selector__container">
+      <div className="theme-selector__container bg-[hsl(var(--card))] border border-[hsl(var(--border))] shadow-[var(--shadow-6)]">
         {/* Header */}
-        <div className="theme-selector__header">
+        <div className="theme-selector__header bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] border-b border-[hsl(var(--sidebar-primary-foreground))]/15">
           <h2 className="theme-selector__title">Theme Selector</h2>
           <button 
             onClick={() => setIsOpen(false)}
-            className="theme-selector__close"
+            className="theme-selector__close bg-[hsl(var(--sidebar-primary-foreground))]/20 text-[hsl(var(--sidebar-primary-foreground))] border border-[hsl(var(--sidebar-primary-foreground))]/10 hover:bg-[hsl(var(--sidebar-primary-foreground))]/30"
             aria-label="Close overlay"
           >
             <X size={24} />
@@ -109,10 +109,10 @@ const AccessibilityOverlay = () => {
         </div>
         
         {/* Controls */}
-        <div className="theme-selector__controls">
+        <div className="theme-selector__controls bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]">
           <button
             onClick={resetSettings}
-            className="theme-selector__control-button"
+            className="theme-selector__control-button bg-[hsl(var(--sidebar-primary-foreground))]/20 text-[hsl(var(--sidebar-primary-foreground))] border border-[hsl(var(--sidebar-primary-foreground))]/10 hover:bg-[hsl(var(--sidebar-primary-foreground))]/30"
             aria-label="Reset all settings"
           >
             <RefreshCw size={18} />
@@ -121,10 +121,10 @@ const AccessibilityOverlay = () => {
         </div>
         
         {/* Content Area */}
-        <div className="theme-selector__content">
+        <div className="theme-selector__content bg-[hsl(var(--background))]">
           {/* Theme Presets Section */}
-          <section className="theme-selector__section">
-            <h3 className="theme-selector__section-title">
+          <section className="theme-selector__section border-b border-[hsl(var(--border))]/40">
+            <h3 className="theme-selector__section-title text-[hsl(var(--foreground))] after:bg-[hsl(var(--border))]/40">
               Theme Presets
             </h3>
             
@@ -142,8 +142,8 @@ const AccessibilityOverlay = () => {
               ))}
               
               {/* Placeholder for more themes */}
-              <div className="theme-presets-placeholder">
-                <p className="theme-presets-placeholder__text">
+              <div className="theme-presets-placeholder bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] border-dashed">
+                <p className="theme-presets-placeholder__text text-[hsl(var(--muted-foreground))]">
                   More theme presets coming soon. Check back for updates!
                 </p>
               </div>
@@ -152,7 +152,7 @@ const AccessibilityOverlay = () => {
         </div>
         
         {/* Footer */}
-        <div className="theme-selector__footer">
+        <div className="theme-selector__footer bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] border-t border-[hsl(var(--sidebar-primary-foreground))]/15">
           <span> Better accessibility By </span>
           <strong className="theme-selector__brand">unenter</strong>
           <p className="theme-selector__keyboard-hint">Press ESC to close this panel😄</p>

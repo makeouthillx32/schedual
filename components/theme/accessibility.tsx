@@ -1,22 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, RefreshCw, Moon, Sun } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/app/provider';
 import ThemePresetCard from '@/components/theme/_components/ThemePresetCard';
-import AccessibilityToggle from '@/components/theme/_components/AccessibilityToggle';
 import ThemeToggle from '@/components/theme/_components/ThemeToggle';
 import ThemeColorMode from '@/components/theme/_components/ThemeColorMode';
 
 // Import Sass styles
 import '@/components/theme/_components/theme.scss';
-
-interface AccessibilityPreset {
-  id: string;
-  name: string;
-  description: string;
-  enabled: boolean;
-}
 
 interface ThemePreset {
   id: string;
@@ -29,27 +21,6 @@ const AccessibilityOverlay = () => {
   const [isOpen, setIsOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { themeType, toggleTheme, themeId, setThemeId, availableThemes, getTheme } = useTheme();
-  
-  const [accessibilityPresets, setAccessibilityPresets] = useState<AccessibilityPreset[]>([
-    {
-      id: 'seizure',
-      name: 'Seizure Safe Preset',
-      description: 'Clear flashes & reduces color',
-      enabled: false
-    },
-    {
-      id: 'vision',
-      name: 'Vision Impaired Preset',
-      description: 'Enhances website\'s visuals',
-      enabled: false
-    },
-    {
-      id: 'adhd',
-      name: 'ADHD Friendly Preset',
-      description: 'More focus & fewer distractions',
-      enabled: false
-    }
-  ]);
   
   // Generate theme presets from available themes
   const [themePresets, setThemePresets] = useState<ThemePreset[]>([]);
@@ -102,15 +73,6 @@ const AccessibilityOverlay = () => {
     } else {
       if (themeType !== 'light') toggleTheme();
     }
-    
-    // Reset accessibility presets
-    setAccessibilityPresets(accessibilityPresets.map(preset => ({ ...preset, enabled: false })));
-  };
-
-  const togglePreset = (id: string) => {
-    setAccessibilityPresets(accessibilityPresets.map(preset => 
-      preset.id === id ? { ...preset, enabled: !preset.enabled } : preset
-    ));
   };
 
   const toggleOverlay = () => {
@@ -193,33 +155,13 @@ const AccessibilityOverlay = () => {
               </div>
             </div>
           </section>
-          
-          {/* Accessibility Presets Section */}
-          <section className="theme-selector__section">
-            <h3 className="theme-selector__section-title">
-              Accessibility Presets
-            </h3>
-            
-            <div>
-              {accessibilityPresets.map(preset => (
-                <AccessibilityToggle
-                  key={preset.id}
-                  id={preset.id}
-                  name={preset.name}
-                  description={preset.description}
-                  enabled={preset.enabled}
-                  onToggle={togglePreset}
-                />
-              ))}
-            </div>
-          </section>
         </div>
         
         {/* Footer */}
         <div className="theme-selector__footer">
-          <span>Theme System By </span>
-          <strong className="theme-selector__brand">Your Brand Name</strong>
-          <p className="theme-selector__keyboard-hint">Press ESC to close this panel</p>
+          <span> Better accessibility By </span>
+          <strong className="theme-selector__brand">unenter</strong>
+          <p className="theme-selector__keyboard-hint">Press ESC to close this panel😄</p>
         </div>
       </div>
     </div>

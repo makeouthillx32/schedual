@@ -40,7 +40,6 @@
   bottom: 0;
   z-index: 50;
   @include flex-center;
-  background: var(--theme-overlay-backdrop);
   padding: 1rem;
   padding-top: calc(1rem + var(--header-height, 70px));
   overflow: auto;

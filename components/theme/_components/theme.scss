@@ -1,18 +1,17 @@
 /* 
  * Theme System Component Styles
- * A comprehensive set of styles for the theme selector and related components
+ * Pure structural and layout styles - NO COLOR LOGIC
  */
 
-// Variables
+// Variables - Structure Only
 :root {
   --theme-transition-speed: 0.2s;
   --theme-border-radius: var(--radius, 0.5rem);
   --theme-box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
   --theme-stroke-width: 2px;
-  --theme-overlay-bg: hsla(var(--foreground), 0.5);
 }
 
-// Mixins
+// Mixins - Layout Only
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -26,9 +25,10 @@
 }
 
 @mixin theme-border {
-  border: var(--theme-stroke-width) solid hsla(var(--border), 0.6);
+  border: var(--theme-stroke-width) solid;
   box-shadow: var(--theme-box-shadow);
 }
+
 // --------------------------------------
 // Theme Selector Overlay
 // --------------------------------------
@@ -37,7 +37,6 @@
   inset: 0;
   z-index: 50;
   @include flex-center;
-  background-color: var(--theme-overlay-bg);
   padding: 1rem;
   overflow: auto;
 
@@ -51,15 +50,12 @@
     border-radius: var(--theme-border-radius);
     overflow: hidden;
     @include theme-border;
-    background-color: hsl(var(--background));
   }
 
   &__header {
-    background-color: hsl(var(--sidebar-primary));
-    color: hsl(var(--sidebar-primary-foreground));
     padding: 1rem;
     @include flex-between;
-    border-bottom: var(--theme-stroke-width) solid hsla(var(--sidebar-primary-foreground), 0.15);
+    border-bottom: var(--theme-stroke-width) solid;
   }
 
   &__title {
@@ -72,22 +68,17 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background-color: hsla(var(--sidebar-primary-foreground), 0.2);
-    color: hsl(var(--sidebar-primary-foreground));
     @include flex-center;
-    border: 1px solid hsla(var(--sidebar-primary-foreground), 0.1);
+    border: 1px solid;
     cursor: pointer;
     transition: all var(--theme-transition-speed) ease;
 
     &:hover {
-      background-color: hsla(var(--sidebar-primary-foreground), 0.3);
       transform: scale(1.05);
     }
   }
 
   &__controls {
-    background-color: hsl(var(--sidebar-primary));
-    color: hsl(var(--sidebar-primary-foreground));
     padding: 0 1rem 1rem;
     display: flex;
     gap: 0.75rem;
@@ -100,16 +91,13 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background-color: hsla(var(--sidebar-primary-foreground), 0.2);
-    color: hsl(var(--sidebar-primary-foreground));
     border-radius: calc(var(--theme-border-radius) - 0.25rem);
-    border: 1px solid hsla(var(--sidebar-primary-foreground), 0.1);
+    border: 1px solid;
     cursor: pointer;
     transition: all var(--theme-transition-speed) ease;
     font-size: 0.875rem;
 
     &:hover {
-      background-color: hsla(var(--sidebar-primary-foreground), 0.3);
       transform: translateY(-1px);
     }
 
@@ -124,7 +112,6 @@
   }
 
   &__content {
-    background-color: hsl(var(--background));
     overflow-y: auto;
     flex: 1;
   }
@@ -134,7 +121,7 @@
 
     &:not(:last-child) {
       margin-bottom: 1rem;
-      border-bottom: 1px solid hsla(var(--border), 0.4);
+      border-bottom: 1px solid;
     }
   }
 
@@ -142,7 +129,6 @@
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0 0 1.25rem;
-    color: hsl(var(--foreground));
     display: flex;
     align-items: center;
     
@@ -150,18 +136,15 @@
       content: "";
       flex: 1;
       height: 1px;
-      background-color: hsla(var(--border), 0.4);
       margin-left: 0.75rem;
     }
   }
 
   &__footer {
-    background-color: hsl(var(--sidebar-primary));
-    color: hsl(var(--sidebar-primary-foreground));
     text-align: center;
     padding: 1rem;
     font-size: 0.875rem;
-    border-top: var(--theme-stroke-width) solid hsla(var(--sidebar-primary-foreground), 0.15);
+    border-top: var(--theme-stroke-width) solid;
   }
 
   &__brand {
@@ -183,12 +166,11 @@
   align-items: center;
   padding-bottom: 1rem;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid hsla(var(--border), 0.4);
-  transition: background-color var(--theme-transition-speed) ease;
+  border-bottom: 1px solid;
+  transition: all var(--theme-transition-speed) ease;
   border-radius: calc(var(--theme-border-radius) - 0.25rem);
   
   &:hover {
-    background-color: hsla(var(--muted), 0.3);
     padding-left: 0.5rem;
     padding-right: 0.5rem;
     margin-left: -0.5rem;
@@ -204,13 +186,12 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    border: 2px solid hsl(var(--border));
+    border: 2px solid;
     transition: all var(--theme-transition-speed) ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
     &--active {
-      border-color: hsl(var(--sidebar-primary));
-      box-shadow: 0 0 0 2px hsla(var(--sidebar-primary), 0.3),
+      box-shadow: 0 0 0 2px,
                   0 2px 8px rgba(0, 0, 0, 0.15);
     }
   }
@@ -224,13 +205,12 @@
     margin: 0 0 0.25rem;
     font-size: 1rem;
     font-weight: 500;
-    color: hsl(var(--foreground));
   }
 
   &__description {
     margin: 0;
     font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
   }
 
   &__actions {
@@ -242,16 +222,12 @@
     font-weight: 500;
     padding: 0.375rem 0.75rem;
     border-radius: 9999px;
-    border: 1px solid hsla(var(--border), 0.5);
-    background-color: hsl(var(--muted));
-    color: hsl(var(--foreground));
+    border: 1px solid;
     cursor: pointer;
     transition: all var(--theme-transition-speed) ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--muted-foreground));
-      color: hsl(var(--muted));
       transform: translateY(-1px);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
     }
@@ -263,14 +239,12 @@
 
     &:disabled {
       cursor: default;
-      opacity: 0.8;
+      opacity: 0.5;
     }
 
     &--active {
-      background-color: hsl(var(--sidebar-primary));
-      color: hsl(var(--sidebar-primary-foreground));
       border-color: transparent;
-      box-shadow: 0 2px 5px hsla(var(--sidebar-primary), 0.3);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }
   }
 }
@@ -283,12 +257,11 @@
   align-items: center;
   padding-bottom: 1rem;
   margin-bottom: 1.25rem;
-  border-bottom: 1px solid hsla(var(--border), 0.4);
-  transition: background-color var(--theme-transition-speed) ease;
+  border-bottom: 1px solid;
+  transition: all var(--theme-transition-speed) ease;
   border-radius: calc(var(--theme-border-radius) - 0.25rem);
   
   &:hover {
-    background-color: hsla(var(--muted), 0.3);
     padding-left: 0.5rem;
     padding-right: 0.5rem;
     margin-left: -0.5rem;
@@ -305,15 +278,12 @@
     width: 3rem;
     height: 1.75rem;
     border-radius: 9999px;
-    background-color: hsl(var(--muted));
-    border: 1px solid hsl(var(--border));
+    border: 1px solid;
     transition: all var(--theme-transition-speed) ease;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 
     &--enabled {
-      background-color: hsl(var(--sidebar-primary));
-      border-color: hsl(var(--sidebar-primary));
-      box-shadow: inset 0 1px 3px hsla(var(--sidebar-primary), 0.2);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
     }
   }
 
@@ -324,7 +294,6 @@
     width: 1.5rem;
     height: 1.5rem;
     border-radius: 50%;
-    background-color: white;
     border: none;
     transition: all var(--theme-transition-speed) ease;
     cursor: pointer;
@@ -344,13 +313,12 @@
     margin: 0 0 0.25rem;
     font-size: 1rem;
     font-weight: 500;
-    color: hsl(var(--foreground));
   }
 
   &__description {
     margin: 0;
     font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
   }
 }
 
@@ -358,14 +326,13 @@
 .theme-presets-placeholder {
   margin-top: 1.5rem;
   padding: 1rem;
-  background-color: hsla(var(--muted), 0.5);
   border-radius: var(--theme-border-radius);
-  border: 1px dashed hsla(var(--border), 0.6);
+  border: 1px dashed;
+  opacity: 0.6;
   
   &__text {
     text-align: center;
     font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
     margin: 0;
   }
 }
@@ -439,7 +406,6 @@
     }
   }
 
-  // <-- ensure your floating button is on top and nudged up on tablet/mobile
   .theme-toggle {
     z-index: 9999;
     bottom: 4rem;
@@ -468,7 +434,6 @@
     }
   }
 
-  // push it even higher on very small screens if needed
   .theme-toggle {
     bottom: 5rem;
   }

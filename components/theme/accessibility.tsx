@@ -93,8 +93,7 @@ const AccessibilityOverlay = () => {
     <div 
       ref={overlayRef}
       onClick={handleOutsideClick}
-      className="theme-selector"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className="theme-selector bg-foreground/50"
     >
       <div className="theme-selector__container">
         {/* Header */}

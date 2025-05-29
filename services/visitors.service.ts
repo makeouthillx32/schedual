@@ -1,12 +1,26 @@
-export async function getVisitorsAnalyticsData() {
+export async function getDevicesUsedData(
+  timeFrame?: "monthly" | "yearly" | (string & {}),
+) {
   try {
-    // Calculate date range - last 30 days
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - 30);
+    // SERVER-SIDE SAFETY CHECK
+    if (typeof window === 'undefined') {
+      console.log('🏢 Server-side rendering detected - returning empty data for devices');
+      return [];
+    }
 
-    // Fetch visitor analytics from our API
-    const response = await fetch(`/api/analytics/visitors?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
+    // Calculate date range based on timeFrame
+    const endDate = new Date();
+    let startDate = new Date();
+    
+    if (timeFrame === "yearly") {
+      startDate.setFullYear(endDate.getFullYear() - 1);
+    } else {
+      // Default to monthly
+      startDate.setMonth(endDate.getMonth() - 1);
+    }
+
+    // Fetch device analytics from our API
+    const response = await fetch(`/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -14,25 +28,51 @@ export async function getVisitorsAnalyticsData() {
     });
 
     if (!response.ok) {
-      console.warn('Analytics API not available, using fallback');
-      // Return empty array instead of dummy data
+      console.warn('Device analytics API not available');
       return [];
     }
 
     const data = await response.json();
     
-    // Transform API response to match expected format
-    const visitorStats = data.visitors || [];
+    // Transform the API response to match the expected format
+    const deviceStats = data.devices || [];
+    const totalSessions = deviceStats.reduce((sum: number, device: any) => sum + (device.sessions_count || 0), 0);
     
-    return visitorStats.map((stat: any, index: number) => ({
-      x: (index + 1).toString(), // Day number as string
-      y: stat.unique_visitors || stat.sessions_count || 0 // Visitor count
+    // Map to the expected format
+    const result = deviceStats.map((device: any) => ({
+      name: capitalizeDeviceType(device.device_type),
+      percentage: totalSessions > 0 ? (device.sessions_count || 0) / totalSessions : 0,
+      amount: device.sessions_count || 0,
     }));
 
+    // Sort by amount (highest first)
+    result.sort((a, b) => b.amount - a.amount);
+
+    // If no data, return empty array
+    if (result.length === 0) {
+      console.info('No device analytics data available yet');
+      return [];
+    }
+
+    return result;
+
   } catch (error) {
-    console.error('Error fetching visitor analytics:', error);
+    console.error('Error fetching device analytics:', error);
     
     // Return empty array on error (no more dummy data!)
     return [];
   }
+}
+
+// Helper function to format device type names
+function capitalizeDeviceType(deviceType: string): string {
+  const typeMap: Record<string, string> = {
+    'desktop': 'Desktop',
+    'mobile': 'Mobile', 
+    'tablet': 'Tablet',
+    'bot': 'Bots',
+    'unknown': 'Unknown'
+  };
+  
+  return typeMap[deviceType?.toLowerCase()] || 'Unknown';
 }

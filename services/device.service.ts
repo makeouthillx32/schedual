@@ -1,15 +1,19 @@
-// services/devices.service.ts - FINAL CHART COMPATIBLE VERSION
+// services/devices.service.ts - SUPER DEBUG VERSION
 export async function getDevicesUsedData(
   timeFrame?: "monthly" | "yearly" | (string & {}),
 ) {
+  console.log('🚀 [DEVICES] === SERVICE CALLED ===');
+  console.log('🚀 [DEVICES] timeFrame:', timeFrame);
+  console.log('🚀 [DEVICES] typeof window:', typeof window);
+  
   try {
-    console.log('🔍 [DEVICES] Service called with timeFrame:', timeFrame);
-
     // SERVER-SIDE SAFETY CHECK 
     if (typeof window === 'undefined') {
-      console.log('🏢 [DEVICES] Server-side rendering');
+      console.log('🏢 [DEVICES] Server-side rendering - returning empty array');
       return [];
     }
+
+    console.log('🌐 [DEVICES] Client-side - proceeding with API call');
 
     // Calculate date range
     const endDate = new Date();
@@ -22,54 +26,103 @@ export async function getDevicesUsedData(
     }
 
     const apiUrl = `/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
-    console.log('🌐 [DEVICES] Calling API:', apiUrl);
+    console.log('🌐 [DEVICES] API URL constructed:', apiUrl);
+    console.log('🌐 [DEVICES] Date range:', {
+      start: startDate.toISOString(),
+      end: endDate.toISOString()
+    });
 
+    console.log('📡 [DEVICES] Making fetch request...');
     const response = await fetch(apiUrl);
+    console.log('📡 [DEVICES] Response received:', {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText
+    });
     
     if (!response.ok) {
-      console.warn('⚠️ [DEVICES] API failed:', response.status);
+      console.error('❌ [DEVICES] API request failed:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+      
+      // Try to read error response
+      try {
+        const errorText = await response.text();
+        console.error('❌ [DEVICES] Error response body:', errorText);
+      } catch (e) {
+        console.error('❌ [DEVICES] Could not read error response');
+      }
+      
       return [];
     }
 
+    console.log('📊 [DEVICES] Parsing JSON response...');
     const apiData = await response.json();
-    console.log('📊 [DEVICES] Raw API response:', apiData);
+    console.log('📊 [DEVICES] === FULL API RESPONSE ===');
+    console.log(JSON.stringify(apiData, null, 2));
+    console.log('📊 [DEVICES] === END API RESPONSE ===');
     
     // Extract devices from API response
     const deviceStats = apiData.devices || [];
-    console.log('📱 [DEVICES] Device stats array:', deviceStats);
+    console.log('📱 [DEVICES] Extracted devices array:', deviceStats);
+    console.log('📱 [DEVICES] Device stats length:', deviceStats.length);
 
     if (deviceStats.length === 0) {
-      console.warn('📭 [DEVICES] No device data found');
+      console.warn('📭 [DEVICES] No device data found in API response');
+      console.warn('📭 [DEVICES] API response structure:', Object.keys(apiData));
       return [];
     }
 
-    // Transform API data to chart format: { name: string, amount: number }[]
-    const chartData = deviceStats.map((device: any) => ({
-      name: capitalizeDeviceType(device.device_type),
-      amount: device.sessions_count || 0
-    }));
+    console.log('🔄 [DEVICES] Processing each device...');
+    
+    // Transform API data to chart format
+    const chartData = deviceStats.map((device: any, index: number) => {
+      console.log(`🔄 [DEVICES] Processing device ${index}:`, device);
+      
+      const name = capitalizeDeviceType(device.device_type);
+      const amount = device.sessions_count || 0;
+      
+      console.log(`🔄 [DEVICES] Transformed: ${device.device_type} -> ${name}, sessions: ${amount}`);
+      
+      return {
+        name: name,
+        amount: amount
+      };
+    });
+
+    console.log('📊 [DEVICES] Raw chart data before filtering:', chartData);
 
     // Sort by amount (highest first) 
     chartData.sort((a: any, b: any) => b.amount - a.amount);
+    console.log('📊 [DEVICES] Sorted chart data:', chartData);
 
-    console.log('✅ [DEVICES] Final chart data:', chartData);
-    console.log('🎯 [DEVICES] Summary:', {
-      deviceCount: chartData.length,
-      totalSessions: chartData.reduce((sum: number, d: any) => sum + d.amount, 0),
-      topDevice: chartData[0]?.name,
-      topDeviceSessions: chartData[0]?.amount
-    });
+    // Filter out zero amounts
+    const filteredData = chartData.filter((item: any) => item.amount > 0);
+    console.log('📊 [DEVICES] Filtered chart data (non-zero):', filteredData);
 
+    console.log('✅ [DEVICES] === FINAL RESULT ===');
+    console.log('✅ [DEVICES] Returning:', filteredData);
+    console.log('✅ [DEVICES] Result length:', filteredData.length);
+    console.log('✅ [DEVICES] Total sessions:', filteredData.reduce((sum: number, d: any) => sum + d.amount, 0));
+    console.log('✅ [DEVICES] === END RESULT ===');
+
+    // Return all data (including zeros) for debugging
     return chartData;
 
   } catch (error) {
-    console.error('❌ [DEVICES] Error:', error);
+    console.error('❌ [DEVICES] === ERROR CAUGHT ===');
+    console.error('❌ [DEVICES] Error details:', error);
+    console.error('❌ [DEVICES] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('❌ [DEVICES] === END ERROR ===');
     return [];
   }
 }
 
 // Helper function to format device type names
 function capitalizeDeviceType(deviceType: string): string {
+  console.log('🔤 [DEVICES] Capitalizing:', deviceType);
+  
   const typeMap: Record<string, string> = {
     'desktop': 'Desktop',
     'mobile': 'Mobile', 
@@ -79,6 +132,6 @@ function capitalizeDeviceType(deviceType: string): string {
   };
   
   const result = typeMap[deviceType?.toLowerCase()] || 'Unknown';
-  console.log('🔤 [DEVICES] Mapped', deviceType, '->', result);
+  console.log('🔤 [DEVICES] Result:', deviceType, '->', result);
   return result;
 }

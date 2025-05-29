@@ -114,31 +114,9 @@ export function clearThemeCache(): void {
 // Default theme ID
 export const defaultThemeId = 'default';
 
-// Backward compatibility exports (lazy-loaded)
-export const themes = new Proxy([] as Theme[], {
-  get(target, prop) {
-    if (typeof prop === 'string' && !isNaN(Number(prop))) {
-      // Array index access
-      throw new Error('❌ Direct array access not supported. Use getThemes() instead.');
-    }
-    
-    if (prop === 'length') {
-      throw new Error('❌ Direct length access not supported. Use getThemes() instead.');
-    }
-    
-    if (prop === 'map' || prop === 'filter' || prop === 'forEach') {
-      throw new Error('❌ Direct array methods not supported. Use getThemes() instead.');
-    }
-    
-    return (target as any)[prop];
-  }
-});
+export const themes = [] as Theme[];
 
-export const themeMap = new Proxy({} as Record<string, Theme>, {
-  get(target, prop: string) {
-    throw new Error(`❌ Direct themeMap access not supported. Use getThemeById('${prop}') instead.`);
-  }
-});
+export const themeMap = {} as Record<string, Theme>;
 
 // Helper function to get available theme IDs
 export async function getAvailableThemeIds(): Promise<string[]> {

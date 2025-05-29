@@ -49,6 +49,7 @@ class AnalyticsClient {
   private sessionId: string;
   private apiBase: string;
   private isInitialized = false;
+  private isEnabled = true; // Add feature flag
 
   constructor(apiBase = '/api/analytics') {
     this.apiBase = apiBase;
@@ -98,24 +99,29 @@ class AnalyticsClient {
   private getUtmParams(url?: string): TrackingPayload['utmParams'] {
     if (typeof window === 'undefined' && !url) return undefined;
     
-    const urlToCheck = url || window.location.href;
-    const urlObj = new URL(urlToCheck);
-    const params = urlObj.searchParams;
+    try {
+      const urlToCheck = url || window.location.href;
+      const urlObj = new URL(urlToCheck);
+      const params = urlObj.searchParams;
 
-    const utmParams: TrackingPayload['utmParams'] = {};
-    
-    if (params.get('utm_source')) utmParams.source = params.get('utm_source')!;
-    if (params.get('utm_medium')) utmParams.medium = params.get('utm_medium')!;
-    if (params.get('utm_campaign')) utmParams.campaign = params.get('utm_campaign')!;
-    if (params.get('utm_term')) utmParams.term = params.get('utm_term')!;
-    if (params.get('utm_content')) utmParams.content = params.get('utm_content')!;
+      const utmParams: TrackingPayload['utmParams'] = {};
+      
+      if (params.get('utm_source')) utmParams.source = params.get('utm_source')!;
+      if (params.get('utm_medium')) utmParams.medium = params.get('utm_medium')!;
+      if (params.get('utm_campaign')) utmParams.campaign = params.get('utm_campaign')!;
+      if (params.get('utm_term')) utmParams.term = params.get('utm_term')!;
+      if (params.get('utm_content')) utmParams.content = params.get('utm_content')!;
 
-    return Object.keys(utmParams).length > 0 ? utmParams : undefined;
+      return Object.keys(utmParams).length > 0 ? utmParams : undefined;
+    } catch (error) {
+      console.warn('Error parsing UTM params:', error);
+      return undefined;
+    }
   }
 
   // Auto-track page views
   async trackPageView(url?: string): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.isEnabled) return;
 
     const deviceInfo = this.getDeviceInfo();
     const pageUrl = url || window.location.href;
@@ -145,10 +151,12 @@ class AnalyticsClient {
       });
 
       if (!response.ok) {
-        console.warn('Analytics tracking failed:', response.statusText);
+        // Silently fail - don't spam console on every page load
+        this.isEnabled = false; // Disable further tracking if API is down
       }
     } catch (error) {
-      console.warn('Analytics tracking error:', error);
+      // Silently fail and disable
+      this.isEnabled = false;
     }
   }
 
@@ -163,7 +171,7 @@ class AnalyticsClient {
       metadata?: Record<string, any>;
     }
   ): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.isEnabled) return;
 
     const payload: EventPayload = {
       sessionId: this.sessionId,
@@ -186,16 +194,18 @@ class AnalyticsClient {
       });
 
       if (!response.ok) {
-        console.warn('Event tracking failed:', response.statusText);
+        // Silently fail
+        this.isEnabled = false;
       }
     } catch (error) {
-      console.warn('Event tracking error:', error);
+      // Silently fail
+      this.isEnabled = false;
     }
   }
 
   // Track performance metrics
   async trackPerformance(metrics: PerformanceMetric[]): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.isEnabled) return;
 
     const payload = {
       sessionId: this.sessionId,
@@ -213,46 +223,49 @@ class AnalyticsClient {
       });
 
       if (!response.ok) {
-        console.warn('Performance tracking failed:', response.statusText);
+        this.isEnabled = false;
       }
     } catch (error) {
-      console.warn('Performance tracking error:', error);
+      this.isEnabled = false;
     }
   }
 
-  // Track Web Vitals automatically
+  // Track Web Vitals automatically - FIXED VERSION
   async trackWebVitals(): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.isEnabled) return;
 
-    // Track Core Web Vitals when available
     try {
-      // Import web-vitals dynamically to avoid SSR issues
-      const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import('web-vitals');
+      // Dynamically import web-vitals with proper error handling
+      const webVitals = await import('web-vitals');
+      
+      // Check if functions exist before calling
+      if (webVitals.getCLS) {
+        webVitals.getCLS((metric) => {
+          this.trackPerformance([{ type: 'CLS', value: metric.value }]);
+        });
+      }
 
-      const metrics: PerformanceMetric[] = [];
+      if (webVitals.getFID) {
+        webVitals.getFID((metric) => {
+          this.trackPerformance([{ type: 'FID', value: metric.value }]);
+        });
+      }
 
-      getCLS((metric) => {
-        metrics.push({ type: 'CLS', value: metric.value });
-        this.trackPerformance([{ type: 'CLS', value: metric.value }]);
-      });
+      if (webVitals.getLCP) {
+        webVitals.getLCP((metric) => {
+          this.trackPerformance([{ type: 'LCP', value: metric.value }]);
+        });
+      }
 
-      getFID((metric) => {
-        metrics.push({ type: 'FID', value: metric.value });
-        this.trackPerformance([{ type: 'FID', value: metric.value }]);
-      });
-
-      getLCP((metric) => {
-        metrics.push({ type: 'LCP', value: metric.value });
-        this.trackPerformance([{ type: 'LCP', value: metric.value }]);
-      });
-
-      getTTFB((metric) => {
-        metrics.push({ type: 'TTFB', value: metric.value });
-        this.trackPerformance([{ type: 'TTFB', value: metric.value }]);
-      });
+      if (webVitals.getTTFB) {
+        webVitals.getTTFB((metric) => {
+          this.trackPerformance([{ type: 'TTFB', value: metric.value }]);
+        });
+      }
 
     } catch (error) {
-      console.warn('Web Vitals tracking not available:', error);
+      // Web vitals not available - that's fine, just skip it
+      console.info('Web Vitals not available - skipping performance tracking');
     }
   }
 
@@ -265,12 +278,12 @@ class AnalyticsClient {
     // Track initial page view
     this.trackPageView();
 
-    // Track Web Vitals
+    // Track Web Vitals (with error handling)
     this.trackWebVitals();
 
-    // Track page visibility changes
+    // Track page visibility changes (only if enabled)
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === 'hidden' && this.isEnabled) {
         this.trackEvent('page_exit', {
           category: 'engagement',
           action: 'page_visibility',
@@ -279,9 +292,11 @@ class AnalyticsClient {
       }
     });
 
-    // Track scroll depth
+    // Track scroll depth (throttled)
     let maxScrollDepth = 0;
     const trackScrollDepth = () => {
+      if (!this.isEnabled) return;
+      
       const scrollDepth = Math.round(
         (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
       );
@@ -309,12 +324,14 @@ class AnalyticsClient {
     // Track time on page
     const startTime = Date.now();
     window.addEventListener('beforeunload', () => {
-      const timeOnPage = Math.round((Date.now() - startTime) / 1000);
-      this.trackEvent('time_on_page', {
-        category: 'engagement',
-        value: timeOnPage,
-        metadata: { seconds: timeOnPage }
-      });
+      if (this.isEnabled) {
+        const timeOnPage = Math.round((Date.now() - startTime) / 1000);
+        this.trackEvent('time_on_page', {
+          category: 'engagement',
+          value: timeOnPage,
+          metadata: { seconds: timeOnPage }
+        });
+      }
     });
   }
 
@@ -327,19 +344,41 @@ class AnalyticsClient {
   onRouteChange(url: string): void {
     this.trackPageView(url);
   }
+
+  // Method to re-enable tracking
+  enable(): void {
+    this.isEnabled = true;
+  }
+
+  // Method to disable tracking
+  disable(): void {
+    this.isEnabled = false;
+  }
 }
 
 // Create singleton instance
 const analytics = new AnalyticsClient();
 
-// Auto-initialize on client side
+// Auto-initialize on client side (with error protection)
 if (typeof window !== 'undefined') {
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => analytics.init());
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        analytics.init();
+      } catch (error) {
+        console.info('Analytics initialization skipped');
+      }
+    });
   } else {
     // DOM is already ready
-    setTimeout(() => analytics.init(), 0);
+    setTimeout(() => {
+      try {
+        analytics.init();
+      } catch (error) {
+        console.info('Analytics initialization skipped');
+      }
+    }, 0);
   }
 }
 

@@ -1,4 +1,4 @@
-// services/devices.service.ts - VERIFIED FOR YOUR DATA
+// services/devices.service.ts - FINAL CHART COMPATIBLE VERSION
 export async function getDevicesUsedData(
   timeFrame?: "monthly" | "yearly" | (string & {}),
 ) {
@@ -22,7 +22,7 @@ export async function getDevicesUsedData(
     }
 
     const apiUrl = `/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
-    console.log('🌐 [DEVICES] Calling:', apiUrl);
+    console.log('🌐 [DEVICES] Calling API:', apiUrl);
 
     const response = await fetch(apiUrl);
     
@@ -31,76 +31,36 @@ export async function getDevicesUsedData(
       return [];
     }
 
-    const data = await response.json();
-    console.log('📊 [DEVICES] API Response:', data);
+    const apiData = await response.json();
+    console.log('📊 [DEVICES] Raw API response:', apiData);
     
-    // Extract devices array from your API response
-    const deviceStats = data.devices || [];
-    console.log('📱 [DEVICES] Device stats:', deviceStats);
+    // Extract devices from API response
+    const deviceStats = apiData.devices || [];
+    console.log('📱 [DEVICES] Device stats array:', deviceStats);
 
     if (deviceStats.length === 0) {
-      console.warn('📭 [DEVICES] No device data');
+      console.warn('📭 [DEVICES] No device data found');
       return [];
     }
 
-    // Calculate total sessions
-    const totalSessions = deviceStats.reduce((sum: number, device: any) => sum + (device.sessions_count || 0), 0);
-    console.log('🔢 [DEVICES] Total sessions:', totalSessions);
+    // Transform API data to chart format: { name: string, amount: number }[]
+    const chartData = deviceStats.map((device: any) => ({
+      name: capitalizeDeviceType(device.device_type),
+      amount: device.sessions_count || 0
+    }));
 
-    // Initialize all device types with zero values
-    const deviceMap = new Map([
-      ['Desktop', { name: 'Desktop', percentage: 0, amount: 0 }],
-      ['Mobile', { name: 'Mobile', percentage: 0, amount: 0 }],
-      ['Tablet', { name: 'Tablet', percentage: 0, amount: 0 }],
-      ['Unknown', { name: 'Unknown', percentage: 0, amount: 0 }],
-    ]);
+    // Sort by amount (highest first) 
+    chartData.sort((a: any, b: any) => b.amount - a.amount);
 
-    // Fill in actual data
-    deviceStats.forEach((device: any) => {
-      const deviceName = capitalizeDeviceType(device.device_type);
-      const amount = device.sessions_count || 0;
-      const percentage = totalSessions > 0 ? amount / totalSessions : 0;
-      
-      console.log(`🔄 [DEVICES] Processing: ${device.device_type} -> ${deviceName}`, {
-        amount,
-        percentage: Math.round(percentage * 100) + '%'
-      });
-      
-      if (deviceMap.has(deviceName)) {
-        deviceMap.set(deviceName, {
-          name: deviceName,
-          percentage: percentage,
-          amount: amount,
-        });
-      } else {
-        // Add to Unknown
-        const unknown = deviceMap.get('Unknown')!;
-        unknown.amount += amount;
-        unknown.percentage = totalSessions > 0 ? unknown.amount / totalSessions : 0;
-      }
+    console.log('✅ [DEVICES] Final chart data:', chartData);
+    console.log('🎯 [DEVICES] Summary:', {
+      deviceCount: chartData.length,
+      totalSessions: chartData.reduce((sum: number, d: any) => sum + d.amount, 0),
+      topDevice: chartData[0]?.name,
+      topDeviceSessions: chartData[0]?.amount
     });
 
-    // Convert to expected array format [Desktop, Mobile, Tablet, Unknown]
-    const result = [
-      deviceMap.get('Desktop')!,
-      deviceMap.get('Mobile')!,
-      deviceMap.get('Tablet')!,
-      deviceMap.get('Unknown')!,
-    ];
-
-    console.log('✅ [DEVICES] Final result:', result);
-    
-    // Extra verification
-    const verification = {
-      totalDevices: result.length,
-      totalAmount: result.reduce((sum, d) => sum + d.amount, 0),
-      totalPercentage: result.reduce((sum, d) => sum + d.percentage, 0),
-      hasData: result.some(d => d.amount > 0),
-      nonZeroDevices: result.filter(d => d.amount > 0)
-    };
-    console.log('🎯 [DEVICES] Verification:', verification);
-
-    return result;
+    return chartData;
 
   } catch (error) {
     console.error('❌ [DEVICES] Error:', error);
@@ -108,14 +68,17 @@ export async function getDevicesUsedData(
   }
 }
 
+// Helper function to format device type names
 function capitalizeDeviceType(deviceType: string): string {
   const typeMap: Record<string, string> = {
     'desktop': 'Desktop',
     'mobile': 'Mobile', 
     'tablet': 'Tablet',
-    'bot': 'Unknown',
+    'bot': 'Bots',
     'unknown': 'Unknown'
   };
   
-  return typeMap[deviceType?.toLowerCase()] || 'Unknown';
+  const result = typeMap[deviceType?.toLowerCase()] || 'Unknown';
+  console.log('🔤 [DEVICES] Mapped', deviceType, '->', result);
+  return result;
 }

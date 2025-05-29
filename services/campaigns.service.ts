@@ -9,6 +9,16 @@ export async function getCampaignVisitorsData(
   timeFrame?: "weekly" | "monthly" | (string & {}),
 ): Promise<CampaignData> {
   try {
+    // SERVER-SIDE SAFETY CHECK
+    if (typeof window === 'undefined') {
+      console.log('🏢 Server-side rendering detected - returning empty data for campaigns');
+      return {
+        total_visitors: 0,
+        performance: 0,
+        chart: []
+      };
+    }
+
     // Calculate date range - default to last 7 days for campaign data
     const endDate = new Date();
     let startDate = new Date();
@@ -39,7 +49,12 @@ export async function getCampaignVisitorsData(
     ]);
 
     if (!currentResponse.ok) {
-      throw new Error(`Campaign API error: ${currentResponse.status}`);
+      console.warn('Campaign API not available');
+      return {
+        total_visitors: 0,
+        performance: 0,
+        chart: []
+      };
     }
 
     const currentData = await currentResponse.json();
@@ -102,6 +117,12 @@ export async function getUTMSourceBreakdown(
   timeFrame?: "weekly" | "monthly" | (string & {})
 ): Promise<Array<{ source: string; visitors: number; percentage: number }>> {
   try {
+    // SERVER-SIDE SAFETY CHECK
+    if (typeof window === 'undefined') {
+      console.log('🏢 Server-side rendering detected - returning empty UTM data');
+      return [];
+    }
+
     const endDate = new Date();
     let startDate = new Date();
     
@@ -117,7 +138,8 @@ export async function getUTMSourceBreakdown(
     });
 
     if (!response.ok) {
-      throw new Error(`UTM API error: ${response.status}`);
+      console.warn('UTM API not available');
+      return [];
     }
 
     const data = await response.json();

@@ -6,7 +6,7 @@ import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
-import analytics from "@/lib/analytics"; // Add this import
+import analytics from "@/lib/analytics";
 import "./globals.css";
 import { setCookie } from "@/lib/cookieUtils";
 
@@ -17,6 +17,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const isHome = pathname === "/";
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
@@ -43,8 +44,8 @@ export default function RootLayout({
 
       if (isHome) {
         themeColor = theme === "dark" 
-          ? getComputedStyle(root).getPropertyValue('--sidebar').trim() // Use sidebar color for home dark
-          : getComputedStyle(root).getPropertyValue('--background').trim(); // Use background color for home light
+          ? getComputedStyle(root).getPropertyValue('--sidebar').trim()
+          : getComputedStyle(root).getPropertyValue('--background').trim();
       } else {
         themeColor = theme === "dark" 
           ? getComputedStyle(root).getPropertyValue('--background').trim()
@@ -53,7 +54,6 @@ export default function RootLayout({
 
       // Ensure the color is in proper format
       if (!themeColor.startsWith('#') && !themeColor.startsWith('hsl') && !themeColor.startsWith('rgb')) {
-        // Default fallbacks if variables aren't properly formatted
         themeColor = theme === "dark" ? "hsl(var(--background))" : "hsl(var(--background))";
       }
 
@@ -70,42 +70,51 @@ export default function RootLayout({
     }
   }, [pathname, isHome]);
 
-  // Analytics: Track route changes for SPA navigation
+  // Analytics: Handle SPA navigation (skip first load to avoid double tracking)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Track route change (this will automatically track page views)
-      analytics.onRouteChange(window.location.href);
-      
-      // Optional: Track specific route events
-      const isAuthPage = pathname === "/sign-in" || 
-                        pathname === "/sign-up" || 
-                        pathname.startsWith("/auth");
-      
-      if (!isAuthPage) {
-        // Track page category based on route
-        let pageCategory = 'general';
-        if (isHome) pageCategory = 'landing';
-        else if (isToolsPage) pageCategory = 'tools';
-        else if (isDashboardPage) pageCategory = 'dashboard';
-        
-        analytics.trackEvent('route_change', {
-          category: 'navigation',
-          action: 'page_view',
-          label: pageCategory,
-          metadata: {
-            pathname,
-            isHome,
-            isToolsPage,
-            isDashboardPage
-          }
-        });
-      }
+    if (typeof window === "undefined") return;
+
+    const isAuthPage = pathname === "/sign-in" || 
+                      pathname === "/sign-up" || 
+                      pathname.startsWith("/auth");
+
+    if (isAuthPage) {
+      console.log('🚫 Skipping analytics for auth page:', pathname);
+      return;
     }
-  }, [pathname, isHome, isToolsPage, isDashboardPage]);
+
+    // Skip tracking on first load (analytics auto-initializes and tracks first page view)
+    if (isFirstLoad) {
+      console.log('🏠 First load detected, analytics will auto-track initial page view');
+      setIsFirstLoad(false);
+      return;
+    }
+
+    // Track subsequent navigation (SPA route changes)
+    console.log('🔄 SPA navigation detected:', pathname);
+    analytics.onRouteChange(window.location.href);
+    
+    // Track page category for navigation events
+    let pageCategory = 'general';
+    if (isHome) pageCategory = 'landing';
+    else if (isToolsPage) pageCategory = 'tools';
+    else if (isDashboardPage) pageCategory = 'dashboard';
+    
+    analytics.trackEvent('spa_navigation', {
+      category: 'navigation',
+      action: 'route_change',
+      label: pageCategory,
+      metadata: {
+        pathname,
+        from: document.referrer || 'direct',
+        pageType: pageCategory
+      }
+    });
+
+  }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
   const showFooter = !isHome && !isDashboardPage;
-  // Show accessibility on all pages except auth pages
   const showAccessibility = !pathname.startsWith("/auth") && 
                             pathname !== "/sign-in" && 
                             pathname !== "/sign-up";
@@ -114,10 +123,8 @@ export default function RootLayout({
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#ffffff" />
-        {/* Only preconnect to Google Fonts - fonts will be loaded dynamically by theme system */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* REMOVED: Hardcoded Google Fonts link - fonts now loaded dynamically by theme */}
       </head>
       <body className={`min-h-screen font-[var(--font-sans)] ${
         isDarkMode 

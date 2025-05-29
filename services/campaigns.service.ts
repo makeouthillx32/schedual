@@ -1,159 +1,221 @@
-// services/campaigns.service.ts
-export interface CampaignData {
-  total_visitors: number;
-  performance: number;
-  chart: Array<{ x: string; y: number }>;
-}
-
-export async function getCampaignVisitorsData(
-  timeFrame?: "weekly" | "monthly" | (string & {}),
-): Promise<CampaignData> {
+// services/device.service.ts - ENHANCED WITH BROWSER DATA
+export async function getDevicesUsedData(
+  timeFrame?: "monthly" | "yearly" | (string & {}),
+) {
   try {
-    // SERVER-SIDE SAFETY CHECK
-    if (typeof window === 'undefined') {
-      console.log('🏢 Server-side rendering detected - returning empty data for campaigns');
-      return {
-        total_visitors: 0,
-        performance: 0,
-        chart: []
-      };
-    }
+    console.log('🔍 [DEVICES] Service called with timeFrame:', timeFrame);
 
-    // Calculate date range - default to last 7 days for campaign data
+    // Calculate date range
     const endDate = new Date();
     let startDate = new Date();
     
-    if (timeFrame === "monthly") {
-      startDate.setMonth(endDate.getMonth() - 1);
+    if (timeFrame === "yearly") {
+      startDate.setFullYear(endDate.getFullYear() - 1);
     } else {
-      // Default to weekly
-      startDate.setDate(endDate.getDate() - 7);
+      startDate.setMonth(endDate.getMonth() - 1);
     }
 
-    // Calculate previous period for performance comparison
-    const prevStartDate = new Date(startDate);
-    const prevEndDate = new Date(startDate);
-    const periodLength = endDate.getTime() - startDate.getTime();
-    prevStartDate.setTime(prevStartDate.getTime() - periodLength);
-
-    // Fetch campaign/UTM analytics from our API
-    const [currentResponse, previousResponse] = await Promise.all([
-      fetch(`/api/analytics/campaigns?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }),
-      fetch(`/api/analytics/campaigns?start=${prevStartDate.toISOString()}&end=${prevEndDate.toISOString()}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      })
-    ]);
-
-    if (!currentResponse.ok) {
-      console.warn('Campaign API not available');
-      return {
-        total_visitors: 0,
-        performance: 0,
-        chart: []
-      };
-    }
-
-    const currentData = await currentResponse.json();
-    const previousData = previousResponse.ok ? await previousResponse.json() : null;
+    // Build API URL
+    let apiUrl: string;
     
-    // Calculate total visitors from current period
-    const totalVisitors = currentData.totalVisitors || 0;
-    
-    // Calculate performance vs previous period
-    const previousVisitors = previousData?.totalVisitors || 0;
-    let performance = 0;
-    
-    if (previousVisitors > 0) {
-      performance = ((totalVisitors - previousVisitors) / previousVisitors) * 100;
-    }
-
-    // Transform daily/weekly data for chart
-    const chartData = (currentData.dailyStats || []).map((stat: any, index: number) => {
-      let dayLabel: string;
-      
-      if (timeFrame === "monthly") {
-        // For monthly view, show week numbers or dates
-        const date = new Date(stat.date);
-        dayLabel = `W${Math.ceil(index / 7 + 1)}`;
-      } else {
-        // For weekly view, show day abbreviations
-        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        const date = new Date(stat.date);
-        dayLabel = dayNames[date.getDay()];
-      }
-      
-      return {
-        x: dayLabel,
-        y: stat.visitors || stat.sessions_count || 0
-      };
-    });
-
-    const result: CampaignData = {
-      total_visitors: totalVisitors,
-      performance: Math.round(performance * 10) / 10, // Round to 1 decimal
-      chart: chartData
-    };
-
-    return result;
-
-  } catch (error) {
-    console.error('Error fetching campaign analytics:', error);
-    
-    // Return empty data structure on error
-    return {
-      total_visitors: 0,
-      performance: 0,
-      chart: []
-    };
-  }
-}
-
-// Additional function to get UTM source breakdown
-export async function getUTMSourceBreakdown(
-  timeFrame?: "weekly" | "monthly" | (string & {})
-): Promise<Array<{ source: string; visitors: number; percentage: number }>> {
-  try {
-    // SERVER-SIDE SAFETY CHECK
     if (typeof window === 'undefined') {
-      console.log('🏢 Server-side rendering detected - returning empty UTM data');
-      return [];
-    }
-
-    const endDate = new Date();
-    let startDate = new Date();
-    
-    if (timeFrame === "monthly") {
-      startDate.setMonth(endDate.getMonth() - 1);
+      // SERVER-SIDE: Use full URL
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      apiUrl = `${baseUrl}/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+      console.log('🏢 [DEVICES] Server-side API call:', apiUrl);
     } else {
-      startDate.setDate(endDate.getDate() - 7);
+      // CLIENT-SIDE: Use relative URL
+      apiUrl = `/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+      console.log('🌐 [DEVICES] Client-side API call:', apiUrl);
     }
 
-    const response = await fetch(`/api/analytics/utm-sources?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
+    console.log('📡 [DEVICES] Making fetch request...');
+    const response = await fetch(apiUrl);
+    
     if (!response.ok) {
-      console.warn('UTM API not available');
+      console.warn('⚠️ [DEVICES] API failed:', response.status, response.statusText);
       return [];
     }
 
-    const data = await response.json();
-    const sources = data.sources || [];
-    const totalVisitors = sources.reduce((sum: number, source: any) => sum + source.visitors, 0);
+    const apiData = await response.json();
+    console.log('📊 [DEVICES] API response:', apiData);
     
-    return sources.map((source: any) => ({
-      source: source.utm_source || 'Direct',
-      visitors: source.visitors || 0,
-      percentage: totalVisitors > 0 ? (source.visitors / totalVisitors) * 100 : 0
+    // Extract devices from API response
+    const deviceStats = apiData.devices || [];
+    console.log('📱 [DEVICES] Device stats:', deviceStats);
+
+    if (deviceStats.length === 0) {
+      console.warn('📭 [DEVICES] No device data found');
+      return [];
+    }
+
+    // Transform API data to chart format: { name: string, amount: number }[]
+    const chartData = deviceStats.map((device: any) => ({
+      name: capitalizeDeviceType(device.device_type),
+      amount: device.sessions_count || 0
     }));
 
+    // Sort by amount (highest first) 
+    chartData.sort((a: any, b: any) => b.amount - a.amount);
+
+    console.log('✅ [DEVICES] Final chart data:', chartData);
+    return chartData;
+
   } catch (error) {
-    console.error('Error fetching UTM source breakdown:', error);
+    console.error('❌ [DEVICES] Error:', error);
     return [];
   }
+}
+
+// NEW: Get browser usage data
+export async function getBrowserUsedData(
+  timeFrame?: "monthly" | "yearly" | (string & {}),
+) {
+  try {
+    console.log('🔍 [BROWSERS] Service called with timeFrame:', timeFrame);
+
+    // Calculate date range
+    const endDate = new Date();
+    let startDate = new Date();
+    
+    if (timeFrame === "yearly") {
+      startDate.setFullYear(endDate.getFullYear() - 1);
+    } else {
+      startDate.setMonth(endDate.getMonth() - 1);
+    }
+
+    // Build API URL
+    let apiUrl: string;
+    
+    if (typeof window === 'undefined') {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      apiUrl = `${baseUrl}/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    } else {
+      apiUrl = `/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    }
+
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      console.warn('⚠️ [BROWSERS] API failed:', response.status);
+      return [];
+    }
+
+    const apiData = await response.json();
+    const deviceStats = apiData.devices || [];
+
+    if (deviceStats.length === 0) {
+      console.warn('📭 [BROWSERS] No device data for browser analysis');
+      return [];
+    }
+
+    // Group by browser (your API returns browser field)
+    const browserMap = new Map<string, number>();
+    
+    deviceStats.forEach((device: any) => {
+      const browser = device.browser || 'Unknown';
+      const sessions = device.sessions_count || 0;
+      
+      browserMap.set(browser, (browserMap.get(browser) || 0) + sessions);
+    });
+
+    // Convert to chart format
+    const browserData = Array.from(browserMap.entries()).map(([browser, sessions]) => ({
+      name: browser,
+      amount: sessions
+    }));
+
+    // Sort by amount (highest first)
+    browserData.sort((a, b) => b.amount - a.amount);
+
+    console.log('✅ [BROWSERS] Browser data:', browserData);
+    return browserData;
+
+  } catch (error) {
+    console.error('❌ [BROWSERS] Error:', error);
+    return [];
+  }
+}
+
+// NEW: Get operating system data
+export async function getOperatingSystemData(
+  timeFrame?: "monthly" | "yearly" | (string & {}),
+) {
+  try {
+    console.log('🔍 [OS] Service called with timeFrame:', timeFrame);
+
+    // Calculate date range
+    const endDate = new Date();
+    let startDate = new Date();
+    
+    if (timeFrame === "yearly") {
+      startDate.setFullYear(endDate.getFullYear() - 1);
+    } else {
+      startDate.setMonth(endDate.getMonth() - 1);
+    }
+
+    // Build API URL
+    let apiUrl: string;
+    
+    if (typeof window === 'undefined') {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      apiUrl = `${baseUrl}/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    } else {
+      apiUrl = `/api/analytics/devices?start=${startDate.toISOString()}&end=${endDate.toISOString()}`;
+    }
+
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      console.warn('⚠️ [OS] API failed:', response.status);
+      return [];
+    }
+
+    const apiData = await response.json();
+    const deviceStats = apiData.devices || [];
+
+    if (deviceStats.length === 0) {
+      console.warn('📭 [OS] No device data for OS analysis');
+      return [];
+    }
+
+    // Group by operating system
+    const osMap = new Map<string, number>();
+    
+    deviceStats.forEach((device: any) => {
+      const os = device.os || 'Unknown';
+      const sessions = device.sessions_count || 0;
+      
+      osMap.set(os, (osMap.get(os) || 0) + sessions);
+    });
+
+    // Convert to chart format
+    const osData = Array.from(osMap.entries()).map(([os, sessions]) => ({
+      name: os,
+      amount: sessions
+    }));
+
+    // Sort by amount (highest first)
+    osData.sort((a, b) => b.amount - a.amount);
+
+    console.log('✅ [OS] Operating system data:', osData);
+    return osData;
+
+  } catch (error) {
+    console.error('❌ [OS] Error:', error);
+    return [];
+  }
+}
+
+// Helper function to format device type names
+function capitalizeDeviceType(deviceType: string): string {
+  const typeMap: Record<string, string> = {
+    'desktop': 'Desktop',
+    'mobile': 'Mobile', 
+    'tablet': 'Tablet',
+    'bot': 'Bots',
+    'unknown': 'Unknown'
+  };
+  
+  return typeMap[deviceType?.toLowerCase()] || 'Unknown';
 }

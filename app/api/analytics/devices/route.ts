@@ -1,4 +1,4 @@
-// app/api/analytics/devices/route.ts
+// app/api/analytics/devices/route.ts - UPDATED TO READ LIVE DATA
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('start') || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const endDate = searchParams.get('end') || new Date().toISOString();
 
-    // Try to get aggregated device stats first
+    console.log('🔍 Fetching device data for date range:', { startDate, endDate });
+
+    // Try aggregated data first (faster)
     const { data: deviceStats, error: deviceStatsError } = await supabase
       .from('analytics_device_stats')
       .select('device_type, browser, os, sessions_count, users_count, page_views_count, bounce_rate')
@@ -28,6 +30,8 @@ export async function GET(request: NextRequest) {
     let devices: DeviceAnalytics[] = [];
 
     if (deviceStats && deviceStats.length > 0) {
+      console.log('✅ Using aggregated device stats:', deviceStats.length, 'records');
+      
       // Use aggregated data
       const deviceTotals = new Map<string, {
         device_type: string;
@@ -57,7 +61,6 @@ export async function GET(request: NextRequest) {
         deviceTotals.set(stat.device_type, existing);
       });
 
-      // Calculate averages and format response
       devices = Array.from(deviceTotals.values()).map(device => ({
         device_type: device.device_type,
         sessions_count: device.sessions_count,
@@ -67,20 +70,31 @@ export async function GET(request: NextRequest) {
       }));
 
     } else {
-      // Fallback to real-time calculation from raw data
-      console.log('No aggregated device stats found, calculating from raw data...');
+      console.log('📊 No aggregated data found, calculating from live sessions...');
       
+      // Fallback to live data calculation
       const { data: sessions, error: sessionsError } = await supabase
         .from('analytics_sessions')
-        .select('device_type, user_id, is_bounce')
+        .select(`
+          device_type, 
+          user_id, 
+          is_bounce,
+          session_id,
+          created_at
+        `)
         .gte('created_at', startDate)
         .lte('created_at', endDate);
 
       const { data: pageViews, error: pageViewsError } = await supabase
         .from('analytics_page_views')
-        .select('user_id, session_id')
+        .select('session_id, user_id, created_at')
         .gte('created_at', startDate)
         .lte('created_at', endDate);
+
+      console.log('📱 Live data found:', {
+        sessions: sessions?.length || 0,
+        pageViews: pageViews?.length || 0
+      });
 
       if (sessions && !sessionsError) {
         const deviceMap = new Map<string, {
@@ -90,7 +104,7 @@ export async function GET(request: NextRequest) {
           pageViews: number;
         }>();
 
-        // Process sessions
+        // Process sessions by device type
         sessions.forEach(session => {
           const deviceType = session.device_type || 'unknown';
           const existing = deviceMap.get(deviceType) || {
@@ -100,23 +114,25 @@ export async function GET(request: NextRequest) {
             pageViews: 0
           };
 
-          existing.sessions.add(session.user_id + '_' + session.device_type);
+          existing.sessions.add(session.session_id);
           existing.users.add(session.user_id);
           if (session.is_bounce) existing.bounces++;
 
           deviceMap.set(deviceType, existing);
         });
 
-        // Add page view counts
+        // Add page view counts by matching session_ids
         if (pageViews && !pageViewsError) {
-          // This is a simplified approach - in reality you'd need to join with sessions
-          // to get device type for each page view
-          const totalPageViews = pageViews.length;
-          const deviceCount = deviceMap.size || 1;
-          const avgPageViewsPerDevice = Math.round(totalPageViews / deviceCount);
-
-          deviceMap.forEach((data, deviceType) => {
-            data.pageViews = avgPageViewsPerDevice;
+          pageViews.forEach(pv => {
+            // Find which device type this session belongs to
+            const session = sessions.find(s => s.session_id === pv.session_id);
+            if (session) {
+              const deviceType = session.device_type || 'unknown';
+              const existing = deviceMap.get(deviceType);
+              if (existing) {
+                existing.pageViews++;
+              }
+            }
           });
         }
 
@@ -128,11 +144,15 @@ export async function GET(request: NextRequest) {
           page_views_count: data.pageViews,
           bounce_rate: data.sessions.size > 0 ? Math.round((data.bounces / data.sessions.size) * 100) : 0
         }));
+
+        console.log('✅ Calculated live device stats:', devices);
       }
     }
 
     // Sort by sessions count (highest first)
     devices.sort((a, b) => b.sessions_count - a.sessions_count);
+
+    console.log('📊 Final device data:', devices);
 
     return NextResponse.json({ 
       devices: devices.length > 0 ? devices : [
@@ -146,7 +166,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Internal server error',
       devices: [
-        // Fallback empty structure
         { device_type: 'unknown', sessions_count: 0, users_count: 0, page_views_count: 0, bounce_rate: 0 }
       ]
     }, { status: 500 });

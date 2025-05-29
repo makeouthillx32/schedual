@@ -23,6 +23,72 @@ export default function RootLayout({
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
   const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
 
+  // ✅ FIXED: Connected to actual Tailwind CSS background values
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Get theme from localStorage
+      const theme = localStorage.getItem("theme") || "light";
+      setIsDarkMode(theme === "dark");
+
+      // ✅ FIXED: Read actual CSS background color from computed styles
+      const updateThemeColor = () => {
+        const root = document.documentElement;
+        
+        // Get the actual background color from CSS variables
+        let backgroundColor = getComputedStyle(root).getPropertyValue('--background').trim();
+        
+        console.log('🔍 Raw CSS --background value:', backgroundColor);
+        
+        // Convert HSL values to hex for iOS
+        let themeColor = '#ffffff'; // fallback
+        
+        if (backgroundColor) {
+          // Handle HSL format: "220 14.75% 11.96%" -> hsl(220, 14.75%, 11.96%)
+          const hslMatch = backgroundColor.match(/(\d+\.?\d*)\s+(\d+\.?\d*)%\s+(\d+\.?\d*)%/);
+          
+          if (hslMatch) {
+            const [, h, s, l] = hslMatch;
+            const hslString = `hsl(${h}, ${s}%, ${l}%)`;
+            console.log('🎨 Converted to HSL:', hslString);
+            
+            // Convert HSL to hex
+            themeColor = hslToHex(parseFloat(h), parseFloat(s), parseFloat(l));
+          } else {
+            // Try to get computed background color from body
+            const bodyBg = getComputedStyle(document.body).backgroundColor;
+            if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') {
+              themeColor = rgbToHex(bodyBg);
+            }
+          }
+        }
+        
+        console.log('🎨 Final theme color for iOS:', themeColor);
+
+        // Update meta tag
+        let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
+        if (metaTag) {
+          metaTag.setAttribute("content", themeColor);
+        } else {
+          metaTag = document.createElement("meta");
+          metaTag.name = "theme-color";
+          metaTag.content = themeColor;
+          document.head.appendChild(metaTag);
+        }
+
+        console.log('📱 iOS theme-color updated:', {
+          theme,
+          pathname,
+          cssBackground: backgroundColor,
+          finalColor: themeColor
+        });
+      };
+
+      // Wait for styles to load, then update
+      setTimeout(updateThemeColor, 100);
+      setTimeout(updateThemeColor, 500); // Extra delay for theme system
+    }
+  }, [pathname, isHome, isDarkMode]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const isAuthPage =
@@ -33,42 +99,8 @@ export default function RootLayout({
       if (!isAuthPage) {
         setCookie("lastPage", pathname, { path: "/" });
       }
-
-      // Get theme from localStorage
-      const theme = localStorage.getItem("theme") || "light";
-      setIsDarkMode(theme === "dark");
-
-      // Set theme-color meta tag based on CSS variables
-      const root = document.documentElement;
-      let themeColor;
-
-      if (isHome) {
-        themeColor = theme === "dark" 
-          ? getComputedStyle(root).getPropertyValue('--sidebar').trim()
-          : getComputedStyle(root).getPropertyValue('--background').trim();
-      } else {
-        themeColor = theme === "dark" 
-          ? getComputedStyle(root).getPropertyValue('--background').trim()
-          : getComputedStyle(root).getPropertyValue('--background').trim();
-      }
-
-      // Ensure the color is in proper format
-      if (!themeColor.startsWith('#') && !themeColor.startsWith('hsl') && !themeColor.startsWith('rgb')) {
-        themeColor = theme === "dark" ? "hsl(var(--background))" : "hsl(var(--background))";
-      }
-
-      // Update meta tag
-      const metaTag = document.querySelector("meta[name='theme-color']");
-      if (metaTag) {
-        metaTag.setAttribute("content", themeColor);
-      } else {
-        const newMeta = document.createElement("meta");
-        newMeta.name = "theme-color";
-        newMeta.content = themeColor;
-        document.head.appendChild(newMeta);
-      }
     }
-  }, [pathname, isHome]);
+  }, [pathname]);
 
   // Analytics: Handle SPA navigation (skip first load to avoid double tracking)
   useEffect(() => {
@@ -83,18 +115,15 @@ export default function RootLayout({
       return;
     }
 
-    // Skip tracking on first load (analytics auto-initializes and tracks first page view)
     if (isFirstLoad) {
       console.log('🏠 First load detected, analytics will auto-track initial page view');
       setIsFirstLoad(false);
       return;
     }
 
-    // Track subsequent navigation (SPA route changes)
     console.log('🔄 SPA navigation detected:', pathname);
     analytics.onRouteChange(window.location.href);
     
-    // Track page category for navigation events
     let pageCategory = 'general';
     if (isHome) pageCategory = 'landing';
     else if (isToolsPage) pageCategory = 'tools';
@@ -140,4 +169,46 @@ export default function RootLayout({
       </body>
     </html>
   );
+}
+
+// ✅ Helper functions to convert colors
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100;
+  l /= 100;
+
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+
+  if (0 <= h && h < 60) {
+    r = c; g = x; b = 0;
+  } else if (60 <= h && h < 120) {
+    r = x; g = c; b = 0;
+  } else if (120 <= h && h < 180) {
+    r = 0; g = c; b = x;
+  } else if (180 <= h && h < 240) {
+    r = 0; g = x; b = c;
+  } else if (240 <= h && h < 300) {
+    r = x; g = 0; b = c;
+  } else if (300 <= h && h < 360) {
+    r = c; g = 0; b = x;
+  }
+
+  r = Math.round((r + m) * 255);
+  g = Math.round((g + m) * 255);
+  b = Math.round((b + m) * 255);
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+function rgbToHex(rgb: string): string {
+  const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (match) {
+    const r = parseInt(match[1]).toString(16).padStart(2, '0');
+    const g = parseInt(match[2]).toString(16).padStart(2, '0');
+    const b = parseInt(match[3]).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  }
+  return rgb; // fallback
 }

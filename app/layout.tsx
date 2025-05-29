@@ -6,6 +6,7 @@ import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
+import analytics from "@/lib/analytics"; // Add this import
 import "./globals.css";
 import { setCookie } from "@/lib/cookieUtils";
 
@@ -68,6 +69,39 @@ export default function RootLayout({
       }
     }
   }, [pathname, isHome]);
+
+  // Analytics: Track route changes for SPA navigation
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Track route change (this will automatically track page views)
+      analytics.onRouteChange(window.location.href);
+      
+      // Optional: Track specific route events
+      const isAuthPage = pathname === "/sign-in" || 
+                        pathname === "/sign-up" || 
+                        pathname.startsWith("/auth");
+      
+      if (!isAuthPage) {
+        // Track page category based on route
+        let pageCategory = 'general';
+        if (isHome) pageCategory = 'landing';
+        else if (isToolsPage) pageCategory = 'tools';
+        else if (isDashboardPage) pageCategory = 'dashboard';
+        
+        analytics.trackEvent('route_change', {
+          category: 'navigation',
+          action: 'page_view',
+          label: pageCategory,
+          metadata: {
+            pathname,
+            isHome,
+            isToolsPage,
+            isDashboardPage
+          }
+        });
+      }
+    }
+  }, [pathname, isHome, isToolsPage, isDashboardPage]);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
   const showFooter = !isHome && !isDashboardPage;

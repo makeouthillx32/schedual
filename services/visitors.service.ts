@@ -1,9 +1,38 @@
 export async function getVisitorsAnalyticsData() {
-  // Fake delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    // Calculate date range - last 30 days
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 30);
 
-  return [
-    168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112, 123, 212, 270,
-    190, 310, 115, 90, 380, 112, 223, 292, 170, 290, 110, 115, 290, 380, 312,
-  ].map((value, index) => ({ x: index + 1 + "", y: value }));
+    // Fetch visitor analytics from our API
+    const response = await fetch(`/api/analytics/visitors?start=${startDate.toISOString()}&end=${endDate.toISOString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.warn('Analytics API not available, using fallback');
+      // Return empty array instead of dummy data
+      return [];
+    }
+
+    const data = await response.json();
+    
+    // Transform API response to match expected format
+    const visitorStats = data.visitors || [];
+    
+    return visitorStats.map((stat: any, index: number) => ({
+      x: (index + 1).toString(), // Day number as string
+      y: stat.unique_visitors || stat.sessions_count || 0 // Visitor count
+    }));
+
+  } catch (error) {
+    console.error('Error fetching visitor analytics:', error);
+    
+    // Return empty array on error (no more dummy data!)
+    return [];
+  }
 }

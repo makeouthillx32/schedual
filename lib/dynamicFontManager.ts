@@ -8,14 +8,15 @@ class DynamicFontManager {
     const fontWeights = '300;400;500;600;700';
     const encodedName = fontName.replace(/\s+/g, '+');
     
-    // List of known Google Fonts (you can expand this)
+    // List of known Google Fonts - UPDATED with all your theme fonts
     const googleFonts = [
       'Architects Daughter', 'Plus Jakarta Sans', 'Source Serif 4', 'JetBrains Mono',
       'Fira Code', 'Inter', 'Roboto', 'Open Sans', 'Poppins', 'Montserrat',
       'Playfair Display', 'Lora', 'Merriweather', 'Space Grotesk', 'DM Sans',
       'IBM Plex Sans', 'IBM Plex Mono', 'Geist', 'Geist Mono', 'Outfit',
       'Source Code Pro', 'Roboto Mono', 'Space Mono',
-      'Libre Baskerville'  // <- Add this line
+      'Libre Baskerville',  // Vintage theme
+      'Oxanium'            // Sharp theme - THIS WAS MISSING!
     ];
     
     if (googleFonts.includes(fontName)) {
@@ -29,7 +30,8 @@ class DynamicFontManager {
     const systemFonts = [
       'System', 'Arial', 'Helvetica', 'Times New Roman', 'Times', 'Courier New',
       'Courier', 'Verdana', 'Georgia', 'Palatino', 'Garamond', 'Bookman',
-      'Trebuchet MS', 'Arial Black', 'Impact', 'sans-serif', 'serif', 'monospace'
+      'Trebuchet MS', 'Arial Black', 'Impact', 'sans-serif', 'serif', 'monospace',
+      'ui-serif', 'Cambria'  // Added system fonts used in Sharp theme
     ];
     return systemFonts.includes(fontName);
   }

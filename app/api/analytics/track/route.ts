@@ -1,136 +1,209 @@
-"use client";
+// app/api/analytics/track/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Providers } from "./provider";
-import Nav from "@/components/nav";
-import Footer from "@/components/footer";
-import AccessibilityOverlay from "@/components/theme/accessibility";
-import analytics from "@/lib/analytics"; // Re-enabled!
-import "./globals.css";
-import { setCookie } from "@/lib/cookieUtils";
+interface TrackingPayload {
+  pageUrl: string;
+  pageTitle?: string;
+  referrer?: string;
+  userAgent: string;
+  sessionId: string;
+  screenWidth?: number;
+  screenHeight?: number;
+  language?: string;
+  timezone?: string;
+  loadTime?: number;
+  utmParams?: {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    term?: string;
+    content?: string;
+  };
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+// Helper functions for user agent parsing
+function detectDeviceType(userAgent: string): string {
+  if (!userAgent) return 'unknown';
+  
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipod')) {
+    return 'mobile';
+  }
+  if (ua.includes('tablet') || ua.includes('ipad')) {
+    return 'tablet';
+  }
+  if (ua.includes('bot') || ua.includes('crawler') || ua.includes('spider')) {
+    return 'bot';
+  }
+  
+  return 'desktop';
+}
 
-  const isHome = pathname === "/";
-  const isToolsPage = pathname.toLowerCase().startsWith("/tools");
-  const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
+function extractBrowser(userAgent: string): string {
+  if (!userAgent) return 'unknown';
+  
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes('chrome') && !ua.includes('edge')) return 'Chrome';
+  if (ua.includes('firefox')) return 'Firefox';
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+  if (ua.includes('edge')) return 'Edge';
+  if (ua.includes('opera')) return 'Opera';
+  
+  return 'unknown';
+}
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isAuthPage =
-        pathname === "/sign-in" ||
-        pathname === "/sign-up" ||
-        pathname.startsWith("/auth");
+function extractOS(userAgent: string): string {
+  if (!userAgent) return 'unknown';
+  
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes('windows')) return 'Windows';
+  if (ua.includes('macintosh') || ua.includes('mac os')) return 'macOS';
+  if (ua.includes('linux')) return 'Linux';
+  if (ua.includes('android')) return 'Android';
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'iOS';
+  
+  return 'unknown';
+}
 
-      if (!isAuthPage) {
-        setCookie("lastPage", pathname, { path: "/" });
+function detectBot(userAgent: string): boolean {
+  if (!userAgent) return false;
+  
+  const ua = userAgent.toLowerCase();
+  const botPatterns = ['bot', 'crawler', 'spider', 'scraper', 'fetch', 'curl'];
+  
+  return botPatterns.some(pattern => ua.includes(pattern));
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const payload: TrackingPayload = await request.json();
+    
+    // Get client IP address
+    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     request.headers.get('x-real-ip') || 
+                     '127.0.0.1';
+    
+    // Extract device and browser information
+    const deviceType = detectDeviceType(payload.userAgent);
+    const browser = extractBrowser(payload.userAgent);
+    const os = extractOS(payload.userAgent);
+    const isBot = detectBot(payload.userAgent);
+    
+    // First, find or create the user
+    let userId: string;
+    
+    // Check if user exists by session_id
+    const { data: existingUser } = await supabase
+      .from('analytics_users')
+      .select('id')
+      .eq('session_id', payload.sessionId)
+      .single();
+    
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
+      // Create new user
+      const { data: newUser, error: userError } = await supabase
+        .from('analytics_users')
+        .insert({
+          user_agent: payload.userAgent,
+          ip_address: clientIP,
+          session_id: payload.sessionId,
+          device_type: deviceType,
+          browser: browser,
+          os: os,
+          is_bot: isBot,
+          screen_width: payload.screenWidth,
+          screen_height: payload.screenHeight,
+          language: payload.language,
+          timezone: payload.timezone,
+        })
+        .select('id')
+        .single();
+      
+      if (userError) {
+        console.error('Error creating user:', userError);
+        return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
       }
-
-      // Get theme from localStorage
-      const theme = localStorage.getItem("theme") || "light";
-      setIsDarkMode(theme === "dark");
-
-      // Set theme-color meta tag based on CSS variables
-      const root = document.documentElement;
-      let themeColor;
-
-      if (isHome) {
-        themeColor = theme === "dark" 
-          ? getComputedStyle(root).getPropertyValue('--sidebar').trim() // Use sidebar color for home dark
-          : getComputedStyle(root).getPropertyValue('--background').trim(); // Use background color for home light
-      } else {
-        themeColor = theme === "dark" 
-          ? getComputedStyle(root).getPropertyValue('--background').trim()
-          : getComputedStyle(root).getPropertyValue('--background').trim();
-      }
-
-      // Ensure the color is in proper format
-      if (!themeColor.startsWith('#') && !themeColor.startsWith('hsl') && !themeColor.startsWith('rgb')) {
-        // Default fallbacks if variables aren't properly formatted
-        themeColor = theme === "dark" ? "hsl(var(--background))" : "hsl(var(--background))";
-      }
-
-      // Update meta tag
-      const metaTag = document.querySelector("meta[name='theme-color']");
-      if (metaTag) {
-        metaTag.setAttribute("content", themeColor);
-      } else {
-        const newMeta = document.createElement("meta");
-        newMeta.name = "theme-color";
-        newMeta.content = themeColor;
-        document.head.appendChild(newMeta);
-      }
+      
+      userId = newUser.id;
     }
-  }, [pathname, isHome]);
-
-  // Analytics: Track route changes for SPA navigation
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Track route change (this will automatically track page views)
-      analytics.onRouteChange(window.location.href);
-      
-      // Optional: Track specific route events
-      const isAuthPage = pathname === "/sign-in" || 
-                        pathname === "/sign-up" || 
-                        pathname.startsWith("/auth");
-      
-      if (!isAuthPage) {
-        // Track page category based on route
-        let pageCategory = 'general';
-        if (isHome) pageCategory = 'landing';
-        else if (isToolsPage) pageCategory = 'tools';
-        else if (isDashboardPage) pageCategory = 'dashboard';
-        
-        analytics.trackEvent('route_change', {
-          category: 'navigation',
-          action: 'page_view',
-          label: pageCategory,
-          metadata: {
-            pathname,
-            isHome,
-            isToolsPage,
-            isDashboardPage
-          }
+    
+    // Create or update session
+    const { data: existingSession } = await supabase
+      .from('analytics_sessions')
+      .select('id')
+      .eq('session_id', payload.sessionId)
+      .single();
+    
+    if (!existingSession) {
+      // Create new session
+      const { error: sessionError } = await supabase
+        .from('analytics_sessions')
+        .insert({
+          session_id: payload.sessionId,
+          user_id: userId,
+          entry_page: payload.pageUrl,
+          device_type: deviceType,
+          browser: browser,
+          os: os,
+          referrer: payload.referrer,
+          utm_source: payload.utmParams?.source,
+          utm_medium: payload.utmParams?.medium,
+          utm_campaign: payload.utmParams?.campaign,
         });
+      
+      if (sessionError) {
+        console.error('Error creating session:', sessionError);
+        // Don't fail the request, just log the error
+      }
+    } else {
+      // Update existing session end time
+      const { error: updateError } = await supabase
+        .from('analytics_sessions')
+        .update({
+          end_time: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('session_id', payload.sessionId);
+      
+      if (updateError) {
+        console.error('Error updating session:', updateError);
+        // Don't fail the request
       }
     }
-  }, [pathname, isHome, isToolsPage, isDashboardPage]);
-
-  const showNav = !isHome && !isToolsPage && !isDashboardPage;
-  const showFooter = !isHome && !isDashboardPage;
-  // Show accessibility on all pages except auth pages
-  const showAccessibility = !pathname.startsWith("/auth") && 
-                            pathname !== "/sign-in" && 
-                            pathname !== "/sign-up";
-
-  return (
-    <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
-      <head>
-        <meta name="theme-color" content="#ffffff" />
-        {/* Only preconnect to Google Fonts - fonts will be loaded dynamically by theme system */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* REMOVED: Hardcoded Google Fonts link - fonts now loaded dynamically by theme */}
-      </head>
-      <body className={`min-h-screen font-[var(--font-sans)] ${
-        isDarkMode 
-          ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]" 
-          : "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]"
-      }`}>
-        <Providers>
-          {showNav && <Nav />}
-          <main className="flex-1">{children}</main>
-          {showFooter && <Footer />}
-          {showAccessibility && <AccessibilityOverlay />}
-        </Providers>
-      </body>
-    </html>
-  );
+    
+    // Create page view record
+    const { error: pageViewError } = await supabase
+      .from('analytics_page_views')
+      .insert({
+        user_id: userId,
+        session_id: payload.sessionId,
+        page_url: payload.pageUrl,
+        page_title: payload.pageTitle,
+        referrer: payload.referrer,
+        utm_source: payload.utmParams?.source,
+        utm_medium: payload.utmParams?.medium,
+        utm_campaign: payload.utmParams?.campaign,
+        utm_term: payload.utmParams?.term,
+        utm_content: payload.utmParams?.content,
+        load_time: payload.loadTime,
+      });
+    
+    if (pageViewError) {
+      console.error('Error creating page view:', pageViewError);
+      return NextResponse.json({ error: 'Failed to track page view' }, { status: 500 });
+    }
+    
+    return NextResponse.json({ success: true, userId });
+    
+  } catch (error) {
+    console.error('Analytics tracking error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

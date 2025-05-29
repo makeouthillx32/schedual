@@ -1,4 +1,4 @@
-// lib/analytics.ts
+// lib/analytics.ts - ENHANCED WITH VERIFICATION
 import { v4 as uuidv4 } from 'uuid';
 
 interface PerformanceMetric {
@@ -49,11 +49,21 @@ class AnalyticsClient {
   private sessionId: string;
   private apiBase: string;
   private isInitialized = false;
-  private isEnabled = true; // Add feature flag
+  private isEnabled = true;
+  private trackingStats = {
+    pageViews: 0,
+    events: 0,
+    performance: 0,
+    errors: 0
+  };
 
   constructor(apiBase = '/api/analytics') {
     this.apiBase = apiBase;
     this.sessionId = this.initSession();
+    console.log('📊 Analytics Client initialized:', {
+      sessionId: this.sessionId,
+      apiBase: this.apiBase
+    });
   }
 
   // Initialize session with UUID
@@ -65,12 +75,14 @@ class AnalyticsClient {
     // Check for existing session in sessionStorage
     const existingSession = sessionStorage.getItem('analytics_session_id');
     if (existingSession) {
+      console.log('🔄 Reusing existing session:', existingSession);
       return existingSession;
     }
 
     // Generate new session ID
     const newSessionId = uuidv4();
     sessionStorage.setItem('analytics_session_id', newSessionId);
+    console.log('✨ Created new session:', newSessionId);
     return newSessionId;
   }
 
@@ -86,13 +98,54 @@ class AnalyticsClient {
       };
     }
 
-    return {
+    const info = {
       userAgent: navigator.userAgent || '',
       screenWidth: screen.width || 0,
       screenHeight: screen.height || 0,
       language: navigator.language || 'en',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
     };
+
+    console.log('🖥️ Device info collected:', {
+      device: this.detectDeviceType(info.userAgent),
+      browser: this.extractBrowser(info.userAgent),
+      os: this.extractOS(info.userAgent),
+      screen: `${info.screenWidth}x${info.screenHeight}`,
+      language: info.language,
+      timezone: info.timezone
+    });
+
+    return info;
+  }
+
+  // Helper functions for device detection (for logging)
+  private detectDeviceType(userAgent: string): string {
+    if (!userAgent) return 'unknown';
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) return 'mobile';
+    if (ua.includes('tablet') || ua.includes('ipad')) return 'tablet';
+    return 'desktop';
+  }
+
+  private extractBrowser(userAgent: string): string {
+    if (!userAgent) return 'unknown';
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('chrome') && !ua.includes('edge')) return 'Chrome';
+    if (ua.includes('firefox')) return 'Firefox';
+    if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+    if (ua.includes('edge')) return 'Edge';
+    return 'unknown';
+  }
+
+  private extractOS(userAgent: string): string {
+    if (!userAgent) return 'unknown';
+    const ua = userAgent.toLowerCase();
+    if (ua.includes('windows')) return 'Windows';
+    if (ua.includes('macintosh') || ua.includes('mac os')) return 'macOS';
+    if (ua.includes('linux')) return 'Linux';
+    if (ua.includes('android')) return 'Android';
+    if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS';
+    return 'unknown';
   }
 
   // Extract UTM parameters from URL
@@ -112,9 +165,14 @@ class AnalyticsClient {
       if (params.get('utm_term')) utmParams.term = params.get('utm_term')!;
       if (params.get('utm_content')) utmParams.content = params.get('utm_content')!;
 
-      return Object.keys(utmParams).length > 0 ? utmParams : undefined;
+      const hasUtmParams = Object.keys(utmParams).length > 0;
+      if (hasUtmParams) {
+        console.log('🎯 UTM parameters detected:', utmParams);
+      }
+
+      return hasUtmParams ? utmParams : undefined;
     } catch (error) {
-      console.warn('Error parsing UTM params:', error);
+      console.warn('⚠️ Error parsing UTM params:', error);
       return undefined;
     }
   }
@@ -141,7 +199,15 @@ class AnalyticsClient {
       utmParams: this.getUtmParams(pageUrl)
     };
 
+    console.log('📄 Tracking page view:', {
+      url: pageUrl,
+      title: pageTitle,
+      referrer: referrer || 'direct',
+      sessionId: this.sessionId
+    });
+
     try {
+      const startTime = performance.now();
       const response = await fetch(`${this.apiBase}/track`, {
         method: 'POST',
         headers: {
@@ -150,12 +216,27 @@ class AnalyticsClient {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        // Silently fail - don't spam console on every page load
-        this.isEnabled = false; // Disable further tracking if API is down
+      const duration = Math.round(performance.now() - startTime);
+
+      if (response.ok) {
+        this.trackingStats.pageViews++;
+        console.log('✅ Page view tracked successfully:', {
+          status: response.status,
+          duration: `${duration}ms`,
+          totalPageViews: this.trackingStats.pageViews
+        });
+      } else {
+        this.trackingStats.errors++;
+        console.warn('❌ Page view tracking failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          duration: `${duration}ms`
+        });
+        this.isEnabled = false;
       }
     } catch (error) {
-      // Silently fail and disable
+      this.trackingStats.errors++;
+      console.error('❌ Page view tracking error:', error);
       this.isEnabled = false;
     }
   }
@@ -184,7 +265,16 @@ class AnalyticsClient {
       metadata: properties?.metadata,
     };
 
+    console.log('🎯 Tracking event:', {
+      name,
+      category: properties?.category,
+      action: properties?.action,
+      label: properties?.label,
+      value: properties?.value
+    });
+
     try {
+      const startTime = performance.now();
       const response = await fetch(`${this.apiBase}/event`, {
         method: 'POST',
         headers: {
@@ -193,12 +283,27 @@ class AnalyticsClient {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        // Silently fail
+      const duration = Math.round(performance.now() - startTime);
+
+      if (response.ok) {
+        this.trackingStats.events++;
+        console.log('✅ Event tracked successfully:', {
+          event: name,
+          duration: `${duration}ms`,
+          totalEvents: this.trackingStats.events
+        });
+      } else {
+        this.trackingStats.errors++;
+        console.warn('❌ Event tracking failed:', {
+          event: name,
+          status: response.status,
+          duration: `${duration}ms`
+        });
         this.isEnabled = false;
       }
     } catch (error) {
-      // Silently fail
+      this.trackingStats.errors++;
+      console.error('❌ Event tracking error:', error);
       this.isEnabled = false;
     }
   }
@@ -213,6 +318,8 @@ class AnalyticsClient {
       metrics: metrics,
     };
 
+    console.log('⚡ Tracking performance metrics:', metrics);
+
     try {
       const response = await fetch(`${this.apiBase}/performance`, {
         method: 'POST',
@@ -222,50 +329,66 @@ class AnalyticsClient {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        this.trackingStats.performance++;
+        console.log('✅ Performance metrics tracked:', {
+          count: metrics.length,
+          types: metrics.map(m => m.type),
+          totalPerformanceEvents: this.trackingStats.performance
+        });
+      } else {
+        this.trackingStats.errors++;
+        console.warn('❌ Performance tracking failed:', response.status);
         this.isEnabled = false;
       }
     } catch (error) {
+      this.trackingStats.errors++;
+      console.error('❌ Performance tracking error:', error);
       this.isEnabled = false;
     }
   }
 
-  // Track Web Vitals automatically - FIXED VERSION
+  // Track Web Vitals automatically
   async trackWebVitals(): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
 
     try {
-      // Dynamically import web-vitals with proper error handling
+      console.log('🔄 Loading Web Vitals library...');
       const webVitals = await import('web-vitals');
-      
+
       // Check if functions exist before calling
       if (webVitals.getCLS) {
         webVitals.getCLS((metric) => {
+          console.log('📊 CLS metric:', metric.value);
           this.trackPerformance([{ type: 'CLS', value: metric.value }]);
         });
       }
 
       if (webVitals.getFID) {
         webVitals.getFID((metric) => {
+          console.log('📊 FID metric:', metric.value);
           this.trackPerformance([{ type: 'FID', value: metric.value }]);
         });
       }
 
       if (webVitals.getLCP) {
         webVitals.getLCP((metric) => {
+          console.log('📊 LCP metric:', metric.value);
           this.trackPerformance([{ type: 'LCP', value: metric.value }]);
         });
       }
 
       if (webVitals.getTTFB) {
         webVitals.getTTFB((metric) => {
+          console.log('📊 TTFB metric:', metric.value);
           this.trackPerformance([{ type: 'TTFB', value: metric.value }]);
         });
       }
 
+      console.log('✅ Web Vitals tracking initialized');
+
     } catch (error) {
-      // Web vitals not available - that's fine, just skip it
-      console.info('Web Vitals not available - skipping performance tracking');
+      console.info('ℹ️ Web Vitals not available - skipping performance tracking');
     }
   }
 
@@ -273,17 +396,19 @@ class AnalyticsClient {
   init(): void {
     if (typeof window === 'undefined' || this.isInitialized) return;
 
+    console.log('🚀 Initializing analytics tracking...');
     this.isInitialized = true;
 
     // Track initial page view
     this.trackPageView();
 
-    // Track Web Vitals (with error handling)
+    // Track Web Vitals
     this.trackWebVitals();
 
-    // Track page visibility changes (only if enabled)
+    // Track page visibility changes
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden' && this.isEnabled) {
+        console.log('👋 Page hidden - tracking exit');
         this.trackEvent('page_exit', {
           category: 'engagement',
           action: 'page_visibility',
@@ -292,7 +417,7 @@ class AnalyticsClient {
       }
     });
 
-    // Track scroll depth (throttled)
+    // Track scroll depth
     let maxScrollDepth = 0;
     const trackScrollDepth = () => {
       if (!this.isEnabled) return;
@@ -301,15 +426,17 @@ class AnalyticsClient {
         (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
       );
       
-      if (scrollDepth > maxScrollDepth) {
+      if (scrollDepth > maxScrollDepth && scrollDepth >= 25) {
         maxScrollDepth = scrollDepth;
         
-        // Track milestone scroll depths
         if (scrollDepth >= 25 && scrollDepth < 50) {
+          console.log('📜 Scroll depth: 25%');
           this.trackEvent('scroll_depth', { category: 'engagement', label: '25%' });
         } else if (scrollDepth >= 50 && scrollDepth < 75) {
+          console.log('📜 Scroll depth: 50%');
           this.trackEvent('scroll_depth', { category: 'engagement', label: '50%' });
         } else if (scrollDepth >= 75) {
+          console.log('📜 Scroll depth: 75%');
           this.trackEvent('scroll_depth', { category: 'engagement', label: '75%' });
         }
       }
@@ -326,6 +453,7 @@ class AnalyticsClient {
     window.addEventListener('beforeunload', () => {
       if (this.isEnabled) {
         const timeOnPage = Math.round((Date.now() - startTime) / 1000);
+        console.log('⏱️ Time on page:', timeOnPage, 'seconds');
         this.trackEvent('time_on_page', {
           category: 'engagement',
           value: timeOnPage,
@@ -333,6 +461,8 @@ class AnalyticsClient {
         });
       }
     });
+
+    console.log('✅ Analytics tracking initialized successfully');
   }
 
   // Get current session ID
@@ -342,32 +472,72 @@ class AnalyticsClient {
 
   // Manual page view tracking for SPA navigation
   onRouteChange(url: string): void {
+    console.log('🔄 Route change detected:', url);
     this.trackPageView(url);
+  }
+
+  // Get tracking statistics
+  getStats() {
+    return {
+      ...this.trackingStats,
+      isEnabled: this.isEnabled,
+      sessionId: this.sessionId
+    };
   }
 
   // Method to re-enable tracking
   enable(): void {
     this.isEnabled = true;
+    console.log('✅ Analytics tracking enabled');
   }
 
   // Method to disable tracking
   disable(): void {
     this.isEnabled = false;
+    console.log('🚫 Analytics tracking disabled');
+  }
+
+  // Debug method to check if everything is working
+  async debug(): Promise<void> {
+    console.log('🔍 Analytics Debug Report:');
+    console.log('Session ID:', this.sessionId);
+    console.log('API Base:', this.apiBase);
+    console.log('Is Enabled:', this.isEnabled);
+    console.log('Is Initialized:', this.isInitialized);
+    console.log('Tracking Stats:', this.trackingStats);
+    console.log('Device Info:', this.getDeviceInfo());
+    
+    // Test API connectivity
+    try {
+      console.log('🧪 Testing API connectivity...');
+      await this.trackEvent('debug_test', {
+        category: 'debug',
+        action: 'connectivity_test',
+        metadata: { timestamp: Date.now() }
+      });
+      console.log('✅ API connectivity test passed');
+    } catch (error) {
+      console.error('❌ API connectivity test failed:', error);
+    }
   }
 }
 
 // Create singleton instance
 const analytics = new AnalyticsClient();
 
-// Auto-initialize on client side (with error protection)
+// Auto-initialize on client side
 if (typeof window !== 'undefined') {
+  // Add debug method to window for easy access
+  (window as any).analyticsDebug = () => analytics.debug();
+  (window as any).analyticsStats = () => console.log(analytics.getStats());
+
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       try {
         analytics.init();
       } catch (error) {
-        console.info('Analytics initialization skipped');
+        console.error('Analytics initialization failed:', error);
       }
     });
   } else {
@@ -376,7 +546,7 @@ if (typeof window !== 'undefined') {
       try {
         analytics.init();
       } catch (error) {
-        console.info('Analytics initialization skipped');
+        console.error('Analytics initialization failed:', error);
       }
     }, 0);
   }

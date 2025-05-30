@@ -1,4 +1,4 @@
-// lib/analytics.ts - FIXED SESSION PERSISTENCE
+// lib/analytics.ts - FIXED WITH GLOBAL DEBUG ACCESS
 import { v4 as uuidv4 } from 'uuid';
 
 interface PerformanceMetric {
@@ -580,17 +580,36 @@ class AnalyticsClient {
 // Create singleton instance
 const analytics = new AnalyticsClient();
 
-// Auto-initialize on client side
+// ✅ FIXED: Always expose analytics globally for debugging
 if (typeof window !== 'undefined') {
-  // Add debug method to window for easy access
+  // Expose analytics instance globally
+  (window as any).analytics = analytics;
+  
+  // Add debug methods to window for easy access
   (window as any).analyticsDebug = () => analytics.debug();
   (window as any).analyticsStats = () => console.log(analytics.getStats());
+  
+  // Add more debug utilities
+  (window as any).analyticsTest = () => {
+    console.log('🧪 Testing analytics tracking...');
+    analytics.trackEvent('manual_test', {
+      category: 'debug',
+      action: 'manual_trigger',
+      label: 'console_test',
+      value: 1,
+      metadata: { 
+        timestamp: Date.now(),
+        source: 'browser_console'
+      }
+    });
+  };
 
   // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       try {
         analytics.init();
+        console.log('📊 Analytics ready! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
       } catch (error) {
         console.error('Analytics initialization failed:', error);
       }
@@ -600,6 +619,7 @@ if (typeof window !== 'undefined') {
     setTimeout(() => {
       try {
         analytics.init();
+        console.log('📊 Analytics ready! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
       } catch (error) {
         console.error('Analytics initialization failed:', error);
       }

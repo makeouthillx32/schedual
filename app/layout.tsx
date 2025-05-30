@@ -102,7 +102,7 @@ export default function RootLayout({
     }
   }, [pathname]);
 
-  // Analytics: Handle SPA navigation (skip first load to avoid double tracking)
+  // ✅ OPTIMIZED: Analytics tracking with better navigation handling
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -121,26 +121,53 @@ export default function RootLayout({
       return;
     }
 
+    // ✅ SIMPLIFIED: Only call onRouteChange - it handles the page view tracking
     console.log('🔄 SPA navigation detected:', pathname);
     analytics.onRouteChange(window.location.href);
     
+    // ✅ SEPARATE: Track navigation event for analysis (separate from page view)
     let pageCategory = 'general';
     if (isHome) pageCategory = 'landing';
     else if (isToolsPage) pageCategory = 'tools';
     else if (isDashboardPage) pageCategory = 'dashboard';
     
-    analytics.trackEvent('spa_navigation', {
-      category: 'navigation',
-      action: 'route_change',
-      label: pageCategory,
-      metadata: {
-        pathname,
-        from: document.referrer || 'direct',
-        pageType: pageCategory
-      }
-    });
+    // Add a small delay to avoid race conditions with page view tracking
+    setTimeout(() => {
+      analytics.trackEvent('navigation', {
+        category: 'user_flow',
+        action: 'page_change',
+        label: pageCategory,
+        metadata: {
+          pathname,
+          from: document.referrer || 'direct',
+          pageType: pageCategory,
+          timestamp: Date.now()
+        }
+      });
+    }, 100);
 
   }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
+
+  // ✅ NEW: Debug analytics on development
+  useEffect(() => {
+    if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
+      // Add analytics debug to window for easy access
+      (window as any).debugAnalytics = () => {
+        console.log('🔍 Analytics Debug Info:');
+        console.log('Session ID:', analytics.getSessionId());
+        console.log('Stats:', analytics.getStats());
+        analytics.debug();
+      };
+      
+      // Log analytics status on mount
+      console.log('📊 Analytics Status:', {
+        sessionId: analytics.getSessionId(),
+        isEnabled: analytics.getStats().isEnabled,
+        pageViews: analytics.getStats().pageViews,
+        events: analytics.getStats().events
+      });
+    }
+  }, []);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
   const showFooter = !isHome && !isDashboardPage;

@@ -1,4 +1,4 @@
-// lib/analytics.ts - ENHANCED WITH VERIFICATION
+// lib/analytics.ts - FIXED SESSION PERSISTENCE
 import { v4 as uuidv4 } from 'uuid';
 
 interface PerformanceMetric {
@@ -66,24 +66,61 @@ class AnalyticsClient {
     });
   }
 
-  // Initialize session with UUID
+  // FIXED: Initialize session with proper persistence
   private initSession(): string {
     if (typeof window === 'undefined') {
       return uuidv4(); // Server-side fallback
     }
 
-    // Check for existing session in sessionStorage
-    const existingSession = sessionStorage.getItem('analytics_session_id');
-    if (existingSession) {
-      console.log('🔄 Reusing existing session:', existingSession);
-      return existingSession;
+    // Try to get session from localStorage first (persists across browser tabs/sessions)
+    let existingSession = localStorage.getItem('analytics_session_id');
+    
+    // If no localStorage session, check sessionStorage (tab-specific)
+    if (!existingSession) {
+      existingSession = sessionStorage.getItem('analytics_session_id');
+    }
+    
+    // Check if session is still valid (not older than 30 minutes of inactivity)
+    const lastActivity = localStorage.getItem('analytics_last_activity');
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in ms
+    
+    if (existingSession && lastActivity) {
+      const timeSinceLastActivity = now - parseInt(lastActivity);
+      
+      if (timeSinceLastActivity < thirtyMinutes) {
+        // Session is still valid, update last activity
+        localStorage.setItem('analytics_last_activity', now.toString());
+        sessionStorage.setItem('analytics_session_id', existingSession);
+        console.log('🔄 Reusing valid session:', existingSession);
+        return existingSession;
+      } else {
+        console.log('⏰ Session expired, creating new one');
+        // Session expired, clear old data
+        localStorage.removeItem('analytics_session_id');
+        localStorage.removeItem('analytics_last_activity');
+        sessionStorage.removeItem('analytics_session_id');
+      }
     }
 
     // Generate new session ID
     const newSessionId = uuidv4();
+    
+    // Store in both localStorage and sessionStorage
+    localStorage.setItem('analytics_session_id', newSessionId);
+    localStorage.setItem('analytics_last_activity', now.toString());
     sessionStorage.setItem('analytics_session_id', newSessionId);
+    
     console.log('✨ Created new session:', newSessionId);
     return newSessionId;
+  }
+
+  // Update last activity on each tracking call
+  private updateActivity(): void {
+    if (typeof window !== 'undefined') {
+      const now = Date.now();
+      localStorage.setItem('analytics_last_activity', now.toString());
+    }
   }
 
   // Get device and browser information
@@ -181,6 +218,9 @@ class AnalyticsClient {
   async trackPageView(url?: string): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
 
+    // Update activity timestamp
+    this.updateActivity();
+
     const deviceInfo = this.getDeviceInfo();
     const pageUrl = url || window.location.href;
     const pageTitle = document.title;
@@ -220,24 +260,27 @@ class AnalyticsClient {
 
       if (response.ok) {
         this.trackingStats.pageViews++;
+        const result = await response.json();
         console.log('✅ Page view tracked successfully:', {
           status: response.status,
           duration: `${duration}ms`,
-          totalPageViews: this.trackingStats.pageViews
+          totalPageViews: this.trackingStats.pageViews,
+          userId: result.userId,
+          deviceType: result.deviceType
         });
       } else {
         this.trackingStats.errors++;
+        const errorText = await response.text();
         console.warn('❌ Page view tracking failed:', {
           status: response.status,
           statusText: response.statusText,
-          duration: `${duration}ms`
+          duration: `${duration}ms`,
+          error: errorText
         });
-        this.isEnabled = false;
       }
     } catch (error) {
       this.trackingStats.errors++;
       console.error('❌ Page view tracking error:', error);
-      this.isEnabled = false;
     }
   }
 
@@ -253,6 +296,9 @@ class AnalyticsClient {
     }
   ): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    // Update activity timestamp
+    this.updateActivity();
 
     const payload: EventPayload = {
       sessionId: this.sessionId,
@@ -294,23 +340,25 @@ class AnalyticsClient {
         });
       } else {
         this.trackingStats.errors++;
+        const errorText = await response.text();
         console.warn('❌ Event tracking failed:', {
           event: name,
           status: response.status,
-          duration: `${duration}ms`
+          duration: `${duration}ms`,
+          error: errorText
         });
-        this.isEnabled = false;
       }
     } catch (error) {
       this.trackingStats.errors++;
       console.error('❌ Event tracking error:', error);
-      this.isEnabled = false;
     }
   }
 
   // Track performance metrics
   async trackPerformance(metrics: PerformanceMetric[]): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    this.updateActivity();
 
     const payload = {
       sessionId: this.sessionId,
@@ -339,12 +387,10 @@ class AnalyticsClient {
       } else {
         this.trackingStats.errors++;
         console.warn('❌ Performance tracking failed:', response.status);
-        this.isEnabled = false;
       }
     } catch (error) {
       this.trackingStats.errors++;
       console.error('❌ Performance tracking error:', error);
-      this.isEnabled = false;
     }
   }
 
@@ -506,6 +552,15 @@ class AnalyticsClient {
     console.log('Is Initialized:', this.isInitialized);
     console.log('Tracking Stats:', this.trackingStats);
     console.log('Device Info:', this.getDeviceInfo());
+    
+    // Check session persistence
+    if (typeof window !== 'undefined') {
+      console.log('Session Storage:', {
+        localStorage: localStorage.getItem('analytics_session_id'),
+        sessionStorage: sessionStorage.getItem('analytics_session_id'),
+        lastActivity: localStorage.getItem('analytics_last_activity')
+      });
+    }
     
     // Test API connectivity
     try {

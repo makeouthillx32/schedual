@@ -13,16 +13,33 @@ const Chart = dynamic(() => import("react-apexcharts"), {
 });
 
 export function DonutChart({ data }: PropsType) {
+  // Use your Tailwind design system colors
+  const tailwindColors = [
+    "hsl(var(--chart-1))",
+    "hsl(var(--chart-2))", 
+    "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))",
+    "hsl(var(--chart-5))"
+  ];
+
   const chartOptions: ApexOptions = {
     chart: {
       type: "donut",
-      fontFamily: "inherit",
+      fontFamily: "var(--font-sans)", // Use your font variable
+      background: "transparent",
     },
-    colors: ["#5750F1", "#5475E5", "#8099EC", "#ADBCF2"],
+    colors: tailwindColors,
     labels: data.map((item) => item.name),
     legend: {
       show: true,
       position: "bottom",
+      fontFamily: "var(--font-sans)",
+      fontSize: "14px",
+      fontWeight: 500,
+      labels: {
+        colors: "hsl(var(--foreground))", // Use your text color
+        useSeriesColors: false
+      },
       itemMargin: {
         horizontal: 10,
         vertical: 5,
@@ -47,11 +64,15 @@ export function DonutChart({ data }: PropsType) {
               label: "Visitors",
               fontSize: "16px",
               fontWeight: "400",
+              color: "hsl(var(--muted-foreground))", // Use your muted text color
+              fontFamily: "var(--font-sans)",
             },
             value: {
               show: true,
               fontSize: "28px",
               fontWeight: "bold",
+              color: "hsl(var(--foreground))", // Use your primary text color
+              fontFamily: "var(--font-sans)",
               formatter: (val) => compactFormat(+val),
             },
           },
@@ -60,6 +81,20 @@ export function DonutChart({ data }: PropsType) {
     },
     dataLabels: {
       enabled: false,
+    },
+    stroke: {
+      width: 2,
+      colors: ["hsl(var(--background))"] // Use your background color for stroke
+    },
+    tooltip: {
+      theme: "dark", // Will use CSS variables
+      style: {
+        fontSize: "14px",
+        fontFamily: "var(--font-sans)",
+      },
+      y: {
+        formatter: (value) => `${value} visitors`
+      }
     },
     responsive: [
       {

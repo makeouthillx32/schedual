@@ -66,7 +66,7 @@ export const NAV_DATA = [
           {
             title: "Members",
             url: "/settings/members",
-            icon: Icons.Users
+            icon: Icons.User
           },
           {
             title: "Roles",

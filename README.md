@@ -1,43 +1,23 @@
-# CMS Schedule App
 
-**Version 2 – Home Page Update**
+# Dart CMS
 
-The CMS Schedule App is a scheduling and client management platform designed to simplify the process of managing jobs, schedules, and custom settings for multiple businesses. It includes a modern homepage, admin dashboard, and real-time data management powered by Supabase and Next.js.
+**Realtime Messaging & Analytics Edition**
 
----
+Dart CMS MK3 is a robust full-stack platform designed for managing business operations, scheduling, and client communication across multiple teams. Built using Next.js, Supabase, and PostgreSQL, it now features a custom-built real-time messaging engine and full analytics suite for tracking user activity, engagement, and performance insights.
+#MK3
 
-## Features
 
-- **Dynamic Job Scheduling**  
-  Automatically assigns jobs to team members based on availability.
+A scalable, privacy-friendly business platform with live messaging, advanced analytics, and adaptive scheduling. Built for remote teams, service providers, and administrative control.## Features
 
-- **Dark Mode Toggle**  
-  Seamless light and dark mode switching for better accessibility.
-
-- **Dropdown Navigation**  
-  Includes a dropdown menu with options for Home, Schedule, and Settings.
-
-- **Real-time Time/Date**  
-  Displays live date and time in the dropdown.
-
-- **Modern UI Components**  
-  Built with Tailwind CSS and Radix UI for a sleek, responsive interface.
-
-- **Next.js Framework**  
-  Fast server-side rendering and API integration.
-
-- **Static Asset Optimization**  
-  Images are now served from `/public/images/home/` using static `<img>` tags.
-
-- **Business Cleaning Schedule Settings**  
-  Admins can now customize business cleaning days via the CMS settings panel.
-
-- **Secure Sign-In Flow (V2)**  
-  Implemented a route-based login system that reflects authentication state without requiring a page refresh.
-
----
-
-## To-Do List
+- Dynamic job scheduling with intelligent assignment logic
+- Realtime private & group messaging system (custom PostgreSQL-based)
+- Dark mode toggle and adaptive theming
+- Role-based sign-in and access control
+- Device & browser usage tracking per session
+- Page view heatmapping and route analytics
+- Custom event tracking via secure endpoints
+- Clean and responsive UI powered by Tailwind CSS + Radix
+## ✅ To-Do List
 
 - [x] Implement job randomization feature  
 - [x] Add dropdown menu for navigation  
@@ -54,68 +34,174 @@ The CMS Schedule App is a scheduling and client management platform designed to 
 - [ ] Store form progress and purge old entries via cron job  
 - [ ] Deploy public site and admin dashboard to production  
 - [ ] Add Docker and Kubernetes integration for self-hosting  
+## Lessons
+
+- Built a fully custom messaging engine with real-time updates using PostgreSQL `LISTEN/NOTIFY`
+- Created a modular analytics system using daily and hourly aggregation tables
+- Implemented API-based session tracking with performance metrics like TTFB and LCP
+- Designed scalable table relationships using Supabase and no RLS constraints
+## Demo
+
+`Live:` [https://schedual-five.vercel.app](https://schedual-five.vercel.app)
+
+## Screenshots
+- Home dashboard with device analytics
+- Real-time messaging overlay between admins and clients
+- Custom schedule control panel for business units
+![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+
+## API Reference
+
+#### Track Page View
+
+```http
+  GET /api/analytics/track
+```
+
+| Parameter   | Type     | Description                        |
+| :---------- | :------- | :--------------------------------- |
+| `sessionId` | `string` | **Required**. Session ID           |
+| `pageUrl`   | `string` | Page being viewed                  |
+| `userAgent` | `string` | Browser's user-agent string        |
 
 ---
 
-## Goals for Future Versions
+#### Log Custom Event
 
-- Add Excel report generation using `ExcelJS` + TypeScript  
-- Enable automatic form progress saving to Supabase  
-- Schedule background purges using Supabase Edge Functions or external cron  
-- Add client-specific settings pages for more granular control  
-- Implement mobile-friendly navigation and layouts  
-- Add localization support using `next-intl`  
-- Integrate with Supabase Storage for uploading and downloading documents  
-- Support self-hosted deployments with Docker and Kubernetes  
+```http
+  POST /api/analytics/event
+```
 
----
-
-## How to Build and Run Locally
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/your-username/cms-schedule-app.git
-   cd cms-schedule-app
-  
-
-
-2. **Install Dependencies**
-   ```bash
-   npm install
-   
-
-3. **Environment Setup**  
-   Create a \`.env.local\` file in the root directory and add the following:
-
-    ```env
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT YOUR SUPABASE URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT YOUR SUPABASE ANON KEY]
-   
-
-4. **Run the Development Server**
-   ```bash
-   npm run dev
-   
-   Visit [http://localhost:3000](http://localhost:3000) to view the app.
-
-5. **Build for Production**
-   ```bash
-   npm run build
-   npm start
-   
+| Parameter     | Type     | Description                              |
+| :------------ | :------- | :--------------------------------------- |
+| `sessionId`   | `string` | **Required**. Session ID                 |
+| `eventName`   | `string` | **Required**. Type of event              |
+| `metadata`    | `object` | Optional custom data                    |
 
 ---
 
-## Feedback and Issues
+#### Record Performance Metrics
 
-If you encounter issues or want to suggest improvements, create a GitHub issue or reach out directly.
+```http
+  POST /api/analytics/performance
+```
+
+| Parameter   | Type    | Description                                      |
+| :---------- | :------ | :----------------------------------------------- |
+| `sessionId` | `string`| **Required**. Session ID                         |
+| `metrics`   | `array` | Array of Core Web Vitals (LCP, FID, TTFB, CLS)   |
 
 ---
 
-## License
+#### Apply Invite Code
 
-This project is open-source and available under the [MIT License](LICENSE).
-EOF
+```http
+  POST /api/apply-invite
+```
+
+| Parameter   | Type     | Description                          |
+| :---------- | :------- | :----------------------------------- |
+| `code`      | `string` | **Required**. Invite code to validate |
+
+---
+
+#### Generate Punchcard
+
+```http
+  POST /api/genpunch
+```
+
+| Parameter    | Type     | Description                           |
+| :----------- | :------- | :------------------------------------ |
+| `week`       | `number` | **Required**. Week number to generate |
+
+---
+
+#### Get Notifications
+
+```http
+  GET /api/notifications
+```
+
+| Parameter   | Type     | Description                          |
+| :---------- | :------- | :----------------------------------- |
+| `user_id`   | `string` | **Required**. User ID to fetch notifications |
+
+---
+
+#### Send Message
+
+```http
+  POST /api/messages
+```
+
+| Parameter     | Type     | Description                       |
+| :------------ | :------- | :-------------------------------- |
+| `to`          | `string` | **Required**. Recipient user ID   |
+| `content`     | `string` | **Required**. Message content     |
+
+---
+
+#### Get Product by ID
+
+```http
+  GET /api/products/${id}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `id`      | `string` | **Required**. Product ID          |
+
+---
+
+#### Get All Users
+
+```http
+  GET /api/get-all-users
+```
+
+| Parameter | Type     | Description                  |
+| :-------- | :------- | :--------------------------- |
+| None      | —        | Admin access to all users    |
 
 
+
+## Installation
+
+```bash
+git clone https://github.com/your-username/dart-cms.git
+cd dart-cms
+npm install
+npm run dev
+```
+## Tech Stack
+
+**Frontend:** Next.js 15, Tailwind CSS  
+**Backend:** Supabase (PostgreSQL), pg_cron  
+**Charts:** Recharts, ApexCharts  
+**Messaging:** PostgreSQL pub/sub + Supabase listeners  
+**Analytics:** Custom aggregation tables + API endpoints  
+
+**Languages and Tools:**  
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Sass](https://img.shields.io/badge/Sass-CC6699?style=for-the-badge&logo=sass&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+## Feedback
+
+Have ideas or bugs? Open an issue or email [unenter.dev@protonmail.com](mailto:unenter.dev@protonmail.com)
+## Documentation
+
+See `/docs/architecture.md` (coming soon) for full backend schema and table structure.
+
+## Badges
+
+Add badges from somewhere like: [shields.io](https://shields.io/)
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
+[![AGPL License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
 

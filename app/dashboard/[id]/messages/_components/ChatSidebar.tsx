@@ -118,11 +118,18 @@ export default function ChatSidebar({
   });
   
   const fetchConversations = async (forceRefresh = false) => {
+    // If forcing refresh, clear cache first
+    if (forceRefresh) {
+      storage.remove(CACHE_KEYS.CONVERSATIONS);
+      hasFetched.current = false;
+      lastFetchTime.current = 0;
+    }
+    
     if (!forceRefresh && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
       return;
     }
     
-    const cachedData = storage.get(CACHE_KEYS.CONVERSATIONS);
+    const cachedData = !forceRefresh ? storage.get(CACHE_KEYS.CONVERSATIONS) : null;
     if (!forceRefresh && cachedData && !hasFetched.current) {
       setConversations(cachedData);
       setIsLoading(false);
@@ -132,7 +139,9 @@ export default function ChatSidebar({
     try {
       hasFetched.current = true;
       lastFetchTime.current = Date.now();
-      if (!cachedData || forceRefresh) setIsLoading(true);
+      setIsLoading(true);
+      
+      console.log('[ChatSidebar] Fetching conversations from server (force:', forceRefresh, ')');
       
       const res = await fetch('/api/messages/get-conversations');
       if (!isMounted.current) return;
@@ -157,13 +166,16 @@ export default function ChatSidebar({
       }));
       
       if (!isMounted.current) return;
+      
+      console.log('[ChatSidebar] Fetched', mapped.length, 'conversations from server');
       storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300);
       setConversations(mapped);
       setError(null);
       
     } catch (err) {
-      if (!cachedData || forceRefresh) {
-        setError("You don't have any chats yet.");
+      console.error('[ChatSidebar] Error fetching conversations:', err);
+      if (forceRefresh) {
+        setError("Failed to load conversations.");
       }
     } finally {
       if (isMounted.current) setIsLoading(false);
@@ -206,18 +218,29 @@ export default function ChatSidebar({
     }, 1000); // Give the server time to process
   };
 
-  // NEW: Handle conversation deletion (this is the fix for deletion)
+  // FIXED: Handle conversation deletion properly
   const handleConversationDeleted = (channelId: string) => {
     console.log('[ChatSidebar] Removing deleted conversation:', channelId);
     
+    // STEP 1: Clear ALL cache to ensure deleted conversation doesn't reappear
+    storage.remove(CACHE_KEYS.CONVERSATIONS);
+    storage.remove(CACHE_KEYS.CURRENT_USER); // Clear this too to be safe
+    
+    // STEP 2: Remove from current state immediately
     setConversations(prev => {
       const updated = prev.filter(conv => conv.channel_id !== channelId);
-      // Update cache immediately
-      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
       return updated;
     });
     
-    // If parent provided a callback, call it too
+    // STEP 3: Force fresh fetch from server (no cache)
+    hasFetched.current = false; // Reset fetch flag
+    lastFetchTime.current = 0;  // Reset time to force refresh
+    
+    setTimeout(() => {
+      fetchConversations(true); // Force refresh from server
+    }, 100);
+    
+    // STEP 4: If parent provided a callback, call it too
     if (onConversationDeleted) {
       onConversationDeleted(channelId);
     }

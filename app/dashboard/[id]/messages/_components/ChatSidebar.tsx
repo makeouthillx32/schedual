@@ -181,18 +181,29 @@ export default function ChatSidebar({
     onSelectChat(chat);
   };
 
-  // RESTORED: Simple new conversation handler (how it used to work)
+  // RESTORED: Proper new conversation handler (how it used to work)
   const handleNewConversation = (conversation: Conversation) => {
     console.log('[ChatSidebar] Adding new conversation:', conversation);
     
     // Add new conversation to the list and select it
-    setConversations(prev => [conversation, ...prev]);
+    setConversations(prev => {
+      // Check if conversation already exists to avoid duplicates
+      const exists = prev.some(c => c.channel_id === conversation.channel_id);
+      if (exists) {
+        return prev;
+      }
+      const updated = [conversation, ...prev];
+      // Update cache with new list
+      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+      return updated;
+    });
+    
     onSelectChat(conversation);
     
     // Force a refresh to ensure we have the latest data from the server
     setTimeout(() => {
       fetchConversations(true);
-    }, 500);
+    }, 1000); // Give the server time to process
   };
 
   // NEW: Handle conversation deletion (this is the fix for deletion)

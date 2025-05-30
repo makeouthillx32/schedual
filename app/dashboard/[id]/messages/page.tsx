@@ -344,8 +344,8 @@ export default function ChatPage() {
     // Navigate back to conversation list
     handleBackToConversations();
     
-    // Show success message
-    toast.success("Conversation deleted successfully");
+    // Show success message (but not duplicate since ActionsSection already shows one)
+    // toast.success("Conversation deleted successfully");
   };
 
   const getPageTitle = () => {
@@ -372,7 +372,8 @@ export default function ChatPage() {
               <div className="chat-sidebar">
                 <ChatSidebar 
                   selectedChat={null} 
-                  onSelectChat={handleSelectChat} 
+                  onSelectChat={handleSelectChat}
+                  onConversationDeleted={handleConversationDeleted}
                 />
               </div>
               <div className="flex-1 flex items-center justify-center">
@@ -383,7 +384,8 @@ export default function ChatPage() {
             <div className="mobile-conversation-list">
               <ChatSidebar 
                 selectedChat={null} 
-                onSelectChat={handleSelectChat} 
+                onSelectChat={handleSelectChat}
+                onConversationDeleted={handleConversationDeleted}
               />
             </div>
           )}
@@ -418,7 +420,8 @@ export default function ChatPage() {
             <div className="chat-sidebar">
               <ChatSidebar 
                 selectedChat={selectedChat} 
-                onSelectChat={handleSelectChat} 
+                onSelectChat={handleSelectChat}
+                onConversationDeleted={handleConversationDeleted}
               />
             </div>
             <div className="chat-content">

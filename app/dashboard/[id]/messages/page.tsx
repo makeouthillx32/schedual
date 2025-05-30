@@ -40,8 +40,8 @@ export default function ChatPage() {
   const isMounted = useRef(true);
   const [userProfiles, setUserProfiles] = useState({});
   
-  // Add this state to force sidebar refresh when conversations are deleted
-  const [refreshSidebar, setRefreshSidebar] = useState(0);
+  // Remove refreshSidebar state since ChatSidebar handles its own refresh now
+  // const [refreshSidebar, setRefreshSidebar] = useState(0);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -341,15 +341,13 @@ export default function ChatPage() {
   const handleConversationDeleted = (channelId: string) => {
     console.log("[ChatPage] Conversation deleted:", channelId);
     
-    // Close the right sidebar
+    // ✅ ONLY do UI navigation - let ChatSidebar handle all the data/cache management
     setShowRightSidebar(false);
-    
-    // Navigate back to conversation list
     handleBackToConversations();
     
-    // Force the sidebar to refresh by incrementing the refresh key
-    // This will cause ChatSidebar to re-mount and fetch fresh data
-    setRefreshSidebar(prev => prev + 1);
+    // ✅ Don't clear cache - ChatSidebar does NUCLEAR clear
+    // ✅ Don't force refresh - ChatSidebar handles its own refresh
+    // ✅ ChatSidebar will automatically update its conversation list
   };
 
   const getPageTitle = () => {
@@ -375,7 +373,6 @@ export default function ChatPage() {
             <>
               <div className="chat-sidebar">
                 <ChatSidebar 
-                  key={refreshSidebar} // This forces re-mount when conversations are deleted
                   selectedChat={null} 
                   onSelectChat={handleSelectChat}
                   onConversationDeleted={handleConversationDeleted}
@@ -388,7 +385,6 @@ export default function ChatPage() {
           ) : (
             <div className="mobile-conversation-list">
               <ChatSidebar 
-                key={refreshSidebar} // This forces re-mount when conversations are deleted
                 selectedChat={null} 
                 onSelectChat={handleSelectChat}
                 onConversationDeleted={handleConversationDeleted}
@@ -425,7 +421,6 @@ export default function ChatPage() {
           <>
             <div className="chat-sidebar">
               <ChatSidebar 
-                key={refreshSidebar} // This forces re-mount when conversations are deleted
                 selectedChat={selectedChat} 
                 onSelectChat={handleSelectChat}
                 onConversationDeleted={handleConversationDeleted}

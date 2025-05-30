@@ -39,6 +39,9 @@ export default function ChatPage() {
   const isLoadingRef = useRef(false);
   const isMounted = useRef(true);
   const [userProfiles, setUserProfiles] = useState({});
+  
+  // Add this state to force sidebar refresh when conversations are deleted
+  const [refreshSidebar, setRefreshSidebar] = useState(0);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -344,8 +347,9 @@ export default function ChatPage() {
     // Navigate back to conversation list
     handleBackToConversations();
     
-    // Show success message (but not duplicate since ActionsSection already shows one)
-    // toast.success("Conversation deleted successfully");
+    // Force the sidebar to refresh by incrementing the refresh key
+    // This will cause ChatSidebar to re-mount and fetch fresh data
+    setRefreshSidebar(prev => prev + 1);
   };
 
   const getPageTitle = () => {
@@ -371,6 +375,7 @@ export default function ChatPage() {
             <>
               <div className="chat-sidebar">
                 <ChatSidebar 
+                  key={refreshSidebar} // This forces re-mount when conversations are deleted
                   selectedChat={null} 
                   onSelectChat={handleSelectChat}
                   onConversationDeleted={handleConversationDeleted}
@@ -383,6 +388,7 @@ export default function ChatPage() {
           ) : (
             <div className="mobile-conversation-list">
               <ChatSidebar 
+                key={refreshSidebar} // This forces re-mount when conversations are deleted
                 selectedChat={null} 
                 onSelectChat={handleSelectChat}
                 onConversationDeleted={handleConversationDeleted}
@@ -419,6 +425,7 @@ export default function ChatPage() {
           <>
             <div className="chat-sidebar">
               <ChatSidebar 
+                key={refreshSidebar} // This forces re-mount when conversations are deleted
                 selectedChat={selectedChat} 
                 onSelectChat={handleSelectChat}
                 onConversationDeleted={handleConversationDeleted}

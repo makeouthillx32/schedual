@@ -84,45 +84,49 @@ async function getUsersData() {
   try {
     const supabase = await createClient();
     
-    // Get total unique analytics users
-    const { count: totalUsers, error: countError } = await supabase
+    // Get all analytics users with session_id to count unique users
+    const { data: allUsers, error: fetchError } = await supabase
       .from('analytics_users')
-      .select('*', { count: 'exact', head: true })
+      .select('session_id, created_at')
       .eq('is_bot', false); // Exclude bots
 
-    if (countError) {
-      console.error('Error fetching analytics users count:', countError);
+    if (fetchError) {
+      console.error('Error fetching analytics users:', fetchError);
       return { value: 0, growthRate: 0 };
     }
+
+    // Count unique users by session_id
+    const uniqueSessionIds = new Set(allUsers?.map(user => user.session_id) || []);
+    const totalUsers = uniqueSessionIds.size;
 
     const now = new Date();
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     
-    // This month's new users
-    const { count: thisMonthUsers } = await supabase
-      .from('analytics_users')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_bot', false)
-      .gte('created_at', firstDayThisMonth.toISOString());
+    // Filter for this month's users and count unique sessions
+    const thisMonthUsers = allUsers?.filter(user => 
+      new Date(user.created_at) >= firstDayThisMonth
+    ) || [];
+    const thisMonthUniqueSessionIds = new Set(thisMonthUsers.map(user => user.session_id));
+    const thisMonthCount = thisMonthUniqueSessionIds.size;
 
-    // Last month's new users
-    const { count: lastMonthUsers } = await supabase
-      .from('analytics_users')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_bot', false)
-      .gte('created_at', firstDayLastMonth.toISOString())
-      .lt('created_at', firstDayThisMonth.toISOString());
+    // Filter for last month's users and count unique sessions
+    const lastMonthUsers = allUsers?.filter(user => {
+      const createdAt = new Date(user.created_at);
+      return createdAt >= firstDayLastMonth && createdAt < firstDayThisMonth;
+    }) || [];
+    const lastMonthUniqueSessionIds = new Set(lastMonthUsers.map(user => user.session_id));
+    const lastMonthCount = lastMonthUniqueSessionIds.size;
 
     let growthRate = 0;
-    if (lastMonthUsers && lastMonthUsers > 0) {
-      growthRate = ((thisMonthUsers || 0) - lastMonthUsers) / lastMonthUsers;
-    } else if (thisMonthUsers && thisMonthUsers > 0) {
+    if (lastMonthCount > 0) {
+      growthRate = (thisMonthCount - lastMonthCount) / lastMonthCount;
+    } else if (thisMonthCount > 0) {
       growthRate = 1;
     }
 
     return {
-      value: totalUsers || 0,
+      value: totalUsers,
       growthRate: Math.round(growthRate * 10000) / 100,
     };
   } catch (error) {

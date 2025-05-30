@@ -65,6 +65,35 @@ export async function POST(request: NextRequest) {
 
     console.log("Group channel created/found with ID:", data);
     
+    // Check if this is a group channel and set default avatar if needed
+    const { data: channelData, error: channelError } = await supabase
+      .from('channels')
+      .select('type_id, avatar_url')
+      .eq('id', data)
+      .single();
+    
+    if (channelError) {
+      console.error("Failed to fetch channel data:", channelError);
+    } else {
+      // Only set default avatar for group chats (assuming type_id > 1 means group)
+      // and only if no avatar is already set
+      if (channelData.type_id > 1 && !channelData.avatar_url) {
+        const defaultGroupAvatarUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/default-group.png`;
+        
+        const { error: updateError } = await supabase
+          .from('channels')
+          .update({ avatar_url: defaultGroupAvatarUrl })
+          .eq('id', data);
+        
+        if (updateError) {
+          console.error("Failed to set default group avatar:", updateError);
+          // Don't fail the request, just log the error
+        } else {
+          console.log("Default group avatar set successfully");
+        }
+      }
+    }
+    
     // Return just the channel ID as a simple string to match the format
     // expected by the frontend component
     return NextResponse.json({ channelId: data });

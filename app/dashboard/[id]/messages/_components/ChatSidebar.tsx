@@ -34,12 +34,14 @@ export interface Conversation {
 interface ChatSidebarProps {
   selectedChat: Conversation | null;
   onSelectChat: (chat: Conversation) => void;
+  onConversationDeleted?: (channelId: string) => void;
   className?: string;
 }
 
 export default function ChatSidebar({ 
   selectedChat, 
   onSelectChat,
+  onConversationDeleted,
   className = ""
 }: ChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -124,7 +126,6 @@ export default function ChatSidebar({
     if (!forceRefresh && cachedData && !hasFetched.current) {
       setConversations(cachedData);
       setIsLoading(false);
-      // REMOVED: Auto-selection of first conversation
       return;
     }
     
@@ -159,7 +160,6 @@ export default function ChatSidebar({
       storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300);
       setConversations(mapped);
       setError(null);
-      // REMOVED: Auto-selection of first conversation
       
     } catch (err) {
       if (!cachedData || forceRefresh) {
@@ -170,7 +170,6 @@ export default function ChatSidebar({
     }
   };
   
-  // REMOVED: Dependency on selectedChat to prevent auto-fetching
   useEffect(() => { 
     fetchConversations(); 
   }, []);
@@ -186,6 +185,23 @@ export default function ChatSidebar({
     // Add new conversation to the list and select it
     setConversations(prev => [conversation, ...prev]);
     onSelectChat(conversation);
+  };
+
+  // Handle conversation deletion
+  const handleConversationDeleted = (channelId: string) => {
+    console.log('[ChatSidebar] Removing deleted conversation:', channelId);
+    
+    setConversations(prev => {
+      const updated = prev.filter(conv => conv.channel_id !== channelId);
+      // Update cache
+      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+      return updated;
+    });
+    
+    // If parent provided a callback, call it too
+    if (onConversationDeleted) {
+      onConversationDeleted(channelId);
+    }
   };
   
   return (

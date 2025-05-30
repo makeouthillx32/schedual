@@ -42,51 +42,14 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Ensure creator is included in participants and remove duplicates
-    const allParticipantIds = [...new Set([user.id, ...participantIds])];
+    // Ensure creator is included in participants (though our function handles this too)
+    const allParticipantIds = [...new Set([...participantIds])];
     
     console.log("Creating group with:", {
       creator: user.id,
       name,
       participants: allParticipantIds
     });
-    
-    // DUPLICATE CHECK: Check if creator already has a group with same name and same participants
-    const { data: existingGroups, error: checkError } = await supabase
-      .from('channels')
-      .select(`
-        id,
-        name,
-        creator_id,
-        type_id,
-        channel_participants!inner(user_id)
-      `)
-      .eq('creator_id', user.id)
-      .eq('name', name)
-      .eq('type_id', 2); // 2 = group type
-    
-    if (checkError) {
-      console.error("Error checking for duplicate groups:", checkError);
-      // Continue anyway - let the database function handle it
-    } else if (existingGroups && existingGroups.length > 0) {
-      // Check if any existing group has the same participants
-      for (const group of existingGroups) {
-        const groupParticipants = group.channel_participants.map(p => p.user_id).sort();
-        const newParticipants = allParticipantIds.sort();
-        
-        // Compare participant arrays
-        if (groupParticipants.length === newParticipants.length && 
-            groupParticipants.every((id, index) => id === newParticipants[index])) {
-          
-          console.log("Found duplicate group:", group.id);
-          return NextResponse.json({ 
-            error: `You already have a group called "${name}" with these participants. Please choose a different name or add different participants.`,
-            isExisting: true,
-            channelId: group.id
-          }, { status: 409 }); // 409 = Conflict
-        }
-      }
-    }
     
     // Call the Postgres function to create or get a group channel
     const { data, error } = await supabase.rpc("create_or_get_group_channel", {
@@ -102,19 +65,20 @@ export async function POST(request: NextRequest) {
 
     console.log("Group channel created/found with ID:", data);
     
-    // Check if this is a newly created group and set default avatar
+    // Check if this is a group channel and set default avatar if needed
     const { data: channelData, error: channelError } = await supabase
       .from('channels')
-      .select('type_id, avatar_url, created_at')
+      .select('type_id, avatar_url')
       .eq('id', data)
       .single();
     
     if (channelError) {
       console.error("Failed to fetch channel data:", channelError);
     } else {
-      // Only set default avatar for group chats and only if no avatar is already set
+      // Only set default avatar for group chats (assuming type_id > 1 means group)
+      // and only if no avatar is already set
       if (channelData.type_id > 1 && !channelData.avatar_url) {
-        const defaultGroupAvatarUrl = 'https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/groupchat.png';
+        const defaultGroupAvatarUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/default-group.png`;
         
         const { error: updateError } = await supabase
           .from('channels')
@@ -128,27 +92,11 @@ export async function POST(request: NextRequest) {
           console.log("Default group avatar set successfully");
         }
       }
-      
-      // Check if this was an existing channel (created more than 5 seconds ago)
-      const isExisting = channelData && 
-                         new Date(channelData.created_at).getTime() < 
-                         (Date.now() - 5000);
-      
-      if (isExisting) {
-        console.log("Returning existing group channel");
-        return NextResponse.json({ 
-          channelId: data,
-          isExisting: true,
-          message: "You already have a group with this name. Opening existing group."
-        });
-      }
     }
     
-    // Return the channel ID for new groups
-    return NextResponse.json({ 
-      channelId: data,
-      isExisting: false 
-    });
+    // Return just the channel ID as a simple string to match the format
+    // expected by the frontend component
+    return NextResponse.json({ channelId: data });
     
   } catch (error: any) {
     console.error("Unexpected error in start-group route:", error);

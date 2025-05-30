@@ -99,9 +99,14 @@ export default function ChatSidebar({
     table: 'messages',
     onInsert: (newMessage) => {
       if (!newMessage?.channel_id || !isMounted.current) return;
+      
       setConversations(prev => {
         const idx = prev.findIndex(c => c.channel_id === newMessage.channel_id);
-        if (idx === -1) return prev;
+        if (idx === -1) {
+          console.log('[ChatSidebar] Message for unknown channel, ignoring:', newMessage.channel_id);
+          return prev; // Don't add conversations that don't exist
+        }
+        
         const updated = [...prev];
         const conv = { ...updated[idx] };
         conv.last_message = newMessage.content;
@@ -111,7 +116,12 @@ export default function ChatSidebar({
         }
         updated.splice(idx, 1);
         updated.unshift(conv);
-        storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+        
+        // Only update cache if we have conversations (not during deletion)
+        if (updated.length > 0) {
+          storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+        }
+        
         return updated;
       });
     }
@@ -218,29 +228,33 @@ export default function ChatSidebar({
     }, 1000); // Give the server time to process
   };
 
-  // FIXED: Handle conversation deletion properly
+  // FIXED: Handle conversation deletion properly - NUCLEAR OPTION
   const handleConversationDeleted = (channelId: string) => {
-    console.log('[ChatSidebar] Removing deleted conversation:', channelId);
+    console.log('[ChatSidebar] NUCLEAR DELETE - Removing conversation:', channelId);
     
-    // STEP 1: Clear ALL cache to ensure deleted conversation doesn't reappear
-    storage.remove(CACHE_KEYS.CONVERSATIONS);
-    storage.remove(CACHE_KEYS.CURRENT_USER); // Clear this too to be safe
+    // STEP 1: Clear ALL cache completely
+    Object.values(CACHE_KEYS).forEach(key => {
+      storage.remove(key);
+    });
     
     // STEP 2: Remove from current state immediately
     setConversations(prev => {
       const updated = prev.filter(conv => conv.channel_id !== channelId);
+      console.log('[ChatSidebar] Filtered conversations, remaining:', updated.length);
       return updated;
     });
     
-    // STEP 3: Force fresh fetch from server (no cache)
-    hasFetched.current = false; // Reset fetch flag
-    lastFetchTime.current = 0;  // Reset time to force refresh
+    // STEP 3: Reset ALL fetch state
+    hasFetched.current = false;
+    lastFetchTime.current = 0;
     
+    // STEP 4: Force complete refresh from server
     setTimeout(() => {
-      fetchConversations(true); // Force refresh from server
-    }, 100);
+      console.log('[ChatSidebar] Forcing complete refresh from server');
+      fetchConversations(true);
+    }, 200);
     
-    // STEP 4: If parent provided a callback, call it too
+    // STEP 5: If parent provided a callback, call it too
     if (onConversationDeleted) {
       onConversationDeleted(channelId);
     }

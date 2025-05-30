@@ -4,7 +4,7 @@ export interface OverviewMetrics {
   views: { value: number; growthRate: number };
   profit: { value: number; growthRate: number };
   products: { value: number; growthRate: number };
-  users: { value: number; growthRate: number };
+  members: { value: number; growthRate: number };
 }
 
 export async function getOverviewData(): Promise<OverviewMetrics> {

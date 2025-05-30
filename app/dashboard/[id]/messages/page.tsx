@@ -335,6 +335,19 @@ export default function ChatPage() {
     setMessages(prev => prev.filter(msg => msg.id !== messageId));
   };
 
+  const handleConversationDeleted = (channelId: string) => {
+    console.log("[ChatPage] Conversation deleted:", channelId);
+    
+    // Close the right sidebar
+    setShowRightSidebar(false);
+    
+    // Navigate back to conversation list
+    handleBackToConversations();
+    
+    // Show success message
+    toast.success("Conversation deleted successfully");
+  };
+
   const getPageTitle = () => {
     if (selectedChat) {
       const resolvedName = selectedChat.channel_name ||
@@ -443,7 +456,9 @@ export default function ChatPage() {
                 participants={sidebarParticipants}
                 avatarColors={avatarColors}
                 isGroup={selectedChat.is_group}
+                channelId={selectedChat.id}
                 onClose={() => setShowRightSidebar(false)}
+                onConversationDeleted={handleConversationDeleted}
               />
             </div>
           </>
@@ -493,7 +508,9 @@ export default function ChatPage() {
                     participants={sidebarParticipants}
                     avatarColors={avatarColors}
                     isGroup={selectedChat.is_group}
+                    channelId={selectedChat.id}
                     onClose={() => setShowRightSidebar(false)}
+                    onConversationDeleted={handleConversationDeleted}
                   />
                 </div>
               </div>

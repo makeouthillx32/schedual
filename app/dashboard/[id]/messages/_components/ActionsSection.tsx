@@ -2,15 +2,8 @@
 'use client';
 
 import { ChevronDown, ChevronRight, Search, Bell, UserPlus, Trash2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { createBrowserClient } from '@supabase/ssr';
-
-// Create Supabase client
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface ActionsSectionProps {
   isGroup: boolean;
@@ -30,49 +23,6 @@ export default function ActionsSection({
   onClose
 }: ActionsSectionProps) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loadingRole, setLoadingRole] = useState(true);
-
-  // Fetch user role when component mounts
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        if (authError || !user) {
-          console.error('[ActionsSection] Auth error:', authError);
-          setLoadingRole(false);
-          return;
-        }
-
-        // Fetch user profile with role information
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select(`
-            role,
-            roles!role (
-              name
-            )
-          `)
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('[ActionsSection] Error fetching user role:', profileError);
-        } else {
-          const roleName = profile?.roles?.name || 'user';
-          setUserRole(roleName);
-          console.log('[ActionsSection] User role:', roleName);
-        }
-      } catch (error) {
-        console.error('[ActionsSection] Error in fetchUserRole:', error);
-      } finally {
-        setLoadingRole(false);
-      }
-    };
-
-    fetchUserRole();
-  }, []);
   
   // Action handlers
   const handleSearchInConversation = () => {
@@ -87,33 +37,11 @@ export default function ActionsSection({
     toast.success('Add participants functionality coming soon!');
   };
 
-  // Handle delete conversation with admin check
+  // Simple delete conversation - no role checks
   const handleDeleteConversation = async () => {
     if (!channelId) {
       toast.error('Cannot delete conversation - missing channel ID');
-      return;
-    }
-
-    // Check if user is admin
-    if (loadingRole) {
-      toast.error('Please wait while we verify your permissions...');
-      return;
-    }
-
-    if (userRole !== 'admin') {
-      // Show message with conversation ID for non-admins
-      toast.error(`Only admins can delete conversations. Ask an admin to delete conversation ID: ${channelId}`, {
-        duration: 6000, // Show for 6 seconds
-      });
-      
-      // Also copy to clipboard for convenience
-      try {
-        await navigator.clipboard.writeText(channelId);
-        toast.success('Conversation ID copied to clipboard', { duration: 3000 });
-      } catch (clipboardError) {
-        console.error('Failed to copy to clipboard:', clipboardError);
-      }
-      
+      console.error('[ActionsSection] No channelId provided');
       return;
     }
 
@@ -128,7 +56,7 @@ export default function ActionsSection({
 
     try {
       setIsDeleting(true);
-      console.log(`[ActionsSection] Admin deleting conversation: ${channelId}`);
+      console.log(`[ActionsSection] Deleting conversation: ${channelId}`);
       
       const response = await fetch(`/api/messages/${channelId}/delete`, {
         method: 'DELETE',
@@ -138,26 +66,29 @@ export default function ActionsSection({
         credentials: 'include',
       });
 
+      console.log(`[ActionsSection] Delete response status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`[ActionsSection] Delete API error: ${response.status} - ${errorText}`);
         
-        let errorMessage = 'Failed to delete conversation';
+        let errorMessage = `Failed to delete conversation (${response.status})`;
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.error || errorMessage;
         } catch (parseError) {
-          errorMessage = `Server error: ${response.status}`;
+          errorMessage = `Server error: ${response.status} - ${errorText}`;
         }
         
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log('[ActionsSection] Delete response:', data);
+      console.log('[ActionsSection] Delete response data:', data);
 
       if (data.success) {
         toast.success(`${actionPast} successfully`);
+        console.log('[ActionsSection] Delete successful, closing sidebar and notifying parent');
         
         // Close the sidebar first
         onClose();
@@ -167,26 +98,16 @@ export default function ActionsSection({
           onConversationDeleted(channelId);
         }
       } else {
-        throw new Error(data.error || 'Failed to delete conversation');
+        throw new Error(data.error || 'Failed to delete conversation - no success flag');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete conversation';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete conversation - unknown error';
       console.error('[ActionsSection] Delete conversation error:', error);
       toast.error(`Delete failed: ${errorMessage}`);
     } finally {
       setIsDeleting(false);
     }
   };
-
-  // Determine button text and if it should be disabled
-  const getDeleteButtonText = () => {
-    if (isDeleting) return 'Deleting...';
-    if (loadingRole) return 'Checking permissions...';
-    if (userRole !== 'admin') return `Ask admin to delete`;
-    return isGroup ? 'Leave group' : 'Delete conversation';
-  };
-
-  const isDeleteDisabled = isDeleting || loadingRole;
 
   return (
     <div style={{
@@ -292,7 +213,7 @@ export default function ActionsSection({
             )}
             <button 
               onClick={handleDeleteConversation}
-              disabled={isDeleteDisabled}
+              disabled={isDeleting}
               style={{
                 width: '100%',
                 padding: '8px 12px',
@@ -300,20 +221,20 @@ export default function ActionsSection({
                 borderRadius: 'var(--radius)',
                 background: 'transparent',
                 border: 'none',
-                color: userRole === 'admin' ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))',
-                cursor: isDeleteDisabled ? 'not-allowed' : 'pointer',
+                color: 'hsl(var(--destructive))',
+                cursor: isDeleting ? 'not-allowed' : 'pointer',
                 transition: 'background-color 0.2s ease',
                 fontSize: '13px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                opacity: isDeleteDisabled ? 0.6 : 1
+                opacity: isDeleting ? 0.6 : 1
               }}
-              onMouseEnter={(e) => !isDeleteDisabled && userRole === 'admin' && (e.currentTarget.style.backgroundColor = 'hsl(var(--destructive) / 0.1)')}
-              onMouseLeave={(e) => !isDeleteDisabled && (e.currentTarget.style.backgroundColor = 'transparent')}
+              onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'hsl(var(--destructive) / 0.1)')}
+              onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               <Trash2 size={14} />
-              {getDeleteButtonText()}
+              {isDeleting ? 'Deleting...' : (isGroup ? 'Leave group' : 'Delete conversation')}
             </button>
           </div>
         </div>

@@ -2,8 +2,8 @@
 'use client';
 
 import { ChevronDown, ChevronRight, Search, Bell, UserPlus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { useDeleteConversation } from '@/hooks/useDeleteConversation';
 
 interface ActionsSectionProps {
   isGroup: boolean;
@@ -22,7 +22,7 @@ export default function ActionsSection({
   onConversationDeleted,
   onClose
 }: ActionsSectionProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { deleteConversation, isDeleting } = useDeleteConversation();
   
   // Action handlers
   const handleSearchInConversation = () => {
@@ -37,7 +37,7 @@ export default function ActionsSection({
     toast.success('Add participants functionality coming soon!');
   };
 
-  // Simple delete conversation - no role checks
+  // Use the hook to delete conversation
   const handleDeleteConversation = async () => {
     if (!channelId) {
       toast.error('Cannot delete conversation - missing channel ID');
@@ -46,7 +46,6 @@ export default function ActionsSection({
     }
 
     const action = isGroup ? 'leave this group' : 'delete this conversation';
-    const actionPast = isGroup ? 'Left group' : 'Conversation deleted';
     
     const confirmed = window.confirm(
       `Are you sure you want to ${action}? This action cannot be undone and will delete all messages, attachments, and reactions.`
@@ -54,59 +53,22 @@ export default function ActionsSection({
     
     if (!confirmed) return;
 
-    try {
-      setIsDeleting(true);
-      console.log(`[ActionsSection] Deleting conversation: ${channelId}`);
+    console.log(`[ActionsSection] Using hook to delete conversation: ${channelId}`);
+    
+    const result = await deleteConversation(channelId);
+    
+    if (result.success) {
+      console.log('[ActionsSection] Delete successful via hook, closing sidebar and notifying parent');
       
-      const response = await fetch(`/api/messages/${channelId}/delete`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      console.log(`[ActionsSection] Delete response status: ${response.status}`);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[ActionsSection] Delete API error: ${response.status} - ${errorText}`);
-        
-        let errorMessage = `Failed to delete conversation (${response.status})`;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
-          errorMessage = `Server error: ${response.status} - ${errorText}`;
-        }
-        
-        throw new Error(errorMessage);
+      // Close the sidebar first
+      onClose();
+      
+      // Notify parent component about the deletion
+      if (onConversationDeleted) {
+        onConversationDeleted(channelId);
       }
-
-      const data = await response.json();
-      console.log('[ActionsSection] Delete response data:', data);
-
-      if (data.success) {
-        toast.success(`${actionPast} successfully`);
-        console.log('[ActionsSection] Delete successful, closing sidebar and notifying parent');
-        
-        // Close the sidebar first
-        onClose();
-        
-        // Notify parent component about the deletion
-        if (onConversationDeleted) {
-          onConversationDeleted(channelId);
-        }
-      } else {
-        throw new Error(data.error || 'Failed to delete conversation - no success flag');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete conversation - unknown error';
-      console.error('[ActionsSection] Delete conversation error:', error);
-      toast.error(`Delete failed: ${errorMessage}`);
-    } finally {
-      setIsDeleting(false);
     }
+    // Hook already handles error toasts, so no need to handle errors here
   };
 
   return (

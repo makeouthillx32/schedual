@@ -62,7 +62,7 @@ export default function ChatRightSidebar({
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+
   
   // Collapsible sections state
   const [sectionsCollapsed, setSectionsCollapsed] = useState({
@@ -217,14 +217,13 @@ export default function ChatRightSidebar({
   };
 
   // Toggle section collapse
+
   const toggleSection = (section: 'about' | 'actions' | 'media') => {
     setSectionsCollapsed(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
-
-  // Handle delete conversation
 
   // Determine if we should show as overlay (mobile/tablet) or sidebar (desktop)
   const shouldShowAsOverlay = isMobile || isTablet;

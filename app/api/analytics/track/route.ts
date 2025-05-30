@@ -1,4 +1,4 @@
-// app/api/analytics/track/route.ts
+// app/api/analytics/track/route.ts - DEBUG VERSION WITH DETAILED ERRORS
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
@@ -79,12 +79,25 @@ function detectBot(userAgent: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 [TRACK] Starting analytics tracking request');
+  
   try {
     const supabase = await createClient();
     const payload: TrackingPayload = await request.json();
     
+    console.log('📝 [TRACK] Payload received:', {
+      sessionId: payload.sessionId,
+      pageUrl: payload.pageUrl,
+      userAgent: payload.userAgent?.substring(0, 50) + '...',
+    });
+    
     // Validate required fields
     if (!payload.sessionId || !payload.pageUrl || !payload.userAgent) {
+      console.error('❌ [TRACK] Missing required fields:', { 
+        hasSessionId: !!payload.sessionId,
+        hasPageUrl: !!payload.pageUrl,
+        hasUserAgent: !!payload.userAgent
+      });
       return NextResponse.json({ 
         error: 'Missing required fields: sessionId, pageUrl, userAgent' 
       }, { status: 400 });
@@ -96,29 +109,48 @@ export async function POST(request: NextRequest) {
                      request.ip ||
                      '127.0.0.1';
     
+    console.log('🌐 [TRACK] Client IP:', clientIP);
+    
     // Extract device and browser information
     const deviceType = detectDeviceType(payload.userAgent);
     const browser = extractBrowser(payload.userAgent);
     const os = extractOS(payload.userAgent);
     const isBot = detectBot(payload.userAgent);
     
-    // First, find or create the user
+    console.log('🖥️ [TRACK] Device info:', { deviceType, browser, os, isBot });
+    
+    // STEP 1: Find or create user
     let userId: string;
     
-    // Check if user exists by session_id
-    const { data: existingUser, error: userSelectError } = await supabase
+    console.log('👤 [TRACK] Looking for existing user with session:', payload.sessionId);
+    
+    const { data: existingUsers, error: userSelectError } = await supabase
       .from('analytics_users')
-      .select('id')
+      .select('id, created_at')
       .eq('session_id', payload.sessionId)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(5); // Get up to 5 to see if there are duplicates
     
     if (userSelectError) {
-      console.error('Error selecting user:', userSelectError);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      console.error('❌ [TRACK] Error selecting user:', userSelectError);
+      return NextResponse.json({ 
+        error: 'Database error - user lookup failed',
+        details: userSelectError.message 
+      }, { status: 500 });
     }
     
-    if (existingUser) {
-      userId = existingUser.id;
+    console.log(`📊 [TRACK] Found ${existingUsers?.length || 0} users with this session ID`);
+    if (existingUsers && existingUsers.length > 1) {
+      console.warn('⚠️ [TRACK] Multiple users found for same session - this indicates duplicate user issue');
+      existingUsers.forEach((user, index) => {
+        console.log(`  User ${index + 1}: ID=${user.id}, Created=${user.created_at}`);
+      });
+    }
+    
+    if (existingUsers && existingUsers.length > 0) {
+      // Use the most recent user record
+      userId = existingUsers[0].id;
+      console.log('✅ [TRACK] Using existing user:', userId);
       
       // Update user's last_seen and other info
       const { error: updateError } = await supabase
@@ -134,9 +166,13 @@ export async function POST(request: NextRequest) {
         .eq('id', userId);
       
       if (updateError) {
-        console.error('Error updating user:', updateError);
+        console.error('⚠️ [TRACK] Error updating user (non-critical):', updateError);
+      } else {
+        console.log('✅ [TRACK] User updated successfully');
       }
     } else {
+      console.log('👤 [TRACK] Creating new user');
+      
       // Create new user
       const { data: newUser, error: userError } = await supabase
         .from('analytics_users')
@@ -157,94 +193,126 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (userError) {
-        console.error('Error creating user:', userError);
-        return NextResponse.json({ error: 'Failed to create user record' }, { status: 500 });
+        console.error('❌ [TRACK] Error creating user:', userError);
+        return NextResponse.json({ 
+          error: 'Database error - user creation failed',
+          details: userError.message 
+        }, { status: 500 });
       }
       
       userId = newUser.id;
+      console.log('✅ [TRACK] New user created:', userId);
     }
     
-    // Create or update session
-    const { data: existingSession, error: sessionSelectError } = await supabase
+    // STEP 2: Handle session
+    console.log('📅 [TRACK] Looking for existing session');
+    
+    const { data: existingSessions, error: sessionSelectError } = await supabase
       .from('analytics_sessions')
-      .select('id, entry_page')
+      .select('id, entry_page, created_at')
       .eq('session_id', payload.sessionId)
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(5); // Get up to 5 to see if there are duplicates
     
     if (sessionSelectError) {
-      console.error('Error selecting session:', sessionSelectError);
-    }
-    
-    if (!existingSession) {
-      // Create new session
-      const { error: sessionError } = await supabase
-        .from('analytics_sessions')
-        .insert({
-          session_id: payload.sessionId,
-          user_id: userId,
-          entry_page: payload.pageUrl,
-          device_type: deviceType,
-          browser: browser,
-          os: os,
-          referrer: payload.referrer || null,
-          utm_source: payload.utmParams?.source || null,
-          utm_medium: payload.utmParams?.medium || null,
-          utm_campaign: payload.utmParams?.campaign || null,
-        });
-      
-      if (sessionError) {
-        console.error('Error creating session:', sessionError);
-        // Don't fail the request, sessions are updated via triggers
-      }
+      console.error('❌ [TRACK] Error selecting session:', sessionSelectError);
+      // Don't fail the request for session errors
     } else {
-      // Update existing session end time and exit page
-      const { error: updateError } = await supabase
-        .from('analytics_sessions')
-        .update({
-          end_time: new Date().toISOString(),
-          exit_page: payload.pageUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('session_id', payload.sessionId);
+      console.log(`📊 [TRACK] Found ${existingSessions?.length || 0} sessions with this session ID`);
       
-      if (updateError) {
-        console.error('Error updating session:', updateError);
+      if (!existingSessions || existingSessions.length === 0) {
+        console.log('📅 [TRACK] Creating new session');
+        
+        const { error: sessionError } = await supabase
+          .from('analytics_sessions')
+          .insert({
+            session_id: payload.sessionId,
+            user_id: userId,
+            entry_page: payload.pageUrl,
+            device_type: deviceType,
+            browser: browser,
+            os: os,
+            referrer: payload.referrer || null,
+            utm_source: payload.utmParams?.source || null,
+            utm_medium: payload.utmParams?.medium || null,
+            utm_campaign: payload.utmParams?.campaign || null,
+          });
+        
+        if (sessionError) {
+          console.error('⚠️ [TRACK] Error creating session (non-critical):', sessionError);
+        } else {
+          console.log('✅ [TRACK] New session created');
+        }
+      } else {
+        console.log('✅ [TRACK] Using existing session:', existingSessions[0].id);
+        
+        // Update existing session
+        const existingSession = existingSessions[0];
+        const { error: updateError } = await supabase
+          .from('analytics_sessions')
+          .update({
+            end_time: new Date().toISOString(),
+            exit_page: payload.pageUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSession.id);
+        
+        if (updateError) {
+          console.error('⚠️ [TRACK] Error updating session (non-critical):', updateError);
+        } else {
+          console.log('✅ [TRACK] Session updated');
+        }
       }
     }
     
-    // Create page view record
+    // STEP 3: Create page view record
+    console.log('📄 [TRACK] Creating page view record');
+    
+    const pageViewData = {
+      user_id: userId,
+      session_id: payload.sessionId,
+      page_url: payload.pageUrl,
+      page_title: payload.pageTitle || null,
+      referrer: payload.referrer || null,
+      utm_source: payload.utmParams?.source || null,
+      utm_medium: payload.utmParams?.medium || null,
+      utm_campaign: payload.utmParams?.campaign || null,
+      utm_term: payload.utmParams?.term || null,
+      utm_content: payload.utmParams?.content || null,
+      load_time: payload.loadTime || null,
+    };
+    
+    console.log('📝 [TRACK] Page view data:', pageViewData);
+    
     const { error: pageViewError } = await supabase
       .from('analytics_page_views')
-      .insert({
-        user_id: userId,
-        session_id: payload.sessionId,
-        page_url: payload.pageUrl,
-        page_title: payload.pageTitle || null,
-        referrer: payload.referrer || null,
-        utm_source: payload.utmParams?.source || null,
-        utm_medium: payload.utmParams?.medium || null,
-        utm_campaign: payload.utmParams?.campaign || null,
-        utm_term: payload.utmParams?.term || null,
-        utm_content: payload.utmParams?.content || null,
-        load_time: payload.loadTime || null,
-      });
+      .insert(pageViewData);
     
     if (pageViewError) {
-      console.error('Error creating page view:', pageViewError);
-      return NextResponse.json({ error: 'Failed to track page view' }, { status: 500 });
+      console.error('❌ [TRACK] Error creating page view:', pageViewError);
+      return NextResponse.json({ 
+        error: 'Database error - page view creation failed',
+        details: pageViewError.message 
+      }, { status: 500 });
     }
     
+    console.log('✅ [TRACK] Page view created successfully');
+    
     // Return success
-    return NextResponse.json({ 
+    const response = { 
       success: true, 
       userId,
       deviceType,
       browser,
       os
-    });
+    };
+    
+    console.log('🎉 [TRACK] Analytics tracking completed successfully:', response);
+    
+    return NextResponse.json(response);
     
   } catch (error) {
-    console.error('Analytics tracking error:', error);
+    console.error('💥 [TRACK] Unexpected error in analytics tracking:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'

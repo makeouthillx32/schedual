@@ -1,4 +1,4 @@
-// app/api/analytics/events/route.ts
+// app/api/analytics/event/route.ts - FIXED FOR DUPLICATE USERS
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
@@ -16,7 +16,16 @@ interface EventPayload {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const payload: EventPayload = await request.json();
+    
+    // Parse the request body
+    let payload: EventPayload;
+    try {
+      payload = await request.json();
+    } catch (parseError) {
+      return NextResponse.json({ 
+        error: 'Invalid JSON in request body' 
+      }, { status: 400 });
+    }
     
     // Validate required fields
     if (!payload.sessionId || !payload.eventName) {
@@ -25,55 +34,60 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Find the user by session_id
-    const { data: user, error: userError } = await supabase
+    // Validate field lengths
+    if (payload.eventName.length > 100) {
+      return NextResponse.json({ 
+        error: 'Event name too long (max 100 characters)' 
+      }, { status: 400 });
+    }
+    
+    // ✅ FIXED: Find user by session_id but handle duplicates
+    const { data: users, error: userError } = await supabase
       .from('analytics_users')
       .select('id')
       .eq('session_id', payload.sessionId)
-      .maybeSingle();
+      .order('created_at', { ascending: false }) // Get the most recent user first
+      .limit(1); // Only get one user
     
     if (userError) {
-      console.error('Error finding user for events:', userError);
+      console.error('Database error finding user:', userError);
       return NextResponse.json({ 
-        error: 'Database error while finding user',
+        error: 'Database error',
         details: userError.message 
       }, { status: 500 });
     }
     
-    if (!user) {
+    if (!users || users.length === 0) {
       return NextResponse.json({ 
-        error: 'Session not found. Please track a page view first to create the session.' 
+        error: 'Session not found. Make sure to call /api/analytics/track first.' 
       }, { status: 404 });
     }
     
-    // Validate event value if provided
-    if (payload.eventValue !== undefined && (isNaN(payload.eventValue) || payload.eventValue < 0)) {
-      return NextResponse.json({ 
-        error: 'Event value must be a positive number' 
-      }, { status: 400 });
-    }
+    // Use the first (most recent) user record
+    const user = users[0];
     
-    // Sanitize metadata - ensure it's valid JSON
-    let sanitizedMetadata = null;
-    if (payload.metadata) {
-      try {
-        // Ensure metadata can be serialized to JSON and limit size
-        const metadataString = JSON.stringify(payload.metadata);
-        if (metadataString.length > 10000) { // 10KB limit
-          return NextResponse.json({ 
-            error: 'Metadata too large. Maximum 10KB allowed.' 
-          }, { status: 400 });
-        }
-        sanitizedMetadata = JSON.parse(metadataString);
-      } catch (error) {
-        console.error('Invalid metadata format:', error);
+    // Validate event value
+    if (payload.eventValue !== undefined) {
+      if (typeof payload.eventValue !== 'number' || isNaN(payload.eventValue)) {
         return NextResponse.json({ 
-          error: 'Invalid metadata format. Must be valid JSON.' 
+          error: 'Event value must be a number' 
         }, { status: 400 });
       }
     }
     
-    // Create event record
+    // Process metadata
+    let sanitizedMetadata = null;
+    if (payload.metadata && Object.keys(payload.metadata).length > 0) {
+      try {
+        sanitizedMetadata = JSON.parse(JSON.stringify(payload.metadata));
+      } catch (error) {
+        return NextResponse.json({ 
+          error: 'Invalid metadata format' 
+        }, { status: 400 });
+      }
+    }
+    
+    // Insert the event
     const { data: eventData, error: eventError } = await supabase
       .from('analytics_events')
       .insert({
@@ -91,9 +105,9 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (eventError) {
-      console.error('Error creating event:', eventError);
+      console.error('Database error creating event:', eventError);
       return NextResponse.json({ 
-        error: 'Failed to track event',
+        error: 'Failed to save event',
         details: eventError.message 
       }, { status: 500 });
     }
@@ -102,17 +116,11 @@ export async function POST(request: NextRequest) {
       success: true,
       eventId: eventData.id,
       timestamp: eventData.created_at,
-      event: {
-        name: payload.eventName,
-        category: payload.eventCategory,
-        action: payload.eventAction,
-        label: payload.eventLabel,
-        value: payload.eventValue
-      }
+      userId: user.id
     });
     
   } catch (error) {
-    console.error('Event tracking error:', error);
+    console.error('Unexpected error in event tracking:', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -120,79 +128,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET endpoint for testing and retrieving events
 export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { searchParams } = new URL(request.url);
-    
-    const sessionId = searchParams.get('sessionId');
-    const eventName = searchParams.get('eventName');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    
-    if (sessionId || eventName) {
-      // Return filtered events
-      let query = supabase
-        .from('analytics_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      
-      if (sessionId) {
-        query = query.eq('session_id', sessionId);
-      }
-      
-      if (eventName) {
-        query = query.eq('event_name', eventName);
-      }
-      
-      const { data: events, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching events:', error);
-        return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
-      }
-      
-      return NextResponse.json(events);
+  return NextResponse.json({
+    message: 'Analytics event tracking endpoint',
+    status: 'active',
+    method: 'POST',
+    requiredFields: ['sessionId', 'eventName'],
+    optionalFields: ['eventCategory', 'eventAction', 'eventLabel', 'eventValue', 'pageUrl', 'metadata'],
+    example: {
+      sessionId: 'your-session-id',
+      eventName: 'button_click',
+      eventCategory: 'engagement',
+      eventAction: 'click',
+      eventLabel: 'signup_button',
+      eventValue: 1,
+      pageUrl: '/signup',
+      metadata: { buttonColor: 'blue', position: 'header' }
     }
-    
-    // Return API documentation
-    return NextResponse.json({
-      message: 'Analytics events tracking endpoint is active',
-      endpoints: {
-        POST: 'Track custom events',
-        GET: 'Retrieve events (add ?sessionId=xxx or ?eventName=xxx to filter)',
-      },
-      example: {
-        sessionId: 'session-123',
-        eventName: 'button_click',
-        eventCategory: 'engagement',
-        eventAction: 'click',
-        eventLabel: 'header_cta',
-        eventValue: 1,
-        pageUrl: '/dashboard',
-        metadata: {
-          buttonText: 'Get Started',
-          position: 'header',
-          timestamp: Date.now()
-        }
-      },
-      commonEvents: [
-        'page_view',
-        'button_click', 
-        'form_submit',
-        'download',
-        'video_play',
-        'search',
-        'purchase',
-        'signup'
-      ]
-    });
-    
-  } catch (error) {
-    console.error('Events GET error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error' 
-    }, { status: 500 });
-  }
+  });
 }

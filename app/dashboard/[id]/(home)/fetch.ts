@@ -2,13 +2,14 @@ import { createClient } from '@/utils/supabase/server';
 
 export async function getOverviewData() {
   try {
-    const usersData = await getUsersData();
+    const [membersData, usersData, viewsData] = await Promise.all([
+      getMembersData(),
+      getUsersData(), 
+      getViewsData()
+    ]);
     
     return {
-      views: {
-        value: 0,
-        growthRate: 0,
-      },
+      views: viewsData,
       profit: {
         value: 0,
         growthRate: 0,
@@ -17,6 +18,7 @@ export async function getOverviewData() {
         value: 0,
         growthRate: 0,
       },
+      members: membersData,
       users: usersData,
     };
   } catch (error) {
@@ -25,21 +27,23 @@ export async function getOverviewData() {
       views: { value: 0, growthRate: 0 },
       profit: { value: 0, growthRate: 0 },
       products: { value: 0, growthRate: 0 },
+      members: { value: 0, growthRate: 0 },
       users: { value: 0, growthRate: 0 },
     };
   }
 }
 
-async function getUsersData() {
+// Members = Registered platform users (from profiles table)
+async function getMembersData() {
   try {
     const supabase = await createClient();
     
-    const { count: totalUsers, error: countError } = await supabase
+    const { count: totalMembers, error: countError } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true });
 
     if (countError) {
-      console.error('Error fetching user count:', countError);
+      console.error('Error fetching members count:', countError);
       return { value: 0, growthRate: 0 };
     }
 
@@ -47,14 +51,66 @@ async function getUsersData() {
     const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     
-    const { count: thisMonthUsers } = await supabase
+    const { count: thisMonthMembers } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', firstDayThisMonth.toISOString());
 
-    const { count: lastMonthUsers } = await supabase
+    const { count: lastMonthMembers } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayLastMonth.toISOString())
+      .lt('created_at', firstDayThisMonth.toISOString());
+
+    let growthRate = 0;
+    if (lastMonthMembers && lastMonthMembers > 0) {
+      growthRate = ((thisMonthMembers || 0) - lastMonthMembers) / lastMonthMembers;
+    } else if (thisMonthMembers && thisMonthMembers > 0) {
+      growthRate = 1;
+    }
+
+    return {
+      value: totalMembers || 0,
+      growthRate: Math.round(growthRate * 10000) / 100,
+    };
+  } catch (error) {
+    console.error('Error fetching members data:', error);
+    return { value: 0, growthRate: 0 };
+  }
+}
+
+// Users = Analytics users (unique visitors from analytics_users table)
+async function getUsersData() {
+  try {
+    const supabase = await createClient();
+    
+    // Get total unique analytics users
+    const { count: totalUsers, error: countError } = await supabase
+      .from('analytics_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_bot', false); // Exclude bots
+
+    if (countError) {
+      console.error('Error fetching analytics users count:', countError);
+      return { value: 0, growthRate: 0 };
+    }
+
+    const now = new Date();
+    const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    // This month's new users
+    const { count: thisMonthUsers } = await supabase
+      .from('analytics_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_bot', false)
+      .gte('created_at', firstDayThisMonth.toISOString());
+
+    // Last month's new users
+    const { count: lastMonthUsers } = await supabase
+      .from('analytics_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_bot', false)
       .gte('created_at', firstDayLastMonth.toISOString())
       .lt('created_at', firstDayThisMonth.toISOString());
 
@@ -70,7 +126,56 @@ async function getUsersData() {
       growthRate: Math.round(growthRate * 10000) / 100,
     };
   } catch (error) {
-    console.error('Error fetching users data:', error);
+    console.error('Error fetching analytics users data:', error);
+    return { value: 0, growthRate: 0 };
+  }
+}
+
+// Views = Page views from analytics_page_views table
+async function getViewsData() {
+  try {
+    const supabase = await createClient();
+    
+    // Get total page views
+    const { count: totalViews, error: countError } = await supabase
+      .from('analytics_page_views')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      console.error('Error fetching page views count:', countError);
+      return { value: 0, growthRate: 0 };
+    }
+
+    const now = new Date();
+    const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    
+    // This month's page views
+    const { count: thisMonthViews } = await supabase
+      .from('analytics_page_views')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayThisMonth.toISOString());
+
+    // Last month's page views
+    const { count: lastMonthViews } = await supabase
+      .from('analytics_page_views')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayLastMonth.toISOString())
+      .lt('created_at', firstDayThisMonth.toISOString());
+
+    let growthRate = 0;
+    if (lastMonthViews && lastMonthViews > 0) {
+      growthRate = ((thisMonthViews || 0) - lastMonthViews) / lastMonthViews;
+    } else if (thisMonthViews && thisMonthViews > 0) {
+      growthRate = 1;
+    }
+
+    return {
+      value: totalViews || 0,
+      growthRate: Math.round(growthRate * 10000) / 100,
+    };
+  } catch (error) {
+    console.error('Error fetching page views data:', error);
     return { value: 0, growthRate: 0 };
   }
 }

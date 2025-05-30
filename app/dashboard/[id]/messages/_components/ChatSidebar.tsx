@@ -181,19 +181,27 @@ export default function ChatSidebar({
     onSelectChat(chat);
   };
 
+  // RESTORED: Simple new conversation handler (how it used to work)
   const handleNewConversation = (conversation: Conversation) => {
+    console.log('[ChatSidebar] Adding new conversation:', conversation);
+    
     // Add new conversation to the list and select it
     setConversations(prev => [conversation, ...prev]);
     onSelectChat(conversation);
+    
+    // Force a refresh to ensure we have the latest data from the server
+    setTimeout(() => {
+      fetchConversations(true);
+    }, 500);
   };
 
-  // Handle conversation deletion
+  // NEW: Handle conversation deletion (this is the fix for deletion)
   const handleConversationDeleted = (channelId: string) => {
     console.log('[ChatSidebar] Removing deleted conversation:', channelId);
     
     setConversations(prev => {
       const updated = prev.filter(conv => conv.channel_id !== channelId);
-      // Update cache
+      // Update cache immediately
       storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
       return updated;
     });

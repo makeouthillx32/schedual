@@ -5,6 +5,7 @@ import { Image, Pencil } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRealtime } from '@/hooks/useRealtimeInsert';
+import { useSharedMedia } from '@/hooks/useSharedMedia';
 import { toast } from 'react-hot-toast';
 import ChatRightSidebarHeader from './ChatRightSidebarHeader';
 import ChatInfoSection from './ChatInfoSection';
@@ -19,22 +20,6 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-// Avatar colors - moved here from page
-const AVATAR_COLORS = {
-  AL: 'bg-blue-500',
-  JA: 'bg-orange-500',
-  JE: 'bg-green-500',
-};
-
-// Chart colors for deterministic avatar generation
-const CHART_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))'
-];
 
 interface Participant {
   user_id: string;
@@ -53,16 +38,6 @@ interface SelectedChat {
   last_message_at: string | null;
 }
 
-interface SharedMedia {
-  id: string;
-  url: string;
-  type: 'image' | 'file';
-  name: string;
-  size: number;
-  created_at: string;
-  sender_name: string;
-}
-
 interface Props {
   selectedChat: SelectedChat;
   currentUserId?: string | null;
@@ -78,19 +53,23 @@ export default function ChatRightSidebar({
 }: Props) {
   const [isOpen, setIsOpen] = useState(true);
   const [participants, setParticipants] = useState(selectedChat.participants);
-  const [sharedMedia, setSharedMedia] = useState<SharedMedia[]>([]);
-  const [loadingMedia, setLoadingMedia] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
   // Collapsible sections state
   const [sectionsCollapsed, setSectionsCollapsed] = useState({
     about: false,
-    actions: true, // Start collapsed to save space
+    actions: true,
     media: false
   });
   
   const isMounted = useRef(true);
+
+  // Use the shared media hook (same pattern as useMessages)
+  const { sharedMedia, loading: loadingMedia, error: mediaError } = useSharedMedia({
+    channelId: selectedChat.id,
+    enabled: !!selectedChat.id
+  });
 
   // Compute values from selectedChat
   const resolvedName = resolveChatDisplayName(selectedChat, currentUserId);
@@ -105,13 +84,6 @@ export default function ChatRightSidebar({
     email: p.email,
     online: p.online,
   }));
-
-  // Generate avatar color deterministically
-  const getAvatarColor = (name: string) => {
-    const hashValue = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const colorIndex = hashValue % CHART_COLORS.length;
-    return CHART_COLORS[colorIndex];
-  };
 
   // Check screen size for responsive behavior
   useEffect(() => {
@@ -136,13 +108,6 @@ export default function ChatRightSidebar({
     }
   }, [selectedChat.participants]);
   
-  // Fetch shared media when component mounts or channelId changes
-  useEffect(() => {
-    if (channelId) {
-      fetchSharedMedia();
-    }
-  }, [channelId]);
-  
   useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -155,12 +120,12 @@ export default function ChatRightSidebar({
     table: 'presence',
     filter: channelId ? `channel_id=eq.${channelId}` : undefined,
     event: '*',
+    enabled: !!channelId,
     onEvent: ({ new: newState, old: oldState, eventType }) => {
       if (!isMounted.current || !channelId) return;
       
       console.log(`[RightSidebar] Presence event: ${eventType}`, newState);
       
-      // Handle presence updates (if presence system exists)
       if (eventType === 'INSERT' || eventType === 'UPDATE') {
         setParticipants(prev => {
           return prev.map(p => {
@@ -177,85 +142,6 @@ export default function ChatRightSidebar({
     }
   });
 
-  // Fetch shared media from messages
-  const fetchSharedMedia = async () => {
-    if (!channelId) return;
-    
-    try {
-      setLoadingMedia(true);
-      console.log(`[RightSidebar] Fetching shared media for channel: ${channelId}`);
-      
-      // Get messages with attachments and images
-      const { data: messages, error } = await supabase
-        .from('messages')
-        .select(`
-          id,
-          image,
-          created_at,
-          sender:profiles!messages_sender_id_fkey(display_name),
-          message_attachments (
-            id,
-            file_url,
-            file_type,
-            file_name,
-            file_size
-          )
-        `)
-        .eq('channel_id', channelId)
-        .or('image.not.is.null,message_attachments.file_url.not.is.null')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('[RightSidebar] Error fetching shared media:', error);
-        return;
-      }
-
-      if (!isMounted.current) return;
-
-      const mediaItems: SharedMedia[] = [];
-      
-      messages?.forEach(message => {
-        // Add images from message.image field
-        if (message.image) {
-          mediaItems.push({
-            id: `image-${message.id}`,
-            url: message.image,
-            type: 'image',
-            name: 'Image',
-            size: 0, // Size not available for direct images
-            created_at: message.created_at,
-            sender_name: message.sender?.display_name || 'Unknown'
-          });
-        }
-        
-        // Add attachments
-        message.message_attachments?.forEach(attachment => {
-          mediaItems.push({
-            id: attachment.id,
-            url: attachment.file_url,
-            type: attachment.file_type?.startsWith('image/') ? 'image' : 'file',
-            name: attachment.file_name || 'File',
-            size: attachment.file_size || 0,
-            created_at: message.created_at,
-            sender_name: message.sender?.display_name || 'Unknown'
-          });
-        });
-      });
-      
-      // Sort by date (newest first)
-      mediaItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
-      setSharedMedia(mediaItems);
-      console.log(`[RightSidebar] Loaded ${mediaItems.length} shared media items`);
-      
-    } catch (err) {
-      console.error('[RightSidebar] Error fetching shared media:', err);
-    } finally {
-      setLoadingMedia(false);
-    }
-  };
-
   // Toggle section collapse
   const toggleSection = (section: 'about' | 'actions' | 'media') => {
     setSectionsCollapsed(prev => ({
@@ -263,6 +149,23 @@ export default function ChatRightSidebar({
       [section]: !prev[section]
     }));
   };
+
+  // Show error if media loading failed
+  useEffect(() => {
+    if (mediaError) {
+      console.error('[RightSidebar] Media loading error:', mediaError);
+      // Don't show toast for media errors - not critical
+    }
+  }, [mediaError]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[RightSidebar] Media state:', {
+      mediaCount: sharedMedia.length,
+      loading: loadingMedia,
+      error: mediaError
+    });
+  }, [sharedMedia.length, loadingMedia, mediaError]);
 
   // Determine if we should show as overlay (mobile/tablet) or sidebar (desktop)
   const shouldShowAsOverlay = isMobile || isTablet;

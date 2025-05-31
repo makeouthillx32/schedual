@@ -38,7 +38,7 @@ interface Message {
 interface ChatMessagesProps {
   messages: Message[];
   currentUserId: string;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>; // Fixed type to allow null
   avatarColors: Record<string, string>;
   onMessageDelete?: (messageId: string | number) => void;
 }

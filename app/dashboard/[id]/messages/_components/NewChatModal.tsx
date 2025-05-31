@@ -16,10 +16,10 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// FIXED: Match your actual API response
 interface User {
   id: string;
   display_name: string | null;
+  email?: string;
   avatar_url?: string;
 }
 
@@ -45,6 +45,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
   // UI state
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
   // Internal state
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -69,23 +70,24 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     };
   }, [isOpen]);
 
-  // Initialize modal data
+  // Initialize modal data - SIMPLIFIED
   const initializeModal = async () => {
     try {
-      console.log('[NewChatModal] Initializing modal...');
+      setError(null);
       
-      // Get current user
+      // Get current user (simplified - no extra checks since user is already in dashboard)
       const userId = await getCurrentUser();
-      if (!isMounted.current || !userId) {
-        console.log('[NewChatModal] No user found');
-        setError('Please sign in to start a chat');
+      if (!isMounted.current) return;
+      
+      if (!userId) {
+        setError('Please refresh the page and try again');
         return;
       }
-
-      console.log('[NewChatModal] Current user:', userId);
-      setCurrentUserId(userId);
       
-      // Load users for search
+      setCurrentUserId(userId);
+      console.log('[NewChatModal] Current user:', userId);
+      
+      // Load users
       await loadAllUsers(userId);
       
       // Focus search input
@@ -97,61 +99,72 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
       
     } catch (err) {
       console.error('[NewChatModal] Error initializing:', err);
-      setError('Failed to initialize chat creation');
+      setError('Failed to initialize. Please try again.');
     }
   };
 
-  // Get current user ID
+  // Get current user ID - SIMPLIFIED
   const getCurrentUser = async (): Promise<string | null> => {
     try {
-      // Check cache first
+      // First try cache
       const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER) as { id?: string } | null;
       if (cachedUser?.id) {
+        console.log('[NewChatModal] Using cached user:', cachedUser.id);
         return cachedUser.id;
       }
 
-      // Fallback to auth
-      const userId = await initializeAuth();
-      return userId;
+      // Fallback to direct auth check (no initializeAuth wrapper)
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('[NewChatModal] Auth error:', error);
+        return null;
+      }
+      
+      if (data.user?.id) {
+        console.log('[NewChatModal] Got user from auth:', data.user.id);
+        // Cache for next time
+        storage.set(CACHE_KEYS.CURRENT_USER, data.user, 3600);
+        return data.user.id;
+      }
+      
+      console.error('[NewChatModal] No user found in auth response');
+      return null;
     } catch (err) {
       console.error('[NewChatModal] Error getting current user:', err);
       return null;
     }
   };
 
-  // FIXED: Load all users and filter out current user
+  // Load all users - FIXED
   const loadAllUsers = async (currentUserId: string) => {
     if (hasLoadedUsers) return;
     
     try {
-      console.log('[NewChatModal] Fetching users from API...');
+      setIsLoadingUsers(true);
+      console.log('[NewChatModal] Loading users from API...');
       
       const response = await fetch('/api/get-all-users');
       if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.status}`);
+        throw new Error(`API returned ${response.status}: ${response.statusText}`);
       }
       
       const users: User[] = await response.json();
-      console.log('[NewChatModal] Received users:', users);
+      console.log('[NewChatModal] Received users:', users.length);
       
       if (!isMounted.current) return;
       
       // Filter out current user
       const filteredUsers = users.filter(user => user.id !== currentUserId);
-      console.log('[NewChatModal] Filtered users (excluding current):', filteredUsers);
+      console.log('[NewChatModal] Filtered users (excluding current):', filteredUsers.length);
       
       setAllUsers(filteredUsers);
       setHasLoadedUsers(true);
       
-      if (filteredUsers.length === 0) {
-        setError('No other users found. Users will appear here once they join.');
-      } else {
-        setError(null);
-      }
-      
     } catch (err) {
       console.error('[NewChatModal] Error loading users:', err);
-      setError('Failed to load users');
+      setError(`Failed to load users: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsLoadingUsers(false);
     }
   };
 
@@ -165,10 +178,13 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     setError(null);
     setIsCreating(false);
     setIsSearching(false);
+    setIsLoadingUsers(false);
     setHasLoadedUsers(false); // Reset so it loads fresh next time
+    setAllUsers([]);
+    setCurrentUserId(null);
   };
 
-  // FIXED: Handle search input - search by display_name only
+  // Handle search input
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -185,9 +201,11 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
           return false;
         }
         
-        // FIXED: Search only by display_name since that's what we have
+        // Search by name or email
         const name = (user.display_name || '').toLowerCase();
-        return name.includes(query);
+        const email = (user.email || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query);
       });
       
       setSearchResults(filtered.slice(0, 10)); // Limit results
@@ -210,7 +228,6 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
       if (!selectedUsers.some(selected => selected.id === user.id)) {
         setSelectedUsers(prev => [...prev, user]);
         setSearchQuery('');
-        setSearchResults([]);
       }
     }
   };
@@ -244,8 +261,6 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     try {
       setIsCreating(true);
       setError(null);
-      
-      console.log('[NewChatModal] Creating DM with user:', selectedUsers[0]);
       
       const response = await fetch('/api/messages/start-dm', {
         method: 'POST',
@@ -287,7 +302,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
             user_id: selectedUsers[0].id,
             display_name: selectedUsers[0].display_name || 'User',
             avatar_url: selectedUsers[0].avatar_url || '',
-            email: '', // No email from API
+            email: selectedUsers[0].email || '',
             online: false
           }
         ]
@@ -325,8 +340,6 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     try {
       setIsCreating(true);
       setError(null);
-      
-      console.log('[NewChatModal] Creating group with users:', selectedUsers);
       
       const response = await fetch('/api/messages/start-group', {
         method: 'POST',
@@ -369,7 +382,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
             user_id: user.id,
             display_name: user.display_name || 'User',
             avatar_url: user.avatar_url || '',
-            email: '', // No email from API
+            email: user.email || '',
             online: false
           }))
         ]
@@ -467,6 +480,18 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                 borderRadius: 'calc(var(--radius) - 2px)'
               }}
               onClick={() => setMode('dm')}
+              onMouseEnter={(e) => {
+                if (mode !== 'dm') {
+                  e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                  e.currentTarget.style.color = 'hsl(var(--accent-foreground))';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (mode !== 'dm') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+                }
+              }}
             >
               <UserCircle size={16} className="inline mr-2" />
               Direct Message
@@ -479,6 +504,18 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                 borderRadius: 'calc(var(--radius) - 2px)'
               }}
               onClick={() => setMode('group')}
+              onMouseEnter={(e) => {
+                if (mode !== 'group') {
+                  e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                  e.currentTarget.style.color = 'hsl(var(--accent-foreground))';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (mode !== 'group') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+                }
+              }}
             >
               <Users size={16} className="inline mr-2" />
               Group Chat
@@ -500,6 +537,14 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                   border: '1px solid hsl(var(--border))',
                   borderRadius: 'var(--radius)',
                   outline: 'none'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'hsl(var(--ring))';
+                  e.currentTarget.style.boxShadow = '0 0 0 2px hsl(var(--ring) / 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'hsl(var(--border))';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               />
             </div>
@@ -528,6 +573,12 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                         color: 'hsl(var(--primary))',
                         borderRadius: '50%'
                       }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(var(--primary) / 0.2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <X size={14} />
                     </button>
@@ -549,6 +600,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3"
+              disabled={isLoadingUsers}
               style={{
                 backgroundColor: 'hsl(var(--background))',
                 color: 'hsl(var(--foreground))',
@@ -556,34 +608,51 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                 borderRadius: 'var(--radius)',
                 outline: 'none'
               }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'hsl(var(--ring))';
+                e.currentTarget.style.boxShadow = '0 0 0 2px hsl(var(--ring) / 0.2)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'hsl(var(--border))';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             />
           </div>
 
           {/* Search Results */}
           <div className="max-h-60 overflow-y-auto mb-4">
-            {!hasLoadedUsers ? (
-              <div className="text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {isLoadingUsers ? (
+              <div className="text-center py-4" style={{
+                color: 'hsl(var(--muted-foreground))'
+              }}>
                 <div className="animate-pulse">Loading users...</div>
               </div>
             ) : allUsers.length === 0 ? (
-              <div className="text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                No other users found yet.
+              <div className="text-center py-4" style={{
+                color: 'hsl(var(--muted-foreground))'
+              }}>
+                No users available
               </div>
             ) : isSearching ? (
-              <div className="text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              <div className="text-center py-4" style={{
+                color: 'hsl(var(--muted-foreground))'
+              }}>
                 <div className="animate-pulse">Searching...</div>
               </div>
             ) : searchQuery && searchResults.length === 0 ? (
-              <div className="text-center py-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              <div className="text-center py-4" style={{
+                color: 'hsl(var(--muted-foreground))'
+              }}>
                 No users found for "{searchQuery}"
               </div>
             ) : searchQuery ? (
-              // Show search results
               searchResults.map(user => (
                 <div
                   key={user.id}
                   className="p-3 cursor-pointer flex items-center transition-colors"
-                  style={{ borderRadius: 'var(--radius)' }}
+                  style={{
+                    borderRadius: 'var(--radius)'
+                  }}
                   onClick={() => handleSelectUser(user)}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
@@ -596,43 +665,35 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                     backgroundColor: 'hsl(var(--muted))',
                     color: 'hsl(var(--muted-foreground))'
                   }}>
-                    {(user.display_name?.[0] || '?').toUpperCase()}
+                    {(user.display_name?.[0] || user.email?.[0] || '?').toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium" style={{ color: 'hsl(var(--card-foreground))' }}>
+                    <div className="font-medium" style={{
+                      color: 'hsl(var(--card-foreground))'
+                    }}>
                       {user.display_name || 'User'}
                     </div>
+                    {user.email && (
+                      <div className="text-sm" style={{
+                        color: 'hsl(var(--muted-foreground))'
+                      }}>
+                        {user.email}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
-              // Show all users when no search
-              allUsers.slice(0, 10).map(user => (
-                <div
-                  key={user.id}
-                  className="p-3 cursor-pointer flex items-center transition-colors"
-                  style={{ borderRadius: 'var(--radius)' }}
-                  onClick={() => handleSelectUser(user)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3" style={{
-                    backgroundColor: 'hsl(var(--muted))',
-                    color: 'hsl(var(--muted-foreground))'
-                  }}>
-                    {(user.display_name?.[0] || '?').toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium" style={{ color: 'hsl(var(--card-foreground))' }}>
-                      {user.display_name || 'User'}
-                    </div>
-                  </div>
+              <div className="text-center py-4" style={{
+                color: 'hsl(var(--muted-foreground))'
+              }}>
+                <div className="text-sm">
+                  Start typing to search for users
                 </div>
-              ))
+                <div className="text-xs mt-1">
+                  {allUsers.length} users available
+                </div>
+              </div>
             )}
           </div>
 
@@ -663,6 +724,18 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               borderRadius: 'var(--radius)',
               backgroundColor: 'transparent'
             }}
+            onMouseEnter={(e) => {
+              if (!isCreating) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                e.currentTarget.style.color = 'hsl(var(--accent-foreground))';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isCreating) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
+              }
+            }}
           >
             Cancel
           </button>
@@ -676,6 +749,16 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               borderRadius: 'var(--radius)',
               cursor: (!isValid || isCreating) ? 'not-allowed' : 'pointer',
               border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              if (isValid && !isCreating) {
+                e.currentTarget.style.opacity = '0.9';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isValid && !isCreating) {
+                e.currentTarget.style.opacity = '1';
+              }
             }}
           >
             {isCreating ? 'Creating...' : mode === 'dm' ? 'Start Chat' : 'Create Group'}

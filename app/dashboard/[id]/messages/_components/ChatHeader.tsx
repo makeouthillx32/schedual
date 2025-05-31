@@ -1,4 +1,3 @@
-// app/dashboard/[id]/messages/_components/ChatHeader.tsx
 'use client';
 
 import { Info, Phone, Video, ArrowLeft } from 'lucide-react';
@@ -17,14 +16,14 @@ interface Participant {
 interface SelectedChat {
   id: string;
   channel_id: string;
-  channel_name: string;
+  channel_name?: string;
   is_group: boolean;
   participants: Participant[];
-  last_message_at: string | null;
+  last_message_at?: string | null;
 }
 
 interface ChatHeaderProps {
-  selectedChat: SelectedChat;
+  selectedChat: SelectedChat | null;
   currentUserId: string | null;
   onInfoClick?: () => void;
   onBackClick?: () => void;
@@ -38,25 +37,30 @@ export default function ChatHeader({
   onBackClick,
   showBackButton = false
 }: ChatHeaderProps) {
-  // Compute all values internally from selectedChat
+  if (!selectedChat) {
+    return (
+      <header className="chat-header">
+        <div className="chat-header-title">
+          <h2 className="text-xl font-semibold truncate">No chat selected</h2>
+        </div>
+      </header>
+    );
+  }
+
   const resolvedName = resolveChatDisplayName(selectedChat, currentUserId);
-  const timestamp = selectedChat.last_message_at;
   const isGroup = selectedChat.is_group;
+  const timestamp = selectedChat.last_message_at || null;
 
   // Enhanced title logic for DM conversations
   let displayTitle = resolvedName;
-  
-  if (!isGroup && selectedChat.participants.length === 2) {
+
+  if (!isGroup && selectedChat.participants?.length === 2) {
     const otherParticipant = selectedChat.participants.find(p => p.user_id !== currentUserId);
-    const currentParticipant = selectedChat.participants.find(p => p.user_id === currentUserId);
-    
-    if (otherParticipant && currentParticipant) {
-      // For DMs, show a cleaner format
+    if (otherParticipant) {
       displayTitle = otherParticipant.display_name || 'Unknown User';
     }
   }
 
-  // Format timestamp
   const formatTimestamp = (ts: string | null) => {
     if (!ts) return null;
     try {
@@ -68,13 +72,10 @@ export default function ChatHeader({
 
   const formattedTimestamp = formatTimestamp(timestamp);
 
-  // Online status for DMs
   const getOnlineStatus = () => {
-    if (!isGroup && selectedChat.participants.length === 2) {
+    if (!isGroup && selectedChat.participants?.length === 2) {
       const otherParticipant = selectedChat.participants.find(p => p.user_id !== currentUserId);
-      if (otherParticipant) {
-        return otherParticipant.online ? 'Online' : 'Offline';
-      }
+      return otherParticipant?.online ? 'Online' : 'Offline';
     }
     return null;
   };
@@ -83,7 +84,6 @@ export default function ChatHeader({
 
   return (
     <header className="chat-header">
-      {/* Back button for mobile */}
       {showBackButton && onBackClick && (
         <button 
           onClick={onBackClick}
@@ -93,10 +93,9 @@ export default function ChatHeader({
           <ArrowLeft size={20} />
         </button>
       )}
-      
+
       <div className="chat-header-title">
         <h2 className="text-xl font-semibold truncate">{displayTitle}</h2>
-        {/* Show online status for DMs, or last message time for groups */}
         {onlineStatus ? (
           <p className={`text-sm truncate ${onlineStatus === 'Online' ? 'text-green-500' : 'text-gray-500'}`}>
             {onlineStatus}
@@ -107,28 +106,21 @@ export default function ChatHeader({
           </p>
         ) : null}
       </div>
-      
+
       <div className="chat-header-actions">
-        {/* Show call buttons only for DMs */}
         {!isGroup && (
           <>
             <button 
               className="hidden md:flex"
               title="Video call"
-              onClick={() => {
-                // TODO: Implement video call
-                console.log('Video call clicked');
-              }}
+              onClick={() => console.log('Video call clicked')}
             >
               <Video size={20} />
             </button>
             <button 
               className="hidden md:flex"
               title="Voice call"
-              onClick={() => {
-                // TODO: Implement voice call
-                console.log('Voice call clicked');
-              }}
+              onClick={() => console.log('Voice call clicked')}
             >
               <Phone size={20} />
             </button>

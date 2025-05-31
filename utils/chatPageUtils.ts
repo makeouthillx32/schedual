@@ -186,19 +186,28 @@ export function buildUserProfilesCacheFromMessages(messages: Message[]): Record<
   return cache;
 }
 
-// Resolve chat display name
 export function resolveChatDisplayName(
   selectedChat: any,
   currentUserId: string | null
 ): string {
-  return selectedChat.channel_name ||
-    (!selectedChat.is_group
-      ? selectedChat.participants
-          .filter((p: any) => p.user_id !== currentUserId)
-          .map((p: any) => p.display_name)
-          .join(', ')
-      : 'Unnamed Group');
+  if (!selectedChat) {
+    return 'No Chat Selected'; // ✅ Prevents the crash
+  }
+
+  if (selectedChat.channel_name) {
+    return selectedChat.channel_name;
+  }
+
+  if (!selectedChat.is_group && Array.isArray(selectedChat.participants)) {
+    return selectedChat.participants
+      .filter((p: any) => p.user_id !== currentUserId)
+      .map((p: any) => p.display_name || 'User')
+      .join(', ');
+  }
+
+  return 'Unnamed Group';
 }
+
 
 // Initialize Supabase auth
 export async function initializeAuth(): Promise<string | null> {

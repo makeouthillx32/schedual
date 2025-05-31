@@ -1,4 +1,4 @@
-// utils/messageServices.ts
+// services/messageServices.ts
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
 import { type Message, type UserProfile } from './chatPageUtils';
@@ -43,7 +43,6 @@ export class MessageManager {
       this.setMessages(prev => prev.filter(msg => msg.id !== messageId));
       toast.success('Message deleted');
       return true;
-
     } catch (err) {
       console.error('Delete error:', err);
       toast.error('Failed to delete message');
@@ -78,7 +77,7 @@ export const ClipboardService = {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         try {
           document.execCommand('copy');
           toast.success('Message copied to clipboard');
@@ -108,21 +107,21 @@ export class ContextMenuManager {
   ) {}
 
   handleContextMenu = (
-    e: React.MouseEvent, 
-    messageId: string | number, 
-    messageContent: string, 
+    e: React.MouseEvent,
+    messageId: string | number,
+    messageContent: string,
     senderId: string,
     currentUserId: string | null
   ) => {
     e.preventDefault();
-    
+
     const canDelete = senderId === currentUserId;
     const messageElement = e.currentTarget as HTMLElement;
-    
+
     // Find message attachments if any
     const message = this.messages.find(m => m.id === messageId);
     const attachments = message?.attachments || [];
-    
+
     this.setContextMenu({
       messageId,
       messageContent,
@@ -133,9 +132,9 @@ export class ContextMenuManager {
   };
 
   handleTouchStart = (
-    messageId: string | number, 
-    messageContent: string, 
-    senderId: string, 
+    messageId: string | number,
+    messageContent: string,
+    senderId: string,
     element: HTMLElement,
     currentUserId: string | null
   ) => {
@@ -143,11 +142,11 @@ export class ContextMenuManager {
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
-      
+
       const canDelete = senderId === currentUserId;
       const message = this.messages.find(m => m.id === messageId);
       const attachments = message?.attachments || [];
-      
+
       this.setContextMenu({
         messageId,
         messageContent,
@@ -184,7 +183,7 @@ export class UserProfileManager {
     if (this.userProfiles[userId]) {
       return this.userProfiles[userId];
     }
-    
+
     if (participants.length > 0) {
       const participant = participants.find(p => p.user_id === userId);
       if (participant) {
@@ -194,12 +193,12 @@ export class UserProfileManager {
           avatar: participant.avatar_url || participant.display_name?.charAt(0)?.toUpperCase() || 'U',
           email: participant.email || ''
         };
-        
+
         this.setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
       }
     }
-    
+
     return null;
   };
 
@@ -217,4 +216,20 @@ export class UserProfileManager {
       this.setUserProfiles(prev => ({ ...prev, ...profilesFromParticipants }));
     }
   };
+}
+
+// ─── Updated: Query the “channels” table (not “conversations”) ───
+export async function getConversationById(id: string) {
+  const { data, error } = await supabase
+    .from('channels')   // ← was “conversations”
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('[getConversationById] Error fetching conversation:', error);
+    return null;
+  }
+
+  return data;
 }

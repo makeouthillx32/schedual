@@ -1,4 +1,4 @@
-// app/dashboard/[id]/messages/_components/ChatSidebar.tsx
+// app/dashboard/[id]/messages/_components/ChatSidebar.tsx (FIXED)
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +8,8 @@ import NewChatModal from './NewChatModal';
 import ChatSidebarHeader from './ChatSidebarHeader';
 import ChatSidebarSearch from './ChatSidebarSearch';
 import ConversationList from './ConversationList';
-import { useRealtimeInsert, useRealtime } from '@/hooks/useRealtimeInsert';
+import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
+// REMOVED useRealtime import - causing issues
 import { storage, CACHE_KEYS } from '@/lib/cookieUtils';
 import './ChatSidebar.scss';
 
@@ -70,9 +71,12 @@ export default function ChatSidebar({
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        console.log('[ChatSidebar] 🔍 Initializing user...');
+        
         const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
         if (cachedUser?.id) {
           setCurrentUserId(cachedUser.id);
+          console.log('[ChatSidebar] ✅ Using cached user:', cachedUser.id);
           return;
         }
 
@@ -80,17 +84,17 @@ export default function ChatSidebar({
         if (!isMounted.current) return;
         
         if (error) {
-          console.error('[ChatSidebar] Auth error:', error);
+          console.error('[ChatSidebar] ❌ Auth error:', error);
           return;
         }
         
         if (data?.user?.id) {
           setCurrentUserId(data.user.id);
           storage.set(CACHE_KEYS.CURRENT_USER, data.user, 3600);
-          console.log('[ChatSidebar] User authenticated:', data.user.id);
+          console.log('[ChatSidebar] ✅ User authenticated:', data.user.id);
         }
       } catch (err) {
-        console.error('[ChatSidebar] Error initializing user:', err);
+        console.error('[ChatSidebar] ❌ Error initializing user:', err);
       }
     };
 
@@ -103,12 +107,16 @@ export default function ChatSidebar({
 
   // Fetch conversations from API
   const fetchConversations = async (forceRefresh = false) => {
+    console.log('[ChatSidebar] 🔄 fetchConversations called', { forceRefresh, hasFetched: hasFetched.current });
+    
     if (!forceRefresh && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
+      console.log('[ChatSidebar] ⏭️ Skipping fetch (too recent)');
       return;
     }
 
     const cachedData = storage.get(CACHE_KEYS.CONVERSATIONS);
     if (!forceRefresh && cachedData && !hasFetched.current) {
+      console.log('[ChatSidebar] 💾 Using cached conversations:', cachedData.length);
       setConversations(cachedData);
       setIsLoading(false);
       return;
@@ -119,13 +127,22 @@ export default function ChatSidebar({
       lastFetchTime.current = Date.now();
       if (!cachedData || forceRefresh) setIsLoading(true);
 
-      console.log('[ChatSidebar] Fetching conversations from server');
+      console.log('[ChatSidebar] 🌐 Fetching conversations from server');
 
       const res = await fetch('/api/messages/get-conversations');
       if (!isMounted.current) return;
-      if (!res.ok) throw new Error('Failed to fetch conversations');
+      
+      console.log('[ChatSidebar] 📡 API Response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[ChatSidebar] ❌ API Error:', res.status, errorText);
+        throw new Error(`Failed to fetch conversations: ${res.status}`);
+      }
 
       const raw = await res.json();
+      console.log('[ChatSidebar] 📦 Raw API data:', raw);
+      
       const mapped: Conversation[] = raw.map((c: any) => ({
         id: c.id ?? c.channel_id,
         channel_id: c.channel_id,
@@ -145,15 +162,15 @@ export default function ChatSidebar({
 
       if (!isMounted.current) return;
 
-      console.log('[ChatSidebar] Fetched', mapped.length, 'conversations from server');
+      console.log('[ChatSidebar] ✅ Mapped conversations:', mapped.length, mapped);
       storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300);
       setConversations(mapped);
       setError(null);
 
     } catch (err) {
-      console.error('[ChatSidebar] Error fetching conversations:', err);
+      console.error('[ChatSidebar] ❌ Error fetching conversations:', err);
       if (!cachedData || forceRefresh) {
-        setError("You don't have any chats yet.");
+        setError("Failed to load conversations. Please try again.");
       }
     } finally {
       if (isMounted.current) setIsLoading(false);
@@ -162,37 +179,27 @@ export default function ChatSidebar({
 
   // Initial fetch when component mounts
   useEffect(() => {
+    console.log('[ChatSidebar] 🚀 Component mounted, starting initial fetch');
     fetchConversations();
   }, []);
 
-  // Listen for new channel memberships (when user is added to new conversations)
-  useRealtime({
-    supabase,
-    table: 'channel_members',
-    filter: currentUserId ? `user_id=eq.${currentUserId}` : undefined,
-    event: '*',
-    onEvent: ({ eventType }) => {
-      if (eventType === 'INSERT' && isMounted.current) {
-        console.log('[ChatSidebar] New channel membership detected, refreshing conversations');
-        hasFetched.current = false;
-        fetchConversations(true);
-      }
-    }
-  });
+  // REMOVED the problematic useRealtime hook for channel_participants
+  // This was likely causing the issue
 
   // Listen for new messages to update conversation list
   useRealtimeInsert({
     supabase,
     table: 'messages',
+    enabled: true, // Always enabled for message updates
     onInsert: (newMessage: any) => {
       if (!newMessage?.channel_id || !isMounted.current) return;
       
-      console.log('[ChatSidebar] New message received, updating conversation:', newMessage.channel_id);
+      console.log('[ChatSidebar] 📨 New message received, updating conversation:', newMessage.channel_id);
       
       setConversations(prev => {
         const idx = prev.findIndex(c => c.channel_id === newMessage.channel_id);
         if (idx === -1) {
-          console.log('[ChatSidebar] Message for unknown channel, triggering refresh');
+          console.log('[ChatSidebar] 🔄 Message for unknown channel, triggering refresh');
           // If we don't know about this channel, refresh the list
           setTimeout(() => fetchConversations(true), 1000);
           return prev;
@@ -221,7 +228,7 @@ export default function ChatSidebar({
 
   // Add new conversation (from modal)
   const handleNewConversation = (conversation: Conversation) => {
-    console.log('[ChatSidebar] Adding new conversation:', conversation);
+    console.log('[ChatSidebar] ➕ Adding new conversation:', conversation);
     
     setConversations(prev => {
       const exists = prev.some(c => c.channel_id === conversation.channel_id);
@@ -241,7 +248,7 @@ export default function ChatSidebar({
 
   // Remove conversation (when deleted)
   const handleConversationDeleted = (channelId: string) => {
-    console.log('[ChatSidebar] Removing conversation:', channelId);
+    console.log('[ChatSidebar] 🗑️ Removing conversation:', channelId);
     
     setConversations(prev => {
       const updated = prev.filter(conv => conv.channel_id !== channelId);
@@ -257,6 +264,8 @@ export default function ChatSidebar({
 
   // Handle chat selection
   const handleChatSelect = (chat: Conversation) => {
+    console.log('[ChatSidebar] 🎯 Chat selected:', chat.channel_name);
+    
     // Mark as read (reset unread count)
     setConversations(prev => {
       const updated = prev.map(c => 
@@ -293,6 +302,14 @@ export default function ChatSidebar({
   const formatTimestamp = (ts: string | null) =>
     ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
 
+  console.log('[ChatSidebar] 🖼️ Render state:', {
+    conversationsCount: conversations.length,
+    isLoading,
+    error,
+    currentUserId: currentUserId?.substring(0, 8) + '...',
+    searchQuery
+  });
+
   return (
     <div className={`h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)] ${className}`}>
       {/* Self-contained header component */}
@@ -321,7 +338,6 @@ export default function ChatSidebar({
           searchQuery={searchQuery}
           selectedChat={selectedChat}
           onSelectChat={handleChatSelect}
-          formatTimestamp={formatTimestamp}
         />
       )}
       

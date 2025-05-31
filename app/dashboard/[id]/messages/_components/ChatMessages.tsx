@@ -1,20 +1,10 @@
-// app/dashboard/[id]/messages/_components/ChatMessages.tsx
 'use client';
 
 import { Heart, Trash2, MoreVertical, Copy } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
-import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
-import {
-  fetchChannelMessages,
-  transformRealtimeMessage,
-  buildUserProfilesCacheFromMessages,
-  getUserProfileFromParticipants,
-  type Message,
-  type UserProfile
-} from '@/utils/chatPageUtils';
 import './ChatMessages.scss';
 
 const supabase = createBrowserClient(
@@ -30,19 +20,27 @@ interface Attachment {
   size: number;
 }
 
-interface Participant {
-  user_id: string;
-  display_name: string;
-  avatar_url: string;
-  email: string;
-  online: boolean;
+interface Message {
+  id: string | number;
+  sender: {
+    id: string;
+    name: string;
+    avatar: string;
+    email: string;
+  };
+  content: string;
+  timestamp: string;
+  likes: number;
+  image: string | null;
+  attachments?: Attachment[];
 }
 
 interface ChatMessagesProps {
-  channelId: string | null;
-  currentUserId: string | null;
-  participants?: Participant[];
-  avatarColors?: Record<string, string>; // Keep for backward compatibility
+  messages: Message[];
+  currentUserId: string;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
+  avatarColors: Record<string, string>;
+  onMessageDelete?: (messageId: string | number) => void;
 }
 
 interface ContextMenuProps {
@@ -194,21 +192,13 @@ function MessageContextMenu({
   );
 }
 
-export interface ChatMessagesRef {
-  addOptimisticMessage: (message: Message) => void;
-  removeOptimisticMessage: (messageId: string | number) => void;
-}
-
-const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
-  channelId,
+export default function ChatMessages({
+  messages,
   currentUserId,
-  participants = [],
-  avatarColors = {}
-}, ref) => {
-  // Internal state - ChatMessages manages its own messages
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  messagesEndRef,
+  avatarColors,
+  onMessageDelete
+}: ChatMessagesProps) {
   const [contextMenu, setContextMenu] = useState<{
     messageId: string | number;
     messageContent: string;
@@ -218,165 +208,6 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [isDeleting, setIsDeleting] = useState<string | number | null>(null);
 
-  // Refs
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMounted = useRef(true);
-  const isLoadingRef = useRef(false);
-
-  // Expose methods to parent via ref
-  useImperativeHandle(ref, () => ({
-    addOptimisticMessage: (message: Message) => {
-      console.log('[ChatMessages] Adding optimistic message:', message);
-      setMessages(prev => [...prev, message]);
-      
-      // Scroll to bottom
-      setTimeout(() => {
-        if (messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 50);
-    },
-    removeOptimisticMessage: (messageId: string | number) => {
-      console.log('[ChatMessages] Removing optimistic message:', messageId);
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-    }
-  }));
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Get user profile with caching - FIXED AVATAR RENDERING
-  const getUserProfile = (userId: string): UserProfile | null => {
-    if (userProfiles[userId]) {
-      return userProfiles[userId];
-    }
-    
-    if (participants.length > 0) {
-      const profile = getUserProfileFromParticipants(userId, participants);
-      if (profile) {
-        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
-        return profile;
-      }
-    }
-    
-    return null;
-  };
-
-  // Load messages when channel changes
-  useEffect(() => {
-    if (!channelId) {
-      setMessages([]);
-      return;
-    }
-    
-    if (isLoadingRef.current) return;
-    
-    const loadMessages = async () => {
-      isLoadingRef.current = true;
-      setLoading(true);
-      
-      try {
-        console.log(`[ChatMessages] Loading messages for channel: ${channelId}`);
-        const messageData = await fetchChannelMessages(channelId);
-        
-        if (!isMounted.current) return;
-        
-        // Build user profiles cache from messages
-        const profilesFromMessages = buildUserProfilesCacheFromMessages(messageData);
-        setUserProfiles(prev => ({ ...prev, ...profilesFromMessages }));
-        
-        setMessages(messageData);
-        
-        // Scroll to bottom after loading
-        setTimeout(() => {
-          if (isMounted.current && messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-          }
-        }, 50);
-        
-      } catch (err) {
-        console.error('[ChatMessages] Error loading messages:', err);
-        toast.error("Failed to load messages");
-      } finally {
-        if (isMounted.current) {
-          setLoading(false);
-          isLoadingRef.current = false;
-        }
-      }
-    };
-    
-    loadMessages();
-  }, [channelId]);
-
-  // Build user profiles cache when participants change
-  useEffect(() => {
-    if (participants.length > 0) {
-      const profilesFromParticipants: Record<string, UserProfile> = {};
-      participants.forEach(participant => {
-        profilesFromParticipants[participant.user_id] = {
-          id: participant.user_id,
-          name: participant.display_name || 'User',
-          avatar: participant.avatar_url || participant.display_name?.charAt(0)?.toUpperCase() || 'U',
-          email: participant.email || ''
-        };
-      });
-      setUserProfiles(prev => ({ ...prev, ...profilesFromParticipants }));
-    }
-  }, [participants]);
-
-  // Handle realtime message inserts for this channel
-  useRealtimeInsert({
-    supabase,
-    table: 'messages',
-    filter: channelId ? `channel_id=eq.${channelId}` : undefined,
-    onInsert: (newMsg) => {
-      if (!isMounted.current || !channelId) return;
-      
-      console.log('[ChatMessages] Processing new message:', newMsg);
-      
-      if (newMsg.sender_id !== currentUserId) {
-        toast.success('New message received!');
-      }
-      
-      const senderProfile = getUserProfile(newMsg.sender_id);
-      const transformedMessage = transformRealtimeMessage(newMsg, senderProfile);
-      
-      setMessages(prev => {
-        // Replace temp message if it exists
-        const tempIndex = prev.findIndex(msg => 
-          msg.sender.id === newMsg.sender_id && 
-          msg.content === newMsg.content && 
-          String(msg.id).startsWith('temp-')
-        );
-        
-        if (tempIndex >= 0) {
-          const newMessages = [...prev];
-          newMessages[tempIndex] = transformedMessage;
-          return newMessages;
-        }
-        
-        // Don't add duplicates
-        if (prev.some(msg => msg.id === newMsg.id)) {
-          return prev;
-        }
-        
-        return [...prev, transformedMessage];
-      });
-      
-      // Scroll to bottom
-      setTimeout(() => {
-        if (isMounted.current && messagesEndRef.current) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 50);
-    },
-  });
-
-  // Helper functions
   const formatMessageTime = (timestamp: string) => {
     try {
       return format(new Date(timestamp), 'h:mm a');
@@ -385,29 +216,17 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
     }
   };
 
-  // FIXED: Avatar rendering function
   const renderAvatar = (avatar: string, name: string) => {
-    // If it's a URL, show the image
-    if (avatar && avatar.startsWith('http')) {
+    if (avatar.startsWith('http')) {
       return (
         <img
           src={avatar}
           alt={`${name}'s avatar`}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            // Fallback to initials if image fails
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.innerHTML = `<div class="avatar-initials bg-[hsl(var(--chart-1))]"><span class="text-xs font-semibold uppercase text-[hsl(var(--primary-foreground))]">${name.charAt(0)}</span></div>`;
-            }
-          }}
         />
       );
     }
     
-    // Chart colors for deterministic avatar generation
     const chartColors = [
       'bg-[hsl(var(--chart-1))]',
       'bg-[hsl(var(--chart-2))]',
@@ -416,14 +235,11 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
       'bg-[hsl(var(--chart-5))]'
     ];
     
-    // Generate consistent color based on name
-    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % chartColors.length;
+    const index = avatar.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % chartColors.length;
     
     return (
       <div className={`avatar-initials ${chartColors[index]}`}>
-        <span className="text-xs font-semibold uppercase text-[hsl(var(--primary-foreground))]">
-          {avatar || name.charAt(0)}
-        </span>
+        <span className="text-xs font-semibold uppercase text-[hsl(var(--primary-foreground))]">{avatar}</span>
       </div>
     );
   };
@@ -514,10 +330,11 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
         return;
       }
 
-      // Remove from local state
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-      toast.success('Message deleted');
+      if (onMessageDelete) {
+        onMessageDelete(messageId);
+      }
 
+      toast.success('Message deleted');
     } catch (err) {
       console.error('Delete error:', err);
       toast.error('Failed to delete message');
@@ -533,16 +350,6 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
-  if (loading) {
-    return (
-      <div className="chat-messages flex items-center justify-center">
-        <div className="text-center text-[hsl(var(--muted-foreground))]">
-          Loading messages...
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div 
@@ -726,9 +533,4 @@ const ChatMessages = forwardRef<ChatMessagesRef, ChatMessagesProps>(({
       <div ref={messagesEndRef} />
     </div>
   );
-});
-
-ChatMessages.displayName = 'ChatMessages';
-
-export default ChatMessages;
-export type { ChatMessagesRef };
+}

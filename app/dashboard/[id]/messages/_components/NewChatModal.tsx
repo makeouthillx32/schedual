@@ -72,33 +72,50 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
   // Initialize modal data
   const initializeModal = async () => {
     try {
-      // Get current user
       const userId = await getCurrentUser();
-      if (!isMounted.current) return;
-      
+      if (!isMounted.current || !userId) return;
+
       setCurrentUserId(userId);
-      
-      // Load users for search
-      await loadAllUsers();
-      
-      // Focus search input
+      await loadAllUsersWithUserId(userId); // ✅ fixed
+
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
         }
       }, 100);
-      
+
     } catch (err) {
       console.error('[NewChatModal] Error initializing:', err);
       setError('Failed to initialize chat creation');
     }
   };
 
+  // Load all users with current user filtered out
+  const loadAllUsersWithUserId = async (userId: string) => {
+    if (hasLoadedUsers) return;
+
+    try {
+      const response = await fetch('/api/get-all-users');
+      if (!response.ok) throw new Error('Failed to fetch users');
+
+      const users: User[] = await response.json();
+      if (!isMounted.current) return;
+
+      const filtered = users.filter(user => user.id !== userId);
+      setAllUsers(filtered);
+      setHasLoadedUsers(true);
+
+    } catch (err) {
+      console.error('[NewChatModal] Error loading users:', err);
+      setError('Failed to load users');
+    }
+  };
   // Get current user ID
   const getCurrentUser = async (): Promise<string | null> => {
     try {
-      // Try cache first
-      const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
+      // Add an explicit type for the cached user
+      const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER) as { id?: string } | null;
+
       if (cachedUser?.id) {
         return cachedUser.id;
       }

@@ -3,63 +3,68 @@
 import { useEffect, useRef } from "react";
 
 type UseRealtimeParams<T> = {
-  supabase: any;
+  supabase: any; // Use the same Supabase instance from context
   table: string;
   filter?: string;
-  event?: "INSERT" | "UPDATE" | "DELETE" | "*";
-  onEvent: (payload: {
-    new: T;
-    old: T | null;
-    eventType: string;
-  }) => void;
+  event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+  onEvent: (payload: { new: T, old: T | null, eventType: string }) => void;
   channelNamePrefix?: string;
 };
 
-export function useRealtime<T>({
+export function useRealtime<T>({ 
   supabase,
-  table,
+  table, 
   filter,
-  event = "INSERT",
+  event = 'INSERT',
   onEvent,
-  channelNamePrefix = "realtime",
+  channelNamePrefix = 'realtime'
 }: UseRealtimeParams<T>) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
+    // Only proceed if we have both a table and a Supabase client
     if (!table || !supabase) {
-      console.log("[Realtime] Missing required params:", {
-        table,
-        hasSupabase: !!supabase,
-      });
+      console.log("[Realtime] Missing required params:", { table, hasSupabase: !!supabase });
       return;
     }
 
+    // Create a unique channel name with table and filter
     const channelName = `${channelNamePrefix}-${table}-${filter ?? "all"}-${Date.now()}`;
-    console.log(`[Realtime] Creating channel: ${channelName}`, {
-      table,
-      filter,
-      event,
-    });
+    console.log(`[Realtime] Creating channel: ${channelName}`, { table, filter, event });
 
+    // Unsubscribe any old channel before creating new one
     if (channelRef.current) {
       console.log(`[Realtime] Removing existing channel before creating new one`);
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
 
-    let filterParams: Record<string, string> = {};
-
+    // Create proper filter object for Supabase
+    let filterParams = {};
+    
     if (filter) {
       console.log(`[Realtime] Parsing filter: "${filter}"`);
+      
+      // Handle 'column=eq.value' format
       const eqMatch = filter.match(/^([^=]+)=eq\.(.+)$/);
       if (eqMatch) {
-        filterParams[eqMatch[1]] = `eq.${eqMatch[2]}`;
+        filterParams = { 
+          filter: `${eqMatch[1]}=eq.${eqMatch[2]}`
+        };
         console.log(`[Realtime] Created filter params:`, filterParams);
       } else {
         console.warn(`[Realtime] Could not parse filter: "${filter}"`);
       }
     }
 
+    // Create and subscribe to the channel
+    console.log(`[Realtime] Setting up subscription with params:`, { 
+      event, 
+      schema: "public", 
+      table,
+      ...filterParams
+    });
+    
     try {
       const channel = supabase
         .channel(channelName)
@@ -69,15 +74,16 @@ export function useRealtime<T>({
             event,
             schema: "public",
             table,
-            ...filterParams,
+            ...filterParams
           },
           (payload: any) => {
             console.log(`[Realtime] Received ${payload.eventType} event:`, payload);
             try {
+              // Pass entire payload to handler
               onEvent({
                 new: payload.new as T,
                 old: payload.old as T | null,
-                eventType: payload.eventType,
+                eventType: payload.eventType
               });
             } catch (err) {
               console.error(`[Realtime] Error processing event:`, err);
@@ -97,12 +103,14 @@ export function useRealtime<T>({
           }
         });
 
+      // Store the channel reference for cleanup
       channelRef.current = channel;
       console.log(`[Realtime] Channel created and stored in ref:`, channelRef.current);
     } catch (err) {
       console.error(`[Realtime] Error creating channel:`, err);
     }
 
+    // Cleanup function
     return () => {
       console.log(`[Realtime] Cleaning up channel: ${channelName}`);
       if (channelRef.current) {
@@ -118,12 +126,12 @@ export function useRealtime<T>({
   }, [supabase, table, filter, event, onEvent, channelNamePrefix]);
 }
 
-// Simpler hook for INSERT-only usage
-export function useRealtimeInsert<T>({
+// For backward compatibility
+export function useRealtimeInsert<T>({ 
   supabase,
-  table,
-  filter,
-  onInsert,
+  table, 
+  filter, 
+  onInsert 
 }: {
   supabase: any;
   table: string;
@@ -134,9 +142,9 @@ export function useRealtimeInsert<T>({
     supabase,
     table,
     filter,
-    event: "INSERT",
+    event: 'INSERT',
     onEvent: ({ new: newRow }) => {
       if (newRow) onInsert(newRow);
-    },
+    }
   });
 }

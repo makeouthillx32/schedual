@@ -11,6 +11,7 @@ import ChatInfoSection from './ChatInfoSection';
 import ParticipantsSection from './ParticipantsSection';
 import ActionsSection from './ActionsSection';
 import SharedMediaSection from './SharedMediaSection';
+import { resolveChatDisplayName } from '@/utils/chatPageUtils';
 import './ChatRightSidebar.scss';
 
 // Create Supabase client
@@ -19,12 +20,37 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Avatar colors - moved here from page
+const AVATAR_COLORS = {
+  AL: 'bg-blue-500',
+  JA: 'bg-orange-500',
+  JE: 'bg-green-500',
+};
+
+// Chart colors for deterministic avatar generation
+const CHART_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))'
+];
+
 interface Participant {
-  id: string;
-  name: string;
-  avatar: string;
+  user_id: string;
+  display_name: string;
+  avatar_url: string;
   email: string;
   online: boolean;
+}
+
+interface SelectedChat {
+  id: string;
+  channel_id: string;
+  channel_name: string;
+  is_group: boolean;
+  participants: Participant[];
+  last_message_at: string | null;
 }
 
 interface SharedMedia {
@@ -38,32 +64,25 @@ interface SharedMedia {
 }
 
 interface Props {
-  selectedChatName: string;
-  participants: Participant[];
-  avatarColors: Record<string, string>;
-  isGroup?: boolean;
-  channelId?: string;
+  selectedChat: SelectedChat;
+  currentUserId?: string | null;
   onClose: () => void;
   onConversationDeleted?: (channelId: string) => void;
 }
 
 export default function ChatRightSidebar({
-  selectedChatName,
-  participants: initialParticipants,
-  avatarColors,
-  isGroup = false,
-  channelId,
+  selectedChat,
+  currentUserId,
   onClose,
   onConversationDeleted
 }: Props) {
   const [isOpen, setIsOpen] = useState(true);
-  const [participants, setParticipants] = useState(initialParticipants);
+  const [participants, setParticipants] = useState(selectedChat.participants);
   const [sharedMedia, setSharedMedia] = useState<SharedMedia[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
-  
   // Collapsible sections state
   const [sectionsCollapsed, setSectionsCollapsed] = useState({
     about: false,
@@ -72,6 +91,27 @@ export default function ChatRightSidebar({
   });
   
   const isMounted = useRef(true);
+
+  // Compute values from selectedChat
+  const resolvedName = resolveChatDisplayName(selectedChat, currentUserId);
+  const channelId = selectedChat.id;
+  const isGroup = selectedChat.is_group;
+
+  // Transform participants for display
+  const displayParticipants = participants.map((p) => ({
+    id: p.user_id,
+    name: p.display_name,
+    avatar: p.avatar_url,
+    email: p.email,
+    online: p.online,
+  }));
+
+  // Generate avatar color deterministically
+  const getAvatarColor = (name: string) => {
+    const hashValue = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const colorIndex = hashValue % CHART_COLORS.length;
+    return CHART_COLORS[colorIndex];
+  };
 
   // Check screen size for responsive behavior
   useEffect(() => {
@@ -89,12 +129,12 @@ export default function ChatRightSidebar({
     };
   }, []);
 
-  // Update participants when props change
+  // Update participants when selectedChat changes
   useEffect(() => {
     if (isMounted.current) {
-      setParticipants(initialParticipants);
+      setParticipants(selectedChat.participants);
     }
-  }, [initialParticipants]);
+  }, [selectedChat.participants]);
   
   // Fetch shared media when component mounts or channelId changes
   useEffect(() => {
@@ -124,7 +164,7 @@ export default function ChatRightSidebar({
       if (eventType === 'INSERT' || eventType === 'UPDATE') {
         setParticipants(prev => {
           return prev.map(p => {
-            if (p.id === newState.user_id) {
+            if (p.user_id === newState.user_id) {
               return {
                 ...p,
                 online: newState.status === 'online'
@@ -217,7 +257,6 @@ export default function ChatRightSidebar({
   };
 
   // Toggle section collapse
-
   const toggleSection = (section: 'about' | 'actions' | 'media') => {
     setSectionsCollapsed(prev => ({
       ...prev,
@@ -287,13 +326,13 @@ export default function ChatRightSidebar({
       />
 
       <ChatInfoSection 
-        selectedChatName={selectedChatName}
+        selectedChatName={resolvedName}
         participantCount={participants.length}
         isGroup={isGroup}
       />
 
       <ParticipantsSection 
-        participants={participants}
+        participants={displayParticipants}
         isGroup={isGroup}
         isCollapsed={sectionsCollapsed.about}
         onToggle={() => toggleSection('about')}

@@ -1,15 +1,11 @@
-// app/api/messages/get-conversations/route.ts
-
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
 export async function GET() {
   try {
-    // Instead of using cookies directly, we'll create a wrapper
-    const cookieStore = cookies();
-    
-    // Create a function to safely get cookie values
+    const cookieStore = await cookies(); // 🔥 FIXED
+
     const getCookie = (name: string) => {
       const cookie = cookieStore.get(name);
       return cookie?.value ?? '';

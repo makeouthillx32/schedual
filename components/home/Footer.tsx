@@ -36,22 +36,22 @@ const SmartDashboardLink: React.FC<{ userId: string }> = ({ userId }) => {
     switch (user.role) {
       case 'admin':
         return {
-          text: 'Admin Dashboard',
+          text: 'Dashboard',
           href: '/dashboard/me',
         };
       case 'jobcoach':
         return {
-          text: 'Job Coach Dashboard',
+          text: 'Dashboard',
           href: '/dashboard/me',
         };
       case 'client':
         return {
-          text: 'Client Dashboard',
+          text: 'Dashboard',
           href: '/dashboard/me',
         };
       case 'user':
         return {
-          text: 'My Dashboard',
+          text: 'Dashboard',
           href: '/dashboard/me',
         };
       default:
@@ -69,6 +69,35 @@ const SmartDashboardLink: React.FC<{ userId: string }> = ({ userId }) => {
       {dashboardInfo.text}
     </Link>
   );
+};
+
+// Smart Section Title Component using Hall Monitor  
+const SmartSectionTitle: React.FC<{ userId: string }> = ({ userId }) => {
+  const { user, isLoading, error } = useHallMonitor(userId);
+
+  // Show loading state
+  if (isLoading) {
+    return "Loading...";
+  }
+
+  // Show error state or fallback
+  if (error || !user) {
+    return "For Users";
+  }
+
+  // Return role-specific section title
+  switch (user.role) {
+    case 'admin':
+      return "For Admins";
+    case 'jobcoach':
+      return "For Job Coaches";
+    case 'client':
+      return "For Clients";
+    case 'user':
+      return "For Users";
+    default:
+      return "For Users";
+  }
 };
 
 const Footer: React.FC = () => {
@@ -91,7 +120,7 @@ const Footer: React.FC = () => {
     if (session?.user?.id) {
       return [
         {
-          title: "For Job Coaches",
+          title: <SmartSectionTitle userId={session.user.id} />,
           links: [
             { name: "CMS App", href: "/CMS" },
             // Replace the hardcoded Dashboard link with our smart component
@@ -100,8 +129,6 @@ const Footer: React.FC = () => {
               href: "#", // href will be handled by the SmartDashboardLink component
               isComponent: true // Flag to identify this as a component
             },
-            { name: "Reports", href: "/reports" },
-            { name: "Settings", href: "/settings" },
           ],
         },
         {

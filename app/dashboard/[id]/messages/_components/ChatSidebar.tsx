@@ -1,4 +1,4 @@
-// app/dashboard/[id]/messages/_components/ChatSidebar.tsx (FIXED)
+// app/dashboard/[id]/messages/_components/ChatSidebar.tsx (CLEAN - NO DEBUG UI)
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -8,9 +8,12 @@ import NewChatModal from './NewChatModal';
 import ChatSidebarHeader from './ChatSidebarHeader';
 import ChatSidebarSearch from './ChatSidebarSearch';
 import ConversationList from './ConversationList';
-import { useRealtimeInsert } from '@/hooks/useRealtimeInsert';
-// REMOVED useRealtime import - causing issues
-import { storage, CACHE_KEYS } from '@/lib/cookieUtils';
+import { 
+  useChatDebugActions, 
+  useDebugLogger,
+  useCacheManager 
+} from '@/hooks/useChatDebugActions';
+import { storage, CACHE_KEYS, CACHE_EXPIRY } from '@/lib/cookieUtils';
 import './ChatSidebar.scss';
 
 // Types
@@ -52,6 +55,9 @@ export default function ChatSidebar({
   const [error, setError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasLoadedFromCache, setHasLoadedFromCache] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState<string>('Initializing...');
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   
   // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,82 +73,119 @@ export default function ChatSidebar({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Initialize current user
-  useEffect(() => {
-    const initializeUser = async () => {
-      try {
-        console.log('[ChatSidebar] 🔍 Initializing user...');
-        
-        const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
-        if (cachedUser?.id) {
-          setCurrentUserId(cachedUser.id);
-          console.log('[ChatSidebar] ✅ Using cached user:', cachedUser.id);
-          return;
-        }
+  // Initialize hooks for backend automation
+  const { addDebugLog: hookAddDebugLog } = useDebugLogger('ChatSidebar');
+  
+  // Silent debug logging (no UI state updates)
+  const addDebugLog = (message: string) => {
+    console.log(`[ChatSidebar] ${message}`);
+    hookAddDebugLog(message);
+  };
 
-        const { data, error } = await supabase.auth.getUser();
-        if (!isMounted.current) return;
-        
-        if (error) {
-          console.error('[ChatSidebar] ❌ Auth error:', error);
-          return;
-        }
-        
-        if (data?.user?.id) {
-          setCurrentUserId(data.user.id);
-          storage.set(CACHE_KEYS.CURRENT_USER, data.user, 3600);
-          console.log('[ChatSidebar] ✅ User authenticated:', data.user.id);
-        }
-      } catch (err) {
-        console.error('[ChatSidebar] ❌ Error initializing user:', err);
-      }
-    };
-
-    initializeUser();
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Fetch conversations from API
+  // Enhanced fetch with mounting checks
   const fetchConversations = async (forceRefresh = false) => {
-    console.log('[ChatSidebar] 🔄 fetchConversations called', { forceRefresh, hasFetched: hasFetched.current });
-    
-    if (!forceRefresh && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
-      console.log('[ChatSidebar] ⏭️ Skipping fetch (too recent)');
+    // Early exit if component is unmounted
+    if (!isMounted.current) {
+      console.log('[ChatSidebar] ❌ Component unmounted, aborting fetch');
       return;
     }
-
-    const cachedData = storage.get(CACHE_KEYS.CONVERSATIONS);
-    if (!forceRefresh && cachedData && !hasFetched.current) {
-      console.log('[ChatSidebar] 💾 Using cached conversations:', cachedData.length);
-      setConversations(cachedData);
-      setIsLoading(false);
+    
+    if (!currentUserId) {
+      addDebugLog('❌ No user ID, skipping fetch');
+      return;
+    }
+    
+    addDebugLog(`🔄 Starting fetch (force: ${forceRefresh})`);
+    
+    // ALWAYS fetch if we haven't fetched yet (dev server restart scenario)
+    if (!hasFetched.current) {
+      addDebugLog('🚀 First fetch - bypassing cache checks');
+      forceRefresh = true;
+    }
+    
+    // If we have cached data and this isn't forced, don't fetch too frequently
+    if (!forceRefresh && hasLoadedFromCache && hasFetched.current && Date.now() - lastFetchTime.current < 30000) {
+      addDebugLog('⏭️ Skipping fetch (recent fetch with cache)');
       return;
     }
 
     try {
       hasFetched.current = true;
       lastFetchTime.current = Date.now();
-      if (!cachedData || forceRefresh) setIsLoading(true);
-
-      console.log('[ChatSidebar] 🌐 Fetching conversations from server');
-
-      const res = await fetch('/api/messages/get-conversations');
-      if (!isMounted.current) return;
       
-      console.log('[ChatSidebar] 📡 API Response status:', res.status);
+      // Check if still mounted before setting loading
+      if (!isMounted.current) {
+        addDebugLog('❌ Component unmounted before loading state');
+        return;
+      }
+      
+      // Only show loading if we don't have cached data or it's forced
+      if (!hasLoadedFromCache || forceRefresh) {
+        setIsLoading(true);
+        addDebugLog('🔄 Setting loading state');
+      }
+      setError(null);
+
+      addDebugLog('🌐 Making API request...');
+
+      const res = await fetch('/api/messages/get-conversations', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      // Check mounting status after async operation
+      if (!isMounted.current) {
+        addDebugLog('❌ Component unmounted during fetch');
+        return;
+      }
+      
+      addDebugLog(`📡 API response: ${res.status}`);
       
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('[ChatSidebar] ❌ API Error:', res.status, errorText);
-        throw new Error(`Failed to fetch conversations: ${res.status}`);
+        addDebugLog(`❌ API error: ${res.status} - ${errorText.slice(0, 100)}`);
+        
+        // Check mounting status again
+        if (!isMounted.current) {
+          addDebugLog('❌ Component unmounted during error handling');
+          return;
+        }
+        
+        // If we have cached data, don't show error to user
+        if (hasLoadedFromCache && conversations.length > 0) {
+          addDebugLog('📦 Using cache despite API error');
+          setCacheInfo(`${cacheInfo} (API failed, using cache)`);
+          return;
+        }
+        
+        throw new Error(`Failed to fetch conversations: ${res.status} - ${errorText}`);
       }
 
       const raw = await res.json();
-      console.log('[ChatSidebar] 📦 Raw API data:', raw);
+      addDebugLog(`📦 Raw data received: ${Array.isArray(raw) ? raw.length : 'not array'} items`);
       
+      // Check mounting status again
+      if (!isMounted.current) {
+        addDebugLog('❌ Component unmounted during data processing');
+        return;
+      }
+      
+      if (!Array.isArray(raw)) {
+        addDebugLog(`❌ Invalid format: ${typeof raw}`);
+        
+        // If we have cached data, don't fail completely
+        if (hasLoadedFromCache && conversations.length > 0) {
+          addDebugLog('📦 Using cache despite invalid response');
+          return;
+        }
+        
+        throw new Error('Server returned invalid data format');
+      }
+      
+      // Map the raw data to our conversation format
       const mapped: Conversation[] = raw.map((c: any) => ({
         id: c.id ?? c.channel_id,
         channel_id: c.channel_id,
@@ -160,82 +203,202 @@ export default function ChatSidebar({
         })),
       }));
 
-      if (!isMounted.current) return;
+      // Final mounting check before updating state
+      if (!isMounted.current) {
+        addDebugLog('❌ Component unmounted during mapping');
+        return;
+      }
 
-      console.log('[ChatSidebar] ✅ Mapped conversations:', mapped.length, mapped);
-      storage.set(CACHE_KEYS.CONVERSATIONS, mapped, 300);
+      addDebugLog(`✅ Mapped ${mapped.length} conversations successfully`);
+      
+      // Update state
       setConversations(mapped);
       setError(null);
+      setHasLoadedFromCache(true);
+      
+      // Enhanced caching strategy with user-specific keys
+      addDebugLog('💾 Caching conversations...');
+      storage.set(CACHE_KEYS.USER_CONVERSATIONS(currentUserId), mapped, CACHE_EXPIRY.MEDIUM, currentUserId);
+      storage.set(CACHE_KEYS.CONVERSATIONS, mapped, CACHE_EXPIRY.MEDIUM); // Fallback cache
+      
+      setCacheInfo(`Fresh data: ${mapped.length} items (cached)`);
+      addDebugLog(`✅ Fetch completed: ${mapped.length} conversations`);
 
     } catch (err) {
-      console.error('[ChatSidebar] ❌ Error fetching conversations:', err);
-      if (!cachedData || forceRefresh) {
-        setError("Failed to load conversations. Please try again.");
+      addDebugLog(`❌ Fetch error: ${err instanceof Error ? err.message : 'Unknown'}`);
+      
+      // Only show error if we don't have any cached data AND component is still mounted
+      if (isMounted.current && (!hasLoadedFromCache || conversations.length === 0)) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(`Failed to load conversations: ${errorMessage}`);
       }
     } finally {
-      if (isMounted.current) setIsLoading(false);
+      // Final check before clearing loading state
+      if (isMounted.current) {
+        setIsLoading(false);
+        addDebugLog('✅ Loading state cleared');
+      }
     }
   };
 
-  // Initial fetch when component mounts
-  useEffect(() => {
-    console.log('[ChatSidebar] 🚀 Component mounted, starting initial fetch');
-    fetchConversations();
-  }, []);
-
-  // REMOVED the problematic useRealtime hook for channel_participants
-  // This was likely causing the issue
-
-  // Listen for new messages to update conversation list
-  useRealtimeInsert({
-    supabase,
-    table: 'messages',
-    enabled: true, // Always enabled for message updates
-    onInsert: (newMessage: any) => {
-      if (!newMessage?.channel_id || !isMounted.current) return;
-      
-      console.log('[ChatSidebar] 📨 New message received, updating conversation:', newMessage.channel_id);
-      
-      setConversations(prev => {
-        const idx = prev.findIndex(c => c.channel_id === newMessage.channel_id);
-        if (idx === -1) {
-          console.log('[ChatSidebar] 🔄 Message for unknown channel, triggering refresh');
-          // If we don't know about this channel, refresh the list
-          setTimeout(() => fetchConversations(true), 1000);
-          return prev;
-        }
-        
-        const updated = [...prev];
-        const conv = { ...updated[idx] };
-        conv.last_message = newMessage.content;
-        conv.last_message_at = newMessage.created_at;
-        
-        // Only increment unread if it's not from current user
-        if (newMessage.sender_id !== currentUserId) {
-          conv.unread_count = (conv.unread_count || 0) + 1;
-        }
-        
-        // Move conversation to top
-        updated.splice(idx, 1);
-        updated.unshift(conv);
-        
-        // Update cache
-        storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
-        return updated;
-      });
-    }
+  // Initialize debug hooks for backend automation
+  const { 
+    clearCache, 
+    cleanup, 
+    forceFetch, 
+    debugCache,
+    clearLogs 
+  } = useChatDebugActions({
+    currentUserId,
+    setConversations,
+    setHasLoadedFromCache,
+    setCacheInfo,
+    setIsLoading,
+    hasFetched,
+    lastFetchTime,
+    addDebugLog,
+    debugLog,
+    setDebugLog,
+    fetchFunction: fetchConversations
   });
 
-  // Add new conversation (from modal)
+  // Load conversations from cache
+  const loadConversationsFromCache = (userId: string) => {
+    addDebugLog(`📦 Loading cache for user: ${userId.slice(-4)}`);
+    
+    // Try user-specific cache first
+    const userConversations = storage.get(CACHE_KEYS.USER_CONVERSATIONS(userId), [], userId);
+    if (userConversations && Array.isArray(userConversations) && userConversations.length > 0) {
+      addDebugLog(`✅ Found user cache: ${userConversations.length} conversations`);
+      setConversations(userConversations);
+      setIsLoading(false);
+      setHasLoadedFromCache(true);
+      setCacheInfo(`User cache: ${userConversations.length} items`);
+      return;
+    }
+    
+    // Fallback to generic cache
+    const genericConversations = storage.get(CACHE_KEYS.CONVERSATIONS, []);
+    if (genericConversations && Array.isArray(genericConversations) && genericConversations.length > 0) {
+      addDebugLog(`✅ Found generic cache: ${genericConversations.length} conversations`);
+      setConversations(genericConversations);
+      setIsLoading(false);
+      setHasLoadedFromCache(true);
+      setCacheInfo(`Generic cache: ${genericConversations.length} items`);
+      return;
+    }
+    
+    addDebugLog('📦 No cache found, will fetch from server');
+    setCacheInfo('No cache found');
+  };
+
+  // Initialize current user
+  useEffect(() => {
+    // Reset mounting flag
+    isMounted.current = true;
+    
+    const initializeUser = async () => {
+      try {
+        addDebugLog('🔍 Starting user initialization...');
+        
+        // Try to get cached user first
+        const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER);
+        if (cachedUser?.id && isMounted.current) {
+          setCurrentUserId(cachedUser.id);
+          addDebugLog(`✅ Found cached user: ${cachedUser.id.slice(-4)}`);
+          
+          // Load conversations for this user from cache immediately
+          loadConversationsFromCache(cachedUser.id);
+          return;
+        }
+
+        addDebugLog('🌐 No cached user, fetching from Supabase...');
+        
+        // If no cached user, get from Supabase
+        const { data, error } = await supabase.auth.getUser();
+        if (!isMounted.current) {
+          addDebugLog('❌ Component unmounted during auth');
+          return;
+        }
+        
+        if (error) {
+          addDebugLog(`❌ Auth error: ${error.message}`);
+          setError(`Authentication failed: ${error.message}`);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (data?.user?.id) {
+          setCurrentUserId(data.user.id);
+          addDebugLog(`✅ User authenticated: ${data.user.id.slice(-4)}`);
+          
+          // Cache user with expiry
+          storage.set(CACHE_KEYS.CURRENT_USER, data.user, CACHE_EXPIRY.LONG, data.user.id);
+          addDebugLog('💾 User cached successfully');
+          
+          // Load conversations for this user from cache
+          loadConversationsFromCache(data.user.id);
+        } else {
+          addDebugLog('❌ No user found in auth response');
+          setError('No authenticated user found');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        addDebugLog(`❌ Initialization error: ${err instanceof Error ? err.message : 'Unknown'}`);
+        if (isMounted.current) {
+          setError('Failed to initialize user session');
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeUser();
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  // Fetch conversations when user is authenticated
+  useEffect(() => {
+    if (currentUserId && isMounted.current) {
+      addDebugLog('🚀 User ready, triggering fetch');
+      // Small delay to ensure component is fully mounted
+      const timer = setTimeout(() => {
+        if (isMounted.current) {
+          fetchConversations(true); // Force refresh
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentUserId]);
+
+  // Conversation management handlers
   const handleNewConversation = (conversation: Conversation) => {
-    console.log('[ChatSidebar] ➕ Adding new conversation:', conversation);
+    if (!currentUserId) {
+      addDebugLog('❌ Cannot add conversation: no user ID');
+      return;
+    }
+    
+    addDebugLog(`➕ Adding conversation: ${conversation.channel_name}`);
     
     setConversations(prev => {
       const exists = prev.some(c => c.channel_id === conversation.channel_id);
-      if (exists) return prev;
+      if (exists) {
+        addDebugLog('⚠️ Conversation already exists');
+        return prev;
+      }
       
       const updated = [conversation, ...prev];
-      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+      
+      // Update enhanced cache immediately
+      storage.set(CACHE_KEYS.USER_CONVERSATIONS(currentUserId), updated, CACHE_EXPIRY.MEDIUM, currentUserId);
+      storage.set(CACHE_KEYS.CONVERSATIONS, updated, CACHE_EXPIRY.MEDIUM);
+      
+      setHasLoadedFromCache(true);
+      setCacheInfo(`Added new: ${updated.length} items`);
+      addDebugLog(`✅ Added successfully, total: ${updated.length}`);
       return updated;
     });
     
@@ -246,13 +409,26 @@ export default function ChatSidebar({
     setTimeout(() => fetchConversations(true), 1000);
   };
 
-  // Remove conversation (when deleted)
   const handleConversationDeleted = (channelId: string) => {
-    console.log('[ChatSidebar] 🗑️ Removing conversation:', channelId);
+    if (!currentUserId) {
+      addDebugLog('❌ Cannot delete conversation: no user ID');
+      return;
+    }
+    
+    addDebugLog(`🗑️ Deleting conversation: ${channelId.slice(-4)}`);
     
     setConversations(prev => {
       const updated = prev.filter(conv => conv.channel_id !== channelId);
-      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+      
+      // Update enhanced cache immediately
+      storage.set(CACHE_KEYS.USER_CONVERSATIONS(currentUserId), updated, CACHE_EXPIRY.MEDIUM, currentUserId);
+      storage.set(CACHE_KEYS.CONVERSATIONS, updated, CACHE_EXPIRY.MEDIUM);
+      
+      // Also clean up any message caches for this channel
+      storage.remove(CACHE_KEYS.USER_MESSAGES(currentUserId, channelId));
+      
+      setCacheInfo(`Deleted: ${updated.length} items`);
+      addDebugLog(`✅ Deleted successfully, remaining: ${updated.length}`);
       return updated;
     });
     
@@ -262,9 +438,13 @@ export default function ChatSidebar({
     }
   };
 
-  // Handle chat selection
   const handleChatSelect = (chat: Conversation) => {
-    console.log('[ChatSidebar] 🎯 Chat selected:', chat.channel_name);
+    if (!currentUserId) {
+      addDebugLog('❌ Cannot select chat: no user ID');
+      return;
+    }
+    
+    addDebugLog(`🎯 Chat selected: ${chat.channel_name}`);
     
     // Mark as read (reset unread count)
     setConversations(prev => {
@@ -273,9 +453,16 @@ export default function ChatSidebar({
           ? { ...c, unread_count: 0 }
           : c
       );
-      storage.set(CACHE_KEYS.CONVERSATIONS, updated, 300);
+      
+      // Update enhanced cache immediately
+      storage.set(CACHE_KEYS.USER_CONVERSATIONS(currentUserId), updated, CACHE_EXPIRY.MEDIUM, currentUserId);
+      storage.set(CACHE_KEYS.CONVERSATIONS, updated, CACHE_EXPIRY.MEDIUM);
+      
       return updated;
     });
+    
+    // Store selected chat in cache for restoration
+    storage.set(CACHE_KEYS.SELECTED_CHAT, chat, CACHE_EXPIRY.SHORT, currentUserId);
     
     // Notify parent
     onSelectChat(chat);
@@ -284,57 +471,72 @@ export default function ChatSidebar({
   // Handle search from search component
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
+    addDebugLog(`🔍 Search: "${query}"`);
   };
 
   // Handle new chat button click
   const handleNewChatClick = () => {
     setIsModalOpen(true);
+    addDebugLog('📝 New chat modal opened');
   };
 
   // Filter conversations based on search
   const filteredConversations = searchQuery
     ? conversations.filter(conv =>
-        conv.channel_name.toLowerCase().includes(searchQuery.toLowerCase())
+        conv.channel_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.participants.some(p => 
+          p.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
       )
     : conversations;
 
-  // Format timestamp helper
-  const formatTimestamp = (ts: string | null) =>
-    ts ? formatDistanceToNow(new Date(ts), { addSuffix: true }) : '';
-
-  console.log('[ChatSidebar] 🖼️ Render state:', {
-    conversationsCount: conversations.length,
-    isLoading,
-    error,
-    currentUserId: currentUserId?.substring(0, 8) + '...',
-    searchQuery
-  });
+  // Determine actual loading state
+  const isActuallyLoading = isLoading && !hasLoadedFromCache;
 
   return (
     <div className={`h-full flex flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] border-r border-[hsl(var(--sidebar-border))] shadow-[var(--shadow-sm)] ${className}`}>
-      {/* Self-contained header component */}
+      
       <ChatSidebarHeader 
         onNewChat={handleNewChatClick}
         title="My Chats"
+        showNewChatButton={true}
       />
       
-      {/* Self-contained search component */}
-      <ChatSidebarSearch onSearchChange={handleSearchChange} />
+      <ChatSidebarSearch 
+        onSearchChange={handleSearchChange}
+        placeholder="Search conversations..."
+      />
       
-      {error ? (
-        <div className="p-4 text-center text-[hsl(var(--muted-foreground))] bg-[hsl(var(--sidebar-accent))/0.3] rounded-[var(--radius)] m-2">
-          <p className="mb-3">{error}</p>
-          <button
-            onClick={handleNewChatClick}
-            className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-[var(--radius)] hover:opacity-90 transition-opacity"
-          >
-            Start a new chat
-          </button>
+      {error && !hasLoadedFromCache ? (
+        <div className="p-4 text-center text-[hsl(var(--destructive))] bg-[hsl(var(--destructive))/0.1] rounded-[var(--radius)] m-2">
+          <p className="mb-3 font-medium">Unable to load conversations</p>
+          <p className="mb-3 text-sm">{error}</p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                hasFetched.current = false;
+                addDebugLog('🔄 Retry button clicked');
+                fetchConversations(true);
+              }}
+              className="px-4 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-[var(--radius)] hover:opacity-90 transition-opacity text-sm"
+            >
+              Retry
+            </button>
+            <button
+              onClick={handleNewChatClick}
+              className="px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded-[var(--radius)] hover:opacity-90 transition-opacity text-sm"
+            >
+              New Chat
+            </button>
+          </div>
         </div>
       ) : (
         <ConversationList
           conversations={filteredConversations}
-          isLoading={isLoading}
+          isLoading={isActuallyLoading}
           searchQuery={searchQuery}
           selectedChat={selectedChat}
           onSelectChat={handleChatSelect}

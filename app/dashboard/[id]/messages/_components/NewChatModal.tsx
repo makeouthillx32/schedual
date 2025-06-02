@@ -1,26 +1,13 @@
-// app/dashboard/[id]/messages/_components/NewChatModal.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Search, Users, UserCircle } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
-import { toast } from 'react-hot-toast';
-import { storage, CACHE_KEYS } from '@/lib/cookieUtils';
-import { initializeAuth } from '@/utils/chatPageUtils';
 import { Conversation } from './ChatSidebar';
 import './NewChatModal.scss';
-
-// Supabase client
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface User {
   id: string;
   display_name: string | null;
-  email?: string;
-  avatar_url?: string;
 }
 
 interface NewChatModalProps {
@@ -30,377 +17,67 @@ interface NewChatModalProps {
 }
 
 export default function NewChatModal({ isOpen, onClose, onConversationCreated }: NewChatModalProps) {
-  // Mode state
   const [mode, setMode] = useState<'dm' | 'group'>('dm');
-  
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  
-  // Selection state
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const [selectedDMUser, setSelectedDMUser] = useState<User | null>(null); // Single user for DM
   const [groupName, setGroupName] = useState('');
-  
-  // UI state
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  
-  // Internal state
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [hasLoadedUsers, setHasLoadedUsers] = useState(false);
-  
-  // Refs
+
   const modalRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const isMounted = useRef(true);
 
-  // Initialize component when opened
+  // Fetch current user ID
   useEffect(() => {
-    if (isOpen) {
-      initializeModal();
-    } else {
-      resetModal();
-    }
-    
-    return () => {
-      isMounted.current = false;
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.id);
+        }
+      } catch (err) {
+        console.error('Error fetching current user:', err);
+      }
     };
+
+    if (isOpen) {
+      fetchCurrentUser();
+    }
   }, [isOpen]);
 
-  // Initialize modal data - SIMPLIFIED
-  const initializeModal = async () => {
-    try {
-      setError(null);
-      
-      // Get current user (simplified - no extra checks since user is already in dashboard)
-      const userId = await getCurrentUser();
-      if (!isMounted.current) return;
-      
-      if (!userId) {
-        setError('Please refresh the page and try again');
-        return;
-      }
-      
-      setCurrentUserId(userId);
-      console.log('[NewChatModal] Current user:', userId);
-      
-      // Load users
-      await loadAllUsers(userId);
-      
-      // Focus search input
-      setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus();
-        }
-      }, 100);
-      
-    } catch (err) {
-      console.error('[NewChatModal] Error initializing:', err);
-      setError('Failed to initialize. Please try again.');
-    }
-  };
-
-  // Get current user ID - SIMPLIFIED
-  const getCurrentUser = async (): Promise<string | null> => {
-    try {
-      // First try cache
-      const cachedUser = storage.get(CACHE_KEYS.CURRENT_USER) as { id?: string } | null;
-      if (cachedUser?.id) {
-        console.log('[NewChatModal] Using cached user:', cachedUser.id);
-        return cachedUser.id;
-      }
-
-      // Fallback to direct auth check (no initializeAuth wrapper)
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error('[NewChatModal] Auth error:', error);
-        return null;
-      }
-      
-      if (data.user?.id) {
-        console.log('[NewChatModal] Got user from auth:', data.user.id);
-        // Cache for next time
-        storage.set(CACHE_KEYS.CURRENT_USER, data.user, 3600);
-        return data.user.id;
-      }
-      
-      console.error('[NewChatModal] No user found in auth response');
-      return null;
-    } catch (err) {
-      console.error('[NewChatModal] Error getting current user:', err);
-      return null;
-    }
-  };
-
-  // Load all users - FIXED
-  const loadAllUsers = async (currentUserId: string) => {
-    if (hasLoadedUsers) return;
-    
-    try {
-      setIsLoadingUsers(true);
-      console.log('[NewChatModal] Loading users from API...');
-      
-      const response = await fetch('/api/get-all-users');
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}: ${response.statusText}`);
-      }
-      
-      const users: User[] = await response.json();
-      console.log('[NewChatModal] Received users:', users.length);
-      
-      if (!isMounted.current) return;
-      
-      // Filter out current user
-      const filteredUsers = users.filter(user => user.id !== currentUserId);
-      console.log('[NewChatModal] Filtered users (excluding current):', filteredUsers.length);
-      
-      setAllUsers(filteredUsers);
-      setHasLoadedUsers(true);
-      
-    } catch (err) {
-      console.error('[NewChatModal] Error loading users:', err);
-      setError(`Failed to load users: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  // Reset modal state
-  const resetModal = () => {
-    setMode('dm');
-    setSearchQuery('');
-    setSearchResults([]);
-    setSelectedUsers([]);
-    setGroupName('');
-    setError(null);
-    setIsCreating(false);
-    setIsSearching(false);
-    setIsLoadingUsers(false);
-    setHasLoadedUsers(false); // Reset so it loads fresh next time
-    setAllUsers([]);
-    setCurrentUserId(null);
-  };
-
-  // Handle search input
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
+    // Focus search input when modal opens
+    if (isOpen && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
 
-    const searchUsers = () => {
-      setIsSearching(true);
-      
-      const query = searchQuery.toLowerCase();
-      const filtered = allUsers.filter(user => {
-        // Don't show already selected users
-        if (selectedUsers.some(selected => selected.id === user.id)) {
-          return false;
-        }
-        
-        // Search by name or email
-        const name = (user.display_name || '').toLowerCase();
-        const email = (user.email || '').toLowerCase();
-        
-        return name.includes(query) || email.includes(query);
-      });
-      
-      setSearchResults(filtered.slice(0, 10)); // Limit results
-      setIsSearching(false);
-    };
-
-    const debounceTimeout = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounceTimeout);
-  }, [searchQuery, allUsers, selectedUsers]);
-
-  // Handle user selection
-  const handleSelectUser = (user: User) => {
-    if (mode === 'dm') {
-      // For DM, replace selection
-      setSelectedUsers([user]);
+    // Reset state when modal opens
+    if (isOpen) {
       setSearchQuery('');
       setSearchResults([]);
-    } else {
-      // For group, add to selection
-      if (!selectedUsers.some(selected => selected.id === user.id)) {
-        setSelectedUsers(prev => [...prev, user]);
-        setSearchQuery('');
-      }
-    }
-  };
-
-  // Remove selected user
-  const handleRemoveUser = (userId: string) => {
-    setSelectedUsers(prev => prev.filter(user => user.id !== userId));
-  };
-
-  // Create conversation
-  const handleCreateConversation = async () => {
-    if (mode === 'dm') {
-      await createDirectMessage();
-    } else {
-      await createGroupChat();
-    }
-  };
-
-  // Create DM
-  const createDirectMessage = async () => {
-    if (selectedUsers.length !== 1) {
-      setError('Please select a user to start a DM');
-      return;
-    }
-
-    if (!currentUserId) {
-      setError('Authentication required');
-      return;
-    }
-
-    try {
-      setIsCreating(true);
+      setSelectedUsers([]);
+      setSelectedDMUser(null);
+      setGroupName('');
       setError(null);
-      
-      const response = await fetch('/api/messages/start-dm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userIds: [selectedUsers[0].id],
-        }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create DM: ${response.status} ${errorText}`);
-      }
-
-      const result = await response.json();
-      const channelId = result.channelId || result;
-      
-      // Create conversation object
-      const newConversation: Conversation = {
-        id: channelId,
-        channel_id: channelId,
-        channel_name: selectedUsers[0].display_name || 'User',
-        is_group: false,
-        last_message: null,
-        last_message_at: null,
-        unread_count: 0,
-        participants: [
-          {
-            user_id: currentUserId,
-            display_name: 'You',
-            avatar_url: '',
-            email: '',
-            online: true
-          },
-          {
-            user_id: selectedUsers[0].id,
-            display_name: selectedUsers[0].display_name || 'User',
-            avatar_url: selectedUsers[0].avatar_url || '',
-            email: selectedUsers[0].email || '',
-            online: false
-          }
-        ]
-      };
-      
-      onConversationCreated(newConversation);
-      onClose();
-      toast.success('Direct message created!');
-      
-    } catch (err) {
-      console.error('[NewChatModal] Error creating DM:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create conversation');
-    } finally {
-      setIsCreating(false);
     }
-  };
+  }, [isOpen]);
 
-  // Create group chat
-  const createGroupChat = async () => {
-    if (selectedUsers.length === 0) {
-      setError('Please select at least one user for the group');
-      return;
-    }
+  // Reset selections when mode changes
+  useEffect(() => {
+    setSelectedUsers([]);
+    setSelectedDMUser(null);
+    setSearchQuery('');
+    setSearchResults([]);
+    setError(null);
+  }, [mode]);
 
-    if (!groupName.trim()) {
-      setError('Please enter a group name');
-      return;
-    }
-
-    if (!currentUserId) {
-      setError('Authentication required');
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-      setError(null);
-      
-      const response = await fetch('/api/messages/start-group', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: groupName.trim(),
-          participantIds: selectedUsers.map(user => user.id),
-        }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create group: ${response.status} ${errorText}`);
-      }
-
-      const result = await response.json();
-      const channelId = result.channelId || result;
-      
-      // Create conversation object
-      const newConversation: Conversation = {
-        id: channelId,
-        channel_id: channelId,
-        channel_name: groupName.trim(),
-        is_group: true,
-        last_message: null,
-        last_message_at: null,
-        unread_count: 0,
-        participants: [
-          {
-            user_id: currentUserId,
-            display_name: 'You',
-            avatar_url: '',
-            email: '',
-            online: true
-          },
-          ...selectedUsers.map(user => ({
-            user_id: user.id,
-            display_name: user.display_name || 'User',
-            avatar_url: user.avatar_url || '',
-            email: user.email || '',
-            online: false
-          }))
-        ]
-      };
-      
-      onConversationCreated(newConversation);
-      onClose();
-      toast.success('Group chat created!');
-      
-    } catch (err) {
-      console.error('[NewChatModal] Error creating group:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create group conversation');
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  // Handle clicks outside modal
+  // Handle clicks outside the modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
@@ -417,12 +94,236 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
     };
   }, [isOpen, onClose]);
 
-  // Validation
-  const isValid = mode === 'dm' 
-    ? selectedUsers.length === 1
-    : selectedUsers.length > 0 && groupName.trim().length > 0;
+  // Handle search query
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/get-all-users?search=${encodeURIComponent(searchQuery)}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to search users');
+        }
+        
+        const users = await response.json();
+        
+        // Filter logic depends on mode
+        let filteredUsers;
+        if (mode === 'dm') {
+          // For DM: exclude current user only (don't exclude selected user so it can be changed)
+          filteredUsers = users.filter((user: User) => user.id !== currentUserId);
+        } else {
+          // For group: exclude current user and already selected users
+          filteredUsers = users.filter(
+            (user: User) => 
+              !selectedUsers.some(selected => selected.id === user.id) && 
+              user.id !== currentUserId
+          );
+        }
+        
+        setSearchResults(filteredUsers);
+      } catch (err) {
+        console.error('Error searching users:', err);
+        setError('Failed to search users');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const debounceTimeout = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchUsers();
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery, selectedUsers, currentUserId, mode]);
+
+  const handleSelectUser = (user: User) => {
+    if (mode === 'dm') {
+      // For DM: select only one user and immediately create conversation
+      setSelectedDMUser(user);
+      // Don't clear search - let user see their selection
+      setSearchQuery(user.display_name || 'User');
+      setSearchResults([]);
+    } else {
+      // For group: check if user is already selected
+      if (selectedUsers.some(selected => selected.id === user.id)) {
+        return;
+      }
+      
+      // Add to selected users
+      setSelectedUsers(prev => [...prev, user]);
+      setSearchQuery('');
+      // Update search results to remove the selected user
+      setSearchResults(prev => prev.filter(result => result.id !== user.id));
+    }
+  };
+
+  const handleRemoveUser = (userId: string) => {
+    if (mode === 'group') {
+      setSelectedUsers(prev => prev.filter(user => user.id !== userId));
+    }
+    // Note: No remove function for DM mode since we don't show selected users
+  };
+
+  const handleCreateConversation = async () => {
+    if (mode === 'dm') {
+      if (!selectedDMUser) {
+        setError('Please select a user to start a DM');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        
+        const response = await fetch('/api/messages/start-dm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userIds: [selectedDMUser.id],
+          }),
+          credentials: 'include',
+        });
+
+        const responseText = await response.text();
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create DM: ${response.status} ${responseText}`);
+        }
+
+        let channelId;
+        try {
+          const data = JSON.parse(responseText);
+          channelId = data;
+        } catch (e) {
+          channelId = responseText;
+        }
+        
+        const newConversation: Conversation = {
+          id: channelId,
+          channel_id: channelId,
+          channel_name: selectedDMUser.display_name || 'User',
+          is_group: false,
+          last_message: null,
+          last_message_at: null,
+          unread_count: 0,
+          participants: [
+            {
+              user_id: currentUserId || '',
+              display_name: 'You',
+              avatar_url: '',
+              email: '',
+              online: true
+            },
+            {
+              user_id: selectedDMUser.id,
+              display_name: selectedDMUser.display_name || 'User',
+              avatar_url: '',
+              email: '',
+              online: false
+            }
+          ]
+        };
+        
+        onConversationCreated(newConversation);
+        onClose();
+      } catch (err) {
+        console.error('Error creating DM:', err);
+        setError('Failed to create conversation: ' + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Group chat logic
+      if (selectedUsers.length === 0) {
+        setError('Please select at least one user for the group');
+        return;
+      }
+
+      if (!groupName.trim()) {
+        setError('Please enter a group name');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        
+        const response = await fetch('/api/messages/start-group', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: groupName,
+            participantIds: selectedUsers.map(user => user.id),
+          }),
+          credentials: 'include',
+        });
+
+        const responseText = await response.text();
+        
+        if (!response.ok) {
+          throw new Error(`Failed to create group: ${response.status} ${responseText}`);
+        }
+
+        let channelId;
+        try {
+          const data = JSON.parse(responseText);
+          channelId = data.channelId || data;
+        } catch (e) {
+          console.error("Error parsing response:", e);
+          throw new Error("Invalid response format from server");
+        }
+        
+        const newConversation: Conversation = {
+          id: channelId,
+          channel_id: channelId,
+          channel_name: groupName,
+          is_group: true,
+          last_message: null,
+          last_message_at: null,
+          unread_count: 0,
+          participants: [
+            {
+              user_id: currentUserId || '',
+              display_name: 'You',
+              avatar_url: '',
+              email: '',
+              online: true
+            },
+            ...selectedUsers.map(user => ({
+              user_id: user.id,
+              display_name: user.display_name || 'User',
+              avatar_url: '',
+              email: '',
+              online: false
+            }))
+          ]
+        };
+        
+        onConversationCreated(newConversation);
+        onClose();
+      } catch (err) {
+        console.error('Error creating group chat:', err);
+        setError('Failed to create group conversation: ' + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   if (!isOpen) return null;
+
+  // Validation logic
+  const isValid = mode === 'dm' ? selectedDMUser !== null : selectedUsers.length > 0 && groupName.trim() !== '';
 
   return (
     <div className="fixed inset-0 z-50 p-4 flex items-center justify-center" style={{
@@ -522,7 +423,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
             </button>
           </div>
 
-          {/* Group Name Input */}
+          {/* Group Name Input (only for group mode) */}
           {mode === 'group' && (
             <div className="mb-4">
               <input
@@ -550,9 +451,12 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
             </div>
           )}
 
-          {/* Selected Users */}
-          {selectedUsers.length > 0 && (
+          {/* Selected Users (ONLY show for group mode) */}
+          {mode === 'group' && selectedUsers.length > 0 && (
             <div className="mb-4">
+              <div className="text-sm font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>
+                Selected Users:
+              </div>
               <div className="flex flex-wrap gap-2">
                 {selectedUsers.map(user => (
                   <div 
@@ -600,7 +504,6 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-3"
-              disabled={isLoadingUsers}
               style={{
                 backgroundColor: 'hsl(var(--background))',
                 color: 'hsl(var(--foreground))',
@@ -621,19 +524,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
 
           {/* Search Results */}
           <div className="max-h-60 overflow-y-auto mb-4">
-            {isLoadingUsers ? (
-              <div className="text-center py-4" style={{
-                color: 'hsl(var(--muted-foreground))'
-              }}>
-                <div className="animate-pulse">Loading users...</div>
-              </div>
-            ) : allUsers.length === 0 ? (
-              <div className="text-center py-4" style={{
-                color: 'hsl(var(--muted-foreground))'
-              }}>
-                No users available
-              </div>
-            ) : isSearching ? (
+            {isLoading ? (
               <div className="text-center py-4" style={{
                 color: 'hsl(var(--muted-foreground))'
               }}>
@@ -645,27 +536,34 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               }}>
                 No users found for "{searchQuery}"
               </div>
-            ) : searchQuery ? (
+            ) : (
               searchResults.map(user => (
                 <div
                   key={user.id}
                   className="p-3 cursor-pointer flex items-center transition-colors"
                   style={{
-                    borderRadius: 'var(--radius)'
+                    borderRadius: 'var(--radius)',
+                    // Highlight selected DM user
+                    backgroundColor: mode === 'dm' && selectedDMUser?.id === user.id ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+                    border: mode === 'dm' && selectedDMUser?.id === user.id ? '1px solid hsl(var(--primary) / 0.3)' : '1px solid transparent'
                   }}
                   onClick={() => handleSelectUser(user)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                    if (!(mode === 'dm' && selectedDMUser?.id === user.id)) {
+                      e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
+                    if (!(mode === 'dm' && selectedDMUser?.id === user.id)) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
                   }}
                 >
                   <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3" style={{
                     backgroundColor: 'hsl(var(--muted))',
                     color: 'hsl(var(--muted-foreground))'
                   }}>
-                    {(user.display_name?.[0] || user.email?.[0] || '?').toUpperCase()}
+                    {(user.display_name?.[0] || '?').toUpperCase()}
                   </div>
                   <div className="flex-1">
                     <div className="font-medium" style={{
@@ -673,27 +571,16 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
                     }}>
                       {user.display_name || 'User'}
                     </div>
-                    {user.email && (
-                      <div className="text-sm" style={{
-                        color: 'hsl(var(--muted-foreground))'
+                    {mode === 'dm' && selectedDMUser?.id === user.id && (
+                      <div className="text-xs" style={{
+                        color: 'hsl(var(--primary))'
                       }}>
-                        {user.email}
+                        Selected for DM
                       </div>
                     )}
                   </div>
                 </div>
               ))
-            ) : (
-              <div className="text-center py-4" style={{
-                color: 'hsl(var(--muted-foreground))'
-              }}>
-                <div className="text-sm">
-                  Start typing to search for users
-                </div>
-                <div className="text-xs mt-1">
-                  {allUsers.length} users available
-                </div>
-              </div>
             )}
           </div>
 
@@ -716,7 +603,7 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
         }}>
           <button
             onClick={onClose}
-            disabled={isCreating}
+            disabled={isLoading}
             className="px-4 py-2 transition-colors"
             style={{
               color: 'hsl(var(--muted-foreground))',
@@ -725,13 +612,13 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
               backgroundColor: 'transparent'
             }}
             onMouseEnter={(e) => {
-              if (!isCreating) {
+              if (!isLoading) {
                 e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
                 e.currentTarget.style.color = 'hsl(var(--accent-foreground))';
               }
             }}
             onMouseLeave={(e) => {
-              if (!isCreating) {
+              if (!isLoading) {
                 e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = 'hsl(var(--muted-foreground))';
               }
@@ -741,27 +628,27 @@ export default function NewChatModal({ isOpen, onClose, onConversationCreated }:
           </button>
           <button
             onClick={handleCreateConversation}
-            disabled={!isValid || isCreating}
+            disabled={!isValid || isLoading}
             className="px-6 py-2 transition-colors"
             style={{
-              backgroundColor: (!isValid || isCreating) ? 'hsl(var(--muted))' : 'hsl(var(--primary))',
-              color: (!isValid || isCreating) ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))',
+              backgroundColor: (!isValid || isLoading) ? 'hsl(var(--muted))' : 'hsl(var(--primary))',
+              color: (!isValid || isLoading) ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))',
               borderRadius: 'var(--radius)',
-              cursor: (!isValid || isCreating) ? 'not-allowed' : 'pointer',
+              cursor: (!isValid || isLoading) ? 'not-allowed' : 'pointer',
               border: 'none'
             }}
             onMouseEnter={(e) => {
-              if (isValid && !isCreating) {
+              if (isValid && !isLoading) {
                 e.currentTarget.style.opacity = '0.9';
               }
             }}
             onMouseLeave={(e) => {
-              if (isValid && !isCreating) {
+              if (isValid && !isLoading) {
                 e.currentTarget.style.opacity = '1';
               }
             }}
           >
-            {isCreating ? 'Creating...' : mode === 'dm' ? 'Start Chat' : 'Create Group'}
+            {isLoading ? 'Creating...' : mode === 'dm' ? 'Start Chat' : 'Create Group'}
           </button>
         </div>
       </div>

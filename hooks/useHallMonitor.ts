@@ -1,4 +1,4 @@
-// hooks/useHallMonitor.ts
+// hooks/useHallMonitor.ts - FIXED VERSION
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import type {
@@ -77,7 +77,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     currentUserId.current = userId;
   }, [userId]);
 
-  // Fetch user data from your existing tables
+  // Fetch user data from your existing tables - FIXED to join with roles table
   const fetchUserData = useCallback(async (targetUserId: string): Promise<MonitorUser | null> => {
     try {
       console.log('[useHallMonitor] Fetching user data for:', targetUserId);
@@ -90,10 +90,14 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         return cachedUser;
       }
 
-      // Fetch user profile with role
+      // FIXED: Join with roles table to get actual role name
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role')
+        .select(`
+          id, 
+          role,
+          roles!inner(role)
+        `)
         .eq('id', targetUserId)
         .single();
 
@@ -101,6 +105,13 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         console.error('[useHallMonitor] Profile fetch error:', profileError);
         return null;
       }
+
+      console.log('[useHallMonitor] Raw profile data:', profile);
+
+      // Extract the actual role name from the joined roles table
+      const actualRole = profile.roles?.role || profile.role;
+      console.log('[useHallMonitor] Role ID from profiles:', profile.role);
+      console.log('[useHallMonitor] Actual role name from roles table:', actualRole);
 
       // Fetch user specializations using your existing function
       const { data: specializations, error: specError } = await supabase
@@ -118,7 +129,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       const userData: MonitorUser = {
         id: profile.id,
         email,
-        role: profile.role,
+        role: actualRole, // Use the actual role name, not the ID
         specializations: specializations || []
       };
 
@@ -136,8 +147,11 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   // Get or create monitor for user's role
   const getMonitor = useCallback(async (userRole: string): Promise<HallMonitor | null> => {
     try {
+      console.log('[useHallMonitor] Getting monitor for role:', userRole);
+      
       // Check if we already have this monitor cached
       if (monitorCache.has(userRole)) {
+        console.log('[useHallMonitor] Using cached monitor for role:', userRole);
         return monitorCache.get(userRole)!;
       }
 
@@ -162,8 +176,9 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
           MonitorClass = UserHallMonitor;
           break;
         default:
-          console.warn('[useHallMonitor] Unknown role:', userRole);
-          return null;
+          console.warn('[useHallMonitor] Unknown role:', userRole, '- defaulting to UserHallMonitor');
+          const { UserHallMonitor: DefaultMonitor } = await import('@/lib/monitors/UserHallMonitor');
+          MonitorClass = DefaultMonitor;
       }
 
       const monitor = new MonitorClass();
@@ -194,6 +209,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         return;
       }
 
+      console.log('[useHallMonitor] User data loaded:', userData);
       setUser(userData);
 
       // Get appropriate monitor
@@ -203,12 +219,14 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         return;
       }
 
+      console.log('[useHallMonitor] Monitor created for role:', userData.role);
       setMonitor(userMonitor);
 
       // Get content configuration
       const config = await userMonitor.getContentConfig(userId);
       if (isMounted.current) {
         setContentConfig(config);
+        console.log('[useHallMonitor] Content config loaded:', config);
       }
 
       console.log('[useHallMonitor] Initialization complete');

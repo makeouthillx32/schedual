@@ -5,7 +5,7 @@
 export interface MonitorUser {
   id: string;
   email?: string;
-  role: string; // From profiles.role (references roles.id)
+  role: string; // ✅ RESOLVED: The actual role NAME (admin, jobcoach, client, user) not the role ID
   specializations?: UserSpecialization[];
 }
 

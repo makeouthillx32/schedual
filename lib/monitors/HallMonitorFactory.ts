@@ -1,4 +1,4 @@
-// lib/monitors/HallMonitorFactory.ts
+// lib/monitors/HallMonitorFactory.ts (FIXED VERSION)
 import { createBrowserClient } from '@supabase/ssr';
 import type { 
   HallMonitor, 
@@ -88,43 +88,43 @@ export class HallMonitorFactory {
     return HallMonitorFactory.instance;
   }
 
-  // Get monitor for a specific role
-  async getMonitor(role: string): Promise<HallMonitor> {
-    this.log(`Getting monitor for role: ${role}`);
+  // Get monitor for a specific role NAME (not role ID)
+  async getMonitor(roleName: string): Promise<HallMonitor> {
+    this.log(`Getting monitor for role: ${roleName}`);
 
     // Validate role
-    if (!this.isValidRole(role)) {
+    if (!this.isValidRole(roleName)) {
       throw new HallMonitorError(
-        `Invalid role: ${role}`,
+        `Invalid role: ${roleName}`,
         'INVALID_ROLE',
-        { role, validRoles: Object.keys(MONITOR_IMPORTS) }
+        { roleName, validRoles: Object.keys(MONITOR_IMPORTS) }
       );
     }
 
     // Check cache first
-    if (this.options.cacheEnabled && monitorInstances.has(role)) {
-      this.log(`Using cached monitor for role: ${role}`);
-      return monitorInstances.get(role)!;
+    if (this.options.cacheEnabled && monitorInstances.has(roleName)) {
+      this.log(`Using cached monitor for role: ${roleName}`);
+      return monitorInstances.get(roleName)!;
     }
 
     try {
       // Dynamically import and create monitor
-      const MonitorClass = await MONITOR_IMPORTS[role as keyof typeof MONITOR_IMPORTS]();
+      const MonitorClass = await MONITOR_IMPORTS[roleName as keyof typeof MONITOR_IMPORTS]();
       const monitor = new MonitorClass();
 
       // Cache the instance
       if (this.options.cacheEnabled) {
-        monitorInstances.set(role, monitor);
-        this.log(`Monitor created and cached for role: ${role}`);
+        monitorInstances.set(roleName, monitor);
+        this.log(`Monitor created and cached for role: ${roleName}`);
       }
 
       return monitor;
     } catch (error) {
-      this.log(`Error creating monitor for role ${role}:`, error);
+      this.log(`Error creating monitor for role ${roleName}:`, error);
       throw new HallMonitorError(
-        `Failed to create monitor for role: ${role}`,
+        `Failed to create monitor for role: ${roleName}`,
         'MONITOR_CREATION_FAILED',
-        { role, error }
+        { roleName, error }
       );
     }
   }
@@ -133,7 +133,7 @@ export class HallMonitorFactory {
   async getMonitorForUser(userId: string): Promise<{ monitor: HallMonitor; user: MonitorUser }> {
     this.log(`Getting monitor for user: ${userId}`);
 
-    // Get user data
+    // Get user data (this now resolves role ID to role name)
     const user = await this.getUserData(userId);
     if (!user) {
       throw new HallMonitorError(
@@ -143,13 +143,13 @@ export class HallMonitorFactory {
       );
     }
 
-    // Get monitor for user's role
+    // Get monitor for user's resolved role name
     const monitor = await this.getMonitor(user.role);
 
     return { monitor, user };
   }
 
-  // Fetch user data from database
+  // ✅ FIXED: Fetch user data and resolve role ID to role name
   async getUserData(userId: string, forceRefresh = false): Promise<MonitorUser | null> {
     this.log(`Fetching user data for: ${userId}, forceRefresh: ${forceRefresh}`);
 
@@ -163,17 +163,35 @@ export class HallMonitorFactory {
     }
 
     try {
-      // Fetch user profile with role
-      const { data: profile, error: profileError } = await this.supabase
+      // ✅ FIXED: Join profiles with roles table to get role name
+      const { data: profileWithRole, error: profileError } = await this.supabase
         .from('profiles')
-        .select('id, role')
+        .select(`
+          id,
+          role,
+          roles!profiles_role_fkey (
+            id,
+            role
+          )
+        `)
         .eq('id', userId)
         .single();
 
-      if (profileError || !profile) {
+      if (profileError || !profileWithRole) {
         this.log(`Profile fetch error for ${userId}:`, profileError);
         return null;
       }
+
+      // ✅ FIXED: Extract role name from the joined roles table
+      const roleName = profileWithRole.roles?.role;
+      const roleId = profileWithRole.role;
+
+      if (!roleName) {
+        this.log(`No role name found for user ${userId}, role ID: ${roleId}`);
+        return null;
+      }
+
+      this.log(`✅ Resolved role for ${userId}: ID="${roleId}" -> NAME="${roleName}"`);
 
       // Fetch user specializations using existing function
       const { data: specializations, error: specError } = await this.supabase
@@ -197,16 +215,16 @@ export class HallMonitorFactory {
       }
 
       const userData: MonitorUser = {
-        id: profile.id,
+        id: profileWithRole.id,
         email,
-        role: profile.role,
+        role: roleName, // ✅ FIXED: Use role name, not role ID
         specializations: specializations || []
       };
 
       // Cache the user data
       if (this.options.cacheEnabled) {
         this.userCache.set(userId, userData, this.options.cacheTTL);
-        this.log(`User data cached for: ${userId}`);
+        this.log(`User data cached for: ${userId} with role: ${roleName}`);
       }
 
       return userData;
@@ -260,9 +278,9 @@ export class HallMonitorFactory {
     }
   }
 
-  // Validate role exists
-  private isValidRole(role: string): role is keyof typeof MONITOR_IMPORTS {
-    return role in MONITOR_IMPORTS;
+  // ✅ FIXED: Validate role name exists (not role ID)
+  private isValidRole(roleName: string): roleName is keyof typeof MONITOR_IMPORTS {
+    return roleName in MONITOR_IMPORTS;
   }
 
   // Cache management
@@ -342,7 +360,10 @@ export class HallMonitorFactory {
 
     try {
       // Test database connection
-      const { error } = await this.supabase.from('profiles').select('id').limit(1);
+      const { error } = await this.supabase
+        .from('profiles')
+        .select('id, role, roles!profiles_role_fkey(role)')
+        .limit(1);
       if (error) {
         issues.push(`Database connection issue: ${error.message}`);
         status = 'unhealthy';

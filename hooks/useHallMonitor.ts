@@ -77,50 +77,43 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     currentUserId.current = userId;
   }, [userId]);
 
-  // Fetch user data from your existing tables - FIXED to join with roles table
+  // Fetch user data from your existing tables - FIXED VERSION
   const fetchUserData = useCallback(async (targetUserId: string): Promise<MonitorUser | null> => {
     try {
-      console.log('[useHallMonitor] Fetching user data for:', targetUserId);
+      console.log('[useHallMonitor] FIXED: Fetching user data for:', targetUserId);
       
       // Check cache first
       const cacheKey = `user-${targetUserId}`;
       const cachedUser = cache.get<MonitorUser>(cacheKey);
       if (cachedUser) {
-        console.log('[useHallMonitor] Using cached user data');
+        console.log('[useHallMonitor] FIXED: Using cached user data');
         return cachedUser;
       }
 
-      // FIXED: Join with roles table to get actual role name
+      // FIXED: Simple query - no joins with roles table
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select(`
-          id, 
-          role,
-          roles!inner(role)
-        `)
+        .select('id, role')
         .eq('id', targetUserId)
         .single();
 
       if (profileError || !profile) {
-        console.error('[useHallMonitor] Profile fetch error:', profileError);
+        console.error('[useHallMonitor] FIXED: Profile fetch error:', profileError);
         return null;
       }
 
-      console.log('[useHallMonitor] Raw profile data:', profile);
-
-      // Extract the actual role name from the joined roles table
-      const actualRole = profile.roles?.role || profile.role;
-      console.log('[useHallMonitor] Role ID from profiles:', profile.role);
-      console.log('[useHallMonitor] Actual role name from roles table:', actualRole);
+      console.log('[useHallMonitor] FIXED: Profile fetched successfully:', profile);
 
       // Fetch user specializations using your existing function
       const { data: specializations, error: specError } = await supabase
         .rpc('get_user_specializations', { user_uuid: targetUserId });
 
       if (specError) {
-        console.error('[useHallMonitor] Specializations fetch error:', specError);
+        console.error('[useHallMonitor] FIXED: Specializations fetch error:', specError);
         // Don't fail if specializations fetch fails - user might not have any
       }
+
+      console.log('[useHallMonitor] FIXED: Specializations fetched:', specializations);
 
       // Get user email from auth if needed
       const { data: authUser } = await supabase.auth.getUser();
@@ -129,17 +122,18 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       const userData: MonitorUser = {
         id: profile.id,
         email,
-        role: actualRole, // Use the actual role name, not the ID
+        role: profile.role, // This should be 'admin', 'jobcoach', 'client', or 'user'
         specializations: specializations || []
       };
 
+      console.log('[useHallMonitor] FIXED: Final user data:', userData);
+
       // Cache the user data
       cache.set(cacheKey, userData);
-      console.log('[useHallMonitor] User data fetched and cached:', userData);
 
       return userData;
     } catch (err) {
-      console.error('[useHallMonitor] Error fetching user data:', err);
+      console.error('[useHallMonitor] FIXED: Error fetching user data:', err);
       return null;
     }
   }, []);
@@ -147,11 +141,8 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   // Get or create monitor for user's role
   const getMonitor = useCallback(async (userRole: string): Promise<HallMonitor | null> => {
     try {
-      console.log('[useHallMonitor] Getting monitor for role:', userRole);
-      
       // Check if we already have this monitor cached
       if (monitorCache.has(userRole)) {
-        console.log('[useHallMonitor] Using cached monitor for role:', userRole);
         return monitorCache.get(userRole)!;
       }
 
@@ -176,18 +167,17 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
           MonitorClass = UserHallMonitor;
           break;
         default:
-          console.warn('[useHallMonitor] Unknown role:', userRole, '- defaulting to UserHallMonitor');
-          const { UserHallMonitor: DefaultMonitor } = await import('@/lib/monitors/UserHallMonitor');
-          MonitorClass = DefaultMonitor;
+          console.warn('[useHallMonitor] FIXED: Unknown role:', userRole);
+          return null;
       }
 
       const monitor = new MonitorClass();
       monitorCache.set(userRole, monitor);
-      console.log('[useHallMonitor] Monitor created and cached for role:', userRole);
+      console.log('[useHallMonitor] FIXED: Monitor created and cached for role:', userRole);
       
       return monitor;
     } catch (err) {
-      console.error('[useHallMonitor] Error creating monitor:', err);
+      console.error('[useHallMonitor] FIXED: Error creating monitor:', err);
       return null;
     }
   }, []);
@@ -200,7 +190,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       setIsLoading(true);
       setError(null);
 
-      console.log('[useHallMonitor] Initializing for user:', userId);
+      console.log('[useHallMonitor] FIXED: Initializing for user:', userId);
 
       // Fetch user data
       const userData = await fetchUserData(userId);
@@ -209,8 +199,8 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         return;
       }
 
-      console.log('[useHallMonitor] User data loaded:', userData);
       setUser(userData);
+      console.log('[useHallMonitor] FIXED: User role detected:', userData.role);
 
       // Get appropriate monitor
       const userMonitor = await getMonitor(userData.role);
@@ -219,19 +209,17 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         return;
       }
 
-      console.log('[useHallMonitor] Monitor created for role:', userData.role);
       setMonitor(userMonitor);
 
       // Get content configuration
       const config = await userMonitor.getContentConfig(userId);
       if (isMounted.current) {
         setContentConfig(config);
-        console.log('[useHallMonitor] Content config loaded:', config);
       }
 
-      console.log('[useHallMonitor] Initialization complete');
+      console.log('[useHallMonitor] FIXED: Initialization complete');
     } catch (err) {
-      console.error('[useHallMonitor] Initialization error:', err);
+      console.error('[useHallMonitor] FIXED: Initialization error:', err);
       if (isMounted.current) {
         setError('Failed to initialize hall monitor');
       }
@@ -261,7 +249,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     context?: AccessContext
   ): Promise<boolean> => {
     if (!monitor || !currentUserId.current) {
-      console.warn('[useHallMonitor] canAccess called without monitor or userId');
+      console.warn('[useHallMonitor] FIXED: canAccess called without monitor or userId');
       return false;
     }
 
@@ -269,7 +257,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       const result = await monitor.checkAccess(currentUserId.current, resource, action, context);
       return result.hasAccess;
     } catch (err) {
-      console.error('[useHallMonitor] Access check error:', err);
+      console.error('[useHallMonitor] FIXED: Access check error:', err);
       return false;
     }
   }, [monitor]);
@@ -289,7 +277,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     if (!monitor || !userId) return;
 
     try {
-      console.log('[useHallMonitor] Refreshing configuration');
+      console.log('[useHallMonitor] FIXED: Refreshing configuration');
       
       // Clear cache for this user
       cache.delete(`user-${userId}`);
@@ -306,7 +294,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
         }
       }
     } catch (err) {
-      console.error('[useHallMonitor] Refresh error:', err);
+      console.error('[useHallMonitor] FIXED: Refresh error:', err);
     }
   }, [monitor, userId, fetchUserData]);
 
@@ -347,7 +335,7 @@ export function useCanAccess(
         const result = await monitor.checkAccess(userId, resource, action, context);
         setCanAccess(result.hasAccess);
       } catch (err) {
-        console.error('[useCanAccess] Error:', err);
+        console.error('[useCanAccess] FIXED: Error:', err);
         setCanAccess(false);
       } finally {
         setIsChecking(false);

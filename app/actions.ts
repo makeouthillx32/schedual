@@ -7,6 +7,30 @@ import { encodedRedirect } from "@/utils/utils";
 import { cookies } from "next/headers";
 import { sendNotification } from "@/lib/notifications";
 
+// Helper function to get and clear last page with proper exclusions
+const getAndClearLastPage = async (): Promise<string> => {
+  const store = await cookies();
+  const allCookies = store.getAll();
+  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
+
+  let lastPage = lastPageCookie?.value || "/";
+
+  // Clear the lastPage cookie after using it
+  store.delete("lastPage");
+
+  // Exclude auth pages and problematic pages from redirect
+  const excludedPages = ["/sign-in", "/sign-up", "/forgot-password"];
+  const pageWithoutHash = lastPage.split('#')[0]; // Handle hash routes
+  
+  if (excludedPages.includes(pageWithoutHash)) {
+    console.log(`[Auth] Excluded page detected (${lastPage}), redirecting to /`);
+    lastPage = "/";
+  }
+
+  console.log(`[Auth] Redirecting to: ${lastPage}`);
+  return lastPage;
+};
+
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
@@ -131,20 +155,8 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  const store = await cookies();
-  const allCookies = store.getAll();
-  const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
-
-  let lastPage = lastPageCookie?.value || "/";
-
-  // Clear the lastPage cookie after using it
-  store.delete("lastPage");
-
-  // Exclude auth pages and problematic pages from redirect
-  if (["/sign-in", "/sign-up", "/forgot-password", "/CMS"].includes(lastPage)) {
-    lastPage = "/";
-  }
-
+  // Get the last page and redirect there
+  const lastPage = await getAndClearLastPage();
   return redirect(`${lastPage}?refresh=true`);
 };
 
@@ -200,7 +212,6 @@ export const resetPasswordAction = async (formData: FormData) => {
 
 export const signOutAction = async () => {
   const supabase = await createClient();
-  const store = await cookies();
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };

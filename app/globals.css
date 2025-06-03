@@ -107,6 +107,61 @@
 }
 
 
+/* Add this to your app/globals.css */
+
+/* View Transition API - Smooth Theme Switching */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  /* Ensure the outgoing theme is beneath */
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  /* Ensure the incoming theme is on top */
+  z-index: 1;
+}
+
+/* Circular reveal animation */
+@keyframes theme-reveal {
+  from {
+    /* Start as tiny circle at click position */
+    clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%));
+    opacity: 0.8;
+  }
+  to {
+    /* Expand to cover entire screen */
+    clip-path: circle(150% at var(--theme-x, 50%) var(--theme-y, 50%));
+    opacity: 1;
+  }
+}
+
+/* Apply the reveal animation to new theme */
+::view-transition-new(root) {
+  animation: theme-reveal 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Fallback for browsers without View Transitions */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* Additional smooth transition for theme variables */
+:root {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure smooth transitions on all themed elements */
+* {
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
 
 .login-with-google-btn {
   width: 100%;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
 import { tools } from "@/lib/toolsConfig";
 import { useHallMonitor } from "@/hooks/useHallMonitor";
+import { useMemo } from "react";
 
 const socialLinks = [
   { icon: <FaInstagram className="size-5" />, href: 'https://instagram.com/YourPage', label: 'Instagram' },
@@ -13,98 +14,94 @@ const socialLinks = [
   { icon: <FaLinkedinIn className="size-5" />, href: 'https://linkedin.com/company/YourPage', label: 'LinkedIn' },
 ];
 
-// Smart Dashboard Link Component using Hall Monitor
-const SmartDashboardLink: React.FC<{ userId: string }> = ({ userId }) => {
-  const { user, isLoading, error } = useHallMonitor(userId);
+const Footer: React.FC = () => {
+  const session = useLoginSession();
+  
+  // ✅ FIXED: Call useHallMonitor at the top level, not inside useMemo
+  const { user, isLoading, error } = useHallMonitor(session?.user?.id);
 
-  // Show loading state
-  if (isLoading) {
-    return <span className="text-muted-foreground">Loading Dashboard...</span>;
-  }
+  console.log('[Footer] Session state:', { 
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id 
+  });
 
-  // Show error state or fallback
-  if (error || !user) {
-    return (
-      <Link href="/dashboard/me" className="hover:underline">
-        Dashboard
-      </Link>
-    );
-  }
+  console.log('[Footer] HallMonitor state:', { 
+    hasUser: !!user, 
+    isLoading, 
+    error, 
+    userRoleId: user?.role_id,
+    userRoleName: user?.role_name 
+  });
 
-  // Return role-specific dashboard link
-  const getDashboardInfo = () => {
-    switch (user.role) {
+  // ✅ Memoize the user section data based on user state
+  const userSectionData = useMemo(() => {
+    // No session = no user sections
+    if (!session?.user?.id) {
+      console.log('[Footer] No user session, returning null');
+      return null;
+    }
+
+    // Loading state
+    if (isLoading) {
+      console.log('[Footer] Still loading user data');
+      return {
+        sectionTitle: "Loading...",
+        dashboardText: "Loading Dashboard...",
+        dashboardHref: "/dashboard/me"
+      };
+    }
+
+    // Error or no user
+    if (error || !user) {
+      console.log('[Footer] Error or no user:', { error, hasUser: !!user });
+      return {
+        sectionTitle: "For Users",
+        dashboardText: "Dashboard",
+        dashboardHref: "/dashboard/me"
+      };
+    }
+
+    console.log('[Footer] ✅ User loaded successfully:', user.role_name);
+
+    // Return role-specific data using role_name
+    switch (user.role_name) {
       case 'admin':
         return {
-          text: 'Dashboard',
-          href: '/dashboard/me',
+          sectionTitle: "For Admins",
+          dashboardText: "Admin Dashboard",
+          dashboardHref: "/dashboard/me"
         };
       case 'jobcoach':
         return {
-          text: 'Dashboard',
-          href: '/dashboard/me',
+          sectionTitle: "For Job Coaches", 
+          dashboardText: "Coach Dashboard",
+          dashboardHref: "/dashboard/me"
         };
       case 'client':
         return {
-          text: 'Dashboard',
-          href: '/dashboard/me',
+          sectionTitle: "For Clients",
+          dashboardText: "Client Dashboard", 
+          dashboardHref: "/dashboard/me"
         };
       case 'user':
         return {
-          text: 'Dashboard',
-          href: '/dashboard/me',
+          sectionTitle: "For Users",
+          dashboardText: "User Dashboard",
+          dashboardHref: "/dashboard/me"
         };
       default:
+        console.log('[Footer] Unknown role, using default:', user.role_name);
         return {
-          text: 'Dashboard',
-          href: '/dashboard/me',
+          sectionTitle: "For Users",
+          dashboardText: "Dashboard",
+          dashboardHref: "/dashboard/me"
         };
     }
-  };
+  }, [session?.user?.id, isLoading, error, user]); // ✅ Proper dependencies
 
-  const dashboardInfo = getDashboardInfo();
-
-  return (
-    <Link href={dashboardInfo.href} className="hover:underline">
-      {dashboardInfo.text}
-    </Link>
-  );
-};
-
-// Smart Section Title Component using Hall Monitor  
-const SmartSectionTitle: React.FC<{ userId: string }> = ({ userId }) => {
-  const { user, isLoading, error } = useHallMonitor(userId);
-
-  // Show loading state
-  if (isLoading) {
-    return "Loading...";
-  }
-
-  // Show error state or fallback
-  if (error || !user) {
-    return "For Users";
-  }
-
-  // Return role-specific section title
-  switch (user.role) {
-    case 'admin':
-      return "For Admins";
-    case 'jobcoach':
-      return "For Job Coaches";
-    case 'client':
-      return "For Clients";
-    case 'user':
-      return "For Users";
-    default:
-      return "For Users";
-  }
-};
-
-const Footer: React.FC = () => {
-  const session = useLoginSession();
-
-  // Define sections based on user session
-  const getSections = () => {
+  // ✅ Define sections based on user session and data
+  const getSections = useMemo(() => {
     const baseSections = [
       {
         title: "Resources",
@@ -117,18 +114,16 @@ const Footer: React.FC = () => {
       },
     ];
 
-    if (session?.user?.id) {
+    // ✅ Only show user sections when logged in AND we have user data
+    if (session?.user?.id && userSectionData && userSectionData.sectionTitle !== "Loading...") {
+      console.log('[Footer] Building sections with user data:', userSectionData);
+      
       return [
         {
-          title: <SmartSectionTitle userId={session.user.id} />,
+          title: userSectionData.sectionTitle,
           links: [
             { name: "CMS App", href: "/CMS" },
-            // Replace the hardcoded Dashboard link with our smart component
-            { 
-              name: <SmartDashboardLink userId={session.user.id} />, 
-              href: "#", // href will be handled by the SmartDashboardLink component
-              isComponent: true // Flag to identify this as a component
-            },
+            { name: userSectionData.dashboardText, href: userSectionData.dashboardHref },
           ],
         },
         {
@@ -139,13 +134,22 @@ const Footer: React.FC = () => {
       ];
     }
 
+    console.log('[Footer] No user data or still loading, returning base sections only');
     return baseSections;
-  };
+  }, [session?.user?.id, userSectionData]);
 
   const legalLinks = [
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms & Conditions", href: "/terms" },
   ];
+
+  console.log('[Footer] Final render state:', {
+    hasSession: !!session,
+    hasUserData: !!userSectionData,
+    sectionsCount: getSections.length,
+    userSectionData,
+    isLoading
+  });
 
   return (
     <section className="py-16 bg-[var(--background)] text-[var(--foreground)] border-t border-gray-200">
@@ -185,7 +189,7 @@ const Footer: React.FC = () => {
 
           {/* Navigation Sections */}
           <div className="grid w-full gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-12">
-            {getSections().map((section, sectionIdx) => (
+            {getSections.map((section, sectionIdx) => (
               <div key={sectionIdx}>
                 <h3 className="mb-4 font-bold text-[var(--foreground)]">{section.title}</h3>
                 <ul className="space-y-3 text-sm text-muted-foreground">
@@ -194,14 +198,9 @@ const Footer: React.FC = () => {
                       key={linkIdx}
                       className="font-medium hover:text-primary transition-colors"
                     >
-                      {/* Handle both component links and regular links */}
-                      {link.isComponent ? (
-                        link.name // This is already a component (SmartDashboardLink)
-                      ) : (
-                        <Link href={link.href} className="hover:underline">
-                          {link.name}
-                        </Link>
-                      )}
+                      <Link href={link.href} className="hover:underline">
+                        {link.name}
+                      </Link>
                     </li>
                   ))}
                 </ul>

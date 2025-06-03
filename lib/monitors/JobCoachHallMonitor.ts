@@ -22,7 +22,7 @@ const supabase = createBrowserClient(
 );
 
 export class JobCoachHallMonitor implements HallMonitor {
-  role = 'jobcoach';
+  role_name = 'jobcoach'; // ✅ FIXED: Changed from 'role' to 'role_name'
 
   // Core access control method
   async checkAccess(

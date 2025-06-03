@@ -22,7 +22,7 @@ const supabase = createBrowserClient(
 );
 
 export class ClientHallMonitor implements HallMonitor {
-  role = 'client';
+  role_name = 'client';
 
   // Core access control method
   async checkAccess(

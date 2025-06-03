@@ -22,7 +22,7 @@ const supabase = createBrowserClient(
 );
 
 export class AdminHallMonitor implements HallMonitor {
-  role = 'admin';
+  role_name = 'admin'; // ✅ FIXED: Changed from 'role' to 'role_name' to match interface
 
   // Core access control method
   async checkAccess(

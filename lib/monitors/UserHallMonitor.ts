@@ -1,4 +1,4 @@
-// lib/monitors/UserHallMonitor.ts
+// lib/monitors/UserHallMonitor.ts - FIXED VERSION
 import { createBrowserClient } from '@supabase/ssr';
 import type {
   HallMonitor,
@@ -21,7 +21,7 @@ const supabase = createBrowserClient(
 );
 
 export class UserHallMonitor implements HallMonitor {
-  role = 'user';
+  role_name = 'user'; // ✅ FIXED: Changed from 'role' to 'role_name'
 
   // Core access control method
   async checkAccess(
@@ -240,6 +240,8 @@ export class UserHallMonitor implements HallMonitor {
   // Get content configuration for basic user
   async getContentConfig(userId: string): Promise<ContentConfig> {
     try {
+      console.log('[UserHallMonitor] Getting content config for user:', userId);
+      
       // Basic users have very minimal configuration
       const availableFeatures = [
         FEATURES.PROFILE_VIEW,
@@ -253,7 +255,7 @@ export class UserHallMonitor implements HallMonitor {
       const navigationItems = await this.buildNavigationItems(userId);
       const permissions = await this.getPermissions(userId);
 
-      return {
+      const config: ContentConfig = {
         dashboardLayout: 'user-basic',
         availableFeatures,
         primaryActions: [
@@ -292,6 +294,9 @@ export class UserHallMonitor implements HallMonitor {
         ],
         permissions
       };
+
+      console.log('[UserHallMonitor] ✅ Content config created for user:', userId, config);
+      return config;
 
     } catch (error) {
       console.error('[UserHallMonitor] Error getting content config:', error);

@@ -1,302 +1,266 @@
-// hooks/useHallMonitor.ts - FIXED VERSION
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import type {
-  HallMonitor,
-  MonitorUser,
-  ContentConfig,
-  UserSpecialization,
+// hooks/useHallMonitor.ts - FINAL FIX FOR INFINITE LOADING
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { hallMonitorFactory } from '@/lib/monitors/HallMonitorFactory';
+import type { 
+  MonitorUser, 
+  HallMonitor, 
+  ContentConfig, 
   AccessContext,
-  UseHallMonitorResult,
-  AccessResult
+  UseHallMonitorResult
 } from '@/types/monitors';
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Cache for monitors to avoid recreating them
-const monitorCache = new Map<string, HallMonitor>();
-
-// Simple in-memory cache for user data
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number;
-}
-
-class SimpleCache {
-  private cache = new Map<string, CacheEntry<any>>();
-  private defaultTTL = 5 * 60 * 1000; // 5 minutes
-
-  set<T>(key: string, data: T, ttl?: number): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL
-    });
-  }
-
-  get<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  delete(key: string): void {
-    this.cache.delete(key);
-  }
-}
-
-const cache = new SimpleCache();
-
-// Main hook for hall monitor functionality
 export function useHallMonitor(userId?: string): UseHallMonitorResult {
-  const [monitor, setMonitor] = useState<HallMonitor | null>(null);
+  // State
   const [user, setUser] = useState<MonitorUser | null>(null);
+  const [monitor, setMonitor] = useState<HallMonitor | null>(null);
   const [contentConfig, setContentConfig] = useState<ContentConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
+  // Refs for cleanup and state management
   const isMounted = useRef(true);
-  const currentUserId = useRef<string | undefined>(userId);
+  const loadingRef = useRef(false);
+  const lastLoadedUserId = useRef<string | undefined>(undefined);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Update ref when userId changes
-  useEffect(() => {
-    currentUserId.current = userId;
-  }, [userId]);
-
-  // Fetch user data from your existing tables - FIXED VERSION
-  const fetchUserData = useCallback(async (targetUserId: string): Promise<MonitorUser | null> => {
-    try {
-      console.log('[useHallMonitor] FIXED: Fetching user data for:', targetUserId);
-      
-      // Check cache first
-      const cacheKey = `user-${targetUserId}`;
-      const cachedUser = cache.get<MonitorUser>(cacheKey);
-      if (cachedUser) {
-        console.log('[useHallMonitor] FIXED: Using cached user data');
-        return cachedUser;
-      }
-
-      // FIXED: Simple query - no joins with roles table
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', targetUserId)
-        .single();
-
-      if (profileError || !profile) {
-        console.error('[useHallMonitor] FIXED: Profile fetch error:', profileError);
-        return null;
-      }
-
-      console.log('[useHallMonitor] FIXED: Profile fetched successfully:', profile);
-
-      // Fetch user specializations using your existing function
-      const { data: specializations, error: specError } = await supabase
-        .rpc('get_user_specializations', { user_uuid: targetUserId });
-
-      if (specError) {
-        console.error('[useHallMonitor] FIXED: Specializations fetch error:', specError);
-        // Don't fail if specializations fetch fails - user might not have any
-      }
-
-      console.log('[useHallMonitor] FIXED: Specializations fetched:', specializations);
-
-      // Get user email from auth if needed
-      const { data: authUser } = await supabase.auth.getUser();
-      const email = authUser.user?.id === targetUserId ? authUser.user.email : undefined;
-
-      const userData: MonitorUser = {
-        id: profile.id,
-        email,
-        role: profile.role, // This should be 'admin', 'jobcoach', 'client', or 'user'
-        specializations: specializations || []
-      };
-
-      console.log('[useHallMonitor] FIXED: Final user data:', userData);
-
-      // Cache the user data
-      cache.set(cacheKey, userData);
-
-      return userData;
-    } catch (err) {
-      console.error('[useHallMonitor] FIXED: Error fetching user data:', err);
-      return null;
+  // ✅ CRITICAL FIX: Single, atomic loading function
+  const loadUserData = useCallback(async (targetUserId: string) => {
+    // ✅ Prevent duplicate concurrent calls
+    if (loadingRef.current) {
+      console.log('[useHallMonitor] ⏭️ Already loading, skipping duplicate call');
+      return;
     }
-  }, []);
 
-  // Get or create monitor for user's role
-  const getMonitor = useCallback(async (userRole: string): Promise<HallMonitor | null> => {
-    try {
-      // Check if we already have this monitor cached
-      if (monitorCache.has(userRole)) {
-        return monitorCache.get(userRole)!;
+    // ✅ Skip if we already loaded this user successfully
+    if (lastLoadedUserId.current === targetUserId && user && monitor && contentConfig) {
+      console.log('[useHallMonitor] ⏭️ User already loaded successfully, skipping');
+      if (isLoading) {
+        setIsLoading(false);
       }
-
-      // Dynamically import the appropriate monitor
-      let MonitorClass;
-      
-      switch (userRole) {
-        case 'admin':
-          const { AdminHallMonitor } = await import('@/lib/monitors/AdminHallMonitor');
-          MonitorClass = AdminHallMonitor;
-          break;
-        case 'jobcoach':
-          const { JobCoachHallMonitor } = await import('@/lib/monitors/JobCoachHallMonitor');
-          MonitorClass = JobCoachHallMonitor;
-          break;
-        case 'client':
-          const { ClientHallMonitor } = await import('@/lib/monitors/ClientHallMonitor');
-          MonitorClass = ClientHallMonitor;
-          break;
-        case 'user':
-          const { UserHallMonitor } = await import('@/lib/monitors/UserHallMonitor');
-          MonitorClass = UserHallMonitor;
-          break;
-        default:
-          console.warn('[useHallMonitor] FIXED: Unknown role:', userRole);
-          return null;
-      }
-
-      const monitor = new MonitorClass();
-      monitorCache.set(userRole, monitor);
-      console.log('[useHallMonitor] FIXED: Monitor created and cached for role:', userRole);
-      
-      return monitor;
-    } catch (err) {
-      console.error('[useHallMonitor] FIXED: Error creating monitor:', err);
-      return null;
+      return;
     }
-  }, []);
 
-  // Initialize hook
-  const initialize = useCallback(async () => {
-    if (!userId || !isMounted.current) return;
+    console.log('[useHallMonitor] 🔄 Loading user data for:', targetUserId);
+
+    // ✅ Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     try {
+      loadingRef.current = true;
       setIsLoading(true);
       setError(null);
 
-      console.log('[useHallMonitor] FIXED: Initializing for user:', userId);
-
-      // Fetch user data
-      const userData = await fetchUserData(userId);
-      if (!userData || !isMounted.current) {
-        setError('Failed to fetch user data');
+      console.log('[useHallMonitor] 📞 Calling hallMonitorFactory.getMonitorForUser...');
+      
+      // ✅ STEP 1: Get monitor and user data
+      const result = await hallMonitorFactory.getMonitorForUser(targetUserId);
+      
+      // ✅ Check if component was unmounted or request was aborted
+      if (!isMounted.current || abortControllerRef.current.signal.aborted) {
+        console.log('[useHallMonitor] ⏭️ Request aborted or component unmounted');
         return;
       }
 
-      setUser(userData);
-      console.log('[useHallMonitor] FIXED: User role detected:', userData.role);
+      console.log('[useHallMonitor] ✅ Got monitor result:', {
+        hasUser: !!result.user,
+        hasMonitor: !!result.monitor,
+        userRoleId: result.user?.role_id,
+        userRoleName: result.user?.role_name,
+        monitorRole: result.monitor?.role_name
+      });
 
-      // Get appropriate monitor
-      const userMonitor = await getMonitor(userData.role);
-      if (!userMonitor || !isMounted.current) {
-        setError('Failed to create hall monitor');
+      // ✅ STEP 2: Set user and monitor first
+      setUser(result.user);
+      setMonitor(result.monitor);
+
+      // ✅ STEP 3: Get content config with error handling
+      console.log('[useHallMonitor] 📋 Loading content config...');
+      
+      let config: ContentConfig;
+      try {
+        config = await result.monitor.getContentConfig(targetUserId);
+        console.log('[useHallMonitor] ✅ Content config loaded:', {
+          dashboardLayout: config.dashboardLayout,
+          featuresCount: config.availableFeatures.length,
+          permissionsCount: config.permissions.length
+        });
+      } catch (configError) {
+        console.error('[useHallMonitor] ❌ Content config error, using fallback:', configError);
+        
+        // ✅ Fallback config if content config fails
+        config = {
+          dashboardLayout: 'user-basic' as any,
+          availableFeatures: ['profile-view'],
+          primaryActions: [],
+          secondaryActions: [],
+          navigationItems: [],
+          hiddenSections: [],
+          customFields: {},
+          visibleComponents: [],
+          permissions: ['profile:read_own']
+        };
+      }
+
+      // ✅ Check again after async operation
+      if (!isMounted.current || abortControllerRef.current.signal.aborted) {
+        console.log('[useHallMonitor] ⏭️ Request aborted during config load');
         return;
       }
 
-      setMonitor(userMonitor);
+      // ✅ STEP 4: Set final state atomically
+      setContentConfig(config);
+      setError(null);
+      lastLoadedUserId.current = targetUserId;
 
-      // Get content configuration
-      const config = await userMonitor.getContentConfig(userId);
-      if (isMounted.current) {
-        setContentConfig(config);
-      }
+      console.log('[useHallMonitor] 🎉 Load complete for user:', targetUserId);
 
-      console.log('[useHallMonitor] FIXED: Initialization complete');
     } catch (err) {
-      console.error('[useHallMonitor] FIXED: Initialization error:', err);
-      if (isMounted.current) {
-        setError('Failed to initialize hall monitor');
+      console.error('[useHallMonitor] ❌ Error loading user data:', err);
+      
+      if (!isMounted.current || abortControllerRef.current.signal.aborted) {
+        console.log('[useHallMonitor] ⏭️ Error occurred but request was aborted');
+        return;
       }
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load user data';
+      setError(errorMessage);
+      setUser(null);
+      setMonitor(null);
+      setContentConfig(null);
+      lastLoadedUserId.current = undefined;
     } finally {
-      if (isMounted.current) {
+      if (isMounted.current && !abortControllerRef.current.signal.aborted) {
+        setIsLoading(false); // ✅ CRITICAL: Always clear loading state
+        console.log('[useHallMonitor] ✅ Loading state cleared');
+      }
+      loadingRef.current = false; // ✅ CRITICAL: Always clear loading flag
+    }
+  }, []); // ✅ Empty deps to prevent recreation
+
+  // ✅ Effect to handle userId changes
+  useEffect(() => {
+    // ✅ Reset state when no userId
+    if (!userId) {
+      console.log('[useHallMonitor] 🚫 No userId provided, resetting state');
+      setUser(null);
+      setMonitor(null);
+      setContentConfig(null);
+      setIsLoading(false);
+      setError(null);
+      loadingRef.current = false;
+      lastLoadedUserId.current = undefined;
+      
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      return;
+    }
+
+    // ✅ Only load if userId actually changed or we don't have complete data
+    const needsLoad = lastLoadedUserId.current !== userId || !user || !monitor || !contentConfig;
+    
+    if (needsLoad) {
+      console.log('[useHallMonitor] 🚀 Starting load for userId:', userId, {
+        lastLoaded: lastLoadedUserId.current,
+        hasUser: !!user,
+        hasMonitor: !!monitor,
+        hasConfig: !!contentConfig
+      });
+      loadUserData(userId);
+    } else {
+      console.log('[useHallMonitor] ⏭️ Data already loaded for userId:', userId);
+      // Ensure loading is false if we have all data
+      if (isLoading) {
         setIsLoading(false);
       }
     }
-  }, [userId, fetchUserData, getMonitor]);
+  }, [userId, loadUserData]); // ✅ Minimal deps
 
-  // Initialize when userId changes
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  // Cleanup on unmount
+  // ✅ Cleanup effect
   useEffect(() => {
     return () => {
+      console.log('[useHallMonitor] 🧹 Cleaning up hook');
       isMounted.current = false;
+      loadingRef.current = false;
+      
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
-  // Convenience method for access checking
+  // ✅ Memoized helper functions (no deps on changing values)
   const canAccess = useCallback(async (
     resource: string, 
     action: string, 
     context?: AccessContext
   ): Promise<boolean> => {
-    if (!monitor || !currentUserId.current) {
-      console.warn('[useHallMonitor] FIXED: canAccess called without monitor or userId');
+    if (!monitor || !user) {
       return false;
     }
 
     try {
-      const result = await monitor.checkAccess(currentUserId.current, resource, action, context);
+      const result = await monitor.checkAccess(user.id, resource, action, context);
       return result.hasAccess;
     } catch (err) {
-      console.error('[useHallMonitor] FIXED: Access check error:', err);
+      console.error('[useHallMonitor] Access check error:', err);
       return false;
     }
-  }, [monitor]);
+  }, [monitor, user]);
 
-  // Check if user has a specific feature
   const hasFeature = useCallback((feature: string): boolean => {
-    return contentConfig?.availableFeatures.includes(feature) || false;
+    if (!contentConfig) return false;
+    return contentConfig.availableFeatures.includes(feature);
   }, [contentConfig]);
 
-  // Check if user has a specific specialization
   const hasSpecialization = useCallback((specialization: string): boolean => {
-    return user?.specializations?.some(s => s.name === specialization) || false;
+    if (!user || !user.specializations) return false;
+    return user.specializations.some(spec => spec.name === specialization);
   }, [user]);
 
-  // Refresh configuration
   const refreshConfig = useCallback(async (): Promise<void> => {
-    if (!monitor || !userId) return;
+    if (!userId || loadingRef.current) return;
+    
+    console.log('[useHallMonitor] 🔄 Refreshing configuration...');
+    
+    // Clear cache and force reload
+    hallMonitorFactory.clearUserCache(userId);
+    lastLoadedUserId.current = undefined;
+    await loadUserData(userId);
+  }, [userId, loadUserData]);
 
-    try {
-      console.log('[useHallMonitor] FIXED: Refreshing configuration');
-      
-      // Clear cache for this user
-      cache.delete(`user-${userId}`);
-      
-      // Re-fetch user data
-      const userData = await fetchUserData(userId);
-      if (userData && isMounted.current) {
-        setUser(userData);
-        
-        // Get fresh content config
-        const config = await monitor.getContentConfig(userId);
-        if (isMounted.current) {
-          setContentConfig(config);
-        }
-      }
-    } catch (err) {
-      console.error('[useHallMonitor] FIXED: Refresh error:', err);
-    }
-  }, [monitor, userId, fetchUserData]);
+  // ✅ Early return for no userId
+  if (!userId) {
+    return {
+      monitor: null,
+      user: null,
+      contentConfig: null,
+      isLoading: false,
+      error: null,
+      canAccess: async () => false,
+      hasFeature: () => false,
+      hasSpecialization: () => false,
+      refreshConfig: async () => {}
+    };
+  }
+
+  // ✅ Debug current state
+  console.log('[useHallMonitor] 📊 Current state:', {
+    userId,
+    hasUser: !!user,
+    userRole: user?.role_name,
+    hasMonitor: !!monitor,
+    hasConfig: !!contentConfig,
+    isLoading,
+    error,
+    lastLoaded: lastLoadedUserId.current
+  });
 
   return {
     monitor,
@@ -311,64 +275,4 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   };
 }
 
-// Helper hook for simple access checking
-export function useCanAccess(
-  userId: string, 
-  resource: string, 
-  action: string, 
-  context?: AccessContext
-) {
-  const [canAccess, setCanAccess] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
-  const { monitor } = useHallMonitor(userId);
-
-  useEffect(() => {
-    async function checkAccess() {
-      if (!monitor || !userId) {
-        setCanAccess(false);
-        setIsChecking(false);
-        return;
-      }
-
-      try {
-        setIsChecking(true);
-        const result = await monitor.checkAccess(userId, resource, action, context);
-        setCanAccess(result.hasAccess);
-      } catch (err) {
-        console.error('[useCanAccess] FIXED: Error:', err);
-        setCanAccess(false);
-      } finally {
-        setIsChecking(false);
-      }
-    }
-
-    checkAccess();
-  }, [monitor, userId, resource, action, context]);
-
-  return { canAccess, isChecking };
-}
-
-// Helper hook for feature checking
-export function useHasFeature(userId: string, feature: string) {
-  const { contentConfig, isLoading } = useHallMonitor(userId);
-  
-  const hasFeature = contentConfig?.availableFeatures.includes(feature) || false;
-  
-  return { hasFeature, isLoading };
-}
-
-// Helper hook for specialization checking
-export function useHasSpecialization(userId: string, specialization: string) {
-  const { user, isLoading } = useHallMonitor(userId);
-  
-  const hasSpecialization = user?.specializations?.some(s => s.name === specialization) || false;
-  
-  return { hasSpecialization, isLoading };
-}
-
-// Cache management utilities
-export const hallMonitorCache = {
-  clear: () => cache.clear(),
-  clearUser: (userId: string) => cache.delete(`user-${userId}`),
-  clearMonitors: () => monitorCache.clear()
-};
+export default useHallMonitor;

@@ -1,11 +1,20 @@
 // types/monitors.ts
 // Hall Monitor types for role-based access control and conditional rendering
 
+// Role mapping that matches your existing useUserRole hook
+export const ROLE_MAP: {[key: string]: string} = {
+  'admin1': 'admin',
+  'coachx7': 'jobcoach', 
+  'user0x': 'user',
+  'client7x': 'client'
+};
+
 // Base user interface that works with your existing schema
 export interface MonitorUser {
   id: string;
   email?: string;
-  role: string; // ✅ RESOLVED: The actual role NAME (admin, jobcoach, client, user) not the role ID
+  role_id: string; // The actual value from profiles.role ('admin1', 'coachx7', etc.)
+  role_name: string; // The mapped role name ('admin', 'jobcoach', etc.) using ROLE_MAP
   specializations?: UserSpecialization[];
 }
 
@@ -14,8 +23,8 @@ export interface UserSpecialization {
   id: string;
   name: string;
   description?: string;
-  role_id: string; // References roles.id
-  role_name: string; // The actual role name from roles.role
+  role_id: string; // References roles.id ('admin1', 'coachx7', etc.)
+  role_name: string; // The actual role name from roles.role ('admin', 'jobcoach', etc.)
   assigned_at: string;
   assigned_by?: string;
 }
@@ -29,7 +38,7 @@ export interface AccessResult {
 
 // Content configuration for conditional rendering
 export interface ContentConfig {
-  // Dashboard layout type
+  // Dashboard layout type based on role + specialization
   dashboardLayout: 'admin-content' | 'admin-users' | 'admin-system' | 
                    'jobcoach-counselor' | 'jobcoach-trainer' | 'jobcoach-specialist' |
                    'client-seeker' | 'client-builder' | 'client-changer' |
@@ -70,7 +79,7 @@ export interface NavigationItem {
 
 // Hall monitor interface that each role monitor implements
 export interface HallMonitor {
-  role: string;
+  role_name: string; // The role name this monitor handles ('admin', 'jobcoach', etc.)
   
   // Core access control
   checkAccess(
@@ -158,12 +167,20 @@ export const CLIENT_SPECIALIZATIONS = {
   CAREER_CHANGER: 'Career Changer'
 } as const;
 
-// Role constants that match your database
+// Role constants that match your database role NAMES (not IDs)
 export const ROLES = {
-  ADMIN: 'admin',
-  JOBCOACH: 'jobcoach',
-  CLIENT: 'client',
-  USER: 'user'
+  ADMIN: 'admin',       // Maps to admin1
+  JOBCOACH: 'jobcoach', // Maps to coachx7
+  CLIENT: 'client',     // Maps to client7x
+  USER: 'user'          // Maps to user0x
+} as const;
+
+// Role IDs that match your database (what's actually stored in profiles.role)
+export const ROLE_IDS = {
+  ADMIN: 'admin1',
+  JOBCOACH: 'coachx7',
+  CLIENT: 'client7x',
+  USER: 'user0x'
 } as const;
 
 // Features available to different specializations
@@ -242,7 +259,8 @@ export interface UseHallMonitorResult {
 
 // Component protection props
 export interface ProtectionRule {
-  roles?: string[];
+  role_names?: string[]; // Use role names for protection rules
+  role_ids?: string[];   // Or use role IDs if needed
   specializations?: string[];
   features?: string[];
   permissions?: string[];
@@ -250,10 +268,21 @@ export interface ProtectionRule {
   customCheck?: (user: MonitorUser) => boolean | Promise<boolean>;
 }
 
+// Utility functions for role conversion
+export const getRoleName = (roleId: string): string => {
+  return ROLE_MAP[roleId] || roleId;
+};
+
+export const getRoleId = (roleName: string): string => {
+  const entry = Object.entries(ROLE_MAP).find(([_, name]) => name === roleName);
+  return entry ? entry[0] : roleName;
+};
+
 // Export type helpers
 export type ResourceType = typeof RESOURCES[keyof typeof RESOURCES];
 export type ActionType = typeof ACTIONS[keyof typeof ACTIONS];
-export type RoleType = typeof ROLES[keyof typeof ROLES];
+export type RoleNameType = typeof ROLES[keyof typeof ROLES];
+export type RoleIdType = typeof ROLE_IDS[keyof typeof ROLE_IDS];
 export type FeatureType = typeof FEATURES[keyof typeof FEATURES];
 export type AdminSpecializationType = typeof ADMIN_SPECIALIZATIONS[keyof typeof ADMIN_SPECIALIZATIONS];
 export type JobCoachSpecializationType = typeof JOBCOACH_SPECIALIZATIONS[keyof typeof JOBCOACH_SPECIALIZATIONS];

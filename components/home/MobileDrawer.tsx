@@ -53,38 +53,51 @@ export default function MobileDrawer({
 
   return (
     <>
-      {/* Backdrop that only covers content below header */}
+      {/* Backdrop ONLY for content area, positioned way below header */}
       <div 
-        className="md:hidden fixed inset-0 top-16 bg-black/20 z-40"
+        className="fixed top-20 left-0 right-0 bottom-0 bg-black/20 z-30 md:hidden"
         onClick={handleClose}
+        style={{
+          // Ensure no backdrop filter effects
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none'
+        }}
       />
       
-      {/* Drawer positioned relative to header, not overlapping it */}
+      {/* Drawer positioned directly under header with no overlap */}
       <div
         ref={menuRef}
-        className={`md:hidden fixed top-16 left-0 right-0 z-50 
-          bg-background border-b border-border shadow-lg rounded-b-xl overflow-hidden
+        className={`drawer-content md:hidden
           ${isClosing ? "animate-slide-up" : "animate-slide-down"}`}
         style={{
-          maxHeight: 'calc(100vh - 4rem)', // Ensure it doesn't exceed viewport
-          overflowY: 'auto'
+          // Explicit positioning to avoid header
+          position: 'fixed',
+          top: '4rem', // 64px - exactly below header
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          maxHeight: 'calc(100vh - 4rem)',
+          overflowY: 'auto',
+          // Ensure no backdrop effects on the drawer itself
+          backdropFilter: 'none',
+          WebkitBackdropFilter: 'none'
         }}
       >
-        <div className="flex flex-col py-1 gap-[2px] bg-background">
+        <div className="mobile-menu-container bg-background border-b border-border shadow-lg rounded-b-xl">
           {navTree.map((node) => (
             <div key={node.key}>
-              <div className="flex items-center justify-between px-4 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors">
+              <div className="mobile-menu-item text-foreground hover:bg-secondary">
                 <a
                   href="#"
                   onClick={handleClickAndClose(node.key)}
-                  className="truncate w-full focus:outline-none text-foreground no-underline"
+                  className="menu-link focus:outline-none text-foreground no-underline"
                 >
                   {node.label}
                 </a>
                 {node.children ? (
                   <button
                     onClick={() => toggleExpand(node.key)}
-                    className="pl-2 text-foreground bg-transparent border-none cursor-pointer"
+                    className="menu-toggle text-foreground"
                     aria-label={`Toggle ${node.label}`}
                   >
                     {expanded === node.key ? (
@@ -102,13 +115,13 @@ export default function MobileDrawer({
               </div>
 
               {node.children && expanded === node.key && (
-                <div className="pl-4 flex flex-col overflow-hidden transition-all duration-200 bg-background">
+                <div className="mobile-submenu bg-background">
                   {node.children.map((child) => (
                     <a
                       key={child.key}
                       href="#"
                       onClick={handleClickAndClose(child.key)}
-                      className="px-4 py-1.5 text-sm text-foreground hover:bg-secondary transition-colors no-underline"
+                      className="submenu-link text-foreground hover:bg-secondary no-underline"
                     >
                       {child.label}
                     </a>
@@ -118,12 +131,12 @@ export default function MobileDrawer({
             </div>
           ))}
 
-          <div className="mt-1 border-t border-border pt-2 bg-background">
+          <div className="mobile-auth-section border-t border-border bg-background">
             {!session ? (
               <a
                 href="/sign-in"
                 onClick={handleClose}
-                className="px-4 py-1.5 text-sm text-accent font-semibold block hover:bg-secondary transition-colors no-underline"
+                className="auth-button text-accent hover:bg-secondary no-underline"
               >
                 Sign In
               </a>
@@ -133,7 +146,7 @@ export default function MobileDrawer({
                   window.location.href = "/auth/logout";
                   handleClose();
                 }}
-                className="px-4 py-1.5 text-sm text-destructive font-semibold block w-full text-left hover:bg-secondary bg-transparent border-none cursor-pointer transition-colors"
+                className="auth-button text-destructive hover:bg-secondary"
               >
                 Log Out
               </button>

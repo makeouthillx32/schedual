@@ -2,7 +2,7 @@
 
 /* Mobile drawer content - structural styling only */
 .drawer-content {
-  position: absolute;
+  position: fixed; /* Changed from absolute to fixed for better positioning */
   top: 4rem;
   left: 0;
   right: 0;
@@ -10,8 +10,24 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border-radius: 0 0 0.75rem 0.75rem;
   overflow: hidden;
-  max-height: fit-content;
+  max-height: calc(100vh - 4rem); /* Ensure it doesn't exceed viewport */
+  overflow-y: auto; /* Allow scrolling if content is too long */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   /* Don't set background or border colors here - let component handle it */
+}
+
+/* Backdrop for content below header only */
+.mobile-drawer-backdrop {
+  position: fixed;
+  top: 4rem; /* Start below header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  background-color: rgba(0, 0, 0, 0.2);
+  /* No backdrop-filter to prevent header blur */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* Mobile menu container */
@@ -41,6 +57,12 @@
     &:focus {
       outline: none;
     }
+    
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
   }
   
   .menu-toggle {
@@ -53,6 +75,12 @@
     
     &:focus {
       outline: none;
+    }
+    
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+      border-radius: 0.25rem;
     }
   }
 }
@@ -70,6 +98,12 @@
     font-size: 0.875rem;
     transition: background-color 0.2s ease;
     text-decoration: none;
+    
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
   }
 }
 
@@ -91,6 +125,27 @@
     background: transparent;
     cursor: pointer;
     text-decoration: none;
+    
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+      border-radius: 0.25rem;
+    }
+  }
+}
+
+/* ========== Header Protection ========== */
+/* Ensure header stays unblurred and on top */
+@media (max-width: 768px) {
+  header,
+  .header,
+  [role="banner"],
+  .site-header {
+    z-index: 60 !important;
+    position: relative;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    isolation: isolate;
   }
 }
 
@@ -123,4 +178,29 @@
 
 .animate-slide-up {
   animation: slide-up 0.25s ease-in forwards;
+}
+
+/* ========== Smooth Scrolling ========== */
+.mobile-drawer-content {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========== Performance Optimizations ========== */
+.drawer-content,
+.mobile-drawer-backdrop {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* ========== Accessibility Improvements ========== */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-down,
+  .animate-slide-up,
+  .mobile-menu-item,
+  .mobile-submenu,
+  .mobile-auth-section .auth-button {
+    animation: none;
+    transition: none;
+  }
 }

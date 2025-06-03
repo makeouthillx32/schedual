@@ -2,33 +2,22 @@
 "use client";
 
 import "@/css/satoshi.css";
-import "@/app/globals.css"; // Import the global CSS that contains your CSS variables
+import "@/app/globals.css";
 
 import { Sidebar } from "@/components/Layouts/sidebar";
 import { Header } from "@/components/Layouts/header";
 import { Providers } from "./providers";
-import { ThemeColorHandler } from "@/components/theme-color-handler";
 
 import "flatpickr/dist/flatpickr.min.css";
 import "jsvectormap/dist/jsvectormap.css";
 
 import NextTopLoader from "nextjs-toploader";
 import type { PropsWithChildren } from "react";
-import { useTheme } from "next-themes";
-
-function DashboardThemeColorWrapper() {
-  const { resolvedTheme } = useTheme();
-  const isDarkMode = resolvedTheme === 'dark';
-  
-  return <ThemeColorHandler isDarkMode={isDarkMode} />;
-}
 
 export default function DashboardLayout({ children }: PropsWithChildren) {
   return (
     <Providers>
-      {/* Use your existing theme color handler */}
-      <DashboardThemeColorWrapper />
-      
+      {/* No need for separate ThemeColorHandler - main provider handles it */}
       <NextTopLoader color="hsl(var(--sidebar-primary))" showSpinner={false} />
       <div className="flex min-h-screen">
         <Sidebar />

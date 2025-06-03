@@ -8,12 +8,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Theme } from "@/types/theme"; 
 import { defaultThemeId, getThemeById, getAvailableThemeIds } from "@/themes";
 import { dynamicFontManager } from "@/lib/dynamicFontManager";
+import { transitionTheme, smoothThemeToggle } from "@/utils/themeTransitions";
 
 interface EnhancedThemeContextType {
   themeType: "light" | "dark";
-  toggleTheme: () => void;
+  toggleTheme: (element?: HTMLElement) => Promise<void>;
   themeId: string;
-  setThemeId: (id: string) => void;
+  setThemeId: (id: string, element?: HTMLElement) => Promise<void>;
   getTheme: (id?: string) => Promise<Theme | null>;
   availableThemes: string[];
 }
@@ -127,20 +128,29 @@ export const Providers: React.FC<{
     }
   };
   
-  // Updated setThemeId function - now checks database
-  const setThemeId = async (id: string) => {
-    try {
-      const theme = await getThemeById(id);
-      if (theme) {
-        setThemeIdState(id);
-        localStorage.setItem("themeId", id);
-        setCookie("themeId", id, { path: "/", maxAge: 31536000 });
-        console.log(`🎨 Theme changed to: ${theme.name} (${id})`);
-      } else {
-        console.warn(`⚠️ Theme ${id} not found in database`);
+  // Enhanced setThemeId function with smooth transitions
+  const setThemeId = async (id: string, element?: HTMLElement) => {
+    const themeChangeCallback = async () => {
+      try {
+        const theme = await getThemeById(id);
+        if (theme) {
+          setThemeIdState(id);
+          localStorage.setItem("themeId", id);
+          setCookie("themeId", id, { path: "/", maxAge: 31536000 });
+          console.log(`🎨 Theme changed to: ${theme.name} (${id})`);
+        } else {
+          console.warn(`⚠️ Theme ${id} not found in database`);
+        }
+      } catch (error) {
+        console.error(`❌ Error setting theme ${id}:`, error);
       }
-    } catch (error) {
-      console.error(`❌ Error setting theme ${id}:`, error);
+    };
+
+    // Use smooth transition if element provided, otherwise regular transition
+    if (element) {
+      await smoothThemeToggle(element, themeChangeCallback);
+    } else {
+      await transitionTheme(themeChangeCallback);
     }
   };
 
@@ -241,7 +251,7 @@ export const Providers: React.FC<{
         localStorage.setItem("theme", themeType);
         setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
         
-        // Update meta theme-color
+        // Update meta theme-color for iOS
         const isHome = window.location.pathname === "/";
         let themeColor = themeType === "dark" 
           ? (isHome ? getComputedStyle(html).getPropertyValue("--sidebar").trim() : getComputedStyle(html).getPropertyValue("--background").trim())
@@ -251,6 +261,24 @@ export const Providers: React.FC<{
           themeColor = getComputedStyle(html).getPropertyValue(themeColor.slice(4, -1)).trim();
         }
         
+        // Convert HSL to hex for iOS compatibility
+        if (themeColor && !themeColor.startsWith("#")) {
+          const tempDiv = document.createElement('div');
+          tempDiv.style.color = themeColor.includes("hsl") ? themeColor : `hsl(${themeColor})`;
+          document.body.appendChild(tempDiv);
+          const computedColor = getComputedStyle(tempDiv).color;
+          document.body.removeChild(tempDiv);
+          
+          const rgbMatch = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (rgbMatch) {
+            const r = parseInt(rgbMatch[1]);
+            const g = parseInt(rgbMatch[2]);
+            const b = parseInt(rgbMatch[3]);
+            themeColor = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+          }
+        }
+        
+        // Update theme-color meta tag
         let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
         if (!metaTag) {
           metaTag = document.createElement("meta");
@@ -259,7 +287,7 @@ export const Providers: React.FC<{
         }
         metaTag.setAttribute("content", themeColor);
         
-        console.log(`✅ Theme applied: ${theme.name} (${themeType})`);
+        console.log(`✅ Theme applied: ${theme.name} (${themeType}) - iOS color: ${themeColor}`);
         
         // Log theme info
         logThemeInfo(themeId, themeType);
@@ -272,8 +300,18 @@ export const Providers: React.FC<{
     applyTheme();
   }, [themeType, themeId, mounted, availableThemes]);
 
-  const toggleTheme = () => {
-    setThemeType((prev) => (prev === "light" ? "dark" : "light"));
+  // Enhanced toggleTheme with smooth transitions
+  const toggleTheme = async (element?: HTMLElement) => {
+    const themeChangeCallback = () => {
+      setThemeType((prev) => (prev === "light" ? "dark" : "light"));
+    };
+
+    // Use smooth transition if element provided, otherwise regular transition
+    if (element) {
+      await smoothThemeToggle(element, themeChangeCallback);
+    } else {
+      await transitionTheme(themeChangeCallback);
+    }
   };
 
   const supabase = createBrowserClient(

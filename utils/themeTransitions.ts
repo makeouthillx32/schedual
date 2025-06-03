@@ -2,14 +2,13 @@
 "use client";
 
 /**
- * Smooth theme transition with circular reveal animation
- * Uses the View Transitions API when available
+ * Simple theme transition with circular reveal animation
+ * Similar to TweakCN's approach - no View Transitions API needed
  */
 
 interface TransitionOptions {
   x?: number;
   y?: number;
-  duration?: number;
   element?: HTMLElement;
 }
 
@@ -18,8 +17,8 @@ interface TransitionOptions {
  */
 function setTransitionOrigin(x: number, y: number) {
   const root = document.documentElement;
-  root.style.setProperty('--theme-x', `${x}px`);
-  root.style.setProperty('--theme-y', `${y}px`);
+  root.style.setProperty('--x', `${x}px`);
+  root.style.setProperty('--y', `${y}px`);
 }
 
 /**
@@ -34,21 +33,13 @@ function getElementCenter(element: HTMLElement): { x: number; y: number } {
 }
 
 /**
- * Main theme transition function
- * @param themeChangeCallback - Function that actually changes the theme
- * @param options - Transition options including origin coordinates
+ * Simple theme transition - just set origin and change theme
+ * The CSS animation will handle the rest automatically
  */
 export async function transitionTheme(
   themeChangeCallback: () => void | Promise<void>,
   options: TransitionOptions = {}
 ): Promise<void> {
-  // Check if View Transitions API is supported
-  if (!('startViewTransition' in document)) {
-    console.log('🔄 View Transitions not supported, using fallback');
-    await themeChangeCallback();
-    return;
-  }
-
   try {
     // Get transition origin coordinates
     let x = options.x ?? window.innerWidth / 2;
@@ -64,21 +55,16 @@ export async function transitionTheme(
     // Set CSS variables for animation origin
     setTransitionOrigin(x, y);
 
-    console.log(`🎨 Starting theme transition from (${x}, ${y})`);
+    console.log(`🎨 Setting theme transition origin at (${x}, ${y})`);
 
-    // Start the view transition
-    const transition = (document as any).startViewTransition(async () => {
-      await themeChangeCallback();
-    });
-
-    // Wait for transition to complete
-    await transition.finished;
+    // Execute the theme change - CSS will handle the animation
+    await themeChangeCallback();
     
-    console.log('✨ Theme transition completed');
+    console.log('✨ Theme changed - CSS animation should be running');
 
   } catch (error) {
     console.error('❌ Theme transition failed:', error);
-    // Fallback to regular theme change
+    // Still execute the theme change even if coordinate setting failed
     await themeChangeCallback();
   }
 }
@@ -110,29 +96,43 @@ export async function transitionThemeFromPoint(
 }
 
 /**
- * Check if View Transitions are supported
+ * Simple coordinate-based theme toggle (TweakCN style)
+ * @param element - Element that was clicked
+ * @param themeChangeCallback - Function to change theme
  */
-export function isViewTransitionsSupported(): boolean {
-  return typeof window !== 'undefined' && 'startViewTransition' in document;
+export function simpleThemeToggle(
+  element: HTMLElement,
+  themeChangeCallback: () => void
+): void {
+  // Get click position
+  const center = getElementCenter(element);
+  
+  // Set origin for animation
+  setTransitionOrigin(center.x, center.y);
+  
+  // Change theme - CSS animation will run automatically
+  themeChangeCallback();
+  
+  console.log(`🎨 Theme toggled from (${center.x}, ${center.y})`);
 }
 
 /**
- * Utility to enhance any theme toggle button with smooth transitions
+ * Utility to enhance any theme toggle button with simple transitions
  * @param buttonSelector - CSS selector for theme toggle buttons
  * @param themeChangeCallback - Function to change theme
  */
 export function enhanceThemeButtons(
   buttonSelector: string,
-  themeChangeCallback: (element: HTMLElement) => void | Promise<void>
+  themeChangeCallback: (element: HTMLElement) => void
 ): void {
   if (typeof window === 'undefined') return;
 
   const buttons = document.querySelectorAll(buttonSelector);
   
   buttons.forEach((button) => {
-    button.addEventListener('click', async (event) => {
+    button.addEventListener('click', (event) => {
       event.preventDefault();
-      await smoothThemeToggle(
+      simpleThemeToggle(
         button as HTMLElement,
         () => themeChangeCallback(button as HTMLElement)
       );

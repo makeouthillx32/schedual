@@ -123,54 +123,127 @@
   }
 }
 
-/* ========== FORCE HEADER TO STAY CLEAR ========== */
-/* Target all possible header selectors */
-header,
-.header,
-[role="banner"],
-.site-header,
-.navbar,
-.nav-header,
-.app-header {
-  /* Force clear appearance */
+/* ========== HEADER PROTECTION - CRITICAL FIX ========== */
+
+/* Header container - prevent any overlays or backdrop effects */
+.header-container {
+  /* Force clear background - no overlays */
+  background: hsl(var(--background)) !important;
+  
+  /* Prevent any backdrop effects */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   
-  /* Ensure proper stacking */
+  /* Ensure it stays on top */
   position: relative !important;
-  z-index: 100 !important; /* Very high z-index */
-  
-  /* Isolation to prevent backdrop inheritance */
-  isolation: isolate !important;
+  z-index: 100 !important;
   
   /* Force hardware acceleration to separate layer */
   transform: translateZ(0) !important;
   will-change: auto !important;
+  
+  /* Prevent inheritance of any backdrop effects */
+  isolation: isolate !important;
+  
+  /* Ensure solid background */
+  opacity: 1 !important;
 }
 
-/* Specific mobile overrides */
+/* Header content and all children */
+.header-content,
+.header-logo,
+.header-nav, 
+.header-actions,
+.header-auth,
+.theme-switcher,
+.mobile-hamburger {
+  /* No backdrop effects on any header elements */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  
+  /* Ensure solid backgrounds where needed */
+  background-color: transparent !important;
+  
+  /* Prevent overlay effects */
+  opacity: 1 !important;
+}
+
+/* Logo specific protection */
+.logo-link,
+.logo-image {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Mobile drawer overlay - position it BELOW header completely */
+.mobile-drawer-overlay {
+  /* Ensure it doesn't affect header */
+  position: fixed !important;
+  top: 4rem !important; /* Start below header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50 !important; /* Below header z-index */
+  
+  /* No backdrop effects */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  
+  /* Don't let it interfere with header */
+  pointer-events: none;
+  
+  /* Allow pointer events only on the drawer content */
+  .drawer-content {
+    pointer-events: auto;
+  }
+}
+
+/* ========== MOBILE SPECIFIC OVERRIDES ========== */
 @media (max-width: 768px) {
-  /* Remove ANY backdrop effects on mobile */
-  * {
+  /* Aggressive header protection on mobile */
+  header,
+  .header,
+  .header-container,
+  [role="banner"] {
+    /* Force solid background */
+    background: hsl(var(--background)) !important;
+    
+    /* No backdrop effects whatsoever */
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    
+    /* Highest z-index */
+    z-index: 999 !important;
+    position: relative !important;
+    
+    /* Force GPU layer */
+    transform: translateZ(0) !important;
+    isolation: isolate !important;
+    
+    /* Prevent any overlays */
+    &::before,
+    &::after {
+      display: none !important;
+    }
   }
   
-  /* Re-enable only for specific non-header elements if needed */
-  .modal-backdrop,
-  .overlay-backdrop {
-    backdrop-filter: blur(4px) !important;
-    -webkit-backdrop-filter: blur(4px) !important;
-  }
-  
-  /* But NEVER on header or navigation */
+  /* Prevent ANY backdrop effects on header children */
   header *,
   .header *,
-  [role="banner"] *,
-  .drawer-content,
-  .mobile-menu-container {
+  .header-container * {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Remove backdrop effects from everything when mobile menu is open */
+  body.mobile-menu-open {
+    header,
+    .header-container {
+      background: hsl(var(--background)) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
   }
 }
 

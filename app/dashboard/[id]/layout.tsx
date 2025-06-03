@@ -17,7 +17,6 @@ import type { PropsWithChildren } from "react";
 export default function DashboardLayout({ children }: PropsWithChildren) {
   return (
     <Providers>
-      {/* No need for separate ThemeColorHandler - main provider handles it */}
       <NextTopLoader color="hsl(var(--sidebar-primary))" showSpinner={false} />
       <div className="flex min-h-screen">
         <Sidebar />

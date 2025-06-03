@@ -27,6 +27,11 @@ export async function ChatsCard() {
     return count > 9 ? '9+' : count.toString();
   };
 
+  // Check if chat has a valid profile picture
+  const hasProfilePicture = (profile: string | null | undefined) => {
+    return profile && profile.trim() !== '' && !profile.includes('placeholder') && !profile.includes('default');
+  };
+
   return (
     <div className="col-span-12 rounded-[var(--radius)] bg-[hsl(var(--background))] py-6 shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)] xl:col-span-4">
       <h2 className="mb-5.5 px-7.5 text-body-2xlg font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
@@ -41,11 +46,11 @@ export async function ChatsCard() {
               className="flex items-center gap-4.5 px-7.5 py-3 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]"
             >
               <div className="relative shrink-0">
-                {chat.profile ? (
+                {hasProfilePicture(chat.profile) ? (
                   // Direct message with profile picture
                   <>
                     <Image
-                      src={chat.profile}
+                      src={chat.profile!}
                       width={56}
                       height={56}
                       className="size-14 rounded-full object-cover"
@@ -62,7 +67,7 @@ export async function ChatsCard() {
                 ) : (
                   // Group chat with colored avatar and first letter
                   <div className={cn(
-                    "size-14 rounded-full flex items-center justify-center text-[hsl(var(--primary-foreground))] font-semibold text-lg",
+                    "size-14 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-sm",
                     getGroupChatColor(chat.name)
                   )}>
                     {chat.name.charAt(0).toUpperCase()}

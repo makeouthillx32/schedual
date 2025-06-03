@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { getCookie, removeCookie } from "@/lib/cookieUtils"; // Adjust path as needed
 
 export default function OAuthCallback() {
   const supabase = useSupabaseClient();
@@ -53,8 +54,24 @@ export default function OAuthCallback() {
         });
       }
 
-      // 6. Redirect to home/dashboard
-      window.location.href = "/CMS";
+      // 6. Get last page from cookie and redirect there
+      const lastPage = getCookie('lastPage') || '/';
+      
+      // Clear the cookie after using it
+      removeCookie('lastPage');
+      
+      // Exclude auth pages from redirect
+      const excludedPages = ['/sign-in', '/sign-up', '/forgot-password'];
+      const pageWithoutHash = lastPage.split('#')[0]; // Handle hash routes
+      
+      let redirectTo = lastPage;
+      if (excludedPages.includes(pageWithoutHash)) {
+        console.log(`[OAuth] Excluded page detected (${lastPage}), redirecting to /`);
+        redirectTo = '/';
+      }
+      
+      console.log(`[OAuth] Redirecting to: ${redirectTo}`);
+      window.location.href = `${redirectTo}?refresh=true`;
     })();
   }, [supabase]);
 

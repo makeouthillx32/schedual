@@ -5,10 +5,11 @@ import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
 import { ThemeProvider } from "next-themes";
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
+import { transitionTheme, smoothThemeToggle } from "@/utils/themeTransitions";
 
-// Component to handle iOS theme color updates for dashboard
+// Enhanced theme manager for dashboard with smooth transitions
 function DashboardThemeColorManager() {
-  const { resolvedTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     const updateThemeColor = () => {
@@ -101,13 +102,73 @@ function DashboardThemeColorManager() {
   return null;
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+// Enhanced ThemeProvider wrapper with smooth transition support
+function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider defaultTheme="light" attribute="class">
+      <DashboardThemeManager>
+        {children}
+      </DashboardThemeManager>
+    </ThemeProvider>
+  );
+}
+
+// Theme manager that adds smooth transition support to next-themes
+function DashboardThemeManager({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+
+  // Add smooth transition methods to the window for global access
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Enhanced theme toggle for dashboard
+      (window as any).smoothToggleTheme = async (element?: HTMLElement) => {
+        const themeChangeCallback = () => {
+          theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
+        };
+
+        if (element) {
+          await smoothThemeToggle(element, themeChangeCallback);
+        } else {
+          await transitionTheme(themeChangeCallback);
+        }
+      };
+
+      // Enhanced theme setter for dashboard
+      (window as any).smoothSetTheme = async (newTheme: string, element?: HTMLElement) => {
+        const themeChangeCallback = () => {
+          theme.setTheme(newTheme);
+        };
+
+        if (element) {
+          await smoothThemeToggle(element, themeChangeCallback);
+        } else {
+          await transitionTheme(themeChangeCallback);
+        }
+      };
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).smoothToggleTheme;
+        delete (window as any).smoothSetTheme;
+      }
+    };
+  }, [theme]);
+
+  return (
+    <>
+      <DashboardThemeColorManager />
+      {children}
+    </>
+  );
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <EnhancedThemeProvider>
       <SidebarProvider>
-        <DashboardThemeColorManager />
         {children}
       </SidebarProvider>
-    </ThemeProvider>
+    </EnhancedThemeProvider>
   );
 }

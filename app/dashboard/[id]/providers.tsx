@@ -1,161 +1,53 @@
-// app/dashboard/[id]/providers.tsx
-"use client";
+import React from 'react';
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
-import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
-import { ThemeProvider } from "next-themes";
-import { useEffect } from "react";
-import { useTheme } from "next-themes";
-import { transitionTheme, smoothThemeToggle } from "@/utils/themeTransitions";
-
-// Enhanced theme manager for dashboard with smooth transitions
-function DashboardThemeColorManager() {
+export default function DashboardThemeToggleTest() {
   const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
-  useEffect(() => {
-    const updateThemeColor = () => {
-      if (typeof window === "undefined") return;
-
-      // Remove existing theme-color meta tags
-      document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
-
-      // Get computed background color from CSS variables
-      const html = document.documentElement;
-      const computedStyle = getComputedStyle(html);
-      
-      let themeColor;
-      if (resolvedTheme === "dark") {
-        themeColor = computedStyle.getPropertyValue("--background").trim();
-      } else {
-        themeColor = computedStyle.getPropertyValue("--background").trim();
-      }
-
-      // Fallback colors if CSS variable not available
-      if (!themeColor) {
-        themeColor = resolvedTheme === "dark" ? "111827" : "ffffff";
-      }
-
-      // Convert HSL to hex if needed
-      let finalColor = themeColor;
-      if (themeColor.includes(" ")) {
-        // If it's HSL format (e.g., "220 14% 11%"), convert to hsl()
-        finalColor = `hsl(${themeColor})`;
-        
-        // Create temporary element to get computed RGB
-        const tempDiv = document.createElement('div');
-        tempDiv.style.color = finalColor;
-        document.body.appendChild(tempDiv);
-        const computedColor = getComputedStyle(tempDiv).color;
-        document.body.removeChild(tempDiv);
-
-        // Convert RGB to hex
-        const rgbMatch = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-        if (rgbMatch) {
-          const r = parseInt(rgbMatch[1]);
-          const g = parseInt(rgbMatch[2]);
-          const b = parseInt(rgbMatch[3]);
-          finalColor = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-        }
-      } else if (!themeColor.startsWith("#")) {
-        finalColor = `#${themeColor}`;
-      }
-
-      // Create theme-color meta tag
-      const metaTag = document.createElement("meta");
-      metaTag.setAttribute("name", "theme-color");
-      metaTag.setAttribute("content", finalColor);
-      document.head.appendChild(metaTag);
-
-      console.log(`🍎 Dashboard iOS theme color: ${finalColor} (${resolvedTheme})`);
-    };
-
-    // Update immediately
-    updateThemeColor();
-
-    // Also update when DOM changes (theme class applied)
-    const observer = new MutationObserver(() => {
-      setTimeout(updateThemeColor, 50);
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class', 'data-theme']
-    });
-
-    return () => observer.disconnect();
-  }, [resolvedTheme]);
-
-  return null;
-}
-
-// Theme manager that adds smooth CIRCULAR transition support to next-themes
-function DashboardThemeManager({ children }: { children: React.ReactNode }) {
-  const theme = useTheme();
-
-  // Add smooth CIRCULAR transition methods to the window for global access
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // CIRCULAR theme toggle for dashboard - NO FADE, JUST CIRCLE EXPANSION
-      (window as any).smoothToggleTheme = async (element?: HTMLElement) => {
-        const themeChangeCallback = () => {
-          theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
-        };
-
-        // Use the circular transition - this creates the expanding circle effect
-        if (element) {
-          await smoothThemeToggle(element, themeChangeCallback);
-        } else {
-          await transitionTheme(themeChangeCallback);
-        }
-      };
-
-      // CIRCULAR theme setter for dashboard - NO FADE, JUST CIRCLE EXPANSION
-      (window as any).smoothSetTheme = async (newTheme: string, element?: HTMLElement) => {
-        const themeChangeCallback = () => {
-          theme.setTheme(newTheme);
-        };
-
-        // Use the circular transition - this creates the expanding circle effect
-        if (element) {
-          await smoothThemeToggle(element, themeChangeCallback);
-        } else {
-          await transitionTheme(themeChangeCallback);
-        }
-      };
+  // TweakCN-style click handler - EXACT same approach as their code
+  const handleThemeToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const { clientX: x, clientY: y } = event;
+    
+    console.log(`🎯 Click coordinates: (${x}, ${y})`);
+    
+    // Call the global smoothToggleTheme function with coordinates
+    if ((window as any).smoothToggleTheme) {
+      await (window as any).smoothToggleTheme({ x, y });
+    } else {
+      console.error('smoothToggleTheme not available');
     }
-
-    return () => {
-      if (typeof window !== 'undefined') {
-        delete (window as any).smoothToggleTheme;
-        delete (window as any).smoothSetTheme;
-      }
-    };
-  }, [theme]);
+  };
 
   return (
-    <>
-      <DashboardThemeColorManager />
-      {children}
-    </>
-  );
-}
-
-// Enhanced ThemeProvider wrapper with smooth transition support
-function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider defaultTheme="light" attribute="class">
-      <DashboardThemeManager>
-        {children}
-      </DashboardThemeManager>
-    </ThemeProvider>
-  );
-}
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <EnhancedThemeProvider>
-      <SidebarProvider>
-        {children}
-      </SidebarProvider>
-    </EnhancedThemeProvider>
+    <div className="fixed top-4 right-4 z-50">
+      <button
+        onClick={handleThemeToggle}
+        className="
+          w-12 h-12 
+          rounded-full 
+          bg-background 
+          border border-border 
+          shadow-lg 
+          flex items-center justify-center 
+          hover:scale-110 
+          transition-transform 
+          duration-200
+        "
+        title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      >
+        {isDark ? (
+          <Sun className="w-5 h-5 text-foreground" />
+        ) : (
+          <Moon className="w-5 h-5 text-foreground" />
+        )}
+      </button>
+      
+      {/* Debug info */}
+      <div className="mt-2 text-xs text-muted-foreground text-center">
+        Current: {resolvedTheme}
+      </div>
+    </div>
   );
 }

@@ -526,4 +526,36 @@ if (typeof window !== 'undefined') {
   setInterval(() => {
     storage.cleanup();
   }, 10 * 60 * 1000);
+
 }
+
+// Add this to the END of your existing cookieUtils.ts file:
+
+/**
+ * Get last page from cookie, with proper fallback logic for hash routing
+ */
+export const getLastPageForRedirect = (): string => {
+  const lastPage = getCookie('lastPage');
+  
+  // If no cookie was set, redirect to home page
+  if (!lastPage) {
+    console.log('[LastPage] No cookie found, redirecting to /');
+    return '/';
+  }
+  
+  // If the stored page is an auth page, redirect to home  
+  const excludedPages = ['/sign-in', '/sign-up', '/forgot-password'];
+  if (excludedPages.includes(lastPage)) {
+    console.log(`[LastPage] Stored page is auth page (${lastPage}), redirecting to /`);
+    return '/';
+  }
+  
+  // If it's a hash route (starts with /#), redirect to home and let client handle the hash
+  if (lastPage.startsWith('/#')) {
+    console.log(`[LastPage] Hash route detected (${lastPage}), redirecting to / and preserving hash`);
+    return '/';
+  }
+  
+  console.log(`[LastPage] Using stored page: ${lastPage}`);
+  return lastPage;
+};

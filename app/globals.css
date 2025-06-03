@@ -56,7 +56,7 @@
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
     
-    /* Add these for circular animation */
+    /* Animation origin variables */
     --x: 50%;
     --y: 50%;
   }
@@ -109,24 +109,23 @@
   }  
 }
 
-/* View Transition API - Smooth Theme Switching with Circular Reveal */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
+/* TweakCN Style Theme Transition - NO VIEW TRANSITIONS API */
+* {
+  border-color: hsl(var(--border));
 }
 
-::view-transition-old(root) {
-  /* Ensure the outgoing theme is beneath */
-  z-index: 0;
+html {
+  /* This is the key - animate the root element when theme changes */
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-::view-transition-new(root) {
-  /* Ensure the incoming theme is on top */
-  z-index: 1;
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Circular reveal animation - FIXED VERSION */
+/* TweakCN's circular reveal animation */
 @keyframes reveal {
   from {
     /* Use CSS variables for the origin, defaulting to center if not set */
@@ -140,29 +139,14 @@
   }
 }
 
-/* Apply the reveal animation to new theme */
-::view-transition-new(root) {
-  /* Apply the reveal animation */
+/* Apply animation when theme class changes */
+html.dark {
   animation: reveal 0.4s ease-in-out forwards;
 }
 
-/* Fallback for browsers without View Transitions */
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation: none;
-  }
-}
-
-/* Remove the conflicting styles that were causing issues */
-/* Additional smooth transition for theme variables */
-:root {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Ensure smooth transitions on all themed elements */
-* {
-  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+/* Also apply when switching back to light */
+html:not(.dark) {
+  animation: reveal 0.4s ease-in-out forwards;
 }
 
 .login-with-google-btn {
@@ -237,7 +221,6 @@ body {
   height: 100%;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Form and input styling */

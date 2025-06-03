@@ -192,10 +192,22 @@ export function Notification() {
 
       <DropdownContent
         align={isMobile ? "end" : "center"}
-        className="border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3.5 py-3 shadow-[var(--shadow-md)] dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))] min-[350px]:min-w-[20rem]"
+        className={`
+          border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-[var(--shadow-md)] 
+          dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))]
+          ${isMobile 
+            ? 'fixed top-16 right-2 left-2 mx-auto max-w-sm px-2 py-2' 
+            : 'px-3.5 py-3 min-[350px]:min-w-[20rem]'
+          }
+        `}
+        style={isMobile ? {
+          maxHeight: 'calc(100vh - 5rem)',
+          overflowY: 'auto',
+          zIndex: 9999
+        } : {}}
       >
-        <div className="mb-1 flex items-center justify-between px-2 py-1.5">
-          <span className="text-lg font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
+        <div className={`mb-1 flex items-center justify-between py-1.5 ${isMobile ? 'px-1' : 'px-2'}`}>
+          <span className={`font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] ${isMobile ? 'text-base' : 'text-lg'}`}>
             Notifications
           </span>
           <span className="rounded-md bg-[hsl(var(--sidebar-primary))] px-[9px] py-0.5 text-xs font-medium text-[hsl(var(--sidebar-primary-foreground))]">
@@ -208,7 +220,7 @@ export function Notification() {
             <div className="animate-pulse h-8 w-8 rounded-full bg-[hsl(var(--muted))] dark:bg-[hsl(var(--secondary))]"></div>
           </div>
         ) : (
-          <ul className="mb-3 max-h-[23rem] space-y-1.5 overflow-y-auto">
+          <ul className={`mb-3 space-y-1.5 overflow-y-auto ${isMobile ? 'max-h-[calc(100vh-10rem)]' : 'max-h-[23rem]'}`}>
             {stackedNotifications.length === 0 ? (
               <li className="text-center py-4 text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))]">
                 No notifications
@@ -224,34 +236,43 @@ export function Notification() {
                       <Link
                         href={item.action_url || "#"}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center gap-4 rounded-[var(--radius)] px-2 py-1.5 outline-none hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]"
+                        className={`
+                          flex items-center rounded-[var(--radius)] outline-none 
+                          hover:bg-[hsl(var(--muted))] focus-visible:bg-[hsl(var(--muted))] 
+                          dark:hover:bg-[hsl(var(--secondary))] dark:focus-visible:bg-[hsl(var(--secondary))]
+                          ${isMobile ? 'gap-3 px-1 py-2' : 'gap-4 px-2 py-1.5'}
+                        `}
                       >
-                        <div className="relative">
+                        <div className="relative flex-shrink-0">
                           <Image
                             src={item.image_url || "/default-avatar.png"}
-                            className="size-14 rounded-full object-cover"
-                            width={200}
-                            height={200}
+                            className={`rounded-full object-cover ${isMobile ? 'size-10' : 'size-14'}`}
+                            width={isMobile ? 40 : 56}
+                            height={isMobile ? 40 : 56}
                             alt="User"
                           />
                           {/* Count badge for stacked notifications */}
                           {item.isStacked && item.count > 1 && (
-                            <span className="absolute -top-1 -right-1 z-10 flex size-6 items-center justify-center rounded-full bg-[hsl(var(--destructive))] text-xs font-bold text-white ring-2 ring-[hsl(var(--background))]">
+                            <span className={`
+                              absolute -top-1 -right-1 z-10 flex items-center justify-center rounded-full 
+                              bg-[hsl(var(--destructive))] text-xs font-bold text-white ring-2 ring-[hsl(var(--background))]
+                              ${isMobile ? 'size-5' : 'size-6'}
+                            `}>
                               {item.count > 9 ? '9+' : item.count}
                             </span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <strong className="block text-sm font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] truncate">
+                          <strong className={`block font-medium text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] ${isMobile ? 'text-sm leading-tight' : 'text-sm'}`}>
                             {item.title}
                           </strong>
-                          <span className="block text-sm font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] truncate">
+                          <span className={`block font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))] ${isMobile ? 'text-xs leading-tight' : 'text-sm'}`}>
                             {item.isStacked 
                               ? `Latest: ${item.content}` 
                               : item.content
                             }
                           </span>
-                          <span className="block text-xs text-[hsl(var(--muted-foreground))] mt-1">
+                          <span className={`block text-[hsl(var(--muted-foreground))] mt-1 ${isMobile ? 'text-xs' : 'text-xs'}`}>
                             {formatTimeAgo(item.created_at)}
                           </span>
                         </div>
@@ -261,13 +282,17 @@ export function Notification() {
                       {item.isStacked && (
                         <button
                           onClick={(e) => toggleStackExpansion(item.id, e)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] transition-colors"
+                          className={`
+                            absolute top-1/2 -translate-y-1/2 p-1 rounded-full 
+                            hover:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] transition-colors
+                            ${isMobile ? 'right-1' : 'right-2'}
+                          `}
                           aria-label={isExpanded ? "Collapse messages" : "Expand messages"}
                         >
                           {isExpanded ? (
-                            <ChevronUp size={16} className="text-[hsl(var(--muted-foreground))]" />
+                            <ChevronUp size={isMobile ? 14 : 16} className="text-[hsl(var(--muted-foreground))]" />
                           ) : (
-                            <ChevronDown size={16} className="text-[hsl(var(--muted-foreground))]" />
+                            <ChevronDown size={isMobile ? 14 : 16} className="text-[hsl(var(--muted-foreground))]" />
                           )}
                         </button>
                       )}
@@ -275,19 +300,23 @@ export function Notification() {
 
                     {/* Expanded individual notifications */}
                     {item.isStacked && isExpanded && (
-                      <div className="ml-4 mt-2 space-y-1 border-l-2 border-[hsl(var(--border))] pl-4">
+                      <div className={`mt-2 space-y-1 border-l-2 border-[hsl(var(--border))] ${isMobile ? 'ml-3 pl-2' : 'ml-4 pl-4'}`}>
                         {item.notifications.map((notification, notifIndex) => (
                           <Link
                             key={notification.id}
                             href={notification.action_url || "#"}
                             onClick={() => setIsOpen(false)}
-                            className="block rounded-[var(--radius)] px-2 py-2 text-sm hover:bg-[hsl(var(--muted))] dark:hover:bg-[hsl(var(--secondary))] transition-colors"
+                            className={`
+                              block rounded-[var(--radius)] text-sm hover:bg-[hsl(var(--muted))] 
+                              dark:hover:bg-[hsl(var(--secondary))] transition-colors
+                              ${isMobile ? 'px-1 py-1.5' : 'px-2 py-2'}
+                            `}
                           >
-                            <div className="flex justify-between items-start">
-                              <span className="text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] truncate flex-1">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className={`text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))] flex-1 ${isMobile ? 'text-xs leading-tight' : ''}`}>
                                 {notification.content || notification.subtitle}
                               </span>
-                              <span className="text-xs text-[hsl(var(--muted-foreground))] ml-2 whitespace-nowrap">
+                              <span className={`text-[hsl(var(--muted-foreground))] whitespace-nowrap ${isMobile ? 'text-xs' : 'text-xs'}`}>
                                 {formatTimeAgo(notification.created_at)}
                               </span>
                             </div>

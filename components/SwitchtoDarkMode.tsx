@@ -19,12 +19,15 @@ const SwitchtoDarkMode: React.FC = () => {
     setIsDark(theme === "dark");
   }, []);
 
-  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Update local state immediately for instant feedback
+  // TweakCN-style click handler - EXACT same approach
+  const handleThemeToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    const { clientX: x, clientY: y } = event;
+    
+    // Update local state immediately
     setIsDark((prev) => !prev);
     
-    // Call smooth theme toggle with the button element for circular animation
-    await toggleTheme(e.currentTarget);
+    // Call toggleTheme with coordinates (TweakCN style)
+    await toggleTheme(event.currentTarget, { x, y });
   };
 
   return (
@@ -32,7 +35,7 @@ const SwitchtoDarkMode: React.FC = () => {
       title="Toggle Theme"
       className="theme-toggle-button"
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-      onClick={handleClick}
+      onClick={handleThemeToggle}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

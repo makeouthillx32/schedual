@@ -9,7 +9,7 @@ import { transitionTheme, smoothThemeToggle } from "@/utils/themeTransitions";
 
 // Enhanced theme manager for dashboard with smooth transitions
 function DashboardThemeColorManager() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const updateThemeColor = () => {
@@ -24,10 +24,8 @@ function DashboardThemeColorManager() {
       
       let themeColor;
       if (resolvedTheme === "dark") {
-        // For dashboard dark mode, use background
         themeColor = computedStyle.getPropertyValue("--background").trim();
       } else {
-        // For dashboard light mode, use background
         themeColor = computedStyle.getPropertyValue("--background").trim();
       }
 
@@ -67,19 +65,6 @@ function DashboardThemeColorManager() {
       metaTag.setAttribute("content", finalColor);
       document.head.appendChild(metaTag);
 
-      // Create media-specific meta tags for better iOS support
-      const metaLight = document.createElement("meta");
-      metaLight.setAttribute("name", "theme-color");
-      metaLight.setAttribute("media", "(prefers-color-scheme: light)");
-      metaLight.setAttribute("content", resolvedTheme === "light" ? finalColor : "#ffffff");
-      document.head.appendChild(metaLight);
-
-      const metaDark = document.createElement("meta");
-      metaDark.setAttribute("name", "theme-color");
-      metaDark.setAttribute("media", "(prefers-color-scheme: dark)");
-      metaDark.setAttribute("content", resolvedTheme === "dark" ? finalColor : "#111827");
-      document.head.appendChild(metaDark);
-
       console.log(`🍎 Dashboard iOS theme color: ${finalColor} (${resolvedTheme})`);
     };
 
@@ -102,30 +87,20 @@ function DashboardThemeColorManager() {
   return null;
 }
 
-// Enhanced ThemeProvider wrapper with smooth transition support
-function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider defaultTheme="light" attribute="class">
-      <DashboardThemeManager>
-        {children}
-      </DashboardThemeManager>
-    </ThemeProvider>
-  );
-}
-
-// Theme manager that adds smooth transition support to next-themes
+// Theme manager that adds smooth CIRCULAR transition support to next-themes
 function DashboardThemeManager({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
 
-  // Add smooth transition methods to the window for global access
+  // Add smooth CIRCULAR transition methods to the window for global access
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Enhanced theme toggle for dashboard
+      // CIRCULAR theme toggle for dashboard - NO FADE, JUST CIRCLE EXPANSION
       (window as any).smoothToggleTheme = async (element?: HTMLElement) => {
         const themeChangeCallback = () => {
           theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
         };
 
+        // Use the circular transition - this creates the expanding circle effect
         if (element) {
           await smoothThemeToggle(element, themeChangeCallback);
         } else {
@@ -133,12 +108,13 @@ function DashboardThemeManager({ children }: { children: React.ReactNode }) {
         }
       };
 
-      // Enhanced theme setter for dashboard
+      // CIRCULAR theme setter for dashboard - NO FADE, JUST CIRCLE EXPANSION
       (window as any).smoothSetTheme = async (newTheme: string, element?: HTMLElement) => {
         const themeChangeCallback = () => {
           theme.setTheme(newTheme);
         };
 
+        // Use the circular transition - this creates the expanding circle effect
         if (element) {
           await smoothThemeToggle(element, themeChangeCallback);
         } else {
@@ -160,6 +136,17 @@ function DashboardThemeManager({ children }: { children: React.ReactNode }) {
       <DashboardThemeColorManager />
       {children}
     </>
+  );
+}
+
+// Enhanced ThemeProvider wrapper with smooth transition support
+function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider defaultTheme="light" attribute="class">
+      <DashboardThemeManager>
+        {children}
+      </DashboardThemeManager>
+    </ThemeProvider>
   );
 }
 

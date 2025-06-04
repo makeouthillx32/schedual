@@ -1,57 +1,58 @@
-import { compactFormat } from "@/lib/format-number";
-import { getOverviewData } from "../../fetch";
-import { OverviewCard } from "./card";
-import * as icons from "./icons";
+import { compactFormat } from “@/lib/format-number”;
+import { OverviewCard } from “./card”;
+import * as icons from “./icons”;
 
 export async function OverviewCardsGroup() {
-  const { views, profit, products, members, users } = await getOverviewData();
+// Dummy data for job coach dashboard
+const totalClients = {
+value: 24,
+percentage: 12.5,
+isPositive: true
+};
 
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-5 2xl:gap-7.5">
-      <OverviewCard
-        label="Total Views"
-        data={{
-          ...views,
-          value: compactFormat(views.value),
-        }}
-        Icon={icons.Views}
-      />
+const workingToday = {
+value: 8,
+percentage: 15.2,
+isPositive: true
+};
 
-      <OverviewCard
-        label="Total Profit"
-        data={{
-          ...profit,
-          value: "$" + compactFormat(profit.value),
-        }}
-        Icon={icons.Profit}
-      />
+const goalsCompleted = {
+value: 156,
+percentage: 8.7,
+isPositive: true
+};
 
-      <OverviewCard
-        label="Total Products"
-        data={{
-          ...products,
-          value: compactFormat(products.value),
-        }}
-        Icon={icons.Product}
-      />
+return (
+<div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 2xl:gap-7.5">
+<OverviewCard
+label=“Your Clients”
+data={{
+…totalClients,
+value: compactFormat(totalClients.value),
+}}
+Icon={icons.Users}
+/>
 
-      <OverviewCard
-        label="Total Members"
-        data={{
-          ...members,
-          value: compactFormat(members.value),
-        }}
-        Icon={icons.Users}
-      />
+```
+  <OverviewCard
+    label="Working Today"
+    data={{
+      ...workingToday,
+      value: compactFormat(workingToday.value),
+    }}
+    Icon={icons.Views} // Could use a work/briefcase icon if available
+  />
 
-      <OverviewCard
-        label="Total Users"
-        data={{
-          ...users,
-          value: compactFormat(users.value),
-        }}
-        Icon={icons.Users}
-      />
-    </div>
-  );
+  <OverviewCard
+    label="Goals Completed"
+    data={{
+      ...goalsCompleted,
+      value: compactFormat(goalsCompleted.value),
+    }}
+    Icon={icons.Product} // Could use a checkmark/target icon if available
+  />
+</div>
+```
+
+);
 }

@@ -3,7 +3,6 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { 
   Smile, 
@@ -15,14 +14,6 @@ import {
   Sun, 
   Coffee 
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 
 const moodOptions = [
   {
@@ -85,120 +76,62 @@ const moodOptions = [
 
 export function MoodCheckIn({ className }: { className?: string }) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const handleMoodSelect = (moodId: string) => {
     setSelectedMood(moodId);
-    setSheetOpen(true);
+    setShowToast(true);
+    
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+
+    // Here you would send the data to your backend
+    console.log("Mood submitted:", { mood: moodId });
   };
 
-  const handleSubmit = () => {
-    if (selectedMood) {
-      setSubmitted(true);
-      setSheetOpen(false);
-      // Here you would send the data to your backend
-      console.log("Mood submitted:", { mood: selectedMood, feedback });
-    }
-  };
-
-  const handleQuickSubmit = () => {
-    if (selectedMood) {
-      setSubmitted(true);
-      // Submit without feedback
-      console.log("Mood submitted:", { mood: selectedMood, feedback: "" });
-    }
-  };
-
-  if (submitted) {
-    return (
+  return (
+    <>
       <div
         className={cn(
           "rounded-[var(--radius)] bg-[hsl(var(--background))] px-7.5 pb-4 pt-7.5 shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)]",
           className,
         )}
       >
-        <div className="text-center py-8">
-          <Smile className="mx-auto h-12 w-12 text-green-600 mb-4" />
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-2">
-            Thanks for sharing!
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            Your mood has been recorded. Have a great day at work!
-          </p>
+        <h2 className="mb-4 text-body-2xlg font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
+          How are you feeling today?
+        </h2>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {moodOptions.map((mood) => {
+            const Icon = mood.icon;
+            const isSelected = selectedMood === mood.id;
+            
+            return (
+              <button
+                key={mood.id}
+                onClick={() => handleMoodSelect(mood.id)}
+                className={cn(
+                  "p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center gap-2",
+                  isSelected ? mood.selectedColor : mood.color
+                )}
+              >
+                <Icon className="h-6 w-6" />
+                <span className="text-sm font-medium">{mood.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div
-      className={cn(
-        "rounded-[var(--radius)] bg-[hsl(var(--background))] px-7.5 pb-4 pt-7.5 shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)]",
-        className,
-      )}
-    >
-      <h2 className="mb-4 text-body-2xlg font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
-        How are you feeling today?
-      </h2>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {moodOptions.map((mood) => {
-          const Icon = mood.icon;
-          const isSelected = selectedMood === mood.id;
-          
-          return (
-            <button
-              key={mood.id}
-              onClick={() => handleMoodSelect(mood.id)}
-              className={cn(
-                "p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center gap-2",
-                isSelected ? mood.selectedColor : mood.color
-              )}
-            >
-              <Icon className="h-6 w-6" />
-              <span className="text-sm font-medium">{mood.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedMood && (
-        <div className="flex gap-3">
-          <Button onClick={handleQuickSubmit} variant="outline">
-            Submit
-          </Button>
-          
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button>Add Note</Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Tell your coach more</SheetTitle>
-                <SheetDescription>
-                  Share any additional thoughts about how you're feeling today.
-                </SheetDescription>
-              </SheetHeader>
-              
-              <div className="py-4">
-                <Textarea
-                  placeholder="How can we make your day better?"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  className="resize-none"
-                  rows={4}
-                />
-              </div>
-              
-              <Button onClick={handleSubmit} className="w-full">
-                Share My Mood
-              </Button>
-            </SheetContent>
-          </Sheet>
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+          <Smile className="h-5 w-5" />
+          <span>Thanks for sharing how you feel!</span>
         </div>
       )}
-    </div>
+    </>
   );
 }

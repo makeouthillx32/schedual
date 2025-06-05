@@ -1,6 +1,6 @@
 
-import { MoodCheckIn, MoodCheckInSkeleton } from "./_components/mood-check";
-import { PersonalWins, PersonalWinsSkeleton } from "./_components/personal-wins";
+import { MoodCheckIn, MoodCheckInSkeleton } from "@/components/Tables/mood-check";
+import { PersonalWins, PersonalWinsSkeleton } from "@/components/Tables/personal-wins";
 import { Suspense } from "react";
 import { ChatsCard } from "./_components/chats-card";
 import { OverviewCardsGroup } from "./_components/overview-cards";

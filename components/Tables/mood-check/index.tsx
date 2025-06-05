@@ -1,8 +1,6 @@
-
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { 
   Smile, 
@@ -77,10 +75,20 @@ const moodOptions = [
 export function MoodCheckIn({ className }: { className?: string }) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [hasSubmittedToday, setHasSubmittedToday] = useState(false);
 
   const handleMoodSelect = (moodId: string) => {
     setSelectedMood(moodId);
     setShowToast(true);
+    
+    // Set appropriate message
+    if (hasSubmittedToday) {
+      setToastMessage("Feedback for current day updated");
+    } else {
+      setToastMessage("Feedback for current day saved");
+      setHasSubmittedToday(true);
+    }
     
     // Hide toast after 3 seconds
     setTimeout(() => {
@@ -88,7 +96,7 @@ export function MoodCheckIn({ className }: { className?: string }) {
     }, 3000);
 
     // Here you would send the data to your backend
-    console.log("Mood submitted:", { mood: moodId });
+    console.log("Mood submitted:", { mood: moodId, isUpdate: hasSubmittedToday });
   };
 
   return (
@@ -129,7 +137,7 @@ export function MoodCheckIn({ className }: { className?: string }) {
       {showToast && (
         <div className="fixed top-4 right-4 z-50 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2">
           <Smile className="h-5 w-5" />
-          <span>Thanks for sharing how you feel!</span>
+          <span>{toastMessage}</span>
         </div>
       )}
     </>

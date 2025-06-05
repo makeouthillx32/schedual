@@ -1,3 +1,4 @@
+
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -14,6 +15,14 @@ import {
   Sun, 
   Coffee 
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const moodOptions = [
   {
@@ -78,12 +87,27 @@ export function MoodCheckIn({ className }: { className?: string }) {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleMoodSelect = (moodId: string) => {
+    setSelectedMood(moodId);
+    setSheetOpen(true);
+  };
 
   const handleSubmit = () => {
     if (selectedMood) {
       setSubmitted(true);
+      setSheetOpen(false);
       // Here you would send the data to your backend
       console.log("Mood submitted:", { mood: selectedMood, feedback });
+    }
+  };
+
+  const handleQuickSubmit = () => {
+    if (selectedMood) {
+      setSubmitted(true);
+      // Submit without feedback
+      console.log("Mood submitted:", { mood: selectedMood, feedback: "" });
     }
   };
 
@@ -127,7 +151,7 @@ export function MoodCheckIn({ className }: { className?: string }) {
           return (
             <button
               key={mood.id}
-              onClick={() => setSelectedMood(mood.id)}
+              onClick={() => handleMoodSelect(mood.id)}
               className={cn(
                 "p-4 rounded-lg border-2 transition-all duration-200 flex flex-col items-center gap-2",
                 isSelected ? mood.selectedColor : mood.color
@@ -140,28 +164,41 @@ export function MoodCheckIn({ className }: { className?: string }) {
         })}
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-            Want to tell your coach anything? (Optional)
-          </label>
-          <Textarea
-            placeholder="How can we make your day better?"
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            className="resize-none"
-            rows={3}
-          />
+      {selectedMood && (
+        <div className="flex gap-3">
+          <Button onClick={handleQuickSubmit} variant="outline">
+            Submit
+          </Button>
+          
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button>Add Note</Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Tell your coach more</SheetTitle>
+                <SheetDescription>
+                  Share any additional thoughts about how you're feeling today.
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="py-4">
+                <Textarea
+                  placeholder="How can we make your day better?"
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  className="resize-none"
+                  rows={4}
+                />
+              </div>
+              
+              <Button onClick={handleSubmit} className="w-full">
+                Share My Mood
+              </Button>
+            </SheetContent>
+          </Sheet>
         </div>
-
-        <Button 
-          onClick={handleSubmit}
-          disabled={!selectedMood}
-          className="w-full md:w-auto"
-        >
-          Share My Mood
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

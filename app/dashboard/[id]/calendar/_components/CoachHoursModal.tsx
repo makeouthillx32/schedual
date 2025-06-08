@@ -1,8 +1,9 @@
 // app/dashboard/[id]/calendar/_components/CoachHoursModal.tsx
+// Enhanced modal for flexible hour logging with quick entry support
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Save, MapPin, FileText } from 'lucide-react';
+import { X, Clock, Save, MapPin, FileText, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CoachHoursModalProps {
@@ -11,6 +12,7 @@ interface CoachHoursModalProps {
   onSubmit: (hoursData: CoachHoursData) => void;
   selectedDate: Date | null;
   coachName: string;
+  existingHours?: number; // For showing already logged hours
 }
 
 interface CoachHoursData {
@@ -23,11 +25,15 @@ interface CoachHoursData {
 
 const ACTIVITY_TYPES = [
   'Client Coaching',
-  'Group Session',
+  'Group Session', 
   'Job Search Support',
   'Skills Training',
-  'Administrative',
+  'Administrative Tasks',
+  'Team Meeting',
   'Community Outreach',
+  'Assessment',
+  'Follow-up',
+  'Documentation',
   'Professional Development',
   'Other'
 ];
@@ -40,23 +46,37 @@ const COMMON_LOCATIONS = [
   'Job Fair',
   'Employer Site',
   'Virtual/Remote',
+  'Field Office',
   'Other'
 ];
+
+// Quick entry code mapping for coach initials (not activity types!)
+const COACH_INITIALS_MAP: Record<string, string> = {
+  'TB': 'Tyler Burnse',
+  'SC': 'Shelia Clark', 
+  'GC': 'Glen Clark',
+  'JD': 'John Doe',
+  'MS': 'Mary Smith',
+  // Add more coach initials as needed
+};
 
 export default function CoachHoursModal({
   isOpen,
   onClose,
   onSubmit,
   selectedDate,
-  coachName
+  coachName,
+  existingHours = 0
 }: CoachHoursModalProps) {
   const [formData, setFormData] = useState<CoachHoursData>({
     report_date: '',
     hours_worked: 0,
-    location: '',
+    location: 'Main Office',
     activity_type: 'Client Coaching',
     notes: ''
   });
+  
+  const [quickEntry, setQuickEntry] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -75,15 +95,17 @@ export default function CoachHoursModal({
     if (isOpen) {
       setErrors({});
       setIsSubmitting(false);
+      setQuickEntry('');
     } else {
       // Reset form when closing
       setFormData({
         report_date: '',
         hours_worked: 0,
-        location: '',
+        location: 'Main Office',
         activity_type: 'Client Coaching',
         notes: ''
       });
+      setQuickEntry('');
     }
   }, [isOpen]);
 
@@ -122,19 +144,56 @@ export default function CoachHoursModal({
     }
   };
 
-  // Parse "TB 7" style input
-  const handleQuickEntry = (entry: string) => {
-    // Parse formats like "TB 7", "JS 4.5", "AC 8"
-    const match = entry.match(/^([A-Z]{1,3})\s+(\d+(?:\.\d+)?)$/i);
-    if (match) {
-      const initials = match[1].toUpperCase();
-      const hours = parseFloat(match[2]);
-      
+  // Parse "TB 7" style quick entry (coach initials + hours)
+  const parseQuickEntry = (entry: string) => {
+    const trimmed = entry.trim().toUpperCase();
+    
+    // Pattern: 1-3 letters followed by space and number
+    const match = trimmed.match(/^([A-Z]{1,3})\s+(\d+(?:\.\d+)?)$/);
+    
+    if (!match) return null;
+    
+    const [, initials, hoursStr] = match;
+    const hours = parseFloat(hoursStr);
+    
+    if (isNaN(hours) || hours <= 0 || hours > 12) return null;
+    
+    const coachName = COACH_INITIALS_MAP[initials];
+    if (!coachName) return null;
+    
+    return {
+      initials,
+      hours,
+      coachName,
+      originalInput: entry
+    };
+  };
+
+  // Handle quick entry input
+  const handleQuickEntryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuickEntry(value);
+    
+    const parsed = parseQuickEntry(value);
+    if (parsed) {
       setFormData(prev => ({
         ...prev,
-        hours_worked: hours,
-        notes: `${initials} - ${hours} hours worked`
+        hours_worked: parsed.hours,
+        notes: `${parsed.initials} - ${parsed.hours} hours worked by ${parsed.coachName}`
       }));
+    }
+  };
+
+  // Apply quick entry
+  const handleApplyQuickEntry = () => {
+    const parsed = parseQuickEntry(quickEntry);
+    if (parsed) {
+      setFormData(prev => ({
+        ...prev,
+        hours_worked: parsed.hours,
+        notes: `${parsed.initials} - ${parsed.hours} hours worked by ${parsed.coachName}`
+      }));
+      setQuickEntry('');
     }
   };
 
@@ -150,8 +209,16 @@ export default function CoachHoursModal({
       newErrors.hours_worked = 'Hours worked must be greater than 0';
     }
 
-    if (formData.hours_worked > 24) {
-      newErrors.hours_worked = 'Hours worked cannot exceed 24 hours';
+    if (formData.hours_worked > 12) {
+      newErrors.hours_worked = 'Hours worked cannot exceed 12 hours per day';
+    }
+
+    if (!formData.activity_type) {
+      newErrors.activity_type = 'Activity type is required';
+    }
+
+    if (!formData.location) {
+      newErrors.location = 'Location is required';
     }
 
     setErrors(newErrors);
@@ -179,70 +246,81 @@ export default function CoachHoursModal({
     }
   };
 
-  // Format date for display
-  const formatDisplayDate = (date: Date | null) => {
-    if (!date) return 'No date selected';
-    return format(date, 'EEEE, MMMM d, yyyy');
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="w-full max-w-md bg-[hsl(var(--card))] rounded-lg shadow-xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg bg-[hsl(var(--card))] shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between border-b border-[hsl(var(--border))] p-6">
           <div>
-            <h2 className="text-lg font-semibold text-[hsl(var(--card-foreground))]">
+            <h2 className="text-xl font-semibold text-[hsl(var(--card-foreground))]">
               Log Work Hours
             </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              {formatDisplayDate(selectedDate)}
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+              {coachName} • {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select Date'}
             </p>
+            {existingHours > 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ Already logged: {existingHours} hours today
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+            className="rounded-md p-1 hover:bg-[hsl(var(--muted))] transition-colors"
             disabled={isSubmitting}
           >
-            <X size={20} />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Coach Info */}
-          <div className="p-3 bg-[hsl(var(--muted))] rounded-lg">
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-[hsl(var(--muted-foreground))]" />
-              <span className="text-sm font-medium">Coach: {coachName}</span>
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Quick Entry */}
-          <div>
+          <div className="bg-[hsl(var(--muted))] p-4 rounded-lg">
             <label className="block text-sm font-medium mb-2">
-              Quick Entry (e.g., "TB 7" for 7 hours)
+              Quick Entry (e.g., "TB 7", "SC 4.5", "GC 8")
             </label>
-            <input
-              type="text"
-              placeholder="Enter initials and hours (e.g., TB 7)"
-              className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
-              onBlur={(e) => {
-                if (e.target.value.trim()) {
-                  handleQuickEntry(e.target.value.trim());
-                  e.target.value = ''; // Clear the input
-                }
-              }}
-            />
-            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-              Format: Initials + Space + Hours (e.g., "TB 7", "JS 4.5")
-            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={quickEntry}
+                onChange={handleQuickEntryChange}
+                placeholder="TB 7 (Coach Initials + Hours)"
+                className="flex-1 px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                onClick={handleApplyQuickEntry}
+                disabled={!parseQuickEntry(quickEntry) || isSubmitting}
+                className="px-3 py-2 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-md hover:bg-[hsl(var(--primary))]/90 transition-colors disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {/* Coach Initials Reference */}
+            <div className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+              <details>
+                <summary className="cursor-pointer">Coach Initials</summary>
+                <div className="mt-1 grid grid-cols-2 gap-1">
+                  {Object.entries(COACH_INITIALS_MAP).map(([initials, name]) => (
+                    <div key={initials} className="flex gap-1">
+                      <span className="font-mono font-bold">{initials}:</span>
+                      <span>{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </div>
           </div>
 
           {/* Date */}
           <div>
             <label htmlFor="report_date" className="block text-sm font-medium mb-2">
+              <Clock className="inline h-4 w-4 mr-1" />
               Date *
             </label>
             <input
@@ -265,9 +343,9 @@ export default function CoachHoursModal({
           {/* Hours Worked */}
           <div>
             <label htmlFor="hours_worked" className="block text-sm font-medium mb-2">
-              Hours Worked *
+              Hours Worked * (1-12 hours)
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <input
                 type="number"
                 id="hours_worked"
@@ -275,8 +353,8 @@ export default function CoachHoursModal({
                 value={formData.hours_worked || ''}
                 onChange={handleInputChange}
                 step="0.25"
-                min="0"
-                max="24"
+                min="0.25"
+                max="12"
                 className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
                   errors.hours_worked ? 'border-red-500' : 'border-[hsl(var(--border))]'
                 }`}
@@ -286,7 +364,19 @@ export default function CoachHoursModal({
               
               {/* Quick Hour Buttons */}
               <div className="flex flex-wrap gap-2">
-                {[1, 2, 4, 6, 7, 8].map(hours => (
+                <span className="text-xs text-[hsl(var(--muted-foreground))] mr-2">Quick:</span>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
+                  <button
+                    key={hours}
+                    type="button"
+                    onClick={() => handleQuickHours(hours)}
+                    className="px-3 py-1 text-xs bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    {hours}h
+                  </button>
+                ))}
+                {[1.5, 2.5, 4.5, 6.5].map(hours => (
                   <button
                     key={hours}
                     type="button"
@@ -307,61 +397,59 @@ export default function CoachHoursModal({
           {/* Activity Type */}
           <div>
             <label htmlFor="activity_type" className="block text-sm font-medium mb-2">
-              Activity Type
+              Activity Type *
             </label>
             <select
               id="activity_type"
               name="activity_type"
               value={formData.activity_type}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
+                errors.activity_type ? 'border-red-500' : 'border-[hsl(var(--border))]'
+              }`}
               disabled={isSubmitting}
+              required
             >
               {ACTIVITY_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
+            {errors.activity_type && (
+              <p className="text-red-500 text-xs mt-1">{errors.activity_type}</p>
+            )}
           </div>
 
           {/* Location */}
           <div>
             <label htmlFor="location" className="block text-sm font-medium mb-2">
-              <MapPin size={16} className="inline mr-1" />
-              Location
+              <MapPin className="inline h-4 w-4 mr-1" />
+              Location *
             </label>
-            <div className="space-y-2">
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
-                disabled={isSubmitting}
-              >
-                <option value="">Select location...</option>
-                {COMMON_LOCATIONS.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-              
-              {/* Custom location input if "Other" is selected */}
-              {formData.location === 'Other' && (
-                <input
-                  type="text"
-                  placeholder="Enter custom location"
-                  className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  disabled={isSubmitting}
-                />
-              )}
-            </div>
+            <select
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
+                errors.location ? 'border-red-500' : 'border-[hsl(var(--border))]'
+              }`}
+              disabled={isSubmitting}
+              required
+            >
+              {COMMON_LOCATIONS.map(location => (
+                <option key={location} value={location}>{location}</option>
+              ))}
+            </select>
+            {errors.location && (
+              <p className="text-red-500 text-xs mt-1">{errors.location}</p>
+            )}
           </div>
 
           {/* Notes */}
           <div>
             <label htmlFor="notes" className="block text-sm font-medium mb-2">
-              <FileText size={16} className="inline mr-1" />
-              Notes
+              <FileText className="inline h-4 w-4 mr-1" />
+              Notes (Optional)
             </label>
             <textarea
               id="notes"
@@ -404,8 +492,8 @@ export default function CoachHoursModal({
                 </>
               ) : (
                 <>
-                  <Save size={16} />
-                  Log Hours
+                  <Save className="h-4 w-4" />
+                  Log {formData.hours_worked || 0} Hours
                 </>
               )}
             </button>

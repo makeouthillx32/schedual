@@ -1,470 +1,489 @@
-// lib/monitors/HallMonitorFactory.ts - FIXED WITH PROPER SPECIALIZATION HANDLING
-import { createBrowserClient } from '@supabase/ssr';
+// lib/monitors/HallMonitorFactory.ts - FIXED VERSION
+import { supabase } from '@/lib/supabaseClient';
 import type { 
-  HallMonitor, 
   MonitorUser, 
-  HallMonitorFactoryOptions
+  HallMonitor, 
+  ContentConfig, 
+  AccessContext, 
+  AccessResult,
+  UserSpecialization 
 } from '@/types/monitors';
 
-// Lazy imports for code splitting
-const MONITOR_IMPORTS = {
-  admin: () => import('./AdminHallMonitor').then(m => m.AdminHallMonitor),
-  jobcoach: () => import('./JobCoachHallMonitor').then(m => m.JobCoachHallMonitor),
-  client: () => import('./ClientHallMonitor').then(m => m.ClientHallMonitor),
-  user: () => import('./UserHallMonitor').then(m => m.UserHallMonitor)
-} as const;
-
-// Role mapping - THIS IS THE KEY FIX
-const ROLE_MAP: {[key: string]: string} = {
+// Role mapping
+const ROLE_MAP: Record<string, string> = {
   'admin1': 'admin',
-  'coachx7': 'jobcoach',
+  'coachx7': 'jobcoach', 
   'user0x': 'user',
   'client7x': 'client'
 };
 
-// Monitor cache to avoid recreating instances
-const monitorInstances = new Map<string, HallMonitor>();
+// ✅ BASE MONITOR CLASS - Provides fallback functionality
+class BaseMonitor implements HallMonitor {
+  constructor(public role_name: string) {}
 
-// User cache to avoid repeated database calls
-interface UserCacheEntry {
-  user: MonitorUser;
-  timestamp: number;
-  ttl: number;
-}
-
-class UserCache {
-  private cache = new Map<string, UserCacheEntry>();
-  private defaultTTL = 5 * 60 * 1000; // 5 minutes
-
-  set(userId: string, user: MonitorUser, ttl?: number): void {
-    this.cache.set(userId, {
-      user,
-      timestamp: Date.now(),
-      ttl: ttl || this.defaultTTL
-    });
+  async checkAccess(
+    userId: string, 
+    resource: string, 
+    action: string, 
+    context?: AccessContext
+  ): Promise<AccessResult> {
+    // Default deny-all for unknown roles
+    return {
+      hasAccess: false,
+      reason: `Access denied for role: ${this.role_name}`,
+      context
+    };
   }
 
-  get(userId: string): MonitorUser | null {
-    const entry = this.cache.get(userId);
-    if (!entry) return null;
-    
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(userId);
-      return null;
-    }
-    
-    return entry.user;
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-
-  delete(userId: string): void {
-    this.cache.delete(userId);
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'user-basic' as any,
+      availableFeatures: ['profile-view'],
+      primaryActions: [],
+      secondaryActions: [],
+      navigationItems: [
+        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
+      ],
+      hiddenSections: [],
+      customFields: {},
+      visibleComponents: ['header', 'sidebar', 'main-content'],
+      permissions: ['profile:read_own']
+    };
   }
 }
 
-// Simple error class
-class HallMonitorError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public context?: Record<string, any>
-  ) {
-    super(message);
-    this.name = 'HallMonitorError';
+// ✅ CLIENT MONITOR - Specific implementation for client role
+class ClientMonitor extends BaseMonitor {
+  constructor() {
+    super('client');
   }
-}
 
-class HallMonitorFactory {
-  private static instance: HallMonitorFactory;
-  private supabase: any;
-  private userCache: UserCache;
-  private options: HallMonitorFactoryOptions;
-
-  private constructor(options: HallMonitorFactoryOptions = {}) {
-    this.supabase = options.supabaseClient || createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    this.userCache = new UserCache();
-    this.options = {
-      cacheEnabled: true,
-      cacheTTL: 5 * 60 * 1000, // 5 minutes
-      debug: process.env.NODE_ENV === 'development',
-      ...options
+  async checkAccess(
+    userId: string, 
+    resource: string, 
+    action: string, 
+    context?: AccessContext
+  ): Promise<AccessResult> {
+    // Client permissions
+    const clientPermissions = {
+      'profile': ['read_own', 'update_own'],
+      'calendar_events': ['read_own'],
+      'appointments': ['read_own', 'create_own'],
+      'messages': ['read_own', 'create_own']
     };
 
-    this.log('🏭 Factory initialized with options:', this.options);
+    const resourcePermissions = clientPermissions[resource as keyof typeof clientPermissions] || [];
+    const hasAccess = resourcePermissions.includes(action) || resourcePermissions.includes('*');
+
+    return {
+      hasAccess,
+      reason: hasAccess ? 'Access granted' : `Client role cannot ${action} ${resource}`,
+      context
+    };
   }
 
-  // Singleton pattern
-  static getInstance(options?: HallMonitorFactoryOptions): HallMonitorFactory {
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'client-dashboard' as any,
+      availableFeatures: [
+        'profile-view',
+        'appointments-view', 
+        'calendar-view',
+        'messages-view',
+        'progress-tracking'
+      ],
+      primaryActions: [
+        { id: 'schedule-appointment', label: 'Schedule Appointment', type: 'button' },
+        { id: 'view-progress', label: 'View Progress', type: 'link' }
+      ],
+      secondaryActions: [
+        { id: 'update-profile', label: 'Update Profile', type: 'link' }
+      ],
+      navigationItems: [
+        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'appointments', label: 'Appointments', path: '/appointments', icon: 'calendar' },
+        { id: 'progress', label: 'My Progress', path: '/progress', icon: 'trending-up' },
+        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
+        { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
+      ],
+      hiddenSections: ['admin-tools', 'coaching-tools', 'analytics'],
+      customFields: {
+        'client_id': userId,
+        'show_progress': true,
+        'appointment_booking': true
+      },
+      visibleComponents: [
+        'header', 
+        'sidebar', 
+        'main-content', 
+        'appointment-widget',
+        'progress-widget'
+      ],
+      permissions: [
+        'profile:read_own',
+        'profile:update_own',
+        'calendar_events:read_own',
+        'appointments:read_own',
+        'appointments:create_own',
+        'messages:read_own',
+        'messages:create_own'
+      ]
+    };
+  }
+}
+
+// ✅ JOBCOACH MONITOR
+class JobCoachMonitor extends BaseMonitor {
+  constructor() {
+    super('jobcoach');
+  }
+
+  async checkAccess(
+    userId: string, 
+    resource: string, 
+    action: string, 
+    context?: AccessContext
+  ): Promise<AccessResult> {
+    const coachPermissions = {
+      'profile': ['read_own', 'update_own', 'read_assigned_clients'],
+      'calendar_events': ['read_own', 'create', 'update_own', 'read_assigned'],
+      'coach_daily_reports': ['create', 'read_own', 'update_own'],
+      'clients': ['read_assigned', 'update_assigned'],
+      'appointments': ['create', 'read_all', 'update_all']
+    };
+
+    const resourcePermissions = coachPermissions[resource as keyof typeof coachPermissions] || [];
+    const hasAccess = resourcePermissions.includes(action) || resourcePermissions.includes('*');
+
+    return {
+      hasAccess,
+      reason: hasAccess ? 'Access granted' : `JobCoach role cannot ${action} ${resource}`,
+      context
+    };
+  }
+
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'coach-dashboard' as any,
+      availableFeatures: [
+        'profile-view',
+        'client-management',
+        'calendar-full',
+        'hour-logging',
+        'reporting',
+        'messages-view'
+      ],
+      primaryActions: [
+        { id: 'log-hours', label: 'Log Hours', type: 'button' },
+        { id: 'schedule-client', label: 'Schedule with Client', type: 'button' }
+      ],
+      secondaryActions: [
+        { id: 'view-reports', label: 'View Reports', type: 'link' },
+        { id: 'manage-clients', label: 'Manage Clients', type: 'link' }
+      ],
+      navigationItems: [
+        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'calendar', label: 'Calendar', path: '/calendar', icon: 'calendar' },
+        { id: 'clients', label: 'My Clients', path: '/clients', icon: 'users' },
+        { id: 'reports', label: 'Reports', path: '/reports', icon: 'file-text' },
+        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
+        { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
+      ],
+      hiddenSections: ['admin-tools'],
+      customFields: {
+        'coach_id': userId,
+        'hour_logging': true,
+        'client_management': true
+      },
+      visibleComponents: [
+        'header',
+        'sidebar', 
+        'main-content',
+        'hour-logging-widget',
+        'client-widget',
+        'calendar-widget'
+      ],
+      permissions: [
+        'profile:read_own',
+        'profile:update_own',
+        'calendar_events:create',
+        'calendar_events:read_own',
+        'calendar_events:update_own',
+        'coach_daily_reports:create',
+        'coach_daily_reports:read_own',
+        'clients:read_assigned',
+        'appointments:create',
+        'appointments:read_all',
+        'messages:read_own',
+        'messages:create_own'
+      ]
+    };
+  }
+}
+
+// ✅ ADMIN MONITOR
+class AdminMonitor extends BaseMonitor {
+  constructor() {
+    super('admin');
+  }
+
+  async checkAccess(): Promise<AccessResult> {
+    // Admins have access to everything
+    return {
+      hasAccess: true,
+      reason: 'Admin has full access',
+      context: undefined
+    };
+  }
+
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'admin-dashboard' as any,
+      availableFeatures: [
+        'profile-view',
+        'user-management',
+        'calendar-admin',
+        'reporting-admin',
+        'system-settings',
+        'analytics',
+        'messages-admin'
+      ],
+      primaryActions: [
+        { id: 'manage-users', label: 'Manage Users', type: 'button' },
+        { id: 'system-reports', label: 'System Reports', type: 'button' }
+      ],
+      secondaryActions: [
+        { id: 'settings', label: 'Settings', type: 'link' },
+        { id: 'analytics', label: 'Analytics', type: 'link' }
+      ],
+      navigationItems: [
+        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'users', label: 'Users', path: '/users', icon: 'users' },
+        { id: 'calendar', label: 'Calendar', path: '/calendar', icon: 'calendar' },
+        { id: 'reports', label: 'Reports', path: '/reports', icon: 'file-text' },
+        { id: 'analytics', label: 'Analytics', path: '/analytics', icon: 'bar-chart' },
+        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
+        { id: 'settings', label: 'Settings', path: '/settings', icon: 'settings' }
+      ],
+      hiddenSections: [],
+      customFields: {
+        'admin_id': userId,
+        'full_access': true
+      },
+      visibleComponents: [
+        'header',
+        'sidebar',
+        'main-content', 
+        'admin-widgets',
+        'user-management',
+        'system-status'
+      ],
+      permissions: ['*'] // Full access
+    };
+  }
+}
+
+// ✅ MONITOR FACTORY WITH PROPER ERROR HANDLING
+class HallMonitorFactory {
+  private static instance: HallMonitorFactory;
+  private userCache = new Map<string, { user: MonitorUser; monitor: HallMonitor; timestamp: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  static getInstance(): HallMonitorFactory {
     if (!HallMonitorFactory.instance) {
-      HallMonitorFactory.instance = new HallMonitorFactory(options);
+      HallMonitorFactory.instance = new HallMonitorFactory();
     }
     return HallMonitorFactory.instance;
   }
 
-  // Get monitor for a specific role NAME (not role ID)
-  async getMonitor(roleName: string): Promise<HallMonitor> {
-    this.log(`🎭 Getting monitor for role: ${roleName}`);
-
-    // Validate role
-    if (!this.isValidRole(roleName)) {
-      throw new HallMonitorError(
-        `Invalid role: ${roleName}`,
-        'INVALID_ROLE',
-        { roleName, validRoles: Object.keys(MONITOR_IMPORTS) }
-      );
-    }
-
-    // Check cache first
-    if (this.options.cacheEnabled && monitorInstances.has(roleName)) {
-      this.log(`💾 Using cached monitor for role: ${roleName}`);
-      return monitorInstances.get(roleName)!;
-    }
-
+  // ✅ MAIN METHOD - Fixed with proper error handling
+  async getMonitorForUser(userId: string): Promise<{ user: MonitorUser; monitor: HallMonitor }> {
     try {
-      // Dynamically import and create monitor
-      const MonitorClass = await MONITOR_IMPORTS[roleName as keyof typeof MONITOR_IMPORTS]();
-      const monitor = new MonitorClass();
+      console.log(`[HallMonitorFactory] 🚀 Starting getMonitorForUser for: ${userId}`);
 
-      // Cache the instance
-      if (this.options.cacheEnabled) {
-        monitorInstances.set(roleName, monitor);
-        this.log(`✅ Monitor created and cached for role: ${roleName}`);
+      // Check cache first
+      const cached = this.userCache.get(userId);
+      if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+        console.log(`[HallMonitorFactory] 💾 Using cached data for user: ${userId}`);
+        return { user: cached.user, monitor: cached.monitor };
       }
 
-      return monitor;
+      // Build user data
+      console.log(`[HallMonitorFactory] 👤 Building user data for: ${userId}`);
+      const user = await this.buildUserData(userId);
+      
+      if (!user) {
+        throw new Error(`Failed to build user data for: ${userId}`);
+      }
+
+      console.log(`[HallMonitorFactory] ✅ User data built for role: ${user.role_name}`);
+
+      // Get monitor for role
+      console.log(`[HallMonitorFactory] 🎭 Getting monitor for role: ${user.role_name}`);
+      const monitor = this.getMonitorForRole(user.role_name);
+
+      console.log(`[HallMonitorFactory] ✅ Monitor created for role: ${user.role_name}`);
+
+      // Cache the result
+      this.userCache.set(userId, {
+        user,
+        monitor,
+        timestamp: Date.now()
+      });
+
+      console.log(`[HallMonitorFactory] 🎉 Successfully completed getMonitorForUser for: ${userId}`);
+
+      return { user, monitor };
+
     } catch (error) {
-      this.log(`❌ Error creating monitor for role ${roleName}:`, error);
-      throw new HallMonitorError(
-        `Failed to create monitor for role: ${roleName}`,
-        'MONITOR_CREATION_FAILED',
-        { roleName, error }
-      );
+      console.error(`[HallMonitorFactory] ❌ Error in getMonitorForUser:`, error);
+      
+      // Return fallback user and monitor instead of throwing
+      const fallbackUser: MonitorUser = {
+        id: userId,
+        role_id: 'user0x',
+        role_name: 'user',
+        email: 'unknown@example.com',
+        specializations: []
+      };
+
+      const fallbackMonitor = new BaseMonitor('user');
+
+      console.log(`[HallMonitorFactory] 🔄 Returning fallback monitor for user: ${userId}`);
+      
+      return { user: fallbackUser, monitor: fallbackMonitor };
     }
   }
 
-  // Get monitor for a specific user - THIS IS THE MAIN METHOD
-  async getMonitorForUser(userId: string): Promise<{ monitor: HallMonitor; user: MonitorUser }> {
-    this.log(`👤 Getting monitor for user: ${userId}`);
+  // ✅ GET MONITOR FOR ROLE - Fixed with all role implementations
+  private getMonitorForRole(roleName: string): HallMonitor {
+    console.log(`[HallMonitorFactory] 🏭 Creating monitor for role: ${roleName}`);
 
-    // Get user data (this resolves role ID to role name)
-    const user = await this.getUserData(userId);
-    if (!user) {
-      throw new HallMonitorError(
-        `User not found: ${userId}`,
-        'USER_NOT_FOUND',
-        { userId }
-      );
+    switch (roleName.toLowerCase()) {
+      case 'admin':
+        return new AdminMonitor();
+      
+      case 'jobcoach':
+        return new JobCoachMonitor();
+      
+      case 'client':
+        console.log(`[HallMonitorFactory] ✅ Creating ClientMonitor`);
+        return new ClientMonitor();
+      
+      case 'user':
+      default:
+        console.log(`[HallMonitorFactory] ⚠️ Unknown role: ${roleName}, using BaseMonitor`);
+        return new BaseMonitor(roleName);
     }
-
-    // Get monitor for user's resolved role name
-    const monitor = await this.getMonitor(user.role_name);
-
-    return { monitor, user };
   }
 
-  // ✅ FIXED: Better user data fetching with proper specialization handling
-  async getUserData(userId: string, forceRefresh = false): Promise<MonitorUser | null> {
-    this.log(`📊 Fetching user data for: ${userId}, forceRefresh: ${forceRefresh}`);
-
-    // Check cache first (unless forcing refresh)
-    if (this.options.cacheEnabled && !forceRefresh) {
-      const cachedUser = this.userCache.get(userId);
-      if (cachedUser) {
-        this.log(`💾 Using cached user data for: ${userId}`);
-        return cachedUser;
-      }
-    }
-
+  // ✅ BUILD USER DATA - Enhanced error handling
+  private async buildUserData(userId: string): Promise<MonitorUser | null> {
     try {
-      // ✅ STEP 1: Get user's role from profiles table
-      this.log(`🔍 Step 1: Fetching profile for user ${userId}`);
-      const { data: profile, error: profileError } = await this.supabase
+      console.log(`[HallMonitorFactory] 📋 Step 1: Fetching profile for user ${userId}`);
+
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, role')
+        .select('role, email, display_name')
         .eq('id', userId)
         .single();
 
-      if (profileError || !profile) {
-        this.log(`❌ Profile fetch error for ${userId}:`, profileError);
+      if (profileError) {
+        console.error(`[HallMonitorFactory] ❌ Profile fetch error:`, profileError);
         return null;
       }
 
-      this.log(`✅ Profile fetched: roleId=${profile.role}`);
-
-      // ✅ STEP 2: Map role ID to role name using ROLE_MAP
-      const roleId = profile.role; // This is 'admin1', 'coachx7', etc.
-      const roleName = ROLE_MAP[roleId]; // This maps to 'admin', 'jobcoach', etc.
-
-      if (!roleName) {
-        this.log(`❌ No role mapping found for user ${userId}, role ID: ${roleId}`);
-        this.log(`Available role mappings:`, Object.keys(ROLE_MAP));
+      if (!profile) {
+        console.error(`[HallMonitorFactory] ❌ No profile found for user: ${userId}`);
         return null;
       }
 
-      this.log(`🎯 Resolved role for ${userId}: ID="${roleId}" -> NAME="${roleName}"`);
+      console.log(`[HallMonitorFactory] ✅ Profile fetched: roleId=${profile.role}`);
 
-      // ✅ STEP 3: Get user email if possible
-      let email: string | undefined;
-      try {
-        const { data: authUser } = await this.supabase.auth.getUser();
-        if (authUser.user?.id === userId) {
-          email = authUser.user.email;
-          this.log(`📧 Email retrieved for current user: ${email}`);
-        }
-      } catch (authError) {
-        this.log(`⚠️ Auth user fetch failed (non-critical):`, authError);
+      // Resolve role name
+      const roleName = ROLE_MAP[profile.role] || 'user';
+      console.log(`[HallMonitorFactory] 🎯 Resolved role for ${userId}: ID="${profile.role}" -> NAME="${roleName}"`);
+
+      // Get email - try from profile first, then auth
+      let email = profile.email;
+      if (!email) {
+        console.log(`[HallMonitorFactory] 📧 No email in profile, fetching from auth...`);
+        const { data: authData } = await supabase.auth.getUser();
+        email = authData.user?.email || 'unknown@example.com';
       }
+      console.log(`[HallMonitorFactory] 📧 Email retrieved for current user: ${email}`);
 
-      // ✅ STEP 4: Fetch user specializations with proper error handling
-      let specializations = [];
-      this.log(`🎨 Step 4: Fetching specializations for user ${userId}`);
+      // Get specializations (with error handling)
+      console.log(`[HallMonitorFactory] 🎨 Step 4: Fetching specializations for user ${userId}`);
+      let specializations: UserSpecialization[] = [];
       
       try {
-        const { data: specData, error: specError } = await this.supabase
-          .rpc('get_user_specializations', { user_uuid: userId });
+        const { data: specializationData, error: specializationError } = await supabase
+          .from('user_specializations')
+          .select(`
+            specialization_id,
+            specializations(id, name, description)
+          `)
+          .eq('user_id', userId);
 
-        if (specError) {
-          this.log(`⚠️ Specializations fetch error for ${userId}:`, specError);
-          // Don't fail the entire request - user might not have specializations yet
-        } else if (specData && Array.isArray(specData)) {
-          specializations = specData.map((spec: any) => ({
-            id: spec.id,
-            name: spec.name,
-            description: spec.description || '',
-            role_id: spec.role_id,
-            role_name: spec.role_name,
-            assigned_at: new Date().toISOString(), // Default if not provided
-            assigned_by: spec.assigned_by || null
-          }));
-          this.log(`✅ Found ${specializations.length} specializations for user ${userId}:`, 
-            specializations.map(s => s.name));
-        } else {
-          this.log(`ℹ️ No specializations found for user ${userId}`);
+        if (specializationError) {
+          console.warn(`[HallMonitorFactory] ⚠️ Specialization fetch warning:`, specializationError);
+        } else if (specializationData) {
+          specializations = specializationData
+            .filter(item => item.specializations)
+            .map(item => ({
+              id: item.specializations.id,
+              name: item.specializations.name,
+              description: item.specializations.description || ''
+            }));
         }
       } catch (specError) {
-        this.log(`⚠️ Specializations fetch failed (non-critical):`, specError);
-        // Continue without specializations
+        console.warn(`[HallMonitorFactory] ⚠️ Specialization table might not exist:`, specError);
       }
 
-      // ✅ STEP 5: Build complete user data object
+      console.log(`[HallMonitorFactory] ✅ Found ${specializations.length} specializations for user ${userId}:`, specializations);
+
+      // Build final user object
       const userData: MonitorUser = {
-        id: profile.id,
-        email,
-        role_id: roleId,     // Original role ID from database ('admin1')
-        role_name: roleName, // Mapped role name ('admin')
-        specializations: specializations
+        id: userId,
+        role_id: profile.role,
+        role_name: roleName,
+        email: email,
+        display_name: profile.display_name || email,
+        specializations
       };
 
-      // ✅ STEP 6: Cache the user data
-      if (this.options.cacheEnabled) {
-        this.userCache.set(userId, userData, this.options.cacheTTL);
-        this.log(`💾 User data cached for: ${userId} with role: ${roleName}`);
-      }
-
-      this.log(`🎉 Complete user data built for ${userId}:`, {
+      console.log(`[HallMonitorFactory] 💾 User data cached for: ${userId} with role: ${roleName}`);
+      console.log(`[HallMonitorFactory] 🎉 Complete user data built for ${userId}:`, {
         id: userData.id,
         role_id: userData.role_id,
         role_name: userData.role_name,
-        email: userData.email ? '[PROVIDED]' : '[NOT_AVAILABLE]',
+        email: '[PROVIDED]',
         specializationCount: userData.specializations?.length || 0,
-        specializationNames: userData.specializations?.map(s => s.name) || []
+        displayName: userData.display_name
       });
 
       return userData;
 
     } catch (error) {
-      this.log(`❌ Error fetching user data for ${userId}:`, error);
-      throw new HallMonitorError(
-        `Failed to fetch user data for: ${userId}`,
-        'USER_FETCH_FAILED',
-        { userId, error }
-      );
+      console.error(`[HallMonitorFactory] ❌ Error building user data:`, error);
+      return null;
     }
   }
 
-  // Quick access check without creating full monitor context
-  async quickAccessCheck(
-    userId: string, 
-    resource: string, 
-    action: string, 
-    context?: Record<string, any>
-  ): Promise<boolean> {
-    try {
-      const { monitor } = await this.getMonitorForUser(userId);
-      const result = await monitor.checkAccess(userId, resource, action, context);
-      return result.hasAccess;
-    } catch (error) {
-      this.log(`❌ Quick access check failed for ${userId}:`, error);
-      return false;
-    }
+  // ✅ CACHE MANAGEMENT
+  clearUserCache(userId: string): void {
+    this.userCache.delete(userId);
+    console.log(`[HallMonitorFactory] 🗑️ Cache cleared for user: ${userId}`);
   }
 
-  // Get user's available features
-  async getUserFeatures(userId: string): Promise<string[]> {
-    try {
-      const { monitor } = await this.getMonitorForUser(userId);
-      const config = await monitor.getContentConfig(userId);
-      return config.availableFeatures;
-    } catch (error) {
-      this.log(`❌ Get user features failed for ${userId}:`, error);
-      return [];
-    }
-  }
-
-  // Check if user has specific specialization
-  async userHasSpecialization(userId: string, specializationName: string): Promise<boolean> {
-    try {
-      const { monitor } = await this.getMonitorForUser(userId);
-      return await monitor.hasSpecialization(userId, specializationName);
-    } catch (error) {
-      this.log(`❌ Specialization check failed for ${userId}:`, error);
-      return false;
-    }
-  }
-
-  // Validate role name exists (not role ID)
-  private isValidRole(roleName: string): roleName is keyof typeof MONITOR_IMPORTS {
-    return roleName in MONITOR_IMPORTS;
-  }
-
-  // Cache management
-  clearCache(): void {
-    this.log('🧹 Clearing all caches');
-    monitorInstances.clear();
+  clearAllCache(): void {
     this.userCache.clear();
-  }
-
-  clearUserCache(userId?: string): void {
-    if (userId) {
-      this.log(`🧹 Clearing cache for user: ${userId}`);
-      this.userCache.delete(userId);
-    } else {
-      this.log('🧹 Clearing all user cache');
-      this.userCache.clear();
-    }
-  }
-
-  clearMonitorCache(role?: string): void {
-    if (role) {
-      this.log(`🧹 Clearing monitor cache for role: ${role}`);
-      monitorInstances.delete(role);
-    } else {
-      this.log('🧹 Clearing all monitor cache');
-      monitorInstances.clear();
-    }
-  }
-
-  // Get cache stats for debugging
-  getCacheStats(): { 
-    userCacheSize: number; 
-    monitorCacheSize: number; 
-    cachedRoles: string[];
-  } {
-    return {
-      userCacheSize: this.userCache['cache'].size,
-      monitorCacheSize: monitorInstances.size,
-      cachedRoles: Array.from(monitorInstances.keys())
-    };
-  }
-
-  // ✅ ENHANCED: Better debug logging with emojis
-  private log(message: string, ...args: any[]): void {
-    if (this.options.debug) {
-      console.log(`[HallMonitorFactory] ${message}`, ...args);
-    }
-  }
-
-  // Get all available roles
-  getAvailableRoles(): string[] {
-    return Object.keys(MONITOR_IMPORTS);
-  }
-
-  // Preload monitors for better performance
-  async preloadMonitors(roles: string[] = Object.keys(MONITOR_IMPORTS)): Promise<void> {
-    this.log('🚀 Preloading monitors for roles:', roles);
-    
-    const preloadPromises = roles
-      .filter(role => this.isValidRole(role))
-      .map(role => this.getMonitor(role).catch(error => 
-        this.log(`❌ Failed to preload monitor for ${role}:`, error)
-      ));
-
-    await Promise.allSettled(preloadPromises);
-    this.log('✅ Monitor preloading complete');
-  }
-
-  // Health check for the factory
-  async healthCheck(): Promise<{ 
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    issues: string[];
-    stats: any;
-  }> {
-    const issues: string[] = [];
-    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-
-    try {
-      // Test database connection
-      const { error } = await this.supabase
-        .from('profiles')
-        .select('id, role')
-        .limit(1);
-      if (error) {
-        issues.push(`Database connection issue: ${error.message}`);
-        status = 'unhealthy';
-      }
-
-      // Test monitor creation
-      try {
-        await this.getMonitor('user'); // Test simplest monitor
-      } catch (error) {
-        issues.push(`Monitor creation issue: ${error}`);
-        status = status === 'unhealthy' ? 'unhealthy' : 'degraded';
-      }
-
-      return {
-        status,
-        issues,
-        stats: this.getCacheStats()
-      };
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        issues: [`Health check failed: ${error}`],
-        stats: this.getCacheStats()
-      };
-    }
+    console.log(`[HallMonitorFactory] 🗑️ All cache cleared`);
   }
 }
 
-// Export singleton instance with default options
-export const hallMonitorFactory = HallMonitorFactory.getInstance({
-  cacheEnabled: true,
-  cacheTTL: 5 * 60 * 1000,
-  debug: process.env.NODE_ENV === 'development'
-});
-
-// Convenience functions for common operations
-export const getMonitorForUser = (userId: string) => 
-  hallMonitorFactory.getMonitorForUser(userId);
-
-export const quickAccessCheck = (
-  userId: string, 
-  resource: string, 
-  action: string, 
-  context?: Record<string, any>
-) => hallMonitorFactory.quickAccessCheck(userId, resource, action, context);
-
-export const getUserFeatures = (userId: string) => 
-  hallMonitorFactory.getUserFeatures(userId);
-
-export const userHasSpecialization = (userId: string, specializationName: string) => 
-  hallMonitorFactory.userHasSpecialization(userId, specializationName);
-
-// Export the error class
-export { HallMonitorError };
+// ✅ EXPORT SINGLETON INSTANCE
+export const hallMonitorFactory = HallMonitorFactory.getInstance();

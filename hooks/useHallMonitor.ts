@@ -14,7 +14,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   const [user, setUser] = useState<MonitorUser | null>(null);
   const [monitor, setMonitor] = useState<HallMonitor | null>(null);
   const [contentConfig, setContentConfig] = useState<ContentConfig | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // ✅ Start with false, not true
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Refs for cleanup and state management
@@ -62,7 +62,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       setUser(result.user);
       setMonitor(result.monitor);
 
-      // Get content config
+      // Get content config with fallback
       let config: ContentConfig;
       try {
         console.log('[useHallMonitor] 📋 Getting content config...');
@@ -71,7 +71,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       } catch (configError) {
         console.warn('[useHallMonitor] Config error, using fallback:', configError);
         
-        // Fallback config
+        // ✅ CRITICAL FIX: Always provide a fallback config
         config = {
           dashboardLayout: 'user-basic' as any,
           availableFeatures: ['profile-view'],
@@ -184,7 +184,7 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     await loadUserData(userId);
   }, [userId, loadUserData]);
 
-  // ✅ Early return for no userId
+  // ✅ SIMPLIFIED: Early return with fallback for no userId
   if (!userId) {
     return {
       monitor: null,
@@ -201,12 +201,14 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
 
   // ✅ Debug current state (reduced logging)
   const hasCompleteData = !!(user && monitor && contentConfig);
-  console.log('[useHallMonitor] 📊 State:', {
-    userId: userId.substring(0, 8) + '...',
-    hasCompleteData,
-    isLoading,
-    error: !!error
-  });
+  if (isLoading || !hasCompleteData) {
+    console.log('[useHallMonitor] 📊 State:', {
+      userId: userId.substring(0, 8) + '...',
+      hasCompleteData,
+      isLoading,
+      error: !!error
+    });
+  }
 
   return {
     monitor,

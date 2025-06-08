@@ -1,4 +1,4 @@
-// hooks/useCalendarEvents.ts (ENHANCED with Hour Logging)
+// hooks/useCalendarEvents.ts (ENHANCED to include hour logs)
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { toast } from 'react-hot-toast';
@@ -24,6 +24,18 @@ interface CalendarEvent {
   is_virtual: boolean;
   virtual_meeting_link?: string;
   duration_minutes: number;
+  is_hour_log?: boolean; // NEW: Flag for hour log entries
+}
+
+interface CoachHourLog {
+  id: string;
+  coach_profile_id: string;
+  report_date: string;
+  hours_worked: number;
+  location: string;
+  activity_type: string;
+  notes: string;
+  created_at: string;
 }
 
 interface CreateEventData {
@@ -42,7 +54,6 @@ interface CreateEventData {
   reminder_minutes?: number;
 }
 
-// 🎯 NEW: Hour Logging Interface
 interface HourLogData {
   report_date: string;
   hours_worked: number;
@@ -51,61 +62,12 @@ interface HourLogData {
   notes?: string;
 }
 
-// Quick entry pattern type (e.g., "TB 7", "JS 4.5")
-interface QuickEntry {
-  activityCode: string;
-  hours: number;
-  originalInput: string;
-}
-
-// Activity type mapping for quick entry
-const ACTIVITY_CODE_MAP: Record<string, string> = {
-  'TB': 'Client Coaching',
-  'JS': 'Job Search Support', 
-  'GS': 'Group Session',
-  'AC': 'Administrative Tasks',
-  'TR': 'Training',
-  'MT': 'Team Meeting',
-  'OT': 'Outreach',
-  'AS': 'Assessment',
-  'FU': 'Follow-up',
-  'DC': 'Documentation'
-};
-
-// Common work hour presets
-const HOUR_PRESETS = [1, 2, 4, 6, 7, 8];
-
-// Location presets
-const LOCATION_PRESETS = [
-  'Main Office',
-  'Community Center', 
-  'Client Home',
-  'Virtual/Remote',
-  'Field Office',
-  'Other'
-];
-
-// Activity types
-const ACTIVITY_TYPES = [
-  'Client Coaching',
-  'Group Session',
-  'Job Search Support',
-  'Administrative Tasks',
-  'Training',
-  'Team Meeting',
-  'Outreach',
-  'Assessment',
-  'Follow-up',
-  'Documentation',
-  'Other'
-];
-
 interface UseCalendarEventsProps {
   startDate: Date;
   endDate: Date;
   userId?: string;
   userRole?: string;
-  coachName?: string; // 🎯 NEW: For hour logging
+  coachName?: string;
 }
 
 export function useCalendarEvents({
@@ -119,8 +81,6 @@ export function useCalendarEvents({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
-  
-  // 🎯 NEW: Hour logging state
   const [loggingHours, setLoggingHours] = useState(false);
 
   // Format date for SQL query
@@ -128,151 +88,159 @@ export function useCalendarEvents({
     return date.toISOString().split('T')[0];
   };
 
-  // 🎯 NEW: Parse quick entry input (e.g., "TB 7", "JS 4.5")
-  const parseQuickEntry = (input: string): QuickEntry | null => {
-    const trimmed = input.trim().toUpperCase();
-    
-    // Pattern: letters followed by space and number
-    const match = trimmed.match(/^([A-Z]{1,3})\s+(\d+(?:\.\d+)?)$/);
-    
-    if (!match) return null;
-    
-    const [, activityCode, hoursStr] = match;
-    const hours = parseFloat(hoursStr);
-    
-    if (isNaN(hours) || hours <= 0 || hours > 24) return null;
-    
-    return {
-      activityCode,
-      hours,
-      originalInput: input
-    };
+  // Convert coach hour logs to calendar events
+  const convertHourLogsToEvents = (hourLogs: CoachHourLog[]): CalendarEvent[] => {
+    return hourLogs.map(log => ({
+      id: `hour-log-${log.id}`,
+      title: `${log.hours_worked}h - ${log.activity_type}`,
+      description: log.notes || `Logged ${log.hours_worked} hours for ${log.activity_type}`,
+      event_date: log.report_date,
+      start_time: '09:00',
+      end_time: '17:00',
+      event_type: 'Hour Log',
+      coach_name: coachName || 'Coach',
+      client_name: '',
+      color_code: '#10B981', // Green for hour logs
+      status: 'completed',
+      location: log.location,
+      is_virtual: false,
+      virtual_meeting_link: '',
+      duration_minutes: Math.round(log.hours_worked * 60),
+      is_hour_log: true
+    }));
   };
 
-  // 🎯 NEW: Validate hour log data
-  const validateHourLogData = (data: Partial<HourLogData>): string[] => {
-    const errors: string[] = [];
-    
-    if (!data.report_date) {
-      errors.push('Date is required');
-    }
-    
-    if (!data.hours_worked || data.hours_worked <= 0) {
-      errors.push('Hours must be greater than 0');
-    } else if (data.hours_worked > 24) {
-      errors.push('Hours cannot exceed 24 per day');
-    }
-    
-    if (!data.activity_type) {
-      errors.push('Activity type is required');
-    }
-    
-    if (!data.location) {
-      errors.push('Location is required');
-    }
-    
-    return errors;
-  };
-
-  // Simple fetch function
+  // Fetch calendar events and hour logs
   const fetchEvents = async () => {
     try {
-      console.log('[Calendar] Starting fetch...');
+      console.log('[Calendar] Fetching events and hour logs...');
       setLoading(true);
       setError(null);
 
-      // Check if event_types table exists first
-      const { error: typeError } = await supabase
-        .from('event_types')
-        .select('id')
-        .limit(1);
+      const startDateStr = formatDate(startDate);
+      const endDateStr = formatDate(endDate);
 
-      if (typeError && typeError.message.includes('relation')) {
-        console.log('[Calendar] Tables do not exist yet - showing empty calendar');
-        setEvents([]);
-        setLoading(false);
-        setHasLoaded(true);
-        return;
-      }
+      // Fetch regular calendar events
+      let regularEvents: CalendarEvent[] = [];
+      
+      try {
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('calendar_events')
+          .select(`
+            id,
+            title,
+            description,
+            event_date,
+            start_time,
+            end_time,
+            location,
+            is_virtual,
+            virtual_meeting_link,
+            status,
+            priority,
+            client_profile:client_profile_id(id),
+            coach_profile:coach_profile_id(id),
+            event_type:event_type_id(id, name, color_code)
+          `)
+          .gte('event_date', startDateStr)
+          .lte('event_date', endDateStr)
+          .order('event_date', { ascending: true });
 
-      // Tables exist, try to fetch events
-      const { data, error: fetchError } = await supabase
-        .from('calendar_events')
-        .select(`
-          id,
-          title,
-          description,
-          event_date,
-          start_time,
-          end_time,
-          location,
-          is_virtual,
-          virtual_meeting_link,
-          status,
-          duration_minutes,
-          event_types(name, color_code)
-        `)
-        .gte('event_date', formatDate(startDate))
-        .lte('event_date', formatDate(endDate))
-        .order('event_date', { ascending: true });
-
-      if (fetchError) {
-        console.log('[Calendar] Fetch error:', fetchError.message);
-        if (fetchError.message.includes('relation')) {
-          setEvents([]);
+        if (eventsError) {
+          console.warn('[Calendar] Events table error (might not exist):', eventsError);
         } else {
-          setError(fetchError.message);
-          setEvents([]);
+          regularEvents = (eventsData || []).map(event => ({
+            id: event.id,
+            title: event.title,
+            description: event.description || '',
+            event_date: event.event_date,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            event_type: event.event_type?.name || 'Event',
+            client_name: event.client_profile?.id || '',
+            coach_name: event.coach_profile?.id || '',
+            color_code: event.event_type?.color_code || '#3B82F6',
+            status: event.status,
+            location: event.location || '',
+            is_virtual: event.is_virtual || false,
+            virtual_meeting_link: event.virtual_meeting_link || '',
+            duration_minutes: 60,
+            is_hour_log: false
+          }));
         }
-      } else {
-        const transformedEvents: CalendarEvent[] = (data || []).map((event: any) => ({
-          id: event.id,
-          title: event.title,
-          description: event.description,
-          event_date: event.event_date,
-          start_time: event.start_time,
-          end_time: event.end_time,
-          event_type: event.event_types?.name || 'Event',
-          client_name: undefined,
-          coach_name: undefined,
-          color_code: event.event_types?.color_code || '#3B82F6',
-          status: event.status || 'scheduled',
-          location: event.location,
-          is_virtual: event.is_virtual || false,
-          virtual_meeting_link: event.virtual_meeting_link,
-          duration_minutes: event.duration_minutes || 60
-        }));
-
-        setEvents(transformedEvents);
-        console.log(`[Calendar] ✅ Loaded ${transformedEvents.length} events`);
+      } catch (err) {
+        console.warn('[Calendar] Regular events fetch failed:', err);
       }
+
+      // Fetch coach hour logs
+      let hourLogEvents: CalendarEvent[] = [];
+      
+      try {
+        const { data: hourLogsData, error: hourLogsError } = await supabase
+          .from('coach_daily_reports')
+          .select('*')
+          .gte('report_date', startDateStr)
+          .lte('report_date', endDateStr)
+          .order('report_date', { ascending: true });
+
+        if (hourLogsError) {
+          console.warn('[Calendar] Hour logs fetch error:', hourLogsError);
+        } else {
+          hourLogEvents = convertHourLogsToEvents(hourLogsData || []);
+          console.log('[Calendar] ✅ Fetched hour logs:', hourLogsData?.length);
+        }
+      } catch (err) {
+        console.warn('[Calendar] Hour logs fetch failed:', err);
+      }
+
+      // Combine all events
+      const allEvents = [...regularEvents, ...hourLogEvents];
+      setEvents(allEvents);
+      setHasLoaded(true);
+
+      console.log('[Calendar] ✅ Total events loaded:', allEvents.length, {
+        regular: regularEvents.length,
+        hourLogs: hourLogEvents.length
+      });
 
     } catch (err) {
-      console.error('[Calendar] Error:', err);
-      setEvents([]);
-      setError(null);
+      console.error('[Calendar] Fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load calendar');
     } finally {
       setLoading(false);
-      setHasLoaded(true);
-      console.log('[Calendar] Fetch completed');
     }
   };
 
-  // Fetch when dependencies change
+  // Load events when date range changes
   useEffect(() => {
-    console.log('[Calendar] Dependencies changed, fetching...');
-    fetchEvents();
-  }, [startDate.getTime(), endDate.getTime(), userId, userRole]);
+    if (startDate && endDate) {
+      fetchEvents();
+    }
+  }, [startDate, endDate, userId, userRole]);
 
   // Create event function
   const createEvent = async (eventData: CreateEventData) => {
     try {
+      // Get a default event type if none provided
+      let eventTypeId = eventData.event_type_id;
+      
+      if (!eventTypeId) {
+        const { data: defaultType } = await supabase
+          .from('event_types')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        eventTypeId = defaultType?.id || null;
+      }
+
       const { data, error } = await supabase
         .from('calendar_events')
-        .insert([{
+        .insert({
           ...eventData,
+          event_type_id: eventTypeId,
           created_by: userId
-        }])
+        })
         .select()
         .single();
 
@@ -335,17 +303,11 @@ export function useCalendarEvents({
     }
   };
 
-  // 🎯 NEW: Log hours function
+  // Log hours function
   const logHours = async (hourData: HourLogData) => {
     try {
       setLoggingHours(true);
       console.log('[Calendar] Logging hours:', hourData);
-
-      // Validate data
-      const validationErrors = validateHourLogData(hourData);
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors.join(', '));
-      }
 
       // Call API to save to coach_daily_reports table
       const response = await fetch('/api/calendar/log-hours', {
@@ -371,7 +333,7 @@ export function useCalendarEvents({
 
       toast.success(`Successfully logged ${hourData.hours_worked} hours for ${hourData.activity_type}`);
       
-      // Optionally refresh events to show any changes
+      // Refresh events to show the new hour log
       await fetchEvents();
       
       return result;
@@ -385,23 +347,7 @@ export function useCalendarEvents({
     }
   };
 
-  // 🎯 NEW: Process quick entry and return suggested form data
-  const processQuickEntry = (input: string): Partial<HourLogData> | null => {
-    const parsed = parseQuickEntry(input);
-    if (!parsed) return null;
-
-    const activityType = ACTIVITY_CODE_MAP[parsed.activityCode];
-    if (!activityType) return null;
-
-    return {
-      hours_worked: parsed.hours,
-      activity_type: activityType,
-      notes: `${parsed.activityCode} - ${parsed.hours} hours worked`,
-      location: 'Main Office' // Default location
-    };
-  };
-
-  // 🎯 NEW: Get existing hours for a specific date
+  // Get existing hours for a specific date
   const getLoggedHoursForDate = async (date: Date): Promise<number> => {
     try {
       const dateString = formatDate(date);
@@ -429,7 +375,6 @@ export function useCalendarEvents({
   };
 
   return {
-    // Existing functionality
     events: events || [],
     loading,
     error,
@@ -437,24 +382,11 @@ export function useCalendarEvents({
     createEvent,
     updateEvent,
     deleteEvent,
-    getEventsForDate,
-    refetch: fetchEvents,
-    
-    // 🎯 NEW: Hour logging functionality
     logHours,
     loggingHours,
-    parseQuickEntry,
-    processQuickEntry,
-    validateHourLogData,
     getLoggedHoursForDate,
-    
-    // 🎯 NEW: Constants for UI components
-    ACTIVITY_TYPES,
-    LOCATION_PRESETS,
-    HOUR_PRESETS,
-    ACTIVITY_CODE_MAP,
-    
-    // 🎯 NEW: Helper functions
+    getEventsForDate,
+    refetch: fetchEvents,
     formatDate,
     coachName
   };

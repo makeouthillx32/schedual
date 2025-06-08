@@ -47,6 +47,14 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
+
+    // Retrieve non-bot user IDs for filtering
+    const { data: nonBotUsers } = await supabase
+      .from('analytics_users')
+      .select('id')
+      .eq('is_bot', false);
+
+    const userIds = nonBotUsers?.map(u => u.id) || [];
     
     // Default to last 30 days
     const endDate = new Date();
@@ -76,6 +84,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_users')
         .select('id')
+        .eq('is_bot', false)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -83,6 +92,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('id, is_bounce, duration')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -90,6 +100,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_page_views')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -97,6 +108,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('is_bounce')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -104,6 +116,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('duration')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .not('duration', 'is', null)
@@ -118,18 +131,21 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_users')
         .select('id')
+        .eq('is_bot', false)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString()),
       
       supabase
         .from('analytics_sessions')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString()),
       
       supabase
         .from('analytics_page_views')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString())
     ]);
@@ -218,6 +234,7 @@ export async function GET(request: NextRequest) {
     const { data: pageViews } = await supabase
       .from('analytics_page_views')
       .select('page_url, user_id')
+      .in('user_id', userIds)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
@@ -245,6 +262,7 @@ export async function GET(request: NextRequest) {
     const { data: realtimeData } = await supabase
       .from('analytics_page_views')
       .select('user_id')
+      .in('user_id', userIds)
       .gte('created_at', fiveMinutesAgo.toISOString());
 
     const realtimeUsers = new Set(realtimeData?.map(r => r.user_id) || []).size;

@@ -1,9 +1,9 @@
 // app/dashboard/[id]/calendar/_components/CoachHoursModal.tsx
-// Enhanced modal for flexible hour logging with quick entry support
+// Enhanced modal for flexible hour logging with dynamic data loading
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Clock, Save, MapPin, FileText, Plus } from 'lucide-react';
+import { X, Clock, Save, MapPin, FileText, Plus, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface CoachHoursModalProps {
@@ -12,53 +12,35 @@ interface CoachHoursModalProps {
   onSubmit: (hoursData: CoachHoursData) => void;
   selectedDate: Date | null;
   coachName: string;
-  existingHours?: number; // For showing already logged hours
+  existingHours?: number;
 }
 
 interface CoachHoursData {
   report_date: string;
   hours_worked: number;
+  work_location_id?: string;
   location?: string;
   activity_type?: string;
   notes?: string;
+  initials?: string;
 }
 
-const ACTIVITY_TYPES = [
-  'Client Coaching',
-  'Group Session', 
-  'Job Search Support',
-  'Skills Training',
-  'Administrative Tasks',
-  'Team Meeting',
-  'Community Outreach',
-  'Assessment',
-  'Follow-up',
-  'Documentation',
-  'Professional Development',
-  'Other'
-];
+// Dynamic data interfaces
+interface WorkLocation {
+  id: string;
+  location_name: string;
+  location_type: string;
+  city?: string;
+  is_active: boolean;
+}
 
-const COMMON_LOCATIONS = [
-  'Main Office',
-  'Community Center',
-  'Client Home',
-  'Library',
-  'Job Fair',
-  'Employer Site',
-  'Virtual/Remote',
-  'Field Office',
-  'Other'
-];
-
-// Quick entry code mapping for coach initials (not activity types!)
-const COACH_INITIALS_MAP: Record<string, string> = {
-  'TB': 'Tyler Burnse',
-  'SC': 'Shelia Clark', 
-  'GC': 'Glen Clark',
-  'JD': 'John Doe',
-  'MS': 'Mary Smith',
-  // Add more coach initials as needed
-};
+interface Specialization {
+  id: string;
+  name: string;
+  description?: string;
+  role: string; // Changed from role_id to role
+  color?: string;
+}
 
 export default function CoachHoursModal({
   isOpen,
@@ -71,14 +53,113 @@ export default function CoachHoursModal({
   const [formData, setFormData] = useState<CoachHoursData>({
     report_date: '',
     hours_worked: 0,
-    location: 'Main Office',
-    activity_type: 'Client Coaching',
-    notes: ''
+    work_location_id: '',
+    location: '',
+    activity_type: '',
+    notes: '',
+    initials: ''
   });
   
   const [quickEntry, setQuickEntry] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Dynamic data loading states
+  const [workLocations, setWorkLocations] = useState<WorkLocation[]>([]);
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingSpecializations, setLoadingSpecializations] = useState(false);
+
+  // Load work locations from existing API
+  const loadWorkLocations = async () => {
+    if (workLocations.length > 0) return;
+    
+    setLoadingLocations(true);
+    try {
+      const response = await fetch('/api/calendar/work-locations', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const locations = await response.json();
+        const activeLocations = locations.filter((loc: WorkLocation) => loc.is_active);
+        setWorkLocations(activeLocations);
+        
+        // Set default location to first active location
+        if (activeLocations.length > 0 && !formData.work_location_id) {
+          setFormData(prev => ({
+            ...prev,
+            work_location_id: activeLocations[0].id
+          }));
+        }
+      } else {
+        console.warn('Failed to load work locations');
+      }
+    } catch (error) {
+      console.error('Error loading work locations:', error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  // Load specializations from get-all API (filter for coachx7)
+  const loadSpecializations = async () => {
+    if (specializations.length > 0) return;
+    
+    setLoadingSpecializations(true);
+    try {
+      const response = await fetch('/api/profile/specializations/get-all', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const allSpecializations = await response.json();
+        console.log('All specializations:', allSpecializations);
+        
+        // Filter for coach-related specializations (role = 'jobcoach')
+        const coachSpecs = allSpecializations.filter((spec: any) => 
+          spec.role === 'jobcoach'
+        );
+        
+        console.log('Coach specializations:', coachSpecs);
+        setSpecializations(coachSpecs);
+        
+        // Set default activity type to first coach specialization
+        if (coachSpecs.length > 0 && !formData.activity_type) {
+          setFormData(prev => ({
+            ...prev,
+            activity_type: coachSpecs[0].name
+          }));
+        }
+      } else {
+        console.warn('Failed to load specializations, response not ok:', response.status);
+        // Set fallback activity types
+        setSpecializations([
+          { id: '1', name: 'Client Coaching', description: '', role: 'jobcoach' },
+          { id: '2', name: 'Administrative Tasks', description: '', role: 'jobcoach' },
+          { id: '3', name: 'Other', description: '', role: 'jobcoach' }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading specializations:', error);
+      // Set fallback activity types
+      setSpecializations([
+        { id: '1', name: 'Client Coaching', description: '', role: 'jobcoach' },
+        { id: '2', name: 'Administrative Tasks', description: '', role: 'jobcoach' },
+        { id: '3', name: 'Other', description: '', role: 'jobcoach' }
+      ]);
+    } finally {
+      setLoadingSpecializations(false);
+    }
+  };
+
+  // Load data when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadWorkLocations();
+      loadSpecializations();
+    }
+  }, [isOpen]);
 
   // Update form data when selected date changes
   useEffect(() => {
@@ -101,9 +182,11 @@ export default function CoachHoursModal({
       setFormData({
         report_date: '',
         hours_worked: 0,
-        location: 'Main Office',
-        activity_type: 'Client Coaching',
-        notes: ''
+        work_location_id: '',
+        location: '',
+        activity_type: '',
+        notes: '',
+        initials: ''
       });
       setQuickEntry('');
     }
@@ -144,7 +227,7 @@ export default function CoachHoursModal({
     }
   };
 
-  // Parse "TB 7" style quick entry (coach initials + hours)
+  // Parse "TB 7" style quick entry - simplified since initials are now in profiles
   const parseQuickEntry = (entry: string) => {
     const trimmed = entry.trim().toUpperCase();
     
@@ -158,13 +241,9 @@ export default function CoachHoursModal({
     
     if (isNaN(hours) || hours <= 0 || hours > 12) return null;
     
-    const coachName = COACH_INITIALS_MAP[initials];
-    if (!coachName) return null;
-    
     return {
       initials,
       hours,
-      coachName,
       originalInput: entry
     };
   };
@@ -179,7 +258,8 @@ export default function CoachHoursModal({
       setFormData(prev => ({
         ...prev,
         hours_worked: parsed.hours,
-        notes: `${parsed.initials} - ${parsed.hours} hours worked by ${parsed.coachName}`
+        initials: parsed.initials,
+        notes: `Quick entry: ${parsed.originalInput}`
       }));
     }
   };
@@ -191,7 +271,8 @@ export default function CoachHoursModal({
       setFormData(prev => ({
         ...prev,
         hours_worked: parsed.hours,
-        notes: `${parsed.initials} - ${parsed.hours} hours worked by ${parsed.coachName}`
+        initials: parsed.initials,
+        notes: `Quick entry: ${parsed.originalInput}`
       }));
       setQuickEntry('');
     }
@@ -217,7 +298,7 @@ export default function CoachHoursModal({
       newErrors.activity_type = 'Activity type is required';
     }
 
-    if (!formData.location) {
+    if (!formData.work_location_id && !formData.location) {
       newErrors.location = 'Location is required';
     }
 
@@ -236,7 +317,18 @@ export default function CoachHoursModal({
     setIsSubmitting(true);
     
     try {
-      await onSubmit(formData);
+      // Ensure we always send the required fields
+      const submissionData: CoachHoursData = {
+        ...formData,
+        initials: formData.initials || 'Coach', // Fallback if no initials set
+        // Ensure we have either work_location_id or location
+        work_location_id: formData.work_location_id || undefined,
+        location: formData.location || undefined
+      };
+      
+      console.log('Submitting hours data:', submissionData);
+      
+      await onSubmit(submissionData);
       onClose();
     } catch (error) {
       console.error('Error submitting coach hours:', error);
@@ -259,6 +351,11 @@ export default function CoachHoursModal({
             </h2>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
               {coachName} • {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select Date'}
+              {formData.initials && (
+                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">
+                  {formData.initials}
+                </span>
+              )}
             </p>
             {existingHours > 0 && (
               <p className="text-xs text-amber-600 mt-1">
@@ -301,19 +398,18 @@ export default function CoachHoursModal({
               </button>
             </div>
             
-            {/* Coach Initials Reference */}
+            {/* Show parsed result */}
+            {quickEntry && parseQuickEntry(quickEntry) && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                <span className="text-green-700">
+                  ✓ Parsed: <strong>{parseQuickEntry(quickEntry)?.initials}</strong> - {parseQuickEntry(quickEntry)?.hours} hours
+                </span>
+              </div>
+            )}
+            
+            {/* Note about initials */}
             <div className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
-              <details>
-                <summary className="cursor-pointer">Coach Initials</summary>
-                <div className="mt-1 grid grid-cols-2 gap-1">
-                  {Object.entries(COACH_INITIALS_MAP).map(([initials, name]) => (
-                    <div key={initials} className="flex gap-1">
-                      <span className="font-mono font-bold">{initials}:</span>
-                      <span>{name}</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
+              <p>💡 Enter your initials and hours (e.g., "TB 7") for quick logging</p>
             </div>
           </div>
 
@@ -343,7 +439,7 @@ export default function CoachHoursModal({
           {/* Hours Worked */}
           <div>
             <label htmlFor="hours_worked" className="block text-sm font-medium mb-2">
-              Hours Worked * (1-12 hours)
+              Hours Worked * (0.25-12 hours)
             </label>
             <div className="space-y-3">
               <input
@@ -394,10 +490,13 @@ export default function CoachHoursModal({
             )}
           </div>
 
-          {/* Activity Type */}
+          {/* Activity Type - From User Specializations */}
           <div>
             <label htmlFor="activity_type" className="block text-sm font-medium mb-2">
               Activity Type *
+              {loadingSpecializations && (
+                <Loader2 className="inline h-3 w-3 ml-1 animate-spin" />
+              )}
             </label>
             <select
               id="activity_type"
@@ -407,11 +506,15 @@ export default function CoachHoursModal({
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
                 errors.activity_type ? 'border-red-500' : 'border-[hsl(var(--border))]'
               }`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingSpecializations}
               required
             >
-              {ACTIVITY_TYPES.map(type => (
-                <option key={type} value={type}>{type}</option>
+              <option value="">Select Activity Type</option>
+              {specializations.map(spec => (
+                <option key={spec.id} value={spec.name}>
+                  {spec.name}
+                  {spec.description && ` - ${spec.description}`}
+                </option>
               ))}
             </select>
             {errors.activity_type && (
@@ -419,27 +522,49 @@ export default function CoachHoursModal({
             )}
           </div>
 
-          {/* Location */}
+          {/* Location - From Work Locations API */}
           <div>
-            <label htmlFor="location" className="block text-sm font-medium mb-2">
+            <label htmlFor="work_location_id" className="block text-sm font-medium mb-2">
               <MapPin className="inline h-4 w-4 mr-1" />
               Location *
+              {loadingLocations && (
+                <Loader2 className="inline h-3 w-3 ml-1 animate-spin" />
+              )}
             </label>
             <select
-              id="location"
-              name="location"
-              value={formData.location}
+              id="work_location_id"
+              name="work_location_id"
+              value={formData.work_location_id}
               onChange={handleInputChange}
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
                 errors.location ? 'border-red-500' : 'border-[hsl(var(--border))]'
               }`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || loadingLocations}
               required
             >
-              {COMMON_LOCATIONS.map(location => (
-                <option key={location} value={location}>{location}</option>
+              <option value="">Select Location</option>
+              {workLocations.map(location => (
+                <option key={location.id} value={location.id}>
+                  {location.location_name}
+                  {location.city && ` - ${location.city}`}
+                  {location.location_type && ` (${location.location_type})`}
+                </option>
               ))}
             </select>
+            
+            {/* Custom location input if needed */}
+            {(!formData.work_location_id || workLocations.length === 0) && (
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                placeholder="Enter custom location"
+                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent mt-2"
+                disabled={isSubmitting}
+              />
+            )}
+            
             {errors.location && (
               <p className="text-red-500 text-xs mt-1">{errors.location}</p>
             )}
@@ -494,6 +619,9 @@ export default function CoachHoursModal({
                 <>
                   <Save className="h-4 w-4" />
                   Log {formData.hours_worked || 0} Hours
+                  {formData.initials && (
+                    <span className="text-xs opacity-75">({formData.initials})</span>
+                  )}
                 </>
               )}
             </button>

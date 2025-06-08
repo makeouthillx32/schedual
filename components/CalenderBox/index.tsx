@@ -1,8 +1,10 @@
-// components/CalenderBox/index.tsx (Enhanced)
+// components/CalenderBox/index.tsx (Updated to use modular components)
 'use client';
 
 import { useMemo, useState } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
+import CalendarEvent from './CalendarEvent';
+import EventTooltip from './EventTooltip';
 
 interface CalendarEvent {
   id: string;
@@ -17,6 +19,14 @@ interface CalendarEvent {
   color_code: string;
   status: string;
   duration_minutes: number;
+  is_hour_log?: boolean;
+  is_payday?: boolean;
+  is_holiday?: boolean;
+  is_sales_day?: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  location?: string;
+  amount?: number;
+  holiday_type?: string;
 }
 
 interface CalendarBoxProps {
@@ -25,6 +35,7 @@ interface CalendarBoxProps {
   onDateClick: (date: Date) => void;
   onEventClick: (event: CalendarEvent) => void;
   viewMode: 'month' | 'week' | 'day';
+  userRole?: string;
 }
 
 const CalendarBox = ({ 
@@ -32,9 +43,12 @@ const CalendarBox = ({
   events, 
   onDateClick, 
   onEventClick, 
-  viewMode 
+  viewMode,
+  userRole = 'user'
 }: CalendarBoxProps) => {
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
+  const [clickedDate, setClickedDate] = useState<Date | null>(null);
+  const [tooltipType, setTooltipType] = useState<'hover' | 'clicked-date' | 'clicked-event'>('hover');
 
   // Generate calendar grid
   const calendarDays = useMemo(() => {
@@ -72,18 +86,27 @@ const CalendarBox = ({
     return eventsByDate[dateString] || [];
   };
 
-  // Handle empty events gracefully
-  if (!events || events.length === 0) {
-    console.log('No events to display, rendering empty calendar');
-  }
-
   // Format time for display
-  const formatTime = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
+  const formatTime = (timeString: string, isHourLog: boolean = false) => {
+    if (isHourLog || timeString === 'All Day' || !timeString || timeString.trim() === '') {
+      return '';
+    }
+    
+    try {
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours, 10);
+      
+      if (isNaN(hour) || hour < 0 || hour > 23) {
+        return '';
+      }
+      
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      console.warn('Error formatting time:', timeString, error);
+      return '';
+    }
   };
 
   // Common cell styling with CSS variables
@@ -116,30 +139,29 @@ const CalendarBox = ({
     return baseClass;
   };
 
-  // Render event in calendar cell
-  const renderEvent = (event: CalendarEvent, index: number) => {
-    const maxVisibleEvents = 3;
-    
-    if (index >= maxVisibleEvents) {
-      return null;
+  // Handle event click with enhanced logic
+  const handleEventClick = (event: CalendarEvent) => {
+    if (event.is_hour_log) {
+      // For hour logs, show persistent tooltip
+      const eventDate = new Date(event.event_date);
+      setClickedDate(clickedDate && isSameDay(clickedDate, eventDate) ? null : eventDate);
+      setTooltipType('clicked-event');
+    } else {
+      // For regular events, use the original handler
+      onEventClick(event);
     }
-    
-    return (
-      <div
-        key={event.id}
-        className="mb-1 cursor-pointer rounded-sm px-1 py-0.5 text-xs font-medium text-white truncate"
-        style={{ backgroundColor: event.color_code }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onEventClick(event);
-        }}
-        title={`${event.title} - ${formatTime(event.start_time)} to ${formatTime(event.end_time)}`}
-      >
-        <span className="block truncate">
-          {formatTime(event.start_time)} {event.title}
-        </span>
-      </div>
-    );
+  };
+
+  // Handle date click
+  const handleDateClick = (date: Date) => {
+    setClickedDate(clickedDate && isSameDay(clickedDate, date) ? null : date);
+    setTooltipType('clicked-date');
+    onDateClick(date);
+  };
+
+  // Handle tooltip close
+  const handleTooltipClose = () => {
+    setClickedDate(null);
   };
 
   // Render calendar grid in weeks
@@ -162,12 +184,17 @@ const CalendarBox = ({
           if (isFirstDay) cellClass += " rounded-bl-[var(--radius)]";
           if (isLastDay) cellClass += " rounded-br-[var(--radius)]";
 
+          const maxVisibleEvents = 3;
+
           return (
             <td
               key={date.toISOString()}
               className={cellClass}
-              onClick={() => onDateClick(date)}
-              onMouseEnter={() => setHoveredDate(date)}
+              onClick={() => handleDateClick(date)}
+              onMouseEnter={() => {
+                setHoveredDate(date);
+                setTooltipType('hover');
+              }}
               onMouseLeave={() => setHoveredDate(null)}
             >
               <span className={getDayNumberClass(date)}>
@@ -175,52 +202,48 @@ const CalendarBox = ({
               </span>
               
               <div className="mt-1 space-y-1 overflow-hidden">
-                {dayEvents.slice(0, 3).map((event, index) => renderEvent(event, index))}
+                {dayEvents.slice(0, maxVisibleEvents).map((event, index) => (
+                  <CalendarEvent
+                    key={event.id}
+                    event={event}
+                    index={index}
+                    maxVisible={maxVisibleEvents}
+                    onClick={handleEventClick}
+                    formatTime={formatTime}
+                  />
+                ))}
                 
-                {dayEvents.length > 3 && (
+                {dayEvents.length > maxVisibleEvents && (
                   <div className="text-xs text-[hsl(var(--muted-foreground))] cursor-pointer hover:text-[hsl(var(--primary))]">
-                    +{dayEvents.length - 3} more
+                    +{dayEvents.length - maxVisibleEvents} more
                   </div>
                 )}
               </div>
 
-              {/* Hover tooltip for more event details */}
-              {hoveredDate && isSameDay(hoveredDate, date) && dayEvents.length > 0 && (
-                <div className="absolute left-full top-0 z-50 ml-2 w-64 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3 shadow-lg">
-                  <div className="font-medium text-[hsl(var(--card-foreground))] mb-2">
-                    {format(date, 'EEEE, MMMM d')}
-                  </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {dayEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-start gap-2 p-2 rounded-sm hover:bg-[hsl(var(--muted))] cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEventClick(event);
-                        }}
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full mt-0.5 flex-shrink-0"
-                          style={{ backgroundColor: event.color_code }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-[hsl(var(--card-foreground))] truncate">
-                            {event.title}
-                          </div>
-                          <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                            {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                          </div>
-                          {event.client_name && (
-                            <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                              Client: {event.client_name}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {/* Hover tooltip */}
+              {hoveredDate && isSameDay(hoveredDate, date) && dayEvents.length > 0 && tooltipType === 'hover' && (
+                <EventTooltip
+                  date={date}
+                  events={dayEvents}
+                  isVisible={true}
+                  onClose={() => setHoveredDate(null)}
+                  onEventClick={onEventClick}
+                  tooltipType="hover"
+                  userRole={userRole}
+                />
+              )}
+
+              {/* Persistent tooltip for clicked dates */}
+              {clickedDate && isSameDay(clickedDate, date) && dayEvents.length > 0 && tooltipType !== 'hover' && (
+                <EventTooltip
+                  date={date}
+                  events={dayEvents}
+                  isVisible={true}
+                  onClose={handleTooltipClose}
+                  onEventClick={handleEventClick}
+                  tooltipType={tooltipType}
+                  userRole={userRole}
+                />
               )}
             </td>
           );

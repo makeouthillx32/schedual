@@ -1,12 +1,17 @@
-// app/dashboard/[id]/calendar/page.tsx (REFACTORED - Clean & Modular with Optimistic Updates)
+// app/dashboard/[id]/calendar/page.tsx - Updated with Calendar Manager/SLS Manager Overlays
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
 import Breadcrumb from '@/components/Breadcrumbs/Breadcrumb';
-import CalendarBox from '@/components/CalenderBox';
 import EventModal from './_components/EventModal';
 import CoachHoursModal from './_components/CoachHoursModal';
+import CalendarHeader from './_components/CalendarHeader';
+import UserRoleInfoPanel from './_components/UserRoleInfoPanel';
+import ExportMessage from './_components/ExportMessage';
+import CalendarContent from './_components/CalendarContent';
+import UserCalendarViewer from './_components/UserCalendarViewer';
+import CalendarManager from './_components/CalendarManager';
+import SLSManager from './_components/SLSManager';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useAuth } from '@/app/provider';
 
@@ -24,25 +29,34 @@ interface CalendarEvent {
   color_code: string;
   status: string;
   is_hour_log?: boolean;
+  is_payday?: boolean;
+  is_holiday?: boolean;
+  is_sales_day?: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  location?: string;
+  amount?: number;
+  duration_minutes: number;
 }
 
 interface CoachHoursData {
   report_date: string;
   hours_worked: number;
+  work_location_id?: string;
   location?: string;
   activity_type?: string;
   notes?: string;
+  initials?: string;
 }
 
-interface OptimisticUpdate {
+interface UserProfile {
   id: string;
-  date: string;
-  hours: number;
-  activity: string;
-  location: string;
-  notes: string;
-  coachName: string;
-  timestamp: number;
+  email: string;
+  display_name?: string;
+  role: string;
+  department?: string;
+  specialization?: string;
+  avatar_url?: string;
+  created_at: string;
 }
 
 export default function CalendarPage() {
@@ -57,10 +71,12 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [userRole, setUserRole] = useState<string>('user0x');
   const [roleLoading, setRoleLoading] = useState(true);
-  // const [existingHoursForDate, setExistingHoursForDate] = useState<number>(0); // Disabled to prevent API spam
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
   
-  // NEW: Optimistic updates for hour logging
-  const [optimisticHours, setOptimisticHours] = useState<OptimisticUpdate[]>([]);
+  // Admin overlay states
+  const [adminSelectedUser, setAdminSelectedUser] = useState<UserProfile | null>(null);
+  const [showCalendarManager, setShowCalendarManager] = useState(false);
+  const [showSLSManager, setShowSLSManager] = useState(false);
 
   // Fetch user role from profiles table
   useEffect(() => {
@@ -102,7 +118,8 @@ export default function CalendarPage() {
           canDeleteEvents: true,
           canLogHours: true,
           canViewAllEvents: true,
-          canManageUsers: true
+          canManageUsers: true,
+          canExportData: true
         };
       case 'coachx7':
         return {
@@ -111,7 +128,8 @@ export default function CalendarPage() {
           canDeleteEvents: false,
           canLogHours: true,
           canViewAllEvents: false,
-          canManageUsers: false
+          canManageUsers: false,
+          canExportData: true
         };
       case 'client7x':
         return {
@@ -120,7 +138,8 @@ export default function CalendarPage() {
           canDeleteEvents: false,
           canLogHours: false,
           canViewAllEvents: false,
-          canManageUsers: false
+          canManageUsers: false,
+          canExportData: false
         };
       default:
         return {
@@ -129,12 +148,15 @@ export default function CalendarPage() {
           canDeleteEvents: false,
           canLogHours: false,
           canViewAllEvents: false,
-          canManageUsers: false
+          canManageUsers: false,
+          canExportData: false
         };
     }
   }, [userRole]);
 
-  // Get events for current month
+  // Get events for current user OR selected admin target user
+  const targetUserId = adminSelectedUser?.id || user?.id;
+  
   const { 
     events, 
     loading, 
@@ -145,78 +167,34 @@ export default function CalendarPage() {
     deleteEvent,
     logHours,
     loggingHours,
-    getLoggedHoursForDate
+    refetch
   } = useCalendarEvents({
     startDate: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
     endDate: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0),
-    userId: user?.id,
-    userRole: userRole,
-    coachName: user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
+    userId: targetUserId,
+    userRole: adminSelectedUser ? adminSelectedUser.role : userRole,
+    coachName: adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
   });
 
-  // NEW: Convert optimistic hours to calendar events
-  const convertOptimisticToEvents = (optimistic: OptimisticUpdate[]): CalendarEvent[] => {
-    return optimistic.map(entry => ({
-      id: `hour-log-${entry.id}`,
-      title: `${entry.hours}h - ${entry.activity}`,
-      description: entry.notes || `Logged ${entry.hours} hours at ${entry.location}`,
-      event_date: entry.date,
-      start_time: '09:00',
-      end_time: '17:00',
-      event_type: 'Hour Log',
-      coach_name: entry.coachName,
-      client_name: '',
-      color_code: '#10B981', // Green for hour logs
-      status: 'completed',
-      is_hour_log: true
-    }));
-  };
-
-  // Remove the problematic existing hours fetching for now
-  // const [existingHoursForDate, setExistingHoursForDate] = useState<number>(0);
-
-  // Fetch existing hours when date is selected (DISABLED for now to prevent 404 spam)
-  // useEffect(() => {
-  //   if (selectedDate && permissions.canLogHours && getLoggedHoursForDate && isHoursModalOpen) {
-  //     // Only fetch when the modal is actually open
-  //     getLoggedHoursForDate(selectedDate).then(hours => {
-  //       setExistingHoursForDate(hours || 0);
-  //     }).catch(() => {
-  //       setExistingHoursForDate(0);
-  //     });
-  //   }
-  // }, [selectedDate, isHoursModalOpen]); // Removed getLoggedHoursForDate from deps to prevent loop
-
-  // NEW: Clear optimistic entries when real data loads
-  useEffect(() => {
-    if (hasLoaded && events) {
-      setOptimisticHours(prev => {
-        return prev.filter(optimistic => {
-          // Check if this date already has a real hour log event
-          const realEvent = events.find(event => 
-            event.event_date === optimistic.date && 
-            event.title?.includes(`${optimistic.hours}h`) &&
-            event.is_hour_log
-          );
-          return !realEvent; // Keep only if no real event found
-        });
-      });
-    }
-  }, [hasLoaded, events]);
-
-  // Filter and combine events based on role
+  // Filter events based on role (viewing user's role, not target user's role)
   const displayEvents = useMemo(() => {
     let baseEvents = events || [];
     
-    // Filter regular events based on role
+    // If admin is viewing another user's calendar, show all events for that user
+    if (userRole === 'admin1' && adminSelectedUser) {
+      return baseEvents; // Show all events for the target user
+    }
+    
+    // Otherwise, apply normal role-based filtering
     switch (userRole) {
       case 'admin1':
         // Admins see all events        
         break;
       
       case 'coachx7':
-        // Job coaches see events for their assigned clients + their own entries
+        // Job coaches see their own hour logs + assigned client events
         baseEvents = baseEvents.filter(event => 
+          event.is_hour_log || // Show all hour logs for coaches
           event.coach_name === user?.email ||
           event.coach_name?.includes(user?.user_metadata?.display_name) ||
           event.coach_name?.includes(user?.user_metadata?.name)
@@ -229,27 +207,23 @@ export default function CalendarPage() {
           event.client_name === user?.email ||
           event.client_name?.includes(user?.user_metadata?.display_name) ||
           event.client_name?.includes(user?.user_metadata?.name) ||
-          event.is_hour_log // NEW: Clients can see coach hour logs
+          event.is_hour_log
         );        
         break;
       
       default:
-        // Basic users see no calendar events        
         baseEvents = [];
         break;
     }
 
-    // NEW: Add optimistic hour log events for coaches and clients
-    if ((userRole === 'coachx7' || userRole === 'client7x') && optimisticHours.length > 0) {
-      const optimisticEvents = convertOptimisticToEvents(optimisticHours);
-      baseEvents = [...baseEvents, ...optimisticEvents];
-    }
-
     return baseEvents;
-  }, [events, userRole, user, optimisticHours]);
+  }, [events, userRole, user, adminSelectedUser]);
+
+  // Calculate loading state
+  const showLoading = (loading && !hasLoaded) || roleLoading;
 
   // Navigation handlers
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const handleNavigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
       if (direction === 'prev') {
@@ -261,51 +235,66 @@ export default function CalendarPage() {
     });
   };
 
-  const goToToday = () => {
+  const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
 
   // Event handlers
   const handleDateClick = (date: Date) => {
-    if (permissions.canLogHours && userRole === 'coachx7') {
-      // For coaches, clicking a date opens hours modal
-      setSelectedDate(date);
-      setIsHoursModalOpen(true);
-      return;
-    }
-    
-    if (permissions.canCreateEvents) {
-      // For admins, clicking a date opens event modal
-      setSelectedDate(date);
-      setSelectedEvent(null);
-      setIsEventModalOpen(true);
-      return;
-    }
-    
-    console.log('User does not have permission to create events or log hours');
+    console.log('Date clicked:', date, 'Events for this date will be shown by calendar component');
   };
 
   const handleEventClick = (event: CalendarEvent) => {
-    // NEW: Handle hour log event clicks differently
-    if (event.is_hour_log && permissions.canLogHours) {
-      // For hour logs, open the hours modal for that date to view/edit
-      setSelectedDate(new Date(event.event_date));
-      setIsHoursModalOpen(true);
-      return;
+    if (event.is_hour_log) {
+      return; // Let calendar component handle hour log tooltips
     }
 
-    // Regular event handling
-    setSelectedEvent(event);
-    setSelectedDate(new Date(event.event_date));
+    if (permissions.canEditEvents || permissions.canViewAllEvents) {
+      setSelectedEvent(event);
+      setSelectedDate(new Date(event.event_date));
+      setIsEventModalOpen(true);
+    }
+  };
+
+  // Action handlers
+  const handleLogHours = () => {
+    setSelectedDate(new Date());
+    setIsHoursModalOpen(true);
+  };
+
+  const handleCreateEvent = () => {
+    setSelectedDate(new Date());
+    setSelectedEvent(null);
     setIsEventModalOpen(true);
   };
 
-  // Event CRUD handlers
-  const handleCreateEvent = async (eventData: any) => {
-    if (!permissions.canCreateEvents) {
-      console.error('User does not have permission to create events');
-      return;
-    }
+  // Admin user selection handler
+  const handleAdminUserSelect = (selectedUser: UserProfile | null) => {
+    setAdminSelectedUser(selectedUser);
+    // Close any open admin modals when user changes
+    setShowCalendarManager(false);
+    setShowSLSManager(false);
+  };
+
+  // Admin modal handlers
+  const handleOpenCalendarManager = () => {
+    setShowCalendarManager(true);
+    setShowSLSManager(false);
+  };
+
+  const handleOpenSLSManager = () => {
+    setShowSLSManager(true);
+    setShowCalendarManager(false);
+  };
+
+  const handleCloseAdminModals = () => {
+    setShowCalendarManager(false);
+    setShowSLSManager(false);
+  };
+
+  // Modal handlers
+  const handleCreateEventSubmit = async (eventData: any) => {
+    if (!permissions.canCreateEvents) return;
 
     try {
       await createEvent(eventData);
@@ -317,11 +306,8 @@ export default function CalendarPage() {
     }
   };
 
-  const handleUpdateEvent = async (eventData: any) => {
-    if (!selectedEvent || !permissions.canEditEvents) {
-      console.error('User does not have permission to edit events');
-      return;
-    }
+  const handleUpdateEventSubmit = async (eventData: any) => {
+    if (!selectedEvent || !permissions.canEditEvents) return;
     
     try {
       await updateEvent(selectedEvent.id, eventData);
@@ -334,10 +320,7 @@ export default function CalendarPage() {
   };
 
   const handleDeleteEvent = async () => {
-    if (!selectedEvent || !permissions.canDeleteEvents) {
-      console.error('User does not have permission to delete events');
-      return;
-    }
+    if (!selectedEvent || !permissions.canDeleteEvents) return;
     
     try {
       await deleteEvent(selectedEvent.id);
@@ -349,59 +332,42 @@ export default function CalendarPage() {
     }
   };
 
-  // Handle hours submission (keeping it simple for now)
   const handleHoursSubmit = async (hoursData: CoachHoursData) => {
-    if (!permissions.canLogHours) {
-      console.error('User does not have permission to log hours');
-      return;
-    }
+    if (!permissions.canLogHours) return;
 
     try {
-      // Save to database
-      if (logHours) {
-        await logHours(hoursData);
-      } else {
-        // Temporary mock implementation
-        await new Promise(resolve => setTimeout(resolve, 1000));        
-      }
-      
+      await logHours(hoursData);
       setIsHoursModalOpen(false);
       setSelectedDate(null);
-      
     } catch (error) {
       console.error('Failed to log hours:', error);
-      throw error; // Let modal handle the error display
+      throw error;
     }
   };
 
-  // Helper functions
-  const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      year: 'numeric' 
-    });
-  };
-
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'admin1': return 'Administrator';
-      case 'coachx7': return 'Job Coach';
-      case 'client7x': return 'Client';
-      case 'user0x': return 'Basic User';
-      default: return 'User';
+  // Export handlers
+  const exportHandlers = {
+    onExportStart: () => {
+      setExportMessage(null);
+    },
+    onExportComplete: () => {
+      setExportMessage('Calendar exported successfully!');
+      setTimeout(() => setExportMessage(null), 3000);
+    },
+    onExportError: (error: string) => {
+      setExportMessage(`Export failed: ${error}`);
+      setTimeout(() => setExportMessage(null), 5000);
     }
   };
 
-  // Loading and error states
-  const showLoading = (loading && !hasLoaded) || roleLoading;
-
+  // Early return for unauthenticated users
   if (!user) {
     return (
       <>
         <Breadcrumb pageName="Calendar" />
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Please sign in to view your calendar.</p>
+            <p className="text-[hsl(var(--muted-foreground))]">Please sign in to view your calendar.</p>
           </div>
         </div>
       </>
@@ -414,164 +380,61 @@ export default function CalendarPage() {
       
       <div className="mx-auto max-w-7xl">
         {/* Calendar Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
-                {formatMonthYear(currentDate)}
-              </h1>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                {getRoleDisplayName(userRole)} View
-                {roleLoading && ' (Loading role...)'}
-                {/* NEW: Show optimistic entries count */}
-                {optimisticHours.length > 0 && (
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {optimisticHours.length} pending
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigateMonth('prev')}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
-                aria-label="Previous month"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => navigateMonth('next')}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
-                aria-label="Next month"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
+        <CalendarHeader
+          currentDate={currentDate}
+          viewMode={viewMode}
+          userRole={userRole}
+          roleLoading={roleLoading}
+          loading={loading}
+          hasLoaded={hasLoaded}
+          loggingHours={loggingHours}
+          permissions={permissions}
+          user={user}
+          displayEvents={displayEvents}
+          showLoading={showLoading}
+          exportHandlers={exportHandlers}
+          onNavigateMonth={handleNavigateMonth}
+          onGoToToday={handleGoToToday}
+          onViewModeChange={setViewMode}
+          onLogHours={handleLogHours}
+          onCreateEvent={handleCreateEvent}
+        />
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={goToToday}
-              className="px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
-            >
-              Today
-            </button>
-            
-            <div className="flex items-center rounded-md border border-[hsl(var(--border))]">
-              {(['month', 'week', 'day'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1.5 text-sm font-medium capitalize transition-colors first:rounded-l-md last:rounded-r-md ${
-                    viewMode === mode
-                      ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]'
-                      : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
+        {/* Export Message */}
+        <ExportMessage message={exportMessage} />
 
-            {/* Role-based action buttons */}
-            <div className="flex items-center gap-2">
-              {permissions.canLogHours && (
-                <button
-                  onClick={() => {
-                    setSelectedDate(new Date());
-                    setIsHoursModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--secondary-foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
-                  title="Log your work hours (supports quick entry like 'TB 7')"
-                  disabled={loggingHours}
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12,6 12,12 16,14"></polyline>
-                  </svg>
-                  {loggingHours ? 'Logging...' : 'Log Hours'}
-                </button>
-              )}
-
-              {permissions.canCreateEvents && (
-                <button
-                  onClick={() => {
-                    setSelectedDate(new Date());
-                    setSelectedEvent(null);
-                    setIsEventModalOpen(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 rounded-md transition-colors"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  New Event
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Role-based info panel */}
-        <div className="mb-4 p-4 bg-[hsl(var(--muted))] rounded-lg border border-[hsl(var(--border))]">
-          <div className="flex items-center gap-2">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <span className="text-sm font-medium">
-              Viewing as: {getRoleDisplayName(userRole)}
-            </span>
-          </div>
-          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
-            {userRole === 'admin1' && 'You can create, edit and delete all calendar events. Click dates to create events.'}
-            {userRole === 'coachx7' && 'Click any date to log your work hours (try "TB 7" for quick entry). Your logged hours appear as green calendar events.'}
-            {userRole === 'client7x' && 'You can view your scheduled appointments and meetings. Coach hour logs appear for transparency.'}
-            {userRole === 'user0x' && 'Basic user - limited calendar access.'}
-            {!['admin1', 'coachx7', 'client7x', 'user0x'].includes(userRole) && 'Unknown role - no calendar access.'}
-          </div>
-        </div>
-
-        {/* Calendar Content */}
-        {showLoading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 animate-spin" />
-              <span className="text-muted-foreground">
-                {roleLoading ? 'Loading role...' : 'Loading calendar...'}
-              </span>
-            </div>
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <p className="text-destructive mb-4">Failed to load calendar</p>
-              <p className="text-sm text-muted-foreground mb-4">{error}</p>
-              <CalendarBox
-                currentDate={currentDate}
-                events={[]}
-                onDateClick={handleDateClick}
-                onEventClick={handleEventClick}
-                viewMode={viewMode}
-              />
-            </div>
-          </div>
-        ) : (
-          <CalendarBox
+        {/* Admin User Calendar Viewer - Only for Admins */}
+        {userRole === 'admin1' && (
+          <UserCalendarViewer
             currentDate={currentDate}
-            events={displayEvents}
-            onDateClick={handleDateClick}
-            onEventClick={handleEventClick}
-            viewMode={viewMode}
+            userRole={userRole}
+            onUserSelect={handleAdminUserSelect}
+            selectedUser={adminSelectedUser}
+            onOpenCalendarManager={handleOpenCalendarManager}
+            onOpenSLSManager={handleOpenSLSManager}
           />
         )}
+
+        {/* Role-based info panel - Updated to show target user info */}
+        <UserRoleInfoPanel 
+          userRole={userRole} 
+          roleLoading={roleLoading}
+          selectedUser={adminSelectedUser}
+        />
+
+        {/* Calendar Content */}
+        <CalendarContent
+          showLoading={showLoading}
+          error={error}
+          roleLoading={roleLoading}
+          currentDate={currentDate}
+          displayEvents={displayEvents}
+          viewMode={viewMode}
+          userRole={userRole}
+          onDateClick={handleDateClick}
+          onEventClick={handleEventClick}
+          onRefetch={refetch}
+        />
 
         {/* Event Modal - only show for users with event permissions */}
         {(permissions.canCreateEvents || permissions.canEditEvents) && (
@@ -582,7 +445,7 @@ export default function CalendarPage() {
               setSelectedEvent(null);
               setSelectedDate(null);
             }}
-            onSubmit={selectedEvent ? handleUpdateEvent : handleCreateEvent}
+            onSubmit={selectedEvent ? handleUpdateEventSubmit : handleCreateEventSubmit}
             onDelete={selectedEvent && permissions.canDeleteEvents ? handleDeleteEvent : undefined}
             selectedDate={selectedDate}
             selectedEvent={selectedEvent}
@@ -599,9 +462,54 @@ export default function CalendarPage() {
             }}
             onSubmit={handleHoursSubmit}
             selectedDate={selectedDate}
-            coachName={user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
-            // existingHours={existingHoursForDate} // Disabled for now
+            coachName={adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
           />
+        )}
+
+        {/* Calendar Manager - Integrated into page */}
+        {showCalendarManager && (
+          <div className="mb-6">
+            <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-sm">
+              <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
+                <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">Calendar Manager</h2>
+                <button
+                  onClick={handleCloseAdminModals}
+                  className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] p-2 rounded-md hover:bg-[hsl(var(--background))] transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-4">
+                <CalendarManager
+                  currentDate={currentDate}
+                  userRole={userRole}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SLS Manager - Integrated into page */}
+        {showSLSManager && (
+          <div className="mb-6">
+            <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-sm">
+              <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
+                <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">SLS Manager</h2>
+                <button
+                  onClick={handleCloseAdminModals}
+                  className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] p-2 rounded-md hover:bg-[hsl(var(--background))] transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-4">
+                <SLSManager
+                  currentDate={currentDate}
+                  userRole={userRole}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>

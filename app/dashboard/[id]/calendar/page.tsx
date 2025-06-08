@@ -57,7 +57,7 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [userRole, setUserRole] = useState<string>('user0x');
   const [roleLoading, setRoleLoading] = useState(true);
-  const [existingHoursForDate, setExistingHoursForDate] = useState<number>(0);
+  // const [existingHoursForDate, setExistingHoursForDate] = useState<number>(0); // Disabled to prevent API spam
   
   // NEW: Optimistic updates for hour logging
   const [optimisticHours, setOptimisticHours] = useState<OptimisticUpdate[]>([]);
@@ -172,16 +172,20 @@ export default function CalendarPage() {
     }));
   };
 
-  // Fetch existing hours when date is selected
-  useEffect(() => {
-    if (selectedDate && permissions.canLogHours && getLoggedHoursForDate) {
-      getLoggedHoursForDate(selectedDate).then(hours => {
-        setExistingHoursForDate(hours || 0);
-      }).catch(() => {
-        setExistingHoursForDate(0);
-      });
-    }
-  }, [selectedDate, permissions.canLogHours, getLoggedHoursForDate]);
+  // Remove the problematic existing hours fetching for now
+  // const [existingHoursForDate, setExistingHoursForDate] = useState<number>(0);
+
+  // Fetch existing hours when date is selected (DISABLED for now to prevent 404 spam)
+  // useEffect(() => {
+  //   if (selectedDate && permissions.canLogHours && getLoggedHoursForDate && isHoursModalOpen) {
+  //     // Only fetch when the modal is actually open
+  //     getLoggedHoursForDate(selectedDate).then(hours => {
+  //       setExistingHoursForDate(hours || 0);
+  //     }).catch(() => {
+  //       setExistingHoursForDate(0);
+  //     });
+  //   }
+  // }, [selectedDate, isHoursModalOpen]); // Removed getLoggedHoursForDate from deps to prevent loop
 
   // NEW: Clear optimistic entries when real data loads
   useEffect(() => {
@@ -345,42 +349,26 @@ export default function CalendarPage() {
     }
   };
 
-  // NEW: Enhanced hours submission with optimistic updates
-  const handleHoursSubmit = async (hoursData: CoachHoursData, optimisticData: OptimisticUpdate) => {
+  // Handle hours submission (keeping it simple for now)
+  const handleHoursSubmit = async (hoursData: CoachHoursData) => {
     if (!permissions.canLogHours) {
       console.error('User does not have permission to log hours');
       return;
     }
 
     try {
-      // Add optimistic entry immediately
-      setOptimisticHours(prev => {
-        // Remove any existing entry for this date, then add new one
-        const filtered = prev.filter(entry => entry.date !== optimisticData.date);
-        return [...filtered, optimisticData];
-      });
-
-      // Close modal immediately for better UX
-      setIsHoursModalOpen(false);
-      setSelectedDate(null);
-
-      // Save to database in background
+      // Save to database
       if (logHours) {
         await logHours(hoursData);
-        // On successful save, optimistic entry will be replaced by real data on next reload
       } else {
         // Temporary mock implementation
         await new Promise(resolve => setTimeout(resolve, 1000));        
       }
       
-    } catch (error) {
-      // On error, remove the optimistic entry
-      setOptimisticHours(prev => 
-        prev.filter(entry => entry.id !== optimisticData.id)
-      );
+      setIsHoursModalOpen(false);
+      setSelectedDate(null);
       
-      // Reopen modal to show error
-      setIsHoursModalOpen(true);
+    } catch (error) {
       console.error('Failed to log hours:', error);
       throw error; // Let modal handle the error display
     }
@@ -612,7 +600,7 @@ export default function CalendarPage() {
             onSubmit={handleHoursSubmit}
             selectedDate={selectedDate}
             coachName={user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
-            existingHours={existingHoursForDate}
+            // existingHours={existingHoursForDate} // Disabled for now
           />
         )}
       </div>

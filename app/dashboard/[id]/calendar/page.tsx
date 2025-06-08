@@ -1,4 +1,4 @@
-// app/dashboard/[id]/calendar/page.tsx - Updated with Calendar Manager/SLS Manager Overlays
+// app/dashboard/[id]/calendar/page.tsx - Fixed SLSManager props
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -57,6 +57,7 @@ interface UserProfile {
   specialization?: string;
   avatar_url?: string;
   created_at: string;
+  last_sign_in?: string;
 }
 
 export default function CalendarPage() {
@@ -77,6 +78,9 @@ export default function CalendarPage() {
   const [adminSelectedUser, setAdminSelectedUser] = useState<UserProfile | null>(null);
   const [showCalendarManager, setShowCalendarManager] = useState(false);
   const [showSLSManager, setShowSLSManager] = useState(false);
+  
+  // SLS Manager specific state
+  const [slsSelectedUser, setSlsSelectedUser] = useState<UserProfile | null>(null);
 
   // Fetch user role from profiles table
   useEffect(() => {
@@ -154,8 +158,10 @@ export default function CalendarPage() {
     }
   }, [userRole]);
 
-  // Get events for current user OR selected admin target user
-  const targetUserId = adminSelectedUser?.id || user?.id;
+  // Get events for current user OR selected admin target user OR SLS selected user
+  // If either manager is open but no user is selected, don't show any events
+  const targetUserId = slsSelectedUser?.id || adminSelectedUser?.id || 
+    (showCalendarManager || showSLSManager ? null : user?.id);
   
   const { 
     events, 
@@ -172,16 +178,22 @@ export default function CalendarPage() {
     startDate: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1),
     endDate: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0),
     userId: targetUserId,
-    userRole: adminSelectedUser ? adminSelectedUser.role : userRole,
-    coachName: adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
+    userRole: slsSelectedUser ? slsSelectedUser.role : (adminSelectedUser ? adminSelectedUser.role : userRole),
+    coachName: slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach',
+    enabled: targetUserId !== null // Only fetch events if we have a target user
   });
 
   // Filter events based on role (viewing user's role, not target user's role)
   const displayEvents = useMemo(() => {
+    // If either manager is open but no user is selected, show empty calendar
+    if ((showCalendarManager || showSLSManager) && !slsSelectedUser && !adminSelectedUser) {
+      return [];
+    }
+
     let baseEvents = events || [];
     
-    // If admin is viewing another user's calendar, show all events for that user
-    if (userRole === 'admin1' && adminSelectedUser) {
+    // If admin is viewing another user's calendar (from either selector), show all events for that user
+    if (userRole === 'admin1' && (adminSelectedUser || slsSelectedUser)) {
       return baseEvents; // Show all events for the target user
     }
     
@@ -217,7 +229,7 @@ export default function CalendarPage() {
     }
 
     return baseEvents;
-  }, [events, userRole, user, adminSelectedUser]);
+  }, [events, userRole, user, adminSelectedUser, slsSelectedUser, showCalendarManager, showSLSManager]);
 
   // Calculate loading state
   const showLoading = (loading && !hasLoaded) || roleLoading;
@@ -274,6 +286,60 @@ export default function CalendarPage() {
     // Close any open admin modals when user changes
     setShowCalendarManager(false);
     setShowSLSManager(false);
+  };
+
+  // SLS Manager user selection handler
+  const handleSlsUserSelect = (selectedUser: UserProfile | null) => {
+    setSlsSelectedUser(selectedUser);
+  };
+
+  // Handle SLS event creation (moved from SLSManager to parent)
+  const handleCreateSlsEvent = async (eventData: any) => {
+    if (!slsSelectedUser || !user?.id) {
+      console.error('No user selected or not authenticated');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/calendar/sls-events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: eventData.title,
+          description: eventData.notes,
+          event_date: eventData.date,
+          start_time: eventData.time,
+          end_time: eventData.endTime, // Calculate this in SLS Manager
+          event_type: eventData.eventType,
+          user_id: slsSelectedUser.id,
+          user_role: slsSelectedUser.role,
+          notes: eventData.notes,
+          location: eventData.location,
+          is_virtual: eventData.isVirtual || false,
+          virtual_meeting_link: eventData.virtualLink,
+          priority: 'medium',
+          created_by_id: user.id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create SLS event');
+      }
+
+      const result = await response.json();
+      console.log('SLS event created successfully:', result);
+      
+      // Refresh calendar to show new event
+      refetch();
+      
+      return result;
+    } catch (error) {
+      console.error('Error creating SLS event:', error);
+      throw error;
+    }
   };
 
   // Admin modal handlers
@@ -419,7 +485,7 @@ export default function CalendarPage() {
         <UserRoleInfoPanel 
           userRole={userRole} 
           roleLoading={roleLoading}
-          selectedUser={adminSelectedUser}
+          selectedUser={slsSelectedUser || adminSelectedUser}
         />
 
         {/* Calendar Content */}
@@ -462,7 +528,7 @@ export default function CalendarPage() {
             }}
             onSubmit={handleHoursSubmit}
             selectedDate={selectedDate}
-            coachName={adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
+            coachName={slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
           />
         )}
 
@@ -489,7 +555,7 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* SLS Manager - Integrated into page */}
+        {/* SLS Manager - Integrated into page with proper props */}
         {showSLSManager && (
           <div className="mb-6">
             <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-sm">
@@ -506,6 +572,9 @@ export default function CalendarPage() {
                 <SLSManager
                   currentDate={currentDate}
                   userRole={userRole}
+                  onUserSelect={handleSlsUserSelect}
+                  selectedUser={slsSelectedUser}
+                  onCreateSlsEvent={handleCreateSlsEvent}
                 />
               </div>
             </div>

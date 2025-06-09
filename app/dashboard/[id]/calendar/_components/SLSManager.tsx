@@ -205,7 +205,7 @@ const SLSManager = ({
     setRefreshing(false);
   };
 
-  // Updated handleCreateSlsEvent function - FIX THE DATA STRUCTURE
+  // Updated handleCreateSlsEvent function - ADD OPTIMISTIC UPDATE
   const handleCreateSlsEvent = async () => {
     if (!selectedUser || !slsEventData.title.trim() || !slsEventData.date) return;
 
@@ -232,7 +232,7 @@ const SLSManager = ({
 
       console.log('🎯 SLSManager sending event data:', eventData);
 
-      // Call the parent function to create the event
+      // Call the parent function to create the event (this will handle optimistic update)
       await onCreateSlsEvent(eventData);
       
       // Reset form and close modal on success
@@ -531,17 +531,19 @@ const SLSManager = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Type
+                    SLS Event Type
                   </label>
                   <select
                     value={slsEventData.eventType}
                     onChange={(e) => setSlsEventData(prev => ({ ...prev, eventType: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   >
-                    <option value="appointment">Appointment</option>
-                    <option value="training">Training</option>
-                    <option value="assessment">Assessment</option>
-                    <option value="follow-up">Follow-up</option>
+                    <option value="appointment">SLS Appointment</option>
+                    <option value="meeting">SLS Meeting</option>
+                    <option value="training">SLS Training</option>
+                    <option value="assessment">SLS Assessment</option>
+                    <option value="follow-up">SLS Follow-up</option>
+                    <option value="support">SLS Support Session</option>
                   </select>
                 </div>
               </div>

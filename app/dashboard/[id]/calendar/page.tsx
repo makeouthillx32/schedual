@@ -1,4 +1,4 @@
-// app/dashboard/[id]/calendar/page.tsx - Fixed SLSManager props
+// app/dashboard/[id]/calendar/page.tsx - Fixed SLS event data mapping
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -293,12 +293,14 @@ export default function CalendarPage() {
     setSlsSelectedUser(selectedUser);
   };
 
-  // Handle SLS event creation (moved from SLSManager to parent)
+  // Handle SLS event creation - FIXED DATA MAPPING
   const handleCreateSlsEvent = async (eventData: any) => {
     if (!slsSelectedUser || !user?.id) {
       console.error('No user selected or not authenticated');
       return;
     }
+
+    console.log('🔥 Calendar page received event data from SLS Manager:', eventData);
 
     try {
       const response = await fetch('/api/calendar/sls-events', {
@@ -308,18 +310,18 @@ export default function CalendarPage() {
         },
         body: JSON.stringify({
           title: eventData.title,
-          description: eventData.notes,
-          event_date: eventData.date,
-          start_time: eventData.time,
-          end_time: eventData.endTime, // Calculate this in SLS Manager
-          event_type: eventData.eventType,
-          user_id: slsSelectedUser.id,
-          user_role: slsSelectedUser.role,
+          description: eventData.description || eventData.notes,
+          event_date: eventData.event_date, // Direct pass-through
+          start_time: eventData.start_time, // Direct pass-through
+          end_time: eventData.end_time, // Direct pass-through
+          event_type: eventData.event_type,
+          user_id: eventData.user_id, // Direct pass-through
+          user_role: eventData.user_role, // Direct pass-through
           notes: eventData.notes,
-          location: eventData.location,
-          is_virtual: eventData.isVirtual || false,
-          virtual_meeting_link: eventData.virtualLink,
-          priority: 'medium',
+          location: eventData.location || '',
+          is_virtual: eventData.is_virtual || false,
+          virtual_meeting_link: eventData.virtual_meeting_link || '',
+          priority: eventData.priority || 'medium',
           created_by_id: user.id
         }),
       });
@@ -330,14 +332,14 @@ export default function CalendarPage() {
       }
 
       const result = await response.json();
-      console.log('SLS event created successfully:', result);
+      console.log('✅ SLS event created successfully:', result);
       
       // Refresh calendar to show new event
       refetch();
       
       return result;
     } catch (error) {
-      console.error('Error creating SLS event:', error);
+      console.error('❌ Error creating SLS event:', error);
       throw error;
     }
   };
@@ -353,9 +355,11 @@ export default function CalendarPage() {
     setShowCalendarManager(false);
   };
 
-  const handleCloseAdminModals = () => {
+   const handleCloseAdminModals = () => {
     setShowCalendarManager(false);
     setShowSLSManager(false);
+    setAdminSelectedUser(null);
+    setSlsSelectedUser(null);
   };
 
   // Modal handlers

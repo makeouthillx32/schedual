@@ -37,13 +37,15 @@ interface SLSManagerProps {
   userRole: string;
   onUserSelect: (user: UserProfile | null) => void;
   selectedUser: UserProfile | null;
+  onCreateSlsEvent: (eventData: any) => Promise<any>;
 }
 
 const SLSManager = ({
   currentDate,
   userRole,
   onUserSelect,
-  selectedUser
+  selectedUser,
+  onCreateSlsEvent
 }: SLSManagerProps) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -203,32 +205,37 @@ const SLSManager = ({
     setRefreshing(false);
   };
 
-  // Handle SLS event creation
+  // Updated handleCreateSlsEvent function - FIX THE DATA STRUCTURE
   const handleCreateSlsEvent = async () => {
-    if (!selectedUser || !slsEventData.title.trim() || !slsEventData.date) {
-      return;
-    }
+    if (!selectedUser || !slsEventData.title.trim() || !slsEventData.date) return;
 
     try {
-      // For now, we'll create a basic calendar event
-      // In the future, this could be enhanced to use specific SLS APIs
+      // Calculate end time
+      const endTime = calculateEndTime(slsEventData.time, parseInt(slsEventData.duration));
+      
+      // Create event data object that matches the parent's API expectations
       const eventData = {
-        title: `SLS: ${slsEventData.title}`,
-        event_date: slsEventData.date,
-        start_time: slsEventData.time,
-        end_time: calculateEndTime(slsEventData.time, parseInt(slsEventData.duration)),
+        title: slsEventData.title, // Don't prefix with "SLS:" here, the API will do it
+        description: slsEventData.notes,
+        event_date: slsEventData.date, // KEY FIX: Make sure this field is included
+        start_time: slsEventData.time, // KEY FIX: Make sure this field is included
+        end_time: endTime, // KEY FIX: Make sure this field is included
         event_type: slsEventData.eventType,
-        client_profile_id: selectedUser.role === 'client7x' ? selectedUser.id : null,
-        coach_profile_id: selectedUser.role === 'coachx7' ? selectedUser.id : null,
+        user_id: selectedUser.id,
+        user_role: selectedUser.role,
         notes: slsEventData.notes,
-        status: 'scheduled',
+        location: '', // Add location field if needed
+        is_virtual: false, // Add virtual meeting support if needed
+        virtual_meeting_link: '', // Add virtual link if needed
         priority: 'medium'
       };
 
-      // This would normally be an API call to create the event
-      console.log('Would create SLS event:', eventData);
+      console.log('🎯 SLSManager sending event data:', eventData);
+
+      // Call the parent function to create the event
+      await onCreateSlsEvent(eventData);
       
-      // Reset form and close modal
+      // Reset form and close modal on success
       setSlsEventData({
         title: '',
         date: '',
@@ -239,9 +246,12 @@ const SLSManager = ({
       });
       setShowSlsModal(false);
       
-      alert('SLS Event would be created! (API not implemented yet)');
+      // Show success message
+      alert('SLS Event created successfully!');
+      
     } catch (error) {
       console.error('Error creating SLS event:', error);
+      alert('Failed to create SLS event. Please try again.');
     }
   };
 
@@ -355,7 +365,7 @@ const SLSManager = ({
 
           {/* Dropdown List */}
           {showDropdown && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
               {loading ? (
                 <div className="p-3 text-center text-gray-500">
                   <RefreshCw className="w-4 h-4 animate-spin mx-auto mb-2" />
@@ -366,33 +376,35 @@ const SLSManager = ({
                   {searchTerm || filterRole !== 'all' ? 'No users match your filters' : 'No users found'}
                 </div>
               ) : (
-                filteredUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    onClick={() => {
-                      onUserSelect(user);
-                      setShowDropdown(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                  >
-                    <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {user.display_name?.charAt(0) || user.email.charAt(0)}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="font-medium text-gray-900">
-                        {user.display_name || user.email}
+                <div className="divide-y divide-gray-100">
+                  {filteredUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => {
+                        onUserSelect(user);
+                        setShowDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                        {user.display_name?.charAt(0) || user.email.charAt(0)}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span className={`px-2 py-1 rounded-full text-xs border ${getRoleColor(user.role)}`}>
-                          {getRoleDisplayName(user.role)}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">
+                          {user.display_name || user.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                          <span className={`px-2 py-1 rounded-full text-xs border ${getRoleColor(user.role)} flex-shrink-0`}>
+                            {getRoleDisplayName(user.role)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1 truncate">
+                          {user.email}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-400 mt-1 truncate">
-                        {user.email}
-                      </div>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}

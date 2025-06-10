@@ -1,8 +1,8 @@
-// hooks/useCalendarEvents.ts (FIXED - correct API endpoints)
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { toast } from 'react-hot-toast';
+// hooks/useCalendarEvents.ts
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
-interface CalendarEvent {
+export interface CalendarEvent {
   id: string;
   title: string;
   description?: string;
@@ -19,14 +19,19 @@ interface CalendarEvent {
   virtual_meeting_link?: string;
   duration_minutes: number;
   is_hour_log?: boolean;
+  is_public?: boolean;
+  priority?: string;
+  notes?: string;
+  client_id?: string;
+  coach_id?: string;
+  created_at?: string;
 }
 
 interface HourLogData {
   report_date: string;
   hours_worked: number;
-  work_location_id?: string;
-  location?: string;
-  activity_type?: string;
+  location: string;
+  activity_type: string;
   notes?: string;
   initials?: string;
 }
@@ -56,7 +61,7 @@ export function useCalendarEvents({
   const fetchingRef = useRef(false);
   const lastFetchKey = useRef<string>('');
 
-  console.log('[Calendar] Hook initialized with enabled:', !!userId, 'userId:', userId);
+  console.log('[Calendar] Hook initialized');
 
   // Format date for SQL query
   const formatDate = (date: Date) => {
@@ -67,6 +72,40 @@ export function useCalendarEvents({
   const getFetchKey = useCallback(() => {
     return `${userId}-${userRole}-${formatDate(startDate)}-${formatDate(endDate)}`;
   }, [userId, userRole, startDate, endDate]);
+
+  // Fetch public events (holidays, paydays, company meetings) - EVERYONE sees these
+  const fetchPublicEvents = useCallback(async (): Promise<CalendarEvent[]> => {
+    if (!userId) {
+      console.log('[Calendar] No userId, skipping public events fetch');
+      return [];
+    }
+
+    try {
+      console.log('[Calendar] Fetching public events (holidays, paydays, meetings)');
+      
+      const startDateStr = formatDate(startDate);
+      const endDateStr = formatDate(endDate);
+      
+      const apiUrl = `/api/calendar/public-events?start_date=${startDateStr}&end_date=${endDateStr}`;
+      
+      const response = await fetch(apiUrl, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        console.warn('[Calendar] Could not fetch public events:', response.status);
+        return [];
+      }
+
+      const publicEvents = await response.json();
+      console.log('[Calendar] Found public events:', publicEvents.length, 'entries');
+
+      return publicEvents;
+    } catch (error) {
+      console.error('[Calendar] Error fetching public events:', error);
+      return [];
+    }
+  }, [userId, startDate, endDate]);
 
   // Fetch logged hours for coaches AND admins
   const fetchLoggedHours = useCallback(async (): Promise<CalendarEvent[]> => {
@@ -115,7 +154,7 @@ export function useCalendarEvents({
         
         return {
           id: `hour-log-${hour.id}`,
-          title: `${hour.initials || 'Coach'} ${hour.hours_worked || 0}h`, // Ensure no NaN and add 'h' for hours
+          title: `${hour.initials || 'Coach'} ${hour.hours_worked || 0}h`, // Ensure no NaN
           description: `${hour.hours_worked || 0} hours - ${hour.activity_type || 'Work'} at ${locationDetails}${hour.notes ? '\n\nNotes: ' + hour.notes : ''}`,
           event_date: hour.report_date,
           start_time: 'All Day', // Special indicator for hour logs
@@ -129,7 +168,10 @@ export function useCalendarEvents({
           is_virtual: false,
           virtual_meeting_link: '',
           duration_minutes: (hour.hours_worked || 0) * 60,
-          is_hour_log: true
+          is_hour_log: true,
+          is_public: false,
+          priority: 'medium',
+          notes: hour.notes
         };
       });
 
@@ -139,39 +181,6 @@ export function useCalendarEvents({
       return [];
     }
   }, [userId, userRole, startDate, endDate, coachName]);
-
-  // Fetch regular calendar events from calendar_events table
-  const fetchCalendarEvents = useCallback(async (): Promise<CalendarEvent[]> => {
-    if (!userId) return [];
-    
-    try {
-      console.log('[Calendar] Fetching calendar events for:', userRole, userId);
-      
-      const startDateStr = formatDate(startDate);
-      const endDateStr = formatDate(endDate);
-      
-      // Build API URL for calendar events (NOT hour logs)
-      const apiUrl = `/api/calendar/events?start_date=${startDateStr}&end_date=${endDateStr}&user_id=${userId}&user_role=${userRole}`;
-      
-      const response = await fetch(apiUrl, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        console.warn('[Calendar] Could not fetch calendar events:', response.status);
-        return [];
-      }
-
-      const calendarEvents = await response.json();
-      console.log('[Calendar] Found calendar events:', calendarEvents.length, 'entries');
-
-      return calendarEvents;
-      
-    } catch (error) {
-      console.error('[Calendar] Error fetching calendar events:', error);
-      return [];
-    }
-  }, [userId, userRole, startDate, endDate]);
 
   // Main fetch function with loop prevention
   const fetchEvents = useCallback(async () => {
@@ -197,17 +206,35 @@ export function useCalendarEvents({
     try {
       console.log('[Calendar] Starting fetch for:', currentFetchKey);
       
-      // Fetch hour logs for coaches AND admins
-      const hourLogEvents = await fetchLoggedHours();
+      // Fetch both public events AND hour logs (in parallel for better performance)
+      const [publicEvents, hourLogEvents] = await Promise.all([
+        fetchPublicEvents(),    // Everyone sees these (PD, holidays, meetings)
+        fetchLoggedHours()      // Only coaches/admins see hour logs
+      ]);
       
-      // Fetch regular calendar events
-      const calendarEvents = await fetchCalendarEvents();
+      // Combine both types of events
+      const allEvents: CalendarEvent[] = [...publicEvents, ...hourLogEvents];
       
-      // Combine all events
-      const allEvents: CalendarEvent[] = [...hourLogEvents, ...calendarEvents];
+      // Sort by date and time
+      allEvents.sort((a, b) => {
+        const dateCompare = a.event_date.localeCompare(b.event_date);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // Handle "All Day" events (hour logs) - put them first for the day
+        if (a.start_time === 'All Day' && b.start_time !== 'All Day') return -1;
+        if (a.start_time !== 'All Day' && b.start_time === 'All Day') return 1;
+        if (a.start_time === 'All Day' && b.start_time === 'All Day') return 0;
+        
+        return a.start_time.localeCompare(b.start_time);
+      });
 
-      console.log('[Calendar] Found calendar events:', calendarEvents.length, 'entries');
-      console.log('[Calendar] Setting events:', allEvents.length, 'total events');
+      console.log('[Calendar] Setting events:', allEvents.length, 'events (', 
+        publicEvents.length, 'public +', hourLogEvents.length, 'hour logs)');
+      
+      // Debug: Log the event types found
+      const eventTypes = [...new Set(allEvents.map(e => e.event_type))];
+      console.log('[Calendar] Event types found:', eventTypes);
+      
       setEvents(allEvents);
       setHasLoaded(true);
     } catch (err) {
@@ -218,9 +245,9 @@ export function useCalendarEvents({
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [userId, fetchLoggedHours, fetchCalendarEvents, getFetchKey]);
+  }, [userId, fetchPublicEvents, fetchLoggedHours, getFetchKey]);
 
-  // Auto-fetch only when key parameters change (COMPLETELY SIMPLIFIED)
+  // Auto-fetch only when key parameters change
   useEffect(() => {
     if (!userId) {
       return;
@@ -232,7 +259,7 @@ export function useCalendarEvents({
     if (currentKey !== lastFetchKey.current && !fetchingRef.current) {
       fetchEvents();
     }
-  }, [userId, userRole, formatDate(startDate), formatDate(endDate)]); // Use formatted dates to prevent object comparison issues
+  }, [userId, userRole, formatDate(startDate), formatDate(endDate)]);
 
   // Manual refetch function (for after logging hours)
   const refetch = useCallback(async () => {
@@ -263,7 +290,7 @@ export function useCalendarEvents({
           ...hourData,
           coach_id: userId,
           coach_name: coachName,
-          initials: hourData.initials || 'Coach' // Extract initials from hourData
+          initials: hourData.initials || 'Coach'
         })
       });
 
@@ -294,21 +321,17 @@ export function useCalendarEvents({
     }
   };
 
-  // FIXED: Get logged hours for a specific date (only for coaches)
+  // Get logged hours for a specific date (only for coaches)
   const getLoggedHoursForDate = async (date: Date): Promise<number> => {
     if (userRole !== 'coachx7' || !userId) return 0;
 
     try {
       const dateStr = formatDate(date);
-      // FIXED: Use the correct API endpoint that exists
-      const response = await fetch(`/api/calendar/log-hours?date=${dateStr}&coach_id=${userId}`, {
+      const response = await fetch(`/api/calendar/logged-hours?date=${dateStr}&coach_id=${userId}`, {
         credentials: 'include'
       });
 
-      if (!response.ok) {
-        console.warn('[Calendar] Could not fetch hours for date:', response.status);
-        return 0;
-      }
+      if (!response.ok) return 0;
 
       const result = await response.json();
       return result.totalHours || 0;
@@ -318,7 +341,33 @@ export function useCalendarEvents({
     }
   };
 
-  // Placeholder functions for regular events
+  // Helper functions for event filtering
+  const getEventsForDate = (date: Date) => {
+    const dateStr = formatDate(date);
+    return events.filter(event => event.event_date === dateStr);
+  };
+
+  const getEventsByType = (eventType: string) => {
+    return events.filter(event => event.event_type === eventType);
+  };
+
+  const getPublicEvents = () => {
+    return events.filter(event => event.is_public === true);
+  };
+
+  const getPaydayEvents = () => {
+    return events.filter(event => 
+      event.event_type === 'PD' || 
+      event.event_type === 'Payday' ||
+      event.event_type?.toLowerCase().includes('pay')
+    );
+  };
+
+  const getHourLogEvents = () => {
+    return events.filter(event => event.is_hour_log === true);
+  };
+
+  // Placeholder functions for regular events (not implemented yet)
   const createEvent = async (eventData: any) => {
     throw new Error('Event creation not implemented yet');
   };
@@ -329,11 +378,6 @@ export function useCalendarEvents({
 
   const deleteEvent = async (eventId: string) => {
     throw new Error('Event deletion not implemented yet');
-  };
-
-  const getEventsForDate = (date: Date) => {
-    const dateStr = formatDate(date);
-    return events.filter(event => event.event_date === dateStr);
   };
 
   return {
@@ -348,6 +392,10 @@ export function useCalendarEvents({
     loggingHours,
     getLoggedHoursForDate,
     getEventsForDate,
+    getEventsByType,
+    getPublicEvents,
+    getPaydayEvents,
+    getHourLogEvents,
     refetch,
     formatDate,
     coachName

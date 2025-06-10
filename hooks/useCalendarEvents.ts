@@ -1,6 +1,6 @@
 // hooks/useCalendarEvents.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 export interface CalendarEvent {
   id: string;

@@ -1,7 +1,8 @@
-// components/CalenderBox/EventTooltip.tsx
+// components/CalenderBox/EventTooltip.tsx - Updated for database event types and SLS support
 'use client';
 
 import { format } from 'date-fns';
+import { useState, useEffect } from 'react';
 
 interface CalendarEvent {
   id: string;
@@ -17,13 +18,9 @@ interface CalendarEvent {
   status: string;
   duration_minutes: number;
   is_hour_log?: boolean;
-  is_payday?: boolean;
-  is_holiday?: boolean;
-  is_sales_day?: boolean;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;
-  amount?: number; // For paydays/sales
-  holiday_type?: string; // Federal, State, Company, etc.
+  amount?: number;
 }
 
 interface EventTooltipProps {
@@ -36,6 +33,14 @@ interface EventTooltipProps {
   userRole?: string;
 }
 
+interface EventType {
+  id: string;
+  name: string;
+  description: string;
+  color_code: string;
+  is_active: boolean;
+}
+
 const EventTooltip = ({
   date,
   events,
@@ -45,7 +50,36 @@ const EventTooltip = ({
   tooltipType,
   userRole = 'user'
 }: EventTooltipProps) => {
-  if (!isVisible || events.length === 0) return null;
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch event types from database
+  useEffect(() => {
+    const fetchEventTypes = async () => {
+      try {
+        const response = await fetch('/api/calendar/event-types', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const types = await response.json();
+          setEventTypes(types);
+        } else {
+          console.warn('Failed to load event types');
+        }
+      } catch (error) {
+        console.error('Error loading event types:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isVisible) {
+      fetchEventTypes();
+    }
+  }, [isVisible]);
+
+  if (!isVisible || events.length === 0 || loading) return null;
 
   // Format time for display
   const formatTime = (timeString: string, isHourLog: boolean = false) => {
@@ -78,25 +112,57 @@ const EventTooltip = ({
     }
   };
 
-  // Get event type icon
+  // Get event type icon based on database event type
   const getEventTypeIcon = (event: CalendarEvent) => {
-    if (event.is_payday) return '💰';
-    if (event.is_holiday) return '🎉';
-    if (event.is_sales_day) return '🛍️';
     if (event.is_hour_log) return '⏰';
-    if (event.event_type === 'Meeting') return '👥';
-    if (event.event_type === 'Appointment') return '📅';
-    if (event.event_type === 'Training') return '🎓';
-    return '📌';
+    
+    const eventType = eventTypes.find(type => 
+      type.name.toLowerCase() === event.event_type.toLowerCase()
+    );
+    
+    if (!eventType) return '📌';
+    
+    switch (eventType.name.toLowerCase()) {
+      case 'payday': return '💰';
+      case 'holiday': return '🎉';
+      case 'sls event': return '🏠';
+      case 'meeting': return '👥';
+      case 'appointment': return '📅';
+      case 'training': return '🎓';
+      case 'workshop': return '🛠️';
+      case 'assessment': return '📊';
+      case 'interview': return '💼';
+      case 'follow-up': return '📞';
+      case 'job coach meeting': return '🎯';
+      case 'personal': return '👤';
+      default: return '📌';
+    }
+  };
+
+  // Helper to check if event is special type from database
+  const isSpecialEventType = (event: CalendarEvent) => {
+    const eventType = eventTypes.find(type => 
+      type.name.toLowerCase() === event.event_type.toLowerCase()
+    );
+    
+    return eventType?.name.toLowerCase() === 'payday' || 
+           eventType?.name.toLowerCase() === 'holiday';
+  };
+
+  // Helper to check if event is SLS type from database
+  const isSlsEventType = (event: CalendarEvent) => {
+    const eventType = eventTypes.find(type => 
+      type.name.toLowerCase() === event.event_type.toLowerCase()
+    );
+    
+    return eventType?.name.toLowerCase() === 'sls event';
   };
 
   // Sort events by priority and type
   const sortedEvents = [...events].sort((a, b) => {
     // Special events first
-    if (a.is_payday && !b.is_payday) return -1;
-    if (b.is_payday && !a.is_payday) return 1;
-    if (a.is_holiday && !b.is_holiday) return -1;
-    if (b.is_holiday && !a.is_holiday) return 1;
+    if (isSpecialEventType(a) && !isSpecialEventType(b)) return -1;
+    if (isSpecialEventType(b) && !isSpecialEventType(a)) return 1;
     
     // Then by priority
     const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
@@ -108,12 +174,13 @@ const EventTooltip = ({
 
   // Group events by type for better organization
   const groupedEvents = {
-    special: sortedEvents.filter(e => e.is_payday || e.is_holiday || e.is_sales_day),
+    special: sortedEvents.filter(e => isSpecialEventType(e)),
     hourLogs: sortedEvents.filter(e => e.is_hour_log),
-    regular: sortedEvents.filter(e => !e.is_payday && !e.is_holiday && !e.is_sales_day && !e.is_hour_log)
+    slsEvents: sortedEvents.filter(e => isSlsEventType(e)),
+    regular: sortedEvents.filter(e => !isSpecialEventType(e) && !e.is_hour_log && !isSlsEventType(e))
   };
 
-  // Render special event (payday, holiday, sales day)
+  // Render special event (payday, holiday from database)
   const renderSpecialEvent = (event: CalendarEvent) => (
     <div
       key={event.id}
@@ -140,11 +207,9 @@ const EventTooltip = ({
             ${event.amount.toLocaleString()}
           </div>
         )}
-        {event.holiday_type && (
-          <div className="text-xs text-purple-600 mt-1">
-            {event.holiday_type} Holiday
-          </div>
-        )}
+        <div className="text-xs text-purple-600 mt-1">
+          {event.event_type}
+        </div>
       </div>
     </div>
   );
@@ -169,6 +234,49 @@ const EventTooltip = ({
         <div className="text-xs text-green-600">
           {event.description}
         </div>
+      </div>
+    </div>
+  );
+
+  // Render SLS event with client name emphasis
+  const renderSlsEvent = (event: CalendarEvent) => (
+    <div
+      key={event.id}
+      className="flex items-start gap-2 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={(e) => {
+        e.stopPropagation();
+        onEventClick(event);
+      }}
+    >
+      <div className="text-2xl mt-0.5 flex-shrink-0">🏠</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-sm text-green-800 truncate">
+          {event.title.replace(/^SLS:\s*/i, '')}
+        </div>
+        <div className="text-xs text-green-600 mt-1">
+          {formatTime(event.start_time, false)} - {formatTime(event.end_time, false)}
+        </div>
+        {/* ENHANCED: Show client name prominently for SLS events */}
+        {event.client_name && (
+          <div className="text-xs text-blue-700 font-semibold mt-1 bg-blue-50 px-2 py-1 rounded">
+            👤 Client: {event.client_name}
+          </div>
+        )}
+        {event.coach_name && (
+          <div className="text-xs text-purple-600 mt-1">
+            🎯 Coach: {event.coach_name}
+          </div>
+        )}
+        {event.location && (
+          <div className="text-xs text-gray-600 mt-1">
+            📍 {event.location}
+          </div>
+        )}
+        {event.description && (
+          <div className="text-xs text-green-600 mt-1">
+            {event.description}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -199,9 +307,15 @@ const EventTooltip = ({
         <div className="text-xs text-[hsl(var(--muted-foreground))]">
           {formatTime(event.start_time, false)} - {formatTime(event.end_time, false)}
         </div>
+        {/* ENHANCED: Show both client and coach names prominently */}
         {event.client_name && (
-          <div className="text-xs text-[hsl(var(--muted-foreground))]">
-            Client: {event.client_name}
+          <div className="text-xs text-blue-600 font-medium">
+            👤 Client: {event.client_name}
+          </div>
+        )}
+        {event.coach_name && (
+          <div className="text-xs text-green-600">
+            🎯 Coach: {event.coach_name}
           </div>
         )}
         {event.location && (
@@ -221,6 +335,7 @@ const EventTooltip = ({
       return sum + hours;
     }, 0),
     hasSpecialEvents: groupedEvents.special.length > 0,
+    slsEventCount: groupedEvents.slsEvents.length,
     urgentEvents: events.filter(e => e.priority === 'urgent').length
   };
 
@@ -238,6 +353,7 @@ const EventTooltip = ({
           <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
             {dayStats.totalEvents} events
             {dayStats.totalHours > 0 && ` • ${dayStats.totalHours}h logged`}
+            {dayStats.slsEventCount > 0 && ` • ${dayStats.slsEventCount} SLS`}
             {dayStats.urgentEvents > 0 && ` • ${dayStats.urgentEvents} urgent`}
           </div>
         </div>
@@ -261,6 +377,18 @@ const EventTooltip = ({
             </div>
             <div className="space-y-2">
               {groupedEvents.special.map(renderSpecialEvent)}
+            </div>
+          </div>
+        )}
+
+        {/* SLS Events Section */}
+        {groupedEvents.slsEvents.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-[hsl(var(--muted-foreground))] mb-2 uppercase tracking-wide">
+              SLS Events
+            </div>
+            <div className="space-y-2">
+              {groupedEvents.slsEvents.map(renderSlsEvent)}
             </div>
           </div>
         )}
@@ -307,9 +435,14 @@ const EventTooltip = ({
                 </button>
               )}
               {userRole === 'admin1' && (
-                <button className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">
-                  + Add Holiday
-                </button>
+                <>
+                  <button className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">
+                    + Add Holiday
+                  </button>
+                  <button className="px-3 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full hover:bg-emerald-200 transition-colors">
+                    + SLS Event
+                  </button>
+                </>
               )}
             </div>
           </div>

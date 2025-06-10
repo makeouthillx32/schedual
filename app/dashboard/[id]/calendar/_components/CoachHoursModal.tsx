@@ -1,5 +1,4 @@
-// app/dashboard/[id]/calendar/_components/CoachHoursModal.tsx
-// Enhanced modal for flexible hour logging with dynamic data loading
+// app/dashboard/[id]/calendar/_components/CoachHoursModal.tsx - FIXED location handling
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -38,7 +37,7 @@ interface Specialization {
   id: string;
   name: string;
   description?: string;
-  role: string; // Changed from role_id to role
+  role: string;
   color?: string;
 }
 
@@ -84,19 +83,22 @@ export default function CoachHoursModal({
         const locations = await response.json();
         const activeLocations = locations.filter((loc: WorkLocation) => loc.is_active);
         setWorkLocations(activeLocations);
-        
-        // Set default location to first active location
-        if (activeLocations.length > 0 && !formData.work_location_id) {
-          setFormData(prev => ({
-            ...prev,
-            work_location_id: activeLocations[0].id
-          }));
-        }
+        console.log('Loaded work locations:', activeLocations.length);
       } else {
-        console.warn('Failed to load work locations');
+        console.warn('Failed to load work locations, status:', response.status);
+        // Set a fallback location in form data
+        setFormData(prev => ({
+          ...prev,
+          location: 'Office' // Default fallback location
+        }));
       }
     } catch (error) {
       console.error('Error loading work locations:', error);
+      // Set a fallback location in form data
+      setFormData(prev => ({
+        ...prev,
+        location: 'Office' // Default fallback location
+      }));
     } finally {
       setLoadingLocations(false);
     }
@@ -114,14 +116,9 @@ export default function CoachHoursModal({
       
       if (response.ok) {
         const allSpecializations = await response.json();
-        console.log('All specializations:', allSpecializations);
-        
-        // Filter for coach-related specializations (role = 'jobcoach')
         const coachSpecs = allSpecializations.filter((spec: any) => 
           spec.role === 'jobcoach'
         );
-        
-        console.log('Coach specializations:', coachSpecs);
         setSpecializations(coachSpecs);
         
         // Set default activity type to first coach specialization
@@ -139,6 +136,14 @@ export default function CoachHoursModal({
           { id: '2', name: 'Administrative Tasks', description: '', role: 'jobcoach' },
           { id: '3', name: 'Other', description: '', role: 'jobcoach' }
         ]);
+        
+        // Set default activity
+        if (!formData.activity_type) {
+          setFormData(prev => ({
+            ...prev,
+            activity_type: 'Client Coaching'
+          }));
+        }
       }
     } catch (error) {
       console.error('Error loading specializations:', error);
@@ -148,6 +153,14 @@ export default function CoachHoursModal({
         { id: '2', name: 'Administrative Tasks', description: '', role: 'jobcoach' },
         { id: '3', name: 'Other', description: '', role: 'jobcoach' }
       ]);
+      
+      // Set default activity
+      if (!formData.activity_type) {
+        setFormData(prev => ({
+          ...prev,
+          activity_type: 'Client Coaching'
+        }));
+      }
     } finally {
       setLoadingSpecializations(false);
     }
@@ -227,11 +240,9 @@ export default function CoachHoursModal({
     }
   };
 
-  // Parse "TB 7" style quick entry - simplified since initials are now in profiles
+  // Parse "TB 7" style quick entry
   const parseQuickEntry = (entry: string) => {
     const trimmed = entry.trim().toUpperCase();
-    
-    // Pattern: 1-3 letters followed by space and number
     const match = trimmed.match(/^([A-Z]{1,3})\s+(\d+(?:\.\d+)?)$/);
     
     if (!match) return null;
@@ -278,7 +289,7 @@ export default function CoachHoursModal({
     }
   };
 
-  // Validate form
+  // FIXED: Validate form with better location handling
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -298,15 +309,19 @@ export default function CoachHoursModal({
       newErrors.activity_type = 'Activity type is required';
     }
 
-    if (!formData.work_location_id && !formData.location) {
-      newErrors.location = 'Location is required';
+    // FIXED: Better location validation
+    const hasWorkLocationId = formData.work_location_id && formData.work_location_id.trim() !== '';
+    const hasLocationText = formData.location && formData.location.trim() !== '';
+    
+    if (!hasWorkLocationId && !hasLocationText) {
+      newErrors.location = 'Location is required (either select from dropdown or enter custom location)';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
+  // FIXED: Handle form submission with better data preparation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -317,16 +332,29 @@ export default function CoachHoursModal({
     setIsSubmitting(true);
     
     try {
-      // Ensure we always send the required fields
+      // FIXED: Prepare submission data with proper location handling
       const submissionData: CoachHoursData = {
         ...formData,
         initials: formData.initials || 'Coach', // Fallback if no initials set
-        // Ensure we have either work_location_id or location
-        work_location_id: formData.work_location_id || undefined,
-        location: formData.location || undefined
+        activity_type: formData.activity_type || 'Client Coaching', // Ensure activity type is set
       };
+
+      // FIXED: Ensure we have location data one way or another
+      if (formData.work_location_id && formData.work_location_id.trim() !== '') {
+        // If work_location_id is selected, use it and clear location text
+        submissionData.work_location_id = formData.work_location_id;
+        submissionData.location = undefined; // Let API handle this
+      } else if (formData.location && formData.location.trim() !== '') {
+        // If custom location text is provided, use it and clear work_location_id
+        submissionData.location = formData.location.trim();
+        submissionData.work_location_id = undefined;
+      } else {
+        // Fallback: provide a default location
+        submissionData.location = 'Office';
+        submissionData.work_location_id = undefined;
+      }
       
-      console.log('Submitting hours data:', submissionData);
+      console.log('🏗️ Modal submitting hours data:', submissionData);
       
       await onSubmit(submissionData);
       onClose();
@@ -407,7 +435,6 @@ export default function CoachHoursModal({
               </div>
             )}
             
-            {/* Note about initials */}
             <div className="mt-2 text-xs text-[hsl(var(--muted-foreground))]">
               <p>💡 Enter your initials and hours (e.g., "TB 7") for quick logging</p>
             </div>
@@ -490,7 +517,7 @@ export default function CoachHoursModal({
             )}
           </div>
 
-          {/* Activity Type - From User Specializations */}
+          {/* Activity Type */}
           <div>
             <label htmlFor="activity_type" className="block text-sm font-medium mb-2">
               Activity Type *
@@ -522,52 +549,62 @@ export default function CoachHoursModal({
             )}
           </div>
 
-          {/* Location - From Work Locations API */}
+          {/* FIXED: Location with better handling */}
           <div>
-            <label htmlFor="work_location_id" className="block text-sm font-medium mb-2">
+            <label className="block text-sm font-medium mb-2">
               <MapPin className="inline h-4 w-4 mr-1" />
               Location *
               {loadingLocations && (
                 <Loader2 className="inline h-3 w-3 ml-1 animate-spin" />
               )}
             </label>
-            <select
-              id="work_location_id"
-              name="work_location_id"
-              value={formData.work_location_id}
+            
+            {/* Work Location Dropdown (if available) */}
+            {workLocations.length > 0 && (
+              <select
+                id="work_location_id"
+                name="work_location_id"
+                value={formData.work_location_id}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent mb-2 ${
+                  errors.location ? 'border-red-500' : 'border-[hsl(var(--border))]'
+                }`}
+                disabled={isSubmitting}
+              >
+                <option value="">Select Location</option>
+                {workLocations.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.location_name}
+                    {location.city && ` - ${location.city}`}
+                    {location.location_type && ` (${location.location_type})`}
+                  </option>
+                ))}
+              </select>
+            )}
+            
+            {/* Custom location input (always show as fallback) */}
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
               onChange={handleInputChange}
+              placeholder={workLocations.length > 0 ? "Or enter custom location" : "Enter location (e.g., Office, Client Home, Community)"}
               className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent ${
                 errors.location ? 'border-red-500' : 'border-[hsl(var(--border))]'
               }`}
-              disabled={isSubmitting || loadingLocations}
-              required
-            >
-              <option value="">Select Location</option>
-              {workLocations.map(location => (
-                <option key={location.id} value={location.id}>
-                  {location.location_name}
-                  {location.city && ` - ${location.city}`}
-                  {location.location_type && ` (${location.location_type})`}
-                </option>
-              ))}
-            </select>
-            
-            {/* Custom location input if needed */}
-            {(!formData.work_location_id || workLocations.length === 0) && (
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                placeholder="Enter custom location"
-                className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded-md focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent mt-2"
-                disabled={isSubmitting}
-              />
-            )}
+              disabled={isSubmitting}
+            />
             
             {errors.location && (
               <p className="text-red-500 text-xs mt-1">{errors.location}</p>
             )}
+            
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">
+              {workLocations.length > 0 
+                ? "Select from dropdown or enter custom location below" 
+                : "Enter location where work was performed"
+              }
+            </p>
           </div>
 
           {/* Notes */}

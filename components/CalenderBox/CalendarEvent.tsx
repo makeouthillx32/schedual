@@ -1,5 +1,7 @@
-// components/CalenderBox/CalendarEvent.tsx
+// components/CalenderBox/CalendarEvent.tsx - Uses database event types only
 'use client';
+
+import { useState, useEffect } from 'react';
 
 interface CalendarEvent {
   id: string;
@@ -15,9 +17,6 @@ interface CalendarEvent {
   status: string;
   duration_minutes: number;
   is_hour_log?: boolean;
-  is_payday?: boolean;
-  is_holiday?: boolean;
-  is_sales_day?: boolean;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;
   amount?: number;
@@ -31,6 +30,14 @@ interface CalendarEventProps {
   formatTime: (timeString: string, isHourLog?: boolean) => string;
 }
 
+interface EventType {
+  id: string;
+  name: string;
+  description: string;
+  color_code: string;
+  is_active: boolean;
+}
+
 const CalendarEvent = ({
   event,
   index,
@@ -38,98 +45,109 @@ const CalendarEvent = ({
   onClick,
   formatTime
 }: CalendarEventProps) => {
-  if (index >= maxVisible) {
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch event types from database
+  useEffect(() => {
+    const fetchEventTypes = async () => {
+      try {
+        const response = await fetch('/api/calendar/event-types', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const types = await response.json();
+          setEventTypes(types);
+        } else {
+          console.warn('Failed to load event types');
+        }
+      } catch (error) {
+        console.error('Error loading event types:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventTypes();
+  }, []);
+
+  if (index >= maxVisible || loading) {
     return null;
   }
 
-  // Get event display text based on type
+  // Find the event type from database
+  const eventTypeData = eventTypes.find(type => 
+    type.name.toLowerCase() === event.event_type.toLowerCase()
+  );
+
+  // Get database color or fallback to event.color_code
+  const backgroundColor = eventTypeData?.color_code || event.color_code || '#3B82F6';
+
+  // Get event display text based on database event type
   const getEventDisplayText = () => {
     if (event.is_hour_log) {
-      return event.title; // e.g., "TB 7"
+      return event.title; // e.g., "TB 7h"
     }
+
+    // Check event type from database
+    const eventTypeName = eventTypeData?.name || event.event_type;
     
-    if (event.is_payday) {
-      return `💰 ${event.title}`;
+    switch (eventTypeName.toLowerCase()) {
+      case 'payday':
+        return `💰 ${event.title}`;
+      case 'holiday':
+        return `🎉 ${event.title}`;
+      case 'sls event':
+        const displayTitle = event.title.replace(/^SLS:\s*/i, '');
+        return `🏠 ${displayTitle}`;
+      case 'meeting':
+        const timeText = formatTime(event.start_time, false);
+        return timeText ? `${timeText} ${event.title}` : event.title;
+      case 'appointment':
+        const appointmentTime = formatTime(event.start_time, false);
+        return appointmentTime ? `${appointmentTime} ${event.title}` : event.title;
+      default:
+        // For all other event types, show time + title
+        const defaultTime = formatTime(event.start_time, false);
+        return defaultTime ? `${defaultTime} ${event.title}` : event.title;
     }
-    
-    if (event.is_holiday) {
-      return `🎉 ${event.title}`;
-    }
-    
-    if (event.is_sales_day) {
-      return `🛍️ ${event.title}`;
-    }
-    
-    // Regular events with time
-    const timeText = formatTime(event.start_time, false);
-    return timeText ? `${timeText} ${event.title}` : event.title;
   };
 
-  // Get tooltip text
+  // Get tooltip text based on database event type
   const getTooltipText = () => {
     if (event.is_hour_log) {
       return event.description || event.title;
     }
-    
-    if (event.is_payday && event.amount) {
-      return `${event.title} - $${event.amount.toLocaleString()}`;
-    }
-    
-    if (event.is_holiday) {
-      return `${event.title} - Holiday`;
-    }
-    
-    if (event.is_sales_day) {
-      return `${event.title} - Sales Event`;
-    }
-    
-    // Regular events
+
+    const eventTypeName = eventTypeData?.name || event.event_type;
     const startTime = formatTime(event.start_time, false);
     const endTime = formatTime(event.end_time, false);
     
+    let tooltip = event.title;
+    
     if (startTime && endTime) {
-      return `${event.title} - ${startTime} to ${endTime}`;
+      tooltip += ` - ${startTime} to ${endTime}`;
     }
     
-    return event.title;
+    if (event.client_name) {
+      tooltip += ` (Client: ${event.client_name})`;
+    }
+
+    if (eventTypeData?.description) {
+      tooltip += ` - ${eventTypeData.description}`;
+    }
+    
+    return tooltip;
   };
 
-  // Get background styling based on event type
+  // Get styling based ONLY on database event type and priority
   const getEventStyling = () => {
-    if (event.is_payday) {
-      return {
-        backgroundColor: '#f59e0b', // Gold/amber
-        backgroundImage: 'linear-gradient(45deg, #f59e0b 0%, #eab308 100%)',
-        borderLeft: '3px solid #d97706'
-      };
-    }
+    const baseStyle = { 
+      backgroundColor: backgroundColor
+    };
     
-    if (event.is_holiday) {
-      return {
-        backgroundColor: '#ef4444', // Red
-        backgroundImage: 'linear-gradient(45deg, #ef4444 0%, #dc2626 100%)',
-        borderLeft: '3px solid #b91c1c'
-      };
-    }
-    
-    if (event.is_sales_day) {
-      return {
-        backgroundColor: '#8b5cf6', // Purple
-        backgroundImage: 'linear-gradient(45deg, #8b5cf6 0%, #7c3aed 100%)',
-        borderLeft: '3px solid #6d28d9'
-      };
-    }
-    
-    if (event.is_hour_log) {
-      return {
-        backgroundColor: event.color_code,
-        borderLeft: '3px solid #059669'
-      };
-    }
-    
-    // Regular events with priority indicators
-    const baseStyle = { backgroundColor: event.color_code };
-    
+    // Only add priority-based borders, no hardcoded event type styling
     if (event.priority === 'urgent') {
       return {
         ...baseStyle,
@@ -144,11 +162,19 @@ const CalendarEvent = ({
         borderLeft: '3px solid #f59e0b'
       };
     }
+
+    // Special handling for hour logs
+    if (event.is_hour_log) {
+      return {
+        ...baseStyle,
+        borderLeft: '3px solid #059669'
+      };
+    }
     
     return baseStyle;
   };
 
-  // Get additional CSS classes
+  // Get CSS classes based on database event type
   const getEventClasses = () => {
     let classes = "mb-1 cursor-pointer rounded-sm px-1 py-0.5 text-xs font-medium text-white truncate transition-all duration-200 hover:scale-105 hover:shadow-md";
     
@@ -156,8 +182,20 @@ const CalendarEvent = ({
       classes += ' animate-pulse';
     }
     
-    if (event.is_payday || event.is_holiday || event.is_sales_day) {
-      classes += ' font-bold shadow-sm';
+    const eventTypeName = eventTypeData?.name || event.event_type;
+    
+    // Add special styling based on database event type
+    switch (eventTypeName.toLowerCase()) {
+      case 'payday':
+      case 'holiday':
+        classes += ' font-bold shadow-sm';
+        break;
+      case 'sls event':
+        classes += ' font-semibold shadow-sm ring-1 ring-opacity-20';
+        break;
+      default:
+        // Default styling for all other database event types
+        break;
     }
     
     return classes;
@@ -180,6 +218,14 @@ const CalendarEvent = ({
       {/* Priority indicator for urgent events */}
       {event.priority === 'urgent' && (
         <div className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+      )}
+
+      {/* Event type indicator */}
+      {eventTypeData && (
+        <div 
+          className="absolute top-0 left-0 w-1 h-full rounded-l-sm opacity-70"
+          style={{ backgroundColor: eventTypeData.color_code }}
+        />
       )}
     </div>
   );

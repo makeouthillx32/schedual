@@ -1,4 +1,4 @@
-// app/api/calendar/logged-hours-range/route.ts - Updated to filter out orphaned records
+// app/api/calendar/logged-hours-range/route.ts - FIXED to return proper format
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -52,20 +52,49 @@ export async function GET(request: NextRequest) {
         initials,
         created_at,
         calendar_event_id,
+        coach_profile_id,
         work_locations!work_location_id (
           location_name,
           location_type,
           city
+        ),
+        profiles!coach_profile_id (
+          display_name,
+          email
         )
       `)
-      .eq('coach_profile_id', targetCoachId)
       .gte('report_date', start_date)
       .lte('report_date', end_date);
 
-    // Filter out orphaned records (calendar_event_id is NULL) unless specifically requested
-    if (!include_orphaned) {
-      query = query.not('calendar_event_id', 'is', null);
+    // Apply coach filtering based on user role
+    if (coach_id) {
+      // If specific coach_id is provided, filter by it
+      query = query.eq('coach_profile_id', coach_id);
+    } else {
+      // Get user role to determine filtering
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const currentUserRole = userProfile?.role || 'user0x';
+      
+      if (currentUserRole === 'admin1') {
+        // Admins see ALL hour logs when no coach_id is specified
+        console.log('[API] Admin user - fetching all hour logs');
+        // No additional filter needed
+      } else {
+        // Non-admins (coaches) see only their own hour logs
+        query = query.eq('coach_profile_id', user.id);
+      }
     }
+
+    // IMPORTANT CHANGE: Always include orphaned records for now
+    // The filtering will happen on the frontend if needed
+    // if (!include_orphaned) {
+    //   query = query.not('calendar_event_id', 'is', null);
+    // }
 
     // Order by date
     query = query.order('report_date', { ascending: true });
@@ -88,33 +117,17 @@ export async function GET(request: NextRequest) {
       total: data?.length || 0,
       linked: linkedRecords.length,
       orphaned: orphanedRecords.length,
-      filtered_out_orphaned: !include_orphaned && orphanedRecords.length > 0
+      coach_id: targetCoachId
     });
 
-    // If there are orphaned records, log a warning
-    if (orphanedRecords.length > 0 && !include_orphaned) {
-      console.warn('[API] ⚠️ Filtered out', orphanedRecords.length, 'orphaned records (no calendar_event_id)');
-      console.warn('[API] 💡 Add ?include_orphaned=true to see them, or run cleanup to remove them');
+    // Log warning about orphaned records but don't filter them out for now
+    if (orphanedRecords.length > 0) {
+      console.warn('[API] ⚠️ Found', orphanedRecords.length, 'orphaned records (no calendar_event_id)');
     }
 
-    // For the response, only return the data we're actually sending
-    const responseData = include_orphaned ? data : linkedRecords;
-
-    // Add metadata to response for debugging
-    const response = {
-      data: responseData || [],
-      metadata: {
-        total_records_found: data?.length || 0,
-        linked_records: linkedRecords.length,
-        orphaned_records: orphanedRecords.length,
-        returned_records: responseData?.length || 0,
-        filtered_orphaned: !include_orphaned,
-        date_range: { start_date, end_date },
-        coach_id: targetCoachId
-      }
-    };
-
-    return NextResponse.json(response);
+    // FIXED: Return just the data array directly (not wrapped in metadata object)
+    // This matches what the frontend expects
+    return NextResponse.json(data || []);
 
   } catch (error) {
     console.error('[API] Unexpected error:', error);
@@ -140,7 +153,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is admin (you might want to add this check)
+    // Check if user is admin
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')

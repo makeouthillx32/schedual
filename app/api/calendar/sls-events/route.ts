@@ -1,29 +1,228 @@
-// app/api/calendar/sls-events/route.ts - Debug version
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+// app/api/calendar/sls-events/route.ts - SLS events for admins + assigned clients only
+import { createClient } from '@/utils/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Get the authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-// Add a simple GET method to test if the route is working
-export async function GET() {
-  console.log('🟢 SLS Events API route is working!');
-  return NextResponse.json({ 
-    message: 'SLS Events API is working',
-    timestamp: new Date().toISOString(),
-    path: '/api/calendar/sls-events'
-  });
+    const { searchParams } = new URL(request.url);
+    const start_date = searchParams.get('start_date');
+    const end_date = searchParams.get('end_date');
+    const user_id = searchParams.get('user_id');
+    const user_role = searchParams.get('user_role');
+
+    if (!start_date || !end_date) {
+      return NextResponse.json(
+        { error: 'start_date and end_date parameters are required' },
+        { status: 400 }
+      );
+    }
+
+    // Get current user's role for access control
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const currentUserRole = userProfile?.role || 'user0x';
+    const targetUserId = user_id || user.id;
+
+    console.log('[SLS-API] Getting SLS events for:', { 
+      currentUserRole,
+      targetUserId, 
+      start_date, 
+      end_date,
+      user_role
+    });
+
+    // ACCESS CONTROL: Only admins and assigned clients can see SLS events
+    if (currentUserRole !== 'admin1' && currentUserRole !== 'client7x') {
+      return NextResponse.json(
+        { error: 'Access denied. SLS events are only visible to admins and assigned clients.' },
+        { status: 403 }
+      );
+    }
+
+    // Build the query for SLS events only
+    // SLS events are identified by having "SLS" in the title or being a specific event type
+    let query = supabase
+      .from('calendar_events')
+      .select(`
+        id,
+        title,
+        description,
+        event_date,
+        start_time,
+        end_time,
+        duration_minutes,
+        location,
+        is_virtual,
+        virtual_meeting_link,
+        status,
+        priority,
+        notes,
+        created_at,
+        client_id,
+        coach_id,
+        event_types!event_type_id (
+          name,
+          color_code
+        )
+      `)
+      .gte('event_date', start_date)
+      .lte('event_date', end_date)
+      .is('coach_report_id', null) // Exclude hour log events
+      .ilike('title', '%SLS%'); // Filter for SLS events
+
+    // Apply role-based filtering for SLS events
+    if (currentUserRole === 'client7x') {
+      // Clients can only see SLS events where they are assigned
+      query = query.eq('client_id', user.id);
+    }
+    // Admins see all SLS events (no additional filter)
+
+    // Order by date and time
+    query = query.order('event_date', { ascending: true })
+                 .order('start_time', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[SLS-API] Error fetching SLS events:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch SLS events' },
+        { status: 500 }
+      );
+    }
+
+    console.log('[SLS-API] Found SLS events:', {
+      total: data?.length || 0,
+      date_range: `${start_date} to ${end_date}`,
+      current_user_role: currentUserRole,
+      target_user: targetUserId
+    });
+
+    // Fetch user profiles to resolve names
+    let userProfiles: any = {};
+    
+    if (data && data.length > 0) {
+      const userIds = [
+        ...new Set([
+          ...data.map(e => e.client_id).filter(Boolean),
+          ...data.map(e => e.coach_id).filter(Boolean)
+        ])
+      ];
+      
+      if (userIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, display_name, email')
+          .in('id', userIds);
+        
+        if (profileError) {
+          console.warn('[SLS-API] Error fetching profiles:', profileError);
+        } else if (profiles) {
+          userProfiles = Object.fromEntries(profiles.map(p => [p.id, p]));
+          console.log('[SLS-API] Loaded profiles for', Object.keys(userProfiles).length, 'users');
+        }
+      }
+    }
+
+    // Transform the data to match the CalendarEvent interface
+    const transformedEvents = data?.map((event: any) => {
+      // Get event type info
+      const eventType = event.event_types;
+      const colorCode = eventType?.color_code || '#8B5CF6'; // Purple for SLS events
+      const eventTypeName = eventType?.name || 'SLS Event';
+
+      // Resolve client and coach names from profiles
+      const clientProfile = userProfiles[event.client_id];
+      const coachProfile = userProfiles[event.coach_id];
+      
+      const clientName = clientProfile?.display_name || clientProfile?.email || (event.client_id ? 'Unknown Client' : '');
+      const coachName = coachProfile?.display_name || coachProfile?.email || (event.coach_id ? 'Unknown Coach' : '');
+
+      return {
+        id: event.id,
+        title: event.title,
+        description: event.description || '',
+        event_date: event.event_date,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        event_type: eventTypeName,
+        client_name: clientName,
+        coach_name: coachName,
+        color_code: colorCode,
+        status: event.status || 'scheduled',
+        location: event.location || '',
+        is_virtual: event.is_virtual || false,
+        virtual_meeting_link: event.virtual_meeting_link || '',
+        duration_minutes: event.duration_minutes || 0,
+        priority: event.priority || 'medium',
+        notes: event.notes || '',
+        // Mark as special SLS events
+        is_hour_log: false,
+        is_payday: false,
+        is_holiday: false,
+        is_sales_day: false,
+        is_sls_event: true // Custom flag for SLS events
+      };
+    }) || [];
+
+    return NextResponse.json(transformedEvents);
+
+  } catch (error) {
+    console.error('[SLS-API] Unexpected error fetching SLS events:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request: Request) {
-  console.log('🚀 SLS Events API POST called');
-  
+// POST - Create new SLS event (admins only)
+export async function POST(request: NextRequest) {
   try {
-    const requestBody = await request.json();
-    console.log('📝 SLS API received request body:', JSON.stringify(requestBody, null, 2));
+    const supabase = await createClient();
+    
+    // Get the authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-    const {
+    // Check if user is admin
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (userProfile?.role !== 'admin1') {
+      return NextResponse.json(
+        { error: 'Admin access required to create SLS events' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { 
       title,
       description,
       event_date,
@@ -36,195 +235,100 @@ export async function POST(request: Request) {
       location,
       is_virtual,
       virtual_meeting_link,
-      priority = 'medium',
+      priority,
       created_by_id
-    } = requestBody;
+    } = body;
 
-    console.log('🎯 Creating SLS event with parsed data:', {
+    console.log('[SLS-API] Creating SLS event:', {
       title,
       event_date,
       start_time,
       end_time,
       user_id,
-      user_role,
-      created_by_id
+      created_by: created_by_id || user.id
     });
 
     // Validate required fields
-    if (!title || !event_date || !start_time || !end_time || !user_id || !created_by_id) {
-      console.error('❌ Missing required fields:', {
-        title: !!title,
-        event_date: !!event_date,
-        start_time: !!start_time,
-        end_time: !!end_time,
-        user_id: !!user_id,
-        created_by_id: !!created_by_id
-      });
+    if (!title || !event_date || !start_time || !end_time || !user_id) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, event_date, start_time, end_time, user_id, created_by_id' },
+        { error: 'Missing required fields: title, event_date, start_time, end_time, user_id' },
         { status: 400 }
       );
     }
 
-    // Get event type ID - FIXED to properly handle SLS events
-    let event_type_id = null;
-    
-    // Always try to get "SLS Event" type first since this is an SLS-specific API
-    console.log('🔍 Looking up SLS Event type in database...');
-    const { data: slsEventType, error: slsError } = await supabase
+    // Get or create SLS event type
+    let { data: slsEventType } = await supabase
       .from('event_types')
-      .select('id, name, color_code')
-      .ilike('name', 'SLS Event')
+      .select('id')
+      .eq('name', 'SLS Event')
       .single();
 
-    if (slsError) {
-      console.warn('⚠️ SLS Event type not found, attempting to create it:', slsError.message);
-      
-      // Try to create the SLS Event type if it doesn't exist
-      const { data: createdType, error: createError } = await supabase
+    if (!slsEventType) {
+      // Create SLS event type if it doesn't exist
+      const { data: newEventType, error: eventTypeError } = await supabase
         .from('event_types')
         .insert({
           name: 'SLS Event',
-          description: 'Supported Living Services event',
-          color_code: '#10B981', // Green color for SLS events
+          description: 'Supported Living Services Event',
+          color_code: '#8B5CF6',
           is_active: true
         })
-        .select('id, name, color_code')
+        .select('id')
         .single();
 
-      if (createError) {
-        console.error('❌ Failed to create SLS Event type:', createError.message);
-        
-        // Fallback: try to find any event type or use null
-        const { data: fallbackType } = await supabase
-          .from('event_types')
-          .select('id, name, color_code')
-          .limit(1)
-          .single();
-        
-        if (fallbackType) {
-          event_type_id = fallbackType.id;
-          console.log('🔄 Using fallback event type:', fallbackType.name, 'ID:', event_type_id);
-        } else {
-          console.warn('⚠️ No event types found at all, proceeding with null');
-        }
-      } else {
-        event_type_id = createdType.id;
-        console.log('✅ Created new SLS Event type, ID:', event_type_id);
+      if (eventTypeError) {
+        console.error('[SLS-API] Error creating SLS event type:', eventTypeError);
+        return NextResponse.json(
+          { error: 'Failed to create event type' },
+          { status: 500 }
+        );
       }
-    } else {
-      event_type_id = slsEventType.id;
-      console.log('✅ Found existing SLS Event type:', slsEventType.name, 'ID:', event_type_id);
+      slsEventType = newEventType;
     }
 
-    // If user provided a specific event_type parameter, respect it but map it appropriately
-    if (event_type) {
-      console.log('🎯 User provided event_type parameter:', event_type);
-      
-      // Map common SLS event subtypes to the main SLS Event type
-      const slsEventSubtypes = ['appointment', 'meeting', 'training', 'assessment', 'follow-up'];
-      
-      if (slsEventSubtypes.includes(event_type.toLowerCase())) {
-        console.log('📝 Mapping', event_type, 'to SLS Event type (keeping SLS Event as main type)');
-        // Keep the SLS Event type but note the subtype in description
-      } else {
-        // Try to find the specific event type they requested
-        const { data: specificType, error: specificError } = await supabase
-          .from('event_types')
-          .select('id, name, color_code')
-          .ilike('name', event_type)
-          .single();
-
-        if (!specificError && specificType) {
-          event_type_id = specificType.id;
-          console.log('✅ Using specific event type:', specificType.name, 'ID:', event_type_id);
-        } else {
-          console.log('⚠️ Specific event type not found, keeping SLS Event type');
-        }
-      }
-    }
-
-    // Determine client_id and coach_id based on user role
-    let client_id = null;
-    let coach_id = null;
-
-    if (user_role === 'client7x') {
-      client_id = user_id;
-      console.log('👤 Setting client_id:', client_id);
-    } else if (user_role === 'coachx7') {
-      coach_id = user_id;
-      console.log('👨‍💼 Setting coach_id:', coach_id);
-    }
-
-    // Prepare the event data
-    const eventData = {
-      title: `SLS: ${title}`,
-      description: description || `SLS ${event_type || 'event'} created for ${user_role === 'client7x' ? 'client' : 'coach'}`,
-      event_type_id,
-      client_id,
-      coach_id,
-      event_date,
-      start_time,
-      end_time,
-      location: location || null,
-      is_virtual: is_virtual || false,
-      virtual_meeting_link: virtual_meeting_link || null,
-      status: 'scheduled',
-      priority,
-      reminder_minutes: 60,
-      notes: notes || null,
-      created_by: created_by_id
-    };
-
-    console.log('💾 About to insert SLS event data:', JSON.stringify({
-      ...eventData,
-      event_type_info: event_type_id ? 'SLS Event type found' : 'No event type (will be null)'
-    }, null, 2));
-
-    // Create the calendar event
-    const { data: event, error: eventError } = await supabase
+    // Create the SLS event
+    const { data: newEvent, error: insertError } = await supabase
       .from('calendar_events')
-      .insert(eventData)
-      .select()
+      .insert({
+        title: title.startsWith('SLS:') ? title : `SLS: ${title}`,
+        description: description || notes,
+        event_type_id: slsEventType.id,
+        client_id: user_role === 'client7x' ? user_id : null,
+        coach_id: user_role === 'coachx7' ? user_id : null,
+        event_date,
+        start_time,
+        end_time,
+        location: location || '',
+        is_virtual: is_virtual || false,
+        virtual_meeting_link: virtual_meeting_link || '',
+        status: 'scheduled',
+        priority: priority || 'medium',
+        notes: notes || '',
+        created_by: created_by_id || user.id
+      })
+      .select('*')
       .single();
 
-    if (eventError) {
-      console.error('❌ Supabase error creating calendar event:', eventError);
+    if (insertError) {
+      console.error('[SLS-API] Error creating SLS event:', insertError);
       return NextResponse.json(
-        { 
-          error: 'Failed to create calendar event', 
-          details: eventError.message,
-          code: eventError.code,
-          hint: eventError.hint 
-        },
+        { error: 'Failed to create SLS event: ' + insertError.message },
         { status: 500 }
       );
     }
 
-    console.log('✅ SLS event created successfully:', {
-      id: event.id,
-      title: event.title,
-      event_type_id: event.event_type_id,
-      event_date: event.event_date,
-      start_time: event.start_time
-    });
+    console.log('[SLS-API] ✅ SLS event created successfully:', newEvent.id);
 
     return NextResponse.json({
       success: true,
-      event,
-      message: 'SLS event created successfully',
-      event_type_used: event_type_id ? 'SLS Event' : 'null (no event type)',
-      event_type_id
+      data: newEvent,
+      message: `SLS event "${title}" created successfully`
     });
 
   } catch (error) {
-    console.error('💥 Catch block error in SLS event creation:', error);
+    console.error('[SLS-API] Unexpected error creating SLS event:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

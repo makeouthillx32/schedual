@@ -1,4 +1,4 @@
-// hooks/useCalendarEvents.ts (FIXED - fetches hour logs for both coaches and admins)
+// hooks/useCalendarEvents.ts (FIXED - correct API endpoints)
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 
@@ -24,8 +24,9 @@ interface CalendarEvent {
 interface HourLogData {
   report_date: string;
   hours_worked: number;
-  location: string;
-  activity_type: string;
+  work_location_id?: string;
+  location?: string;
+  activity_type?: string;
   notes?: string;
   initials?: string;
 }
@@ -55,7 +56,7 @@ export function useCalendarEvents({
   const fetchingRef = useRef(false);
   const lastFetchKey = useRef<string>('');
 
-  console.log('[Calendar] Hook initialized');
+  console.log('[Calendar] Hook initialized with enabled:', !!userId, 'userId:', userId);
 
   // Format date for SQL query
   const formatDate = (date: Date) => {
@@ -114,7 +115,7 @@ export function useCalendarEvents({
         
         return {
           id: `hour-log-${hour.id}`,
-          title: `${hour.initials || 'Coach'} ${hour.hours_worked || 0}`, // Ensure no NaN
+          title: `${hour.initials || 'Coach'} ${hour.hours_worked || 0}h`, // Ensure no NaN and add 'h' for hours
           description: `${hour.hours_worked || 0} hours - ${hour.activity_type || 'Work'} at ${locationDetails}${hour.notes ? '\n\nNotes: ' + hour.notes : ''}`,
           event_date: hour.report_date,
           start_time: 'All Day', // Special indicator for hour logs
@@ -138,6 +139,39 @@ export function useCalendarEvents({
       return [];
     }
   }, [userId, userRole, startDate, endDate, coachName]);
+
+  // Fetch regular calendar events from calendar_events table
+  const fetchCalendarEvents = useCallback(async (): Promise<CalendarEvent[]> => {
+    if (!userId) return [];
+    
+    try {
+      console.log('[Calendar] Fetching calendar events for:', userRole, userId);
+      
+      const startDateStr = formatDate(startDate);
+      const endDateStr = formatDate(endDate);
+      
+      // Build API URL for calendar events (NOT hour logs)
+      const apiUrl = `/api/calendar/events?start_date=${startDateStr}&end_date=${endDateStr}&user_id=${userId}&user_role=${userRole}`;
+      
+      const response = await fetch(apiUrl, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        console.warn('[Calendar] Could not fetch calendar events:', response.status);
+        return [];
+      }
+
+      const calendarEvents = await response.json();
+      console.log('[Calendar] Found calendar events:', calendarEvents.length, 'entries');
+
+      return calendarEvents;
+      
+    } catch (error) {
+      console.error('[Calendar] Error fetching calendar events:', error);
+      return [];
+    }
+  }, [userId, userRole, startDate, endDate]);
 
   // Main fetch function with loop prevention
   const fetchEvents = useCallback(async () => {
@@ -166,11 +200,14 @@ export function useCalendarEvents({
       // Fetch hour logs for coaches AND admins
       const hourLogEvents = await fetchLoggedHours();
       
-      // For now, we only show hour logs for coaches and admins
-      // Regular calendar events would be fetched here for other roles
-      const allEvents: CalendarEvent[] = [...hourLogEvents];
+      // Fetch regular calendar events
+      const calendarEvents = await fetchCalendarEvents();
+      
+      // Combine all events
+      const allEvents: CalendarEvent[] = [...hourLogEvents, ...calendarEvents];
 
-      console.log('[Calendar] Setting events:', allEvents.length, 'events');
+      console.log('[Calendar] Found calendar events:', calendarEvents.length, 'entries');
+      console.log('[Calendar] Setting events:', allEvents.length, 'total events');
       setEvents(allEvents);
       setHasLoaded(true);
     } catch (err) {
@@ -181,7 +218,7 @@ export function useCalendarEvents({
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [userId, fetchLoggedHours, getFetchKey]);
+  }, [userId, fetchLoggedHours, fetchCalendarEvents, getFetchKey]);
 
   // Auto-fetch only when key parameters change (COMPLETELY SIMPLIFIED)
   useEffect(() => {
@@ -257,17 +294,21 @@ export function useCalendarEvents({
     }
   };
 
-  // Get logged hours for a specific date (only for coaches)
+  // FIXED: Get logged hours for a specific date (only for coaches)
   const getLoggedHoursForDate = async (date: Date): Promise<number> => {
     if (userRole !== 'coachx7' || !userId) return 0;
 
     try {
       const dateStr = formatDate(date);
-      const response = await fetch(`/api/calendar/logged-hours?date=${dateStr}&coach_id=${userId}`, {
+      // FIXED: Use the correct API endpoint that exists
+      const response = await fetch(`/api/calendar/log-hours?date=${dateStr}&coach_id=${userId}`, {
         credentials: 'include'
       });
 
-      if (!response.ok) return 0;
+      if (!response.ok) {
+        console.warn('[Calendar] Could not fetch hours for date:', response.status);
+        return 0;
+      }
 
       const result = await response.json();
       return result.totalHours || 0;
@@ -312,3 +353,9 @@ export function useCalendarEvents({
     coachName
   };
 }
+
+
+
+
+
+

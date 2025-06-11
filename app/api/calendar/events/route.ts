@@ -1,3 +1,5 @@
+
+
 // app/api/calendar/events/route.ts - Regular Calendar Events API with Profile Resolution
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -346,3 +348,4 @@ export async function DELETE(request: Request) {
     );
   }
 }
+

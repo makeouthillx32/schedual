@@ -29,10 +29,20 @@ export async function GET(request: Request) {
       );
     }
 
-    // FIXED: Use separate queries to avoid join issues
+    // Build query for calendar events
     const { data: events, error } = await supabase
       .from('calendar_events')
-      .select('*')
+      .select(`
+        *,
+        event_types (
+          name,
+          color_code,
+          description,
+          visible_to_coaches,
+          visible_to_clients,
+          visible_to_admins
+        )
+      `)
       .gte('event_date', start_date)
       .lte('event_date', end_date)
       .order('event_date', { ascending: true })
@@ -48,38 +58,33 @@ export async function GET(request: Request) {
 
     console.log('[Calendar Events API] Found', events?.length || 0, 'raw calendar events');
 
-    // Get event types separately
-    const { data: eventTypes, error: eventTypesError } = await supabase
-      .from('event_types')
-      .select('*');
-
-    if (eventTypesError) {
-      console.error('[Calendar Events API] Error fetching event types:', eventTypesError);
-    }
-
-    // Create event types lookup
-    const eventTypesLookup = eventTypes ? Object.fromEntries(
-      eventTypes.map(et => [et.id, et])
-    ) : {};
-
-    console.log('[Calendar Events API] Loaded', Object.keys(eventTypesLookup).length, 'event types');
+    // DEBUG: Log each raw event to see what we're getting
+    events?.forEach((event, index) => {
+      console.log(`[Calendar Events API] Raw event ${index + 1}:`, {
+        title: event.title,
+        event_date: event.event_date,
+        event_type_id: event.event_type_id,
+        event_types: event.event_types,
+        client_id: event.client_id
+      });
+    });
 
     // Filter events based on user role and permissions
     const filteredEvents = (events || []).filter(event => {
-      const eventType = eventTypesLookup[event.event_type_id];
+      const eventType = event.event_types;
       
       console.log('[Calendar Events API] Processing event:', {
         title: event.title,
-        event_type_id: event.event_type_id,
         eventType: eventType?.name,
         visible_to_clients: eventType?.visible_to_clients,
         client_id: event.client_id,
-        user_id
+        user_id,
+        user_role
       });
       
       // If no event type, only admins can see it
       if (!eventType) {
-        console.log('[Calendar Events API] No event type found, admin only');
+        console.log('[Calendar Events API] No event type, admin only');
         return user_role === 'admin1';
       }
 
@@ -100,6 +105,7 @@ export async function GET(request: Request) {
           const canSee = isAssigned || isVisible;
           
           console.log('[Calendar Events API] Client filtering:', {
+            title: event.title,
             isAssigned,
             isVisible,
             canSee
@@ -168,17 +174,6 @@ export async function GET(request: Request) {
       const clientName = clientProfile?.display_name || clientProfile?.email || (event.client_id ? 'Unknown Client' : '');
       const coachName = coachProfile?.display_name || coachProfile?.email || (event.coach_id ? 'Unknown Coach' : '');
 
-      console.log('[Calendar Events API] Event mapping DEBUG:', {
-        title: event.title,
-        client_id: event.client_id,
-        coach_id: event.coach_id,
-        clientProfile: userProfiles[event.client_id],
-        coachProfile: userProfiles[event.coach_id],
-        allProfiles: Object.keys(userProfiles),
-        client_name: clientName,
-        coach_name: coachName
-      });
-
       return {
         id: event.id,
         title: event.title,
@@ -186,8 +181,8 @@ export async function GET(request: Request) {
         event_date: event.event_date,
         start_time: event.start_time,
         end_time: event.end_time,
-        event_type: eventTypesLookup[event.event_type_id]?.name || 'Event',
-        color_code: eventTypesLookup[event.event_type_id]?.color_code || '#3B82F6',
+        event_type: event.event_types?.name || 'Event',
+        color_code: event.event_types?.color_code || '#3B82F6',
         status: event.status,
         location: event.location,
         is_virtual: event.is_virtual,

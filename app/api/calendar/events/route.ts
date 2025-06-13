@@ -1,4 +1,4 @@
-// app/api/calendar/events/route.ts - FIXED VERSION
+// app/api/calendar/events/route.ts - Regular Calendar Events API with Profile Resolution
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -6,7 +6,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// GET - Fetch regular calendar events with event type permissions
+// GET - Fetch regular calendar events
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -29,24 +29,34 @@ export async function GET(request: Request) {
       );
     }
 
-    // Simple query - get all events in date range with event type info
-    const { data: events, error } = await supabase
+    // Build query for calendar events
+    let query = supabase
       .from('calendar_events')
       .select(`
         *,
         event_types (
           name,
           color_code,
-          description,
-          visible_to_coaches,
-          visible_to_clients,
-          visible_to_admins
+          description
         )
       `)
       .gte('event_date', start_date)
       .lte('event_date', end_date)
       .order('event_date', { ascending: true })
       .order('start_time', { ascending: true });
+
+    // Filter based on user role
+    if (user_role === 'admin1') {
+      // Admins see all events - no additional filtering
+    } else if (user_role === 'coachx7' && user_id) {
+      // Coaches see events where they are the coach
+      query = query.eq('coach_id', user_id);
+    } else if (user_role === 'client7x' && user_id) {
+      // Clients see events where they are the client
+      query = query.eq('client_id', user_id);
+    }
+
+    const { data: events, error } = await query;
 
     if (error) {
       console.error('[Calendar Events API] Error fetching events:', error);
@@ -56,97 +66,32 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('[Calendar Events API] Raw events from DB:', events?.length || 0);
-    
-    // Filter events based on user role and event type permissions
-    const filteredEvents = (events || []).filter(event => {
-      const eventType = event.event_types;
-      
-      console.log('[Calendar Events API] Processing event:', {
-        title: event.title,
-        event_type: eventType?.name,
-        coach_id: event.coach_id,
-        client_id: event.client_id,
-        visible_to_coaches: eventType?.visible_to_coaches,
-        visible_to_clients: eventType?.visible_to_clients,
-        visible_to_admins: eventType?.visible_to_admins,
-        user_role,
-        user_id
-      });
+    console.log('[Calendar Events API] Found', events?.length || 0, 'calendar events');
 
-      // If no event type, allow for admins only
-      if (!eventType) {
-        console.log('[Calendar Events API] No event type, allowing for admins only');
-        return user_role === 'admin1';
-      }
-
-      // Check permissions based on user role
-      switch (user_role) {
-        case 'admin1':
-          // Admins see everything unless explicitly hidden
-          const adminCanSee = eventType.visible_to_admins !== false;
-          console.log('[Calendar Events API] Admin visibility:', adminCanSee);
-          return adminCanSee;
-          
-        case 'coachx7':
-          // Coaches see events they're assigned to OR events visible to coaches
-          const isAssignedCoach = event.coach_id === user_id;
-          const visibleToCoaches = eventType.visible_to_coaches === true;
-          const coachCanSee = isAssignedCoach || visibleToCoaches;
-          console.log('[Calendar Events API] Coach visibility:', {
-            isAssignedCoach,
-            visibleToCoaches,
-            canSee: coachCanSee
-          });
-          return coachCanSee;
-          
-        case 'client7x':
-          // Clients see events they're assigned to OR events visible to clients
-          const isAssignedClient = event.client_id === user_id;
-          const visibleToClients = eventType.visible_to_clients === true;
-          const clientCanSee = isAssignedClient || visibleToClients;
-          console.log('[Calendar Events API] Client visibility:', {
-            isAssignedClient,
-            visibleToClients,
-            canSee: clientCanSee
-          });
-          return clientCanSee;
-          
-        default:
-          console.log('[Calendar Events API] Unknown role, denying access');
-          return false;
-      }
-    });
-
-    console.log('[Calendar Events API] After filtering:', filteredEvents.length, 'events visible to', user_role);
-
-    // If no events after filtering, return empty array
-    if (!filteredEvents || filteredEvents.length === 0) {
-      console.log('[Calendar Events API] No events passed filtering, returning empty array');
-      return NextResponse.json([]);
-    }
-
-    // Resolve user profiles for display names
+    // NEW: Use our Supabase function to resolve display names efficiently
     let userProfiles: any = {};
     
-    const userIds = [
-      ...new Set([
-        ...filteredEvents.map(e => e.client_id).filter(Boolean),
-        ...filteredEvents.map(e => e.coach_id).filter(Boolean)
-      ])
-    ];
-    
-    if (userIds.length > 0) {
-      console.log('[Calendar Events API] Resolving display names for:', userIds);
+    if (events && events.length > 0) {
+      // Get unique user IDs from both client_id and coach_id
+      const userIds = [
+        ...new Set([
+          ...events.map(e => e.client_id).filter(Boolean),
+          ...events.map(e => e.coach_id).filter(Boolean)
+        ])
+      ];
       
-      try {
+      console.log('[Calendar Events API] Resolving display names for user IDs:', userIds);
+      
+      if (userIds.length > 0) {
+        // Use our custom Supabase function to resolve display names
         const { data: resolvedUsers, error: resolveError } = await supabase
           .rpc('resolve_display_names', { user_ids: userIds });
         
         if (resolveError) {
-          console.warn('[Calendar Events API] RPC failed, using fallback:', resolveError);
+          console.error('[Calendar Events API] Error resolving display names:', resolveError);
           
-          // FALLBACK: Try profiles table directly
+          // FALLBACK: If function fails, try profiles table directly
+          console.log('[Calendar Events API] Function failed, falling back to profiles table...');
           const { data: profiles, error: profileError } = await supabase
             .from('profiles')
             .select('id, display_name, email')
@@ -154,26 +99,39 @@ export async function GET(request: Request) {
           
           if (profiles && !profileError) {
             userProfiles = Object.fromEntries(profiles.map(p => [p.id, p]));
-            console.log('[Calendar Events API] Fallback loaded profiles:', Object.keys(userProfiles).length);
+            console.log('[Calendar Events API] Fallback successful - loaded', Object.keys(userProfiles).length, 'profiles');
           }
         } else if (resolvedUsers) {
+          console.log('[Calendar Events API] Function resolved users:', resolvedUsers);
+          // Create a lookup map: userId -> user data
           userProfiles = Object.fromEntries(
             resolvedUsers.map((user: any) => [user.id, user])
           );
-          console.log('[Calendar Events API] RPC loaded profiles:', Object.keys(userProfiles).length);
+          console.log('[Calendar Events API] Successfully resolved', Object.keys(userProfiles).length, 'display names via function');
         }
-      } catch (profileError) {
-        console.warn('[Calendar Events API] Profile resolution failed:', profileError);
       }
     }
 
     // Transform events to match expected format
-    const transformedEvents = filteredEvents.map(event => {
+    const transformedEvents = (events || []).map(event => {
+      // NEW: Resolve client and coach names from profiles
       const clientProfile = userProfiles[event.client_id];
       const coachProfile = userProfiles[event.coach_id];
       
+      // Use display_name first, fallback to email, then to a default
       const clientName = clientProfile?.display_name || clientProfile?.email || (event.client_id ? 'Unknown Client' : '');
       const coachName = coachProfile?.display_name || coachProfile?.email || (event.coach_id ? 'Unknown Coach' : '');
+
+      console.log('[Calendar Events API] Event mapping DEBUG:', {
+        title: event.title,
+        client_id: event.client_id,
+        coach_id: event.coach_id,
+        clientProfile: userProfiles[event.client_id],
+        coachProfile: userProfiles[event.coach_id],
+        allProfiles: Object.keys(userProfiles),
+        client_name: clientName,
+        coach_name: coachName
+      });
 
       return {
         id: event.id,
@@ -191,13 +149,12 @@ export async function GET(request: Request) {
         duration_minutes: event.duration_minutes,
         priority: event.priority,
         notes: event.notes,
-        is_hour_log: false,
-        client_name: clientName,
-        coach_name: coachName
+        is_hour_log: false, // Regular events are not hour logs
+        client_name: clientName, // NOW RESOLVED FROM PROFILES
+        coach_name: coachName    // NOW RESOLVED FROM PROFILES
       };
     });
 
-    console.log('[Calendar Events API] Returning', transformedEvents.length, 'transformed events');
     return NextResponse.json(transformedEvents);
 
   } catch (error) {
@@ -209,7 +166,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST - Create regular calendar event (unchanged)
+// POST - Create regular calendar event
 export async function POST(request: Request) {
   try {
     const eventData = await request.json();
@@ -232,6 +189,7 @@ export async function POST(request: Request) {
       coach_id
     } = eventData;
 
+    // Validate required fields
     if (!title || !event_date || !start_time || !end_time || !created_by_id) {
       return NextResponse.json(
         { error: 'Missing required fields: title, event_date, start_time, end_time, created_by_id' },
@@ -239,6 +197,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get event type ID if provided
     let event_type_id = null;
     if (event_type) {
       const { data: eventType } = await supabase
@@ -250,6 +209,7 @@ export async function POST(request: Request) {
       event_type_id = eventType?.id || null;
     }
 
+    // Create the calendar event
     const { data: event, error } = await supabase
       .from('calendar_events')
       .insert({
@@ -280,6 +240,8 @@ export async function POST(request: Request) {
       );
     }
 
+    console.log('[Calendar Events API] ✅ Event created successfully:', event);
+
     return NextResponse.json({
       success: true,
       event,
@@ -294,7 +256,8 @@ export async function POST(request: Request) {
     );
   }
 }
-// PUT and DELETE methods remain the same...
+
+// PUT - Update calendar event
 export async function PUT(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -383,4 +346,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

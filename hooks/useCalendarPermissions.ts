@@ -225,7 +225,7 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
           canLogHours: false,
           canViewAllEvents: false,
           canManageUsers: false,
-          canExportData: false,
+          canExportData: true, // 🔥 FIXED: Changed from false to true - Clients can now export their calendar data
           canCreateSLS: false,
           canManageCalendar: false,
         });

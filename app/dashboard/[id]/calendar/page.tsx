@@ -11,6 +11,7 @@ import ExportMessage from './_components/ExportMessage';
 import CalendarContent from './_components/CalendarContent';
 import UserCalendarViewer from './_components/UserCalendarViewer';
 import CalendarManager from './_components/CalendarManager';
+import SLSManager from './_components/SLSManager'; // ADDED: Missing import
 import CalendarContextMenu from './_components/CalendarContextMenu'; // Import the new context menu
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useAuth } from '@/app/provider';
@@ -211,7 +212,7 @@ export default function CalendarPage() {
           canLogHours: false,
           canViewAllEvents: false,
           canManageUsers: false,
-          canExportData: true // RESTORED: Clients can export
+          canExportData: true // 🔥 ENSURED: Clients can export
         };
       default:
         return {
@@ -242,7 +243,9 @@ export default function CalendarPage() {
       permissionsError,
       dynamicPermissions,
       fallbackPermissions,
-      finalPermissions
+      finalPermissions,
+      // 🔥 SPECIFIC DEBUG FOR EXPORT
+      clientCanExport: userRole === 'client7x' ? finalPermissions.canExportData : 'N/A'
     });
   }, [userRole, isAdmin, permissionsLoading, permissionsError, dynamicPermissions, fallbackPermissions, finalPermissions]);
 
@@ -584,7 +587,7 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* Calendar Header - RESTORED with export functionality */}
+        {/* 🔥 CRITICAL: Calendar Header - Using finalPermissions (which includes export for clients) */}
         <CalendarHeader
           currentDate={currentDate}
           viewMode={viewMode}
@@ -592,13 +595,13 @@ export default function CalendarPage() {
           roleLoading={roleLoading}
           loggingHours={loggingHours}
           optimisticCount={0}
-          permissions={finalPermissions}
+          permissions={finalPermissions} // ✅ CORRECT: This should enable export for clients
           onNavigateMonth={handleNavigateMonth}
           onGoToToday={handleGoToToday}
           onSetViewMode={setViewMode}
           onOpenHoursModal={handleLogHours}
           onOpenEventModal={handleCreateEvent}
-          exportHandlers={exportHandlers} // RESTORED: Export functionality
+          exportHandlers={exportHandlers} // ✅ RESTORED: Export functionality
         />
 
         {/* Export Message */}

@@ -1,8 +1,8 @@
-// components/CalenderBox/index.tsx (Updated to use modular components)
+// Enhanced CalendarBox - Better mobile responsiveness and visual improvements
 'use client';
 
-import { useMemo, useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
+import { useState, useEffect, useRef } from 'react';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
 import CalendarEvent from './CalendarEvent';
 import EventTooltip from './EventTooltip';
 
@@ -20,13 +20,9 @@ interface CalendarEvent {
   status: string;
   duration_minutes: number;
   is_hour_log?: boolean;
-  is_payday?: boolean;
-  is_holiday?: boolean;
-  is_sales_day?: boolean;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   location?: string;
   amount?: number;
-  holiday_type?: string;
 }
 
 interface CalendarBoxProps {
@@ -34,120 +30,125 @@ interface CalendarBoxProps {
   events: CalendarEvent[];
   onDateClick: (date: Date) => void;
   onEventClick: (event: CalendarEvent) => void;
-  viewMode: 'month' | 'week' | 'day';
-  userRole?: string;
+  userRole: string;
+  loading?: boolean;
 }
 
-const CalendarBox = ({ 
-  currentDate, 
-  events, 
-  onDateClick, 
-  onEventClick, 
-  viewMode,
-  userRole = 'user'
+const CalendarBox = ({
+  currentDate,
+  events = [],
+  onDateClick,
+  onEventClick,
+  userRole,
+  loading = false
 }: CalendarBoxProps) => {
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [clickedDate, setClickedDate] = useState<Date | null>(null);
   const [tooltipType, setTooltipType] = useState<'hover' | 'clicked-date' | 'clicked-event'>('hover');
+  const [isMobile, setIsMobile] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Generate calendar grid
-  const calendarDays = useMemo(() => {
-    const start = startOfMonth(currentDate);
-    const end = endOfMonth(currentDate);
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
     
-    // Get the first day of the week for the start of month
-    const startDate = new Date(start);
-    startDate.setDate(startDate.getDate() - startDate.getDay());
-    
-    // Get the last day of the week for the end of month
-    const endDate = new Date(end);
-    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
-    
-    return eachDayOfInterval({ start: startDate, end: endDate });
-  }, [currentDate]);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-  // Group events by date
-  const eventsByDate = useMemo(() => {
-    const grouped: Record<string, CalendarEvent[]> = {};
-    
-    events.forEach(event => {
-      if (!grouped[event.event_date]) {
-        grouped[event.event_date] = [];
-      }
-      grouped[event.event_date].push(event);
-    });
-    
-    return grouped;
-  }, [events]);
+  // Calculate calendar days
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const calendarStart = startOfWeek(monthStart);
+  const calendarEnd = endOfWeek(monthEnd);
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   // Get events for a specific date
   const getEventsForDate = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd');
-    return eventsByDate[dateString] || [];
+    return events.filter(event => event.event_date === dateString);
   };
 
   // Format time for display
-  const formatTime = (timeString: string, isHourLog: boolean = false) => {
-    if (isHourLog || timeString === 'All Day' || !timeString || timeString.trim() === '') {
-      return '';
-    }
+  const formatTime = (timeString: string, isHourLog?: boolean) => {
+    if (isHourLog || timeString === 'All Day') return '';
     
     try {
-      const [hours, minutes] = timeString.split(':');
-      const hour = parseInt(hours, 10);
-      
-      if (isNaN(hour) || hour < 0 || hour > 23) {
-        return '';
-      }
-      
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-      return `${displayHour}:${minutes} ${ampm}`;
+      const [hours, minutes] = timeString.split(':').map(Number);
+      const hour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      return `${hour}:${minutes.toString().padStart(2, '0')} ${ampm}`;
     } catch (error) {
-      console.warn('Error formatting time:', timeString, error);
       return '';
     }
   };
 
-  // Common cell styling with CSS variables
-  const getCellClass = (date: Date) => {
-    const baseClass = "ease relative h-20 cursor-pointer border border-[hsl(var(--border))] p-2 transition duration-500 hover:bg-[hsl(var(--muted))] dark:border-[hsl(var(--sidebar-border))] dark:hover:bg-[hsl(var(--secondary))] md:h-25 md:p-6 xl:h-31";
+  // Get cell styling based on date and state
+  const getCellClass = (date: Date, dayEvents: CalendarEvent[]) => {
+    let baseClass = `
+      relative cursor-pointer border border-[hsl(var(--border))] 
+      transition-all duration-200 ease-in-out
+      hover:bg-[hsl(var(--muted))] hover:shadow-sm
+      ${isMobile ? 'h-16 p-1' : 'h-20 p-2 md:h-24 md:p-3 lg:h-28 lg:p-4'}
+    `;
     
+    // Outside current month
     if (!isSameMonth(date, currentDate)) {
-      return baseClass + " opacity-50";
+      baseClass += " opacity-50 bg-[hsl(var(--muted))]";
     }
     
+    // Today highlighting
     if (isToday(date)) {
-      return baseClass + " bg-[hsl(var(--accent))] ring-2 ring-[hsl(var(--primary))]";
+      baseClass += " bg-[hsl(var(--accent))] ring-2 ring-[hsl(var(--primary))] ring-inset";
     }
     
-    return baseClass;
+    // Clicked date highlighting
+    if (clickedDate && isSameDay(clickedDate, date)) {
+      baseClass += " bg-[hsl(var(--secondary))] ring-1 ring-[hsl(var(--ring))]";
+    }
+    
+    // Has events indicator
+    if (dayEvents.length > 0) {
+      baseClass += " shadow-sm";
+    }
+    
+    // Special event types get subtle background hints
+    const hasSpecialEvent = dayEvents.some(e => 
+      ['holiday', 'payday'].includes(e.event_type.toLowerCase()) ||
+      e.priority === 'urgent'
+    );
+    if (hasSpecialEvent) {
+      baseClass += " bg-gradient-to-br from-orange-50 to-transparent";
+    }
+    
+    return baseClass.trim();
   };
 
-  // Common text styling
+  // Get day number styling
   const getDayNumberClass = (date: Date) => {
-    let baseClass = "font-medium";
+    let baseClass = `font-medium ${isMobile ? 'text-sm' : 'text-base'}`;
     
     if (isToday(date)) {
       baseClass += " text-[hsl(var(--primary))] font-bold";
     } else if (!isSameMonth(date, currentDate)) {
       baseClass += " text-[hsl(var(--muted-foreground))]";
     } else {
-      baseClass += " text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]";
+      baseClass += " text-[hsl(var(--foreground))]";
     }
     
     return baseClass;
   };
 
-  // Handle event click with enhanced logic
+  // Handle event click
   const handleEventClick = (event: CalendarEvent) => {
     if (event.is_hour_log) {
-      // For hour logs, show persistent tooltip
       const eventDate = new Date(event.event_date);
       setClickedDate(clickedDate && isSameDay(clickedDate, eventDate) ? null : eventDate);
       setTooltipType('clicked-event');
     } else {
-      // For regular events, use the original handler
       onEventClick(event);
     }
   };
@@ -162,9 +163,10 @@ const CalendarBox = ({
   // Handle tooltip close
   const handleTooltipClose = () => {
     setClickedDate(null);
+    setHoveredDate(null);
   };
 
-  // Render calendar grid in weeks
+  // Render calendar grid
   const renderCalendarGrid = () => {
     const weeks = [];
     
@@ -180,11 +182,12 @@ const CalendarBox = ({
           const isFirstDay = weekIndex === 0 && dayIndex === 0;
           const isLastDay = weekIndex === weeks.length - 1 && dayIndex === 6;
           
-          let cellClass = getCellClass(date);
+          let cellClass = getCellClass(date, dayEvents);
           if (isFirstDay) cellClass += " rounded-bl-[var(--radius)]";
           if (isLastDay) cellClass += " rounded-br-[var(--radius)]";
 
-          const maxVisibleEvents = 3;
+          // Adjust max visible events based on screen size
+          const maxVisibleEvents = isMobile ? 1 : 3;
 
           return (
             <td
@@ -192,16 +195,33 @@ const CalendarBox = ({
               className={cellClass}
               onClick={() => handleDateClick(date)}
               onMouseEnter={() => {
-                setHoveredDate(date);
-                setTooltipType('hover');
+                if (!isMobile) {
+                  setHoveredDate(date);
+                  setTooltipType('hover');
+                }
               }}
-              onMouseLeave={() => setHoveredDate(null)}
+              onMouseLeave={() => {
+                if (!isMobile) {
+                  setHoveredDate(null);
+                }
+              }}
             >
-              <span className={getDayNumberClass(date)}>
-                {format(date, 'd')}
-              </span>
+              {/* Date number */}
+              <div className="flex items-center justify-between mb-1">
+                <span className={getDayNumberClass(date)}>
+                  {format(date, 'd')}
+                </span>
+                
+                {/* Event count indicator for mobile */}
+                {isMobile && dayEvents.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-full">
+                    {dayEvents.length}
+                  </span>
+                )}
+              </div>
               
-              <div className="mt-1 space-y-1 overflow-hidden">
+              {/* Events */}
+              <div className={`space-y-1 overflow-hidden ${isMobile ? 'h-8' : 'flex-1'}`}>
                 {dayEvents.slice(0, maxVisibleEvents).map((event, index) => (
                   <CalendarEvent
                     key={event.id}
@@ -210,18 +230,28 @@ const CalendarBox = ({
                     maxVisible={maxVisibleEvents}
                     onClick={handleEventClick}
                     formatTime={formatTime}
+                    isMobile={isMobile}
                   />
                 ))}
                 
+                {/* More events indicator */}
                 {dayEvents.length > maxVisibleEvents && (
-                  <div className="text-xs text-[hsl(var(--muted-foreground))] cursor-pointer hover:text-[hsl(var(--primary))]">
+                  <div 
+                    className={`text-xs text-[hsl(var(--muted-foreground))] cursor-pointer hover:text-[hsl(var(--primary))] font-medium ${
+                      isMobile ? 'text-center' : ''
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDateClick(date);
+                    }}
+                  >
                     +{dayEvents.length - maxVisibleEvents} more
                   </div>
                 )}
               </div>
 
-              {/* Hover tooltip */}
-              {hoveredDate && isSameDay(hoveredDate, date) && dayEvents.length > 0 && tooltipType === 'hover' && (
+              {/* Hover tooltip (desktop only) */}
+              {!isMobile && hoveredDate && isSameDay(hoveredDate, date) && dayEvents.length > 0 && tooltipType === 'hover' && (
                 <EventTooltip
                   date={date}
                   events={dayEvents}
@@ -230,19 +260,7 @@ const CalendarBox = ({
                   onEventClick={onEventClick}
                   tooltipType="hover"
                   userRole={userRole}
-                />
-              )}
-
-              {/* Persistent tooltip for clicked dates */}
-              {clickedDate && isSameDay(clickedDate, date) && dayEvents.length > 0 && tooltipType !== 'hover' && (
-                <EventTooltip
-                  date={date}
-                  events={dayEvents}
-                  isVisible={true}
-                  onClose={handleTooltipClose}
-                  onEventClick={handleEventClick}
-                  tooltipType={tooltipType}
-                  userRole={userRole}
+                  parentRef={calendarRef}
                 />
               )}
             </td>
@@ -252,28 +270,63 @@ const CalendarBox = ({
     ));
   };
 
-  return (
-    <div className="w-full max-w-full rounded-[var(--radius)] bg-[hsl(var(--background))] shadow-[var(--shadow-sm)] dark:bg-[hsl(var(--card))] dark:shadow-[var(--shadow-md)]">
-      <table className="w-full">
-        <thead>
-          <tr className="grid grid-cols-7 rounded-t-[var(--radius)] bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]">
-            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
-              <th
-                key={day}
-                className={`flex h-15 items-center justify-center p-1 text-body-xs font-medium sm:text-base xl:p-5 ${
-                  index === 0 ? 'rounded-tl-[var(--radius)]' : ''
-                } ${index === 6 ? 'rounded-tr-[var(--radius)]' : ''}`}
-              >
-                <span className="hidden lg:block">{day}</span>
-                <span className="block lg:hidden">{day.slice(0, 3)}</span>
-              </th>
+  if (loading) {
+    return (
+      <div className="w-full max-w-full rounded-[var(--radius)] bg-[hsl(var(--background))] shadow-sm">
+        <div className="animate-pulse">
+          <div className="h-12 bg-[hsl(var(--muted))] rounded-t-[var(--radius)] mb-4"></div>
+          <div className="grid grid-cols-7 gap-2 p-4">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="h-16 bg-[hsl(var(--muted))] rounded"></div>
             ))}
-          </tr>
-        </thead>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      ref={calendarRef}
+      className="w-full max-w-full rounded-[var(--radius)] bg-[hsl(var(--background))] shadow-sm border border-[hsl(var(--border))] overflow-hidden"
+    >
+      {/* Header */}
+      <div className="bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]">
+        <div className="grid grid-cols-7 rounded-t-[var(--radius)]">
+          {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+            <div
+              key={day}
+              className={`flex h-12 items-center justify-center p-2 text-sm font-medium ${
+                index === 0 ? 'rounded-tl-[var(--radius)]' : ''
+              } ${index === 6 ? 'rounded-tr-[var(--radius)]' : ''}`}
+            >
+              <span className={isMobile ? 'text-xs' : 'hidden lg:block'}>{day}</span>
+              <span className={isMobile ? 'hidden' : 'block lg:hidden'}>{day.slice(0, 3)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Calendar Grid */}
+      <table className="w-full">
         <tbody>
           {renderCalendarGrid()}
         </tbody>
       </table>
+
+      {/* Persistent tooltip for clicked dates */}
+      {clickedDate && (
+        <EventTooltip
+          date={clickedDate}
+          events={getEventsForDate(clickedDate)}
+          isVisible={true}
+          onClose={handleTooltipClose}
+          onEventClick={handleEventClick}
+          tooltipType={tooltipType}
+          userRole={userRole}
+          parentRef={calendarRef}
+        />
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-// app/dashboard/[id]/calendar/page.tsx - Integrated Touch Gestures (No Separate Mode)
+// app/dashboard/[id]/calendar/page.tsx - FIXED: Removed client filtering to trust API permissions
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -268,7 +268,7 @@ export default function CalendarPage() {
     coachName: slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
   });
 
-  // Filter events based on role (viewing user's role, not target user's role)
+  // FIXED: Trust API filtering - no additional frontend filtering for clients
   const displayEvents = useMemo(() => {
     let baseEvents = events || [];
     
@@ -277,39 +277,25 @@ export default function CalendarPage() {
       return baseEvents; // Show all events for the target user
     }
     
-    // Otherwise, apply normal role-based filtering
+    // FIXED: Let API handle permissions - only apply filtering for specific admin/coach use cases
     switch (userRole) {
       case 'admin1':
-        // Admins see all events        
-        break;
+        // Admins see all events - no filtering needed
+        return baseEvents;
       
       case 'coachx7':
-        // Job coaches see their own hour logs + assigned client events
-        baseEvents = baseEvents.filter(event => 
-          event.is_hour_log || // Show all hour logs for coaches
-          event.coach_name === user?.email ||
-          event.coach_name?.includes(user?.user_metadata?.display_name) ||
-          event.coach_name?.includes(user?.user_metadata?.name)
-        );        
-        break;
+        // For coaches, we might want to filter in some cases, but for now trust the API
+        return baseEvents;
       
       case 'client7x':
-        // Clients see their own events + coach hour logs (for transparency)
-        baseEvents = baseEvents.filter(event => 
-          event.client_name === user?.email ||
-          event.client_name?.includes(user?.user_metadata?.display_name) ||
-          event.client_name?.includes(user?.user_metadata?.name) ||
-          event.is_hour_log
-        );        
-        break;
+        // FIXED: Trust the API filtering - it already handles permissions correctly
+        // The API filters to show: assigned events OR events visible to clients (like paydays)
+        return baseEvents;
       
       default:
-        baseEvents = [];
-        break;
+        return [];
     }
-
-    return baseEvents;
-  }, [events, userRole, user, adminSelectedUser, slsSelectedUser]);
+  }, [events, userRole, adminSelectedUser, slsSelectedUser]);
 
   // Calculate loading state with more granular info
   const showLoading = (loading && !hasLoaded) || roleLoading;

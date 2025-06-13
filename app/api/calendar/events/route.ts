@@ -37,24 +37,16 @@ export async function GET(request: Request) {
         event_types (
           name,
           color_code,
-          description
+          description,
+          visible_to_coaches,
+          visible_to_clients,
+          visible_to_admins
         )
       `)
       .gte('event_date', start_date)
       .lte('event_date', end_date)
       .order('event_date', { ascending: true })
       .order('start_time', { ascending: true });
-
-    // Filter based on user role
-    if (user_role === 'admin1') {
-      // Admins see all events - no additional filtering
-    } else if (user_role === 'coachx7' && user_id) {
-      // Coaches see events where they are the coach
-      query = query.eq('coach_id', user_id);
-    } else if (user_role === 'client7x' && user_id) {
-      // Clients see events where they are the client
-      query = query.eq('client_id', user_id);
-    }
 
     const { data: events, error } = await query;
 
@@ -66,17 +58,47 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('[Calendar Events API] Found', events?.length || 0, 'calendar events');
+    console.log('[Calendar Events API] Found', events?.length || 0, 'raw calendar events');
+
+    // Filter events based on user role and permissions
+    const filteredEvents = (events || []).filter(event => {
+      const eventType = event.event_types;
+      
+      // If no event type, only admins can see it
+      if (!eventType) {
+        return user_role === 'admin1';
+      }
+
+      // Apply role-based filtering
+      switch (user_role) {
+        case 'admin1':
+          // Admins see all events unless explicitly hidden
+          return eventType.visible_to_admins !== false;
+          
+        case 'coachx7':
+          // Coaches see: events assigned to them OR events visible to coaches
+          return event.coach_id === user_id || eventType.visible_to_coaches === true;
+          
+        case 'client7x':
+          // Clients see: events assigned to them OR events visible to clients
+          return event.client_id === user_id || eventType.visible_to_clients === true;
+          
+        default:
+          return false;
+      }
+    });
+
+    console.log('[Calendar Events API] After filtering:', filteredEvents.length, 'events visible to', user_role);
 
     // NEW: Use our Supabase function to resolve display names efficiently
     let userProfiles: any = {};
     
-    if (events && events.length > 0) {
+    if (filteredEvents && filteredEvents.length > 0) {
       // Get unique user IDs from both client_id and coach_id
       const userIds = [
         ...new Set([
-          ...events.map(e => e.client_id).filter(Boolean),
-          ...events.map(e => e.coach_id).filter(Boolean)
+          ...filteredEvents.map(e => e.client_id).filter(Boolean),
+          ...filteredEvents.map(e => e.coach_id).filter(Boolean)
         ])
       ];
       
@@ -113,7 +135,7 @@ export async function GET(request: Request) {
     }
 
     // Transform events to match expected format
-    const transformedEvents = (events || []).map(event => {
+    const transformedEvents = (filteredEvents || []).map(event => {
       // NEW: Resolve client and coach names from profiles
       const clientProfile = userProfiles[event.client_id];
       const coachProfile = userProfiles[event.coach_id];

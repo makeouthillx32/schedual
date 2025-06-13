@@ -1,4 +1,4 @@
-// app/dashboard/[id]/calendar/page.tsx - FIXED: Removed client filtering to trust API permissions
+// app/dashboard/[id]/calendar/page.tsx - SIMPLIFIED: All interactions handled by CalendarBox
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,10 +8,10 @@ import CoachHoursModal from './_components/CoachHoursModal';
 import CalendarHeader from './_components/CalendarHeader';
 import UserRoleInfoPanel from './_components/UserRoleInfoPanel';
 import ExportMessage from './_components/ExportMessage';
-import CalendarContent from './_components/CalendarContent';
+import CalendarBox from '@/components/CalenderBox'; // Use the original CalendarBox path
 import UserCalendarViewer from './_components/UserCalendarViewer';
 import CalendarManager from './_components/CalendarManager';
-import CalendarContextMenu from './_components/CalendarContextMenu'; // Import the new context menu
+import CalendarContextMenu from './_components/CalendarContextMenu';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useAuth } from '@/app/provider';
 import { useCalendarPermissions } from '@/hooks/useCalendarPermissions';
@@ -39,7 +39,6 @@ interface CalendarEvent {
   duration_minutes: number;
 }
 
-// FIXED: Updated interface to match the API and useCalendarEvents hook
 interface CoachHoursData {
   report_date: string;
   hours_worked: number;
@@ -81,7 +80,7 @@ export default function CalendarPage() {
   const [showCalendarManager, setShowCalendarManager] = useState(false);
   const [showSLSManager, setShowSLSManager] = useState(false);
   
-  // NEW: Context menu state
+  // Context menu state
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -93,48 +92,6 @@ export default function CalendarPage() {
 
   // SLS Manager specific state
   const [slsSelectedUser, setSlsSelectedUser] = useState<UserProfile | null>(null);
-
-  // INTEGRATED: Disable browser behaviors but allow our context menu
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      // Only prevent default if it's not our calendar context menu
-      const target = e.target as HTMLElement;
-      if (!target.closest('.calendar-day') && !target.closest('.calendar-event')) {
-        e.preventDefault();
-      }
-    };
-    
-    const preventDefault = (e: Event) => e.preventDefault();
-    
-    // Disable text selection and drag behaviors
-    document.addEventListener('selectstart', preventDefault);
-    document.addEventListener('dragstart', preventDefault);
-    document.addEventListener('contextmenu', handleContextMenu);
-    
-    // Disable text selection globally
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
-    document.body.style.mozUserSelect = 'none';
-    document.body.style.msUserSelect = 'none';
-    
-    // Disable touch callouts on mobile
-    document.body.style.webkitTouchCallout = 'none';
-    document.body.style.webkitUserDrag = 'none';
-    
-    return () => {
-      document.removeEventListener('selectstart', preventDefault);
-      document.removeEventListener('dragstart', preventDefault);
-      document.removeEventListener('contextmenu', handleContextMenu);
-      
-      // Restore default behaviors on cleanup
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
-      document.body.style.mozUserSelect = '';
-      document.body.style.msUserSelect = '';
-      document.body.style.webkitTouchCallout = '';
-      document.body.style.webkitUserDrag = '';
-    };
-  }, []);
 
   // Fetch user role from profiles table
   useEffect(() => {
@@ -166,12 +123,8 @@ export default function CalendarPage() {
     fetchUserRole();
   }, [user?.id]);
   
-  // FIXED: Admin permissions should be role-based, not user-specific
-  // If user is admin, use hardcoded admin permissions immediately
   const isAdmin = userRole === 'admin1';
   
-  // For admins: use fallback permissions immediately (role-based)
-  // For others: try dynamic permissions first, then fallback
   const { 
     permissions: dynamicPermissions, 
     loading: permissionsLoading, 
@@ -180,7 +133,6 @@ export default function CalendarPage() {
     refetch: refetchPermissions 
   } = useCalendarPermissions(isAdmin ? null : user?.id || null, userRole);
 
-  // FALLBACK: Static permissions in case dynamic permissions fail - RESTORED EXPORT FOR ALL
   const fallbackPermissions = useMemo(() => {    
     switch (userRole) {
       case 'admin1':
@@ -188,10 +140,10 @@ export default function CalendarPage() {
           canCreateEvents: true,
           canEditEvents: true,
           canDeleteEvents: true,
-          canLogHours: true,  // FIXED: Admins can log hours
+          canLogHours: true,
           canViewAllEvents: true,
           canManageUsers: true,
-          canExportData: true // RESTORED: Admins can export
+          canExportData: true
         };
       case 'coachx7':
         return {
@@ -201,7 +153,7 @@ export default function CalendarPage() {
           canLogHours: true,
           canViewAllEvents: false,
           canManageUsers: false,
-          canExportData: true // RESTORED: Coaches can export
+          canExportData: true
         };
       case 'client7x':
         return {
@@ -211,7 +163,7 @@ export default function CalendarPage() {
           canLogHours: false,
           canViewAllEvents: false,
           canManageUsers: false,
-          canExportData: true // RESTORED: Clients can export
+          canExportData: true
         };
       default:
         return {
@@ -226,25 +178,11 @@ export default function CalendarPage() {
     }
   }, [userRole]);
 
-  // Use role-based permissions for admins, dynamic for others
   const finalPermissions = isAdmin 
-    ? fallbackPermissions // Admins always get full permissions based on role
+    ? fallbackPermissions
     : ((!permissionsLoading && !permissionsError && dynamicPermissions) 
         ? dynamicPermissions 
         : fallbackPermissions);
-
-  // Debug log for permissions (remove this after testing)
-  useEffect(() => {
-    console.log('🔐 Permissions Debug:', {
-      userRole,
-      isAdmin,
-      permissionsLoading,
-      permissionsError,
-      dynamicPermissions,
-      fallbackPermissions,
-      finalPermissions
-    });
-  }, [userRole, isAdmin, permissionsLoading, permissionsError, dynamicPermissions, fallbackPermissions, finalPermissions]);
 
   // Get events for current user OR selected admin target user OR SLS selected user
   const targetUserId = slsSelectedUser?.id || adminSelectedUser?.id || user?.id;
@@ -268,39 +206,20 @@ export default function CalendarPage() {
     coachName: slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
   });
 
-  // FIXED: Trust API filtering - no additional frontend filtering for clients
+  // SIMPLIFIED: Trust API filtering - no additional frontend filtering
   const displayEvents = useMemo(() => {
     let baseEvents = events || [];
     
-    // If admin is viewing another user's calendar (from either selector), show all events for that user
+    // If admin is viewing another user's calendar, show all events for that user
     if (userRole === 'admin1' && (adminSelectedUser || slsSelectedUser)) {
-      return baseEvents; // Show all events for the target user
+      return baseEvents;
     }
     
-    // FIXED: Let API handle permissions - only apply filtering for specific admin/coach use cases
-    switch (userRole) {
-      case 'admin1':
-        // Admins see all events - no filtering needed
-        return baseEvents;
-      
-      case 'coachx7':
-        // For coaches, we might want to filter in some cases, but for now trust the API
-        return baseEvents;
-      
-      case 'client7x':
-        // FIXED: Trust the API filtering - it already handles permissions correctly
-        // The API filters to show: assigned events OR events visible to clients (like paydays)
-        return baseEvents;
-      
-      default:
-        return [];
-    }
+    // For all other cases, trust the API filtering
+    return baseEvents;
   }, [events, userRole, adminSelectedUser, slsSelectedUser]);
 
-  // Calculate loading state with more granular info
   const showLoading = (loading && !hasLoaded) || roleLoading;
-  const isLoadingTargetUser = (slsSelectedUser || adminSelectedUser) && loading;
-  const isLoadingOwnCalendar = (!slsSelectedUser && !adminSelectedUser) && loading;
 
   // Navigation handlers
   const handleNavigateMonth = (direction: 'prev' | 'next') => {
@@ -319,7 +238,22 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  // FIXED: Right-click context menu handlers
+  // SIMPLIFIED: Event handlers - only for opening modals
+  const handleEventClick = (event: CalendarEvent) => {
+    // Only open modal for regular events (not hour logs)
+    if (!event.is_hour_log && (finalPermissions.canEditEvents || finalPermissions.canViewAllEvents)) {
+      setSelectedEvent(event);
+      setSelectedDate(new Date(event.event_date));
+      setIsEventModalOpen(true);
+    }
+  };
+
+  const handleDateClick = (date: Date) => {
+    // Just for logging - CalendarBox handles the tooltip
+    console.log('📅 Date clicked from page:', date);
+  };
+
+  // Context menu handlers
   const handleDateRightClick = (e: React.MouseEvent, date: Date, events: CalendarEvent[]) => {
     e.preventDefault();
     console.log('📅 Date right-clicked (CONTEXT MENU):', date);
@@ -360,31 +294,6 @@ export default function CalendarPage() {
     });
   };
 
-  // Context menu action handlers
-  const handleContextViewEvents = (date: Date, events: CalendarEvent[]) => {
-    console.log(`📋 Viewing ${events.length} events for ${date.toLocaleDateString()}`);
-    // Could open a detailed view modal or expand the first event
-    if (events.length > 0) {
-      // For now, just edit the first event
-      setSelectedEvent(events[0]);
-      setSelectedDate(new Date(events[0].event_date));
-      setIsEventModalOpen(true);
-    }
-  };
-
-  // SIMPLIFIED: Event handlers - Left click shows popup, Right click shows context menu
-  const handleDateClick = (date: Date) => {
-    console.log('📅 Date clicked/tapped (VIEW MODE):', date);
-    // Let CalendarContent handle showing popup/tooltip
-    return;
-  };
-
-  const handleEventClick = (event: CalendarEvent) => {
-    console.log('🎯 Event clicked (VIEW MODE):', event.title);
-    // Let CalendarContent handle showing popup/tooltip  
-    return;
-  };
-
   // Action handlers
   const handleLogHours = (date?: Date) => {
     setSelectedDate(date || new Date());
@@ -397,15 +306,13 @@ export default function CalendarPage() {
     setIsEventModalOpen(true);
   };
 
-  // Admin user selection handler
+  // Admin user selection handlers
   const handleAdminUserSelect = (selectedUser: UserProfile | null) => {
     setAdminSelectedUser(selectedUser);
-    // Close any open admin modals when user changes
     setShowCalendarManager(false);
     setShowSLSManager(false);
   };
 
-  // SLS Manager user selection handler
   const handleSlsUserSelect = (selectedUser: UserProfile | null) => {
     setSlsSelectedUser(selectedUser);
   };
@@ -416,8 +323,6 @@ export default function CalendarPage() {
       console.error('No user selected or not authenticated');
       return;
     }
-
-    console.log('🔥 Calendar page received event data from SLS Manager:', eventData);
 
     try {
       const response = await fetch('/api/calendar/sls-events', {
@@ -449,11 +354,7 @@ export default function CalendarPage() {
       }
 
       const result = await response.json();
-      console.log('✅ SLS event created successfully:', result);
-      
-      // Refresh calendar to show new event
       refetch();
-      
       return result;
     } catch (error) {
       console.error('❌ Error creating SLS event:', error);
@@ -475,7 +376,6 @@ export default function CalendarPage() {
   const handleCloseAdminModals = () => {
     setShowCalendarManager(false);
     setShowSLSManager(false);
-    // RESTORED: Clear selected users when closing managers to go back to own calendar
     setAdminSelectedUser(null);
     setSlsSelectedUser(null);
   };
@@ -520,12 +420,10 @@ export default function CalendarPage() {
     }
   };
 
-  // FIXED: Updated to match the correct interface
   const handleHoursSubmit = async (hoursData: CoachHoursData) => {
     if (!finalPermissions.canLogHours) return;
 
     try {
-      console.log('🏗️ Calendar page submitting hours:', hoursData);
       await logHours(hoursData);
       setIsHoursModalOpen(false);
       setSelectedDate(null);
@@ -578,13 +476,12 @@ export default function CalendarPage() {
             <div className="text-sm text-gray-600 text-center">
               {roleLoading && "Loading user role..."}
               {permissionsLoading && "Loading permissions..."}
-              {isLoadingTargetUser && `Loading ${slsSelectedUser?.display_name || adminSelectedUser?.display_name || 'target user'}'s calendar...`}
-              {isLoadingOwnCalendar && "Loading your calendar..."}
+              {loading && "Loading calendar..."}
             </div>
           </div>
         )}
 
-        {/* Calendar Header - RESTORED with export functionality */}
+        {/* Calendar Header */}
         <CalendarHeader
           currentDate={currentDate}
           viewMode={viewMode}
@@ -598,7 +495,7 @@ export default function CalendarPage() {
           onSetViewMode={setViewMode}
           onOpenHoursModal={handleLogHours}
           onOpenEventModal={handleCreateEvent}
-          exportHandlers={exportHandlers} // RESTORED: Export functionality
+          exportHandlers={exportHandlers}
         />
 
         {/* Export Message */}
@@ -616,32 +513,28 @@ export default function CalendarPage() {
           />
         )}
 
-        {/* Role-based info panel - Updated to show target user info */}
+        {/* Role-based info panel */}
         <UserRoleInfoPanel 
           userRole={userRole} 
           roleLoading={roleLoading}
           selectedUser={slsSelectedUser || adminSelectedUser}
         />
 
-        {/* SIMPLIFIED: Calendar Content with right-click context menu */}
-        <CalendarContent
-          showLoading={showLoading}
-          error={error}
-          roleLoading={roleLoading}
+        {/* MAIN CALENDAR - All interactions handled internally */}
+        <CalendarBox
           currentDate={currentDate}
-          displayEvents={displayEvents}
-          viewMode={viewMode}
+          events={displayEvents}
           userRole={userRole}
-          onDateClick={handleDateClick} // Left click = show popup
-          onEventClick={handleEventClick} // Left click = show popup
-          onRefetch={refetch}
-          // NEW: Right-click handlers for context menu
+          loading={showLoading}
+          onEventClick={handleEventClick}
+          onDateClick={handleDateClick}
+          onLogHours={handleLogHours}
+          onCreateEvent={handleCreateEvent}
           onDateRightClick={handleDateRightClick}
           onEventRightClick={handleEventRightClick}
-          disableBrowserDefaults={true}
         />
 
-        {/* NEW: Context Menu */}
+        {/* Context Menu */}
         <CalendarContextMenu
           menu={contextMenu}
           permissions={finalPermissions}
@@ -664,10 +557,16 @@ export default function CalendarPage() {
               }
             }
           }}
-          onViewEvents={handleContextViewEvents}
+          onViewEvents={(date, events) => {
+            if (events.length > 0) {
+              setSelectedEvent(events[0]);
+              setSelectedDate(new Date(events[0].event_date));
+              setIsEventModalOpen(true);
+            }
+          }}
         />
 
-        {/* Event Modal - only show for users with event permissions */}
+        {/* Event Modal */}
         {(finalPermissions.canCreateEvents || finalPermissions.canEditEvents) && (
           <EventModal
             isOpen={isEventModalOpen}
@@ -683,7 +582,7 @@ export default function CalendarPage() {
           />
         )}
 
-        {/* Coach Hours Modal - only show for coaches and admins with logHours permission */}
+        {/* Coach Hours Modal */}
         {finalPermissions.canLogHours && (
           <CoachHoursModal
             isOpen={isHoursModalOpen}
@@ -697,7 +596,7 @@ export default function CalendarPage() {
           />
         )}
 
-        {/* Calendar Manager - Integrated into page */}
+        {/* Calendar Manager */}
         {showCalendarManager && (
           <div className="mb-6">
             <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-sm">
@@ -720,7 +619,7 @@ export default function CalendarPage() {
           </div>
         )}
 
-        {/* SLS Manager - Fixed with proper props */}
+        {/* SLS Manager */}
         {showSLSManager && (
           <div className="mb-6">
             <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-lg shadow-sm">
@@ -745,19 +644,6 @@ export default function CalendarPage() {
             </div>
           </div>
         )}
-
-        {/* SIMPLIFIED: Interaction instructions */}
-        <div className="mt-4 p-3 bg-[hsl(var(--muted))] rounded-lg border">
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">
-            <div className="font-medium mb-2 text-[hsl(var(--foreground))]">📱 Interaction Guide:</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-              <div>• <strong>Left click/tap:</strong> View details popup</div>
-              <div>• <strong>Right click:</strong> Action menu (create, edit, copy, delete)</div>
-              <div>• <strong>Mobile long press:</strong> Same as right click</div>
-              <div>• <strong>Browser selection:</strong> Disabled for better mobile experience</div>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

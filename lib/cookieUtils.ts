@@ -262,6 +262,11 @@ export const CACHE_KEYS = {
   USER_PROFILES: 'userProfiles',
   MESSAGE_ATTACHMENTS: (messageId: string) => `attachments_${messageId}`,
   READ_STATUS: (userId: string) => `readStatus_${userId}`,
+  // 🎨 THEME CACHE KEYS (RESTORED)
+  THEMES: 'themes',
+  THEME_FONTS: 'themeFonts',
+  USER_THEME: (userId: string) => `userTheme_${userId}`,
+  THEME_METADATA: 'themeMetadata',
 };
 
 export const CACHE_EXPIRY = {
@@ -305,6 +310,52 @@ export const cacheHelpers = {
 
   clearConversationCaches: (userId: string): void => {
     storage.invalidateConversations(userId);
+  },
+
+  // 🎨 THEME CACHE HELPERS (RESTORED)
+  cacheThemes: (themes: any[]): void => {
+    storage.set(CACHE_KEYS.THEMES, themes, CACHE_EXPIRY.DAY);
+    console.log(`[CacheHelper] 🎨 Cached ${themes.length} themes`);
+  },
+
+  getCachedThemes: (): any[] | null => {
+    const themes = storage.get(CACHE_KEYS.THEMES);
+    if (themes && Array.isArray(themes)) {
+      console.log(`[CacheHelper] 🎨 Retrieved ${themes.length} themes from cache`);
+      return themes;
+    }
+    return null;
+  },
+
+  cacheThemeFonts: (fonts: any[]): void => {
+    storage.set(CACHE_KEYS.THEME_FONTS, fonts, CACHE_EXPIRY.DAY);
+    console.log(`[CacheHelper] 🔤 Cached ${fonts.length} theme fonts`);
+  },
+
+  getCachedThemeFonts: (): any[] | null => {
+    const fonts = storage.get(CACHE_KEYS.THEME_FONTS);
+    if (fonts && Array.isArray(fonts)) {
+      console.log(`[CacheHelper] 🔤 Retrieved ${fonts.length} theme fonts from cache`);
+      return fonts;
+    }
+    return null;
+  },
+
+  cacheUserTheme: (userId: string, themeData: any): void => {
+    storage.set(CACHE_KEYS.USER_THEME(userId), themeData, CACHE_EXPIRY.WEEK, userId);
+    console.log(`[CacheHelper] 🎨 Cached theme for user ${userId.slice(-4)}`);
+  },
+
+  getCachedUserTheme: (userId: string): any | null => {
+    return storage.get(CACHE_KEYS.USER_THEME(userId), null, userId);
+  },
+
+  invalidateThemeCaches: (): void => {
+    console.log('[CacheHelper] 🎨 Invalidating theme caches...');
+    storage.remove(CACHE_KEYS.THEMES);
+    storage.remove(CACHE_KEYS.THEME_FONTS);
+    storage.remove(CACHE_KEYS.THEME_METADATA);
+    console.log('[CacheHelper] ✅ Theme caches invalidated');
   }
 };
 

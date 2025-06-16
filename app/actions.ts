@@ -7,28 +7,108 @@ import { encodedRedirect } from "@/utils/utils";
 import { cookies } from "next/headers";
 import { sendNotification } from "@/lib/notifications";
 
-// Helper function to get and clear last page with proper exclusions
 const getAndClearLastPage = async (): Promise<string> => {
   const store = await cookies();
   const allCookies = store.getAll();
   const lastPageCookie = allCookies.find((c) => c.name === "lastPage");
-
   let lastPage = lastPageCookie?.value || "/";
-
-  // Clear the lastPage cookie after using it
   store.delete("lastPage");
-
-  // Exclude auth pages and problematic pages from redirect
   const excludedPages = ["/sign-in", "/sign-up", "/forgot-password"];
-  const pageWithoutHash = lastPage.split('#')[0]; // Handle hash routes
-  
+  const pageWithoutHash = lastPage.split('#')[0];
   if (excludedPages.includes(pageWithoutHash)) {
     console.log(`[Auth] Excluded page detected (${lastPage}), redirecting to /`);
     lastPage = "/";
   }
-
   console.log(`[Auth] Redirecting to: ${lastPage}`);
   return lastPage;
+};
+
+const populateUserCookies = async (userId: string) => {
+  try {
+    const supabase = await createClient();
+    const store = await cookies();
+    
+    console.log(`[Auth] 🍪 Populating cookies for user ${userId.slice(-4)}`);
+    
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("role, display_name, department, specialization, avatar_url")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("[Auth] ❌ Profile fetch failed:", profileError.message);
+      return;
+    }
+
+    if (!profileData?.role) {
+      console.error("[Auth] ❌ No role found in profile");
+      return;
+    }
+
+    const validRoles = ['admin1', 'coachx7', 'client7x', 'user0x'];
+    if (!validRoles.includes(profileData.role)) {
+      console.warn(`[Auth] ⚠️ Invalid role: ${profileData.role}, using user0x`);
+      profileData.role = 'user0x';
+    }
+
+    store.set("userRole", profileData.role, { 
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/",
+      secure: true,
+      sameSite: "lax" 
+    });
+    
+    store.set("userRoleUserId", userId, { 
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/",
+      secure: true,
+      sameSite: "lax" 
+    });
+
+    if (profileData.display_name) {
+      store.set("userDisplayName", profileData.display_name, { 
+        maxAge: 30 * 24 * 60 * 60,
+        path: "/",
+        secure: true,
+        sameSite: "lax" 
+      });
+    }
+
+    if (profileData.department) {
+      store.set("userDepartment", profileData.department, { 
+        maxAge: 30 * 24 * 60 * 60,
+        path: "/",
+        secure: true,
+        sameSite: "lax" 
+      });
+    }
+
+    const rolePermissions = await supabase
+      .rpc('get_role_permissions', {
+        user_role_type: profileData.role
+      });
+
+    if (!rolePermissions.error && rolePermissions.data) {
+      const permissionsData = {
+        timestamp: Date.now(),
+        permissions: rolePermissions.data,
+        role: profileData.role
+      };
+      
+      store.set("userPermissions", JSON.stringify(permissionsData), { 
+        maxAge: 5 * 60,
+        path: "/",
+        secure: true,
+        sameSite: "lax" 
+      });
+    }
+
+    console.log(`[Auth] ✅ Cookies populated successfully for ${profileData.role} user`);
+    
+  } catch (error) {
+    console.error("[Auth] ❌ Cookie population failed:", error);
+  }
 };
 
 export const signUpAction = async (formData: FormData) => {
@@ -80,7 +160,6 @@ export const signUpAction = async (formData: FormData) => {
         })
         .eq("id", data.user.id);
   
-      // ✅ Here you DELETE the invite after use
       await supabase
         .from("invites")
         .delete()
@@ -88,7 +167,6 @@ export const signUpAction = async (formData: FormData) => {
     }
   } else {
     console.log("🔥 NO INVITE CODE - SETTING DEFAULT ROLE");
-    // If no invite code, fetch and assign default user role from roles table
     const { data: roleData, error: roleError } = await supabase
       .from("roles")
       .select("id")
@@ -110,7 +188,6 @@ export const signUpAction = async (formData: FormData) => {
     }
   }
   
-  // Get the user's avatar for the notification (skip display_name)
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select("avatar_url")
@@ -119,17 +196,14 @@ export const signUpAction = async (formData: FormData) => {
 
   console.log("🔥 PROFILE FETCH:", { profileData, profileError: profileError?.message });
 
-  // Send notification to admins about the new sign-up
   try {
     console.log("🔥 SENDING NOTIFICATION...");
-    
     await sendNotification({
       title: `${email} joined the team!`,
       subtitle: "Tell them welcome!",
       imageUrl: profileData?.avatar_url || "https://chsmesvozsjcgrwuimld.supabase.co/storage/v1/object/public/avatars/Default.png",
       role_admin: true,
     });
-    
     console.log("🔥 NOTIFICATION SENT SUCCESSFULLY!");
   } catch (error) {
     console.error("🔥 NOTIFICATION FAILED:", error);
@@ -149,14 +223,27 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  console.log("[Auth] 🔐 Sign-in attempt for:", email);
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    console.error("[Auth] ❌ Sign-in failed:", error.message);
     return encodedRedirect("error", "/sign-in", error.message);
   }
 
-  // Get the last page and redirect there
+  if (!data.user?.id) {
+    console.error("[Auth] ❌ No user data returned");
+    return encodedRedirect("error", "/sign-in", "Authentication failed");
+  }
+
+  console.log(`[Auth] ✅ Sign-in successful for user ${data.user.id.slice(-4)}`);
+
+  await populateUserCookies(data.user.id);
+
   const lastPage = await getAndClearLastPage();
+  console.log(`[Auth] 🚀 Redirecting to: ${lastPage}`);
+  
   return redirect(`${lastPage}?refresh=true`);
 };
 
@@ -212,6 +299,16 @@ export const resetPasswordAction = async (formData: FormData) => {
 
 export const signOutAction = async () => {
   const supabase = await createClient();
+  const store = await cookies();
+  
+  console.log("[Auth] 🚪 Signing out and clearing cookies");
+  
+  store.delete("userRole");
+  store.delete("userRoleUserId");
+  store.delete("userDisplayName");
+  store.delete("userDepartment");
+  store.delete("userPermissions");
+  
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };

@@ -1,4 +1,4 @@
-// hooks/useCalendarPermissions.ts
+// hooks/useCalendarPermissions.ts - Updated to use new role_permissions table
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
@@ -19,12 +19,10 @@ interface CalendarPermissions {
   canManageCalendar: boolean;
 }
 
-interface PermissionRecord {
-  permission_type: string;
+interface RolePermissionRecord {
+  permission_name: string;
+  is_granted: boolean;
   resource_type: string;
-  permission_level: string;
-  specific_actions: string[];
-  metadata: any;
 }
 
 export function useCalendarPermissions(userId: string | null, userRole: string | null) {
@@ -43,22 +41,10 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Map role IDs correctly - these should match your actual database role IDs
-  const getRoleType = (roleId: string): string => {
-    // Now we use the role IDs directly since that's what the database expects
-    switch (roleId) {
-      case 'admin1': return 'admin1';
-      case 'coachx7': return 'coachx7'; 
-      case 'client7x': return 'client7x';
-      case 'user0x': return 'user0x';
-      default: return 'user0x';
-    }
-  };
-
-  // Fetch permissions from database
-  const fetchPermissions = async () => {
-    if (!userId || !userRole) {
-      console.log('[Permissions] No user ID or role provided');
+  // Fetch permissions from new role_permissions table
+  const fetchRolePermissions = async () => {
+    if (!userRole) {
+      console.log('[RolePermissions] No user role provided');
       setPermissions({
         canCreateEvents: false,
         canEditEvents: false,
@@ -77,41 +63,25 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
     setError(null);
 
     try {
-      const roleType = getRoleType(userRole);
-      console.log('[Permissions] Fetching permissions for user:', userId, 'role:', userRole, 'type:', roleType);
+      console.log('[RolePermissions] Fetching permissions for role:', userRole);
 
-      // Call the database function to get user permissions
-      const { data: userPermissions, error: permError } = await supabase
-        .rpc('get_user_permissions', {
-          user_uuid: userId,
-          user_role_type: roleType
+      // Call the new role permissions function
+      const { data: rolePermissions, error: permError } = await supabase
+        .rpc('get_role_permissions', {
+          user_role_type: userRole
         });
 
       if (permError) {
-        console.error('[Permissions] Error fetching user-specific permissions:', permError);
-        
-        // Fallback to role-based permissions
-        const { data: rolePermissions, error: roleError } = await supabase
-          .from('calendar_permissions')
-          .select('permission_type, resource_type, permission_level, specific_actions, metadata')
-          .eq('shared_with_type', roleType)
-          .eq('permission_type', 'role_based')
-          .eq('is_active', true);
-
-        if (roleError) {
-          throw new Error(`Failed to fetch permissions: ${roleError.message}`);
-        }
-
-        console.log('[Permissions] Using role-based fallback permissions:', rolePermissions);
-        parsePermissions(rolePermissions || []);
-      } else {
-        console.log('[Permissions] Fetched user permissions:', userPermissions);
-        parsePermissions(userPermissions || []);
+        console.error('[RolePermissions] Error fetching role permissions:', permError);
+        throw new Error(`Failed to fetch role permissions: ${permError.message}`);
       }
 
+      console.log('[RolePermissions] Fetched role permissions:', rolePermissions);
+      parseRolePermissions(rolePermissions || []);
+
     } catch (err) {
-      console.error('[Permissions] Error in fetchPermissions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch permissions');
+      console.error('[RolePermissions] Error in fetchRolePermissions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch role permissions');
       
       // Fallback to hardcoded permissions based on role
       setFallbackPermissions(userRole);
@@ -120,8 +90,8 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
     }
   };
 
-  // Parse permission records into boolean flags
-  const parsePermissions = (permissionRecords: PermissionRecord[]) => {
+  // Parse role permission records into boolean flags
+  const parseRolePermissions = (permissionRecords: RolePermissionRecord[]) => {
     const newPermissions: CalendarPermissions = {
       canCreateEvents: false,
       canEditEvents: false,
@@ -134,59 +104,46 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
       canManageCalendar: false,
     };
 
+    // Map database permissions to our interface
     permissionRecords.forEach(perm => {
-      // Check permission level
-      const hasAdminLevel = perm.permission_level === 'admin';
-      const hasWriteLevel = perm.permission_level === 'write' || hasAdminLevel;
-      
-      // Check specific actions
-      const actions = perm.specific_actions || [];
-      
-      // Map permissions
-      if (hasAdminLevel || actions.includes('create_events') || perm.permission_level === 'create_events') {
-        newPermissions.canCreateEvents = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('edit_events') || perm.permission_level === 'edit_events') {
-        newPermissions.canEditEvents = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('delete_events') || perm.permission_level === 'delete_events') {
-        newPermissions.canDeleteEvents = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('log_hours') || perm.permission_level === 'log_hours') {
-        newPermissions.canLogHours = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('view_all_events') || perm.permission_level === 'view_all_events') {
-        newPermissions.canViewAllEvents = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('manage_users') || perm.permission_level === 'manage_users') {
-        newPermissions.canManageUsers = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('export_data') || perm.permission_level === 'export_data') {
-        newPermissions.canExportData = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('sls_create') || perm.permission_level === 'sls_create') {
-        newPermissions.canCreateSLS = true;
-      }
-      
-      if (hasAdminLevel || actions.includes('calendar_manage') || perm.permission_level === 'calendar_manage') {
-        newPermissions.canManageCalendar = true;
+      switch (perm.permission_name) {
+        case 'create_events':
+          newPermissions.canCreateEvents = perm.is_granted;
+          break;
+        case 'edit_events':
+          newPermissions.canEditEvents = perm.is_granted;
+          break;
+        case 'delete_events':
+          newPermissions.canDeleteEvents = perm.is_granted;
+          break;
+        case 'log_hours':
+          newPermissions.canLogHours = perm.is_granted;
+          break;
+        case 'view_all_events':
+          newPermissions.canViewAllEvents = perm.is_granted;
+          break;
+        case 'manage_users':
+          newPermissions.canManageUsers = perm.is_granted;
+          break;
+        case 'export_data':
+          newPermissions.canExportData = perm.is_granted;
+          break;
+        case 'sls_create':
+          newPermissions.canCreateSLS = perm.is_granted;
+          break;
+        case 'manage_calendar':
+          newPermissions.canManageCalendar = perm.is_granted;
+          break;
       }
     });
 
-    console.log('[Permissions] Parsed permissions:', newPermissions);
+    console.log('[RolePermissions] Parsed permissions:', newPermissions);
     setPermissions(newPermissions);
   };
 
   // Fallback to hardcoded permissions if database fails
   const setFallbackPermissions = (role: string) => {
-    console.log('[Permissions] Using fallback permissions for role:', role);
+    console.log('[RolePermissions] Using fallback permissions for role:', role);
     
     switch (role) {
       case 'admin1':
@@ -225,7 +182,7 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
           canLogHours: false,
           canViewAllEvents: false,
           canManageUsers: false,
-          canExportData: true, // 🔥 FIXED: Changed from false to true - Clients can now export their calendar data
+          canExportData: true, // ✅ Clients can export
           canCreateSLS: false,
           canManageCalendar: false,
         });
@@ -247,10 +204,10 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
     }
   };
 
-  // Fetch permissions when user or role changes
+  // Fetch permissions when role changes
   useEffect(() => {
-    fetchPermissions();
-  }, [userId, userRole]);
+    fetchRolePermissions();
+  }, [userRole]);
 
   // Helper function to check specific permission
   const hasPermission = (permission: keyof CalendarPermissions): boolean => {
@@ -274,6 +231,6 @@ export function useCalendarPermissions(userId: string | null, userRole: string |
     hasPermission,
     hasAllPermissions,
     hasAnyPermission,
-    refetch: fetchPermissions
+    refetch: fetchRolePermissions
   };
 }

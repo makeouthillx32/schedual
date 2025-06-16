@@ -1,4 +1,4 @@
-// app/dashboard/[id]/calendar/page.tsx - FIXED: Added CalendarExport component
+// app/dashboard/[id]/calendar/page.tsx - Optimized with cookie-based role caching
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -17,8 +17,7 @@ import CalendarContextMenu from './_components/CalendarContextMenu';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useAuth } from '@/app/provider';
 import { useCalendarPermissions } from '@/hooks/useCalendarPermissions';
-import { useCalendarRole } from '@/hooks/useCalendarRole';
-import { useCalendarModals } from '@/hooks/useCalendarModals';
+import { userRoleCookies, profileCache } from '@/lib/cookieUtils';
 
 interface CalendarEvent {
   id: string;
@@ -42,6 +41,16 @@ interface CalendarEvent {
   duration_minutes: number;
 }
 
+interface CoachHoursData {
+  report_date: string;
+  hours_worked: number;
+  work_location_id?: string;
+  location?: string;
+  activity_type?: string;
+  notes?: string;
+  initials?: string;
+}
+
 interface UserProfile {
   id: string;
   email: string;
@@ -56,16 +65,21 @@ interface UserProfile {
 
 export default function CalendarPage() {
   const { user } = useAuth();
-  const { userRole, setUserRole, roleLoading, isAdmin, fallbackPermissions } = useCalendarRole(user);
   
+  const [userRole, setUserRole] = useState<string>(() => {
+    return user?.id ? userRoleCookies.getUserRole(user.id) || 'user0x' : 'user0x';
+  });
+  const [roleLoading, setRoleLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [exportMessage, setExportMessage] = useState<string | null>(null);
-  
   const [adminSelectedUser, setAdminSelectedUser] = useState<UserProfile | null>(null);
   const [showCalendarManager, setShowCalendarManager] = useState(false);
   const [showSLSManager, setShowSLSManager] = useState(false);
-  
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -74,7 +88,6 @@ export default function CalendarPage() {
     events: [] as CalendarEvent[],
     targetEvent: null as CalendarEvent | null
   });
-
   const [slsSelectedUser, setSlsSelectedUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
@@ -84,25 +97,20 @@ export default function CalendarPage() {
         e.preventDefault();
       }
     };
-    
     const preventDefault = (e: Event) => e.preventDefault();
-    
     document.addEventListener('selectstart', preventDefault);
     document.addEventListener('dragstart', preventDefault);
     document.addEventListener('contextmenu', handleContextMenu);
-    
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
     document.body.style.mozUserSelect = 'none';
     document.body.style.msUserSelect = 'none';
     document.body.style.webkitTouchCallout = 'none';
     document.body.style.webkitUserDrag = 'none';
-    
     return () => {
       document.removeEventListener('selectstart', preventDefault);
       document.removeEventListener('dragstart', preventDefault);
       document.removeEventListener('contextmenu', handleContextMenu);
-      
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
       document.body.style.mozUserSelect = '';
@@ -111,6 +119,40 @@ export default function CalendarPage() {
       document.body.style.webkitUserDrag = '';
     };
   }, []);
+
+  useEffect(() => {
+    async function fetchUserRole() {
+      if (!user?.id) {
+        setRoleLoading(false);
+        return;
+      }
+      const cachedProfile = profileCache.getProfile(user.id);
+      if (cachedProfile?.role) {
+        setUserRole(cachedProfile.role);
+        setRoleLoading(false);
+        return;
+      }
+      setRoleLoading(true);
+      try {
+        const role = await userRoleCookies.getRoleWithFallback(user.id, `/api/profile/${user.id}`);
+        setUserRole(role);
+        const response = await fetch(`/api/profile/${user.id}`);
+        if (response.ok) {
+          const profileData = await response.json();
+          profileCache.setProfile(user.id, profileData);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+        const fallbackRole = user?.user_metadata?.role || user?.app_metadata?.role || 'user0x';
+        setUserRole(fallbackRole);
+      } finally {
+        setRoleLoading(false);
+      }
+    }
+    fetchUserRole();
+  }, [user?.id]);
+
+  const isAdmin = userRole === 'admin1';
   
   const { 
     permissions: dynamicPermissions, 
@@ -120,24 +162,56 @@ export default function CalendarPage() {
     refetch: refetchPermissions 
   } = useCalendarPermissions(isAdmin ? null : user?.id || null, userRole);
 
+  const fallbackPermissions = useMemo(() => {    
+    switch (userRole) {
+      case 'admin1':
+        return {
+          canCreateEvents: true,
+          canEditEvents: true,
+          canDeleteEvents: true,
+          canLogHours: true,
+          canViewAllEvents: true,
+          canManageUsers: true,
+          canExportData: true
+        };
+      case 'coachx7':
+        return {
+          canCreateEvents: false,
+          canEditEvents: false,
+          canDeleteEvents: false,
+          canLogHours: true,
+          canViewAllEvents: false,
+          canManageUsers: false,
+          canExportData: true
+        };
+      case 'client7x':
+        return {
+          canCreateEvents: false,
+          canEditEvents: false,
+          canDeleteEvents: false,
+          canLogHours: false,
+          canViewAllEvents: false,
+          canManageUsers: false,
+          canExportData: true
+        };
+      default:
+        return {
+          canCreateEvents: false,
+          canEditEvents: false,
+          canDeleteEvents: false,
+          canLogHours: false,
+          canViewAllEvents: false,
+          canManageUsers: false,
+          canExportData: false
+        };
+    }
+  }, [userRole]);
+
   const finalPermissions = isAdmin 
     ? fallbackPermissions
     : ((!permissionsLoading && !permissionsError && dynamicPermissions) 
         ? dynamicPermissions 
         : fallbackPermissions);
-
-  useEffect(() => {
-    console.log('🔐 Permissions Debug:', {
-      userRole,
-      isAdmin,
-      permissionsLoading,
-      permissionsError,
-      dynamicPermissions,
-      fallbackPermissions,
-      finalPermissions,
-      clientCanExport: userRole === 'client7x' ? finalPermissions.canExportData : 'N/A'
-    });
-  }, [userRole, isAdmin, permissionsLoading, permissionsError, dynamicPermissions, fallbackPermissions, finalPermissions]);
 
   const targetUserId = slsSelectedUser?.id || adminSelectedUser?.id || user?.id;
   
@@ -160,23 +234,14 @@ export default function CalendarPage() {
     coachName: slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
   });
 
-  const modalHandlers = useCalendarModals(
-    { createEvent, updateEvent, deleteEvent, logHours },
-    finalPermissions
-  );
-
   const displayEvents = useMemo(() => {
     let baseEvents = events || [];
-    
     if (userRole === 'admin1' && (adminSelectedUser || slsSelectedUser)) {
       return baseEvents;
     }
-    
     switch (userRole) {
       case 'admin1':
-        return baseEvents;
       case 'coachx7':
-        return baseEvents;
       case 'client7x':
         return baseEvents;
       default:
@@ -185,8 +250,6 @@ export default function CalendarPage() {
   }, [events, userRole, adminSelectedUser, slsSelectedUser]);
 
   const showLoading = (loading && !hasLoaded) || roleLoading;
-  const isLoadingTargetUser = (slsSelectedUser || adminSelectedUser) && loading;
-  const isLoadingOwnCalendar = (!slsSelectedUser && !adminSelectedUser) && loading;
 
   const handleNavigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
@@ -200,14 +263,10 @@ export default function CalendarPage() {
     });
   };
 
-  const handleGoToToday = () => {
-    setCurrentDate(new Date());
-  };
+  const handleGoToToday = () => setCurrentDate(new Date());
 
   const handleDateRightClick = (e: React.MouseEvent, date: Date, events: CalendarEvent[]) => {
     e.preventDefault();
-    console.log('📅 Date right-clicked (CONTEXT MENU):', date);
-    
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -221,8 +280,6 @@ export default function CalendarPage() {
   const handleEventRightClick = (e: React.MouseEvent, event: CalendarEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('🎯 Event right-clicked (CONTEXT MENU):', event.title);
-    
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -245,46 +302,78 @@ export default function CalendarPage() {
   };
 
   const handleContextViewEvents = (date: Date, events: CalendarEvent[]) => {
-    console.log(`📋 Viewing ${events.length} events for ${date.toLocaleDateString()}`);
     if (events.length > 0) {
-      modalHandlers.handleEditEvent(events[0]);
+      setSelectedEvent(events[0]);
+      setSelectedDate(new Date(events[0].event_date));
+      setIsEventModalOpen(true);
     }
   };
 
-  const handleDateClick = (date: Date) => {
-    console.log('📅 Date clicked/tapped (VIEW MODE):', date);
-    return;
+  const handleLogHours = (date?: Date) => {
+    setSelectedDate(date || new Date());
+    setIsHoursModalOpen(true);
   };
 
-  const handleEventClick = (event: CalendarEvent) => {
-    console.log('🎯 Event clicked (VIEW MODE):', event.title);
-    return;
+  const handleCreateEvent = (date?: Date) => {
+    setSelectedDate(date || new Date());
+    setSelectedEvent(null);
+    setIsEventModalOpen(true);
   };
 
-  const handleAdminUserSelect = (selectedUser: UserProfile | null) => {
-    setAdminSelectedUser(selectedUser);
-    setShowCalendarManager(false);
-    setShowSLSManager(false);
+  const handleCreateEventSubmit = async (eventData: any) => {
+    if (!finalPermissions.canCreateEvents) return;
+    try {
+      await createEvent(eventData);
+      setIsEventModalOpen(false);
+      setSelectedEvent(null);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Failed to create event:', error);
+    }
   };
 
-  const handleSlsUserSelect = (selectedUser: UserProfile | null) => {
-    setSlsSelectedUser(selectedUser);
+  const handleUpdateEventSubmit = async (eventData: any) => {
+    if (!selectedEvent || !finalPermissions.canEditEvents) return;
+    try {
+      await updateEvent(selectedEvent.id, eventData);
+      setIsEventModalOpen(false);
+      setSelectedEvent(null);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Failed to update event:', error);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent || !finalPermissions.canDeleteEvents) return;
+    try {
+      await deleteEvent(selectedEvent.id);
+      setIsEventModalOpen(false);
+      setSelectedEvent(null);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+    }
+  };
+
+  const handleHoursSubmit = async (hoursData: CoachHoursData) => {
+    if (!finalPermissions.canLogHours) return;
+    try {
+      await logHours(hoursData);
+      setIsHoursModalOpen(false);
+      setSelectedDate(null);
+    } catch (error) {
+      console.error('Failed to log hours:', error);
+      throw error;
+    }
   };
 
   const handleCreateSlsEvent = async (eventData: any) => {
-    if (!slsSelectedUser || !user?.id) {
-      console.error('No user selected or not authenticated');
-      return;
-    }
-
-    console.log('🔥 Calendar page received event data from SLS Manager:', eventData);
-
+    if (!slsSelectedUser || !user?.id) return;
     try {
       const response = await fetch('/api/calendar/sls-events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: eventData.title,
           description: eventData.description || eventData.notes,
@@ -302,44 +391,21 @@ export default function CalendarPage() {
           created_by_id: user.id
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create SLS event');
       }
-
       const result = await response.json();
-      console.log('✅ SLS event created successfully:', result);
-      
       refetch();
       return result;
     } catch (error) {
-      console.error('❌ Error creating SLS event:', error);
+      console.error('Error creating SLS event:', error);
       throw error;
     }
   };
 
-  const handleOpenCalendarManager = () => {
-    setShowCalendarManager(true);
-    setShowSLSManager(false);
-  };
-
-  const handleOpenSLSManager = () => {
-    setShowSLSManager(true);
-    setShowCalendarManager(false);
-  };
-
-  const handleCloseAdminModals = () => {
-    setShowCalendarManager(false);
-    setShowSLSManager(false);
-    setAdminSelectedUser(null);
-    setSlsSelectedUser(null);
-  };
-
   const exportHandlers = {
-    onExportStart: () => {
-      setExportMessage(null);
-    },
+    onExportStart: () => setExportMessage(null),
     onExportComplete: () => {
       setExportMessage('Calendar exported successfully!');
       setTimeout(() => setExportMessage(null), 3000);
@@ -366,7 +432,6 @@ export default function CalendarPage() {
   return (
     <>
       <Breadcrumb pageName="Calendar" />
-      
       <div className="mx-auto max-w-7xl">
         {(showLoading || permissionsLoading) && (
           <div className="mb-4">
@@ -376,8 +441,7 @@ export default function CalendarPage() {
             <div className="text-sm text-gray-600 text-center">
               {roleLoading && "Loading user role..."}
               {permissionsLoading && "Loading permissions..."}
-              {isLoadingTargetUser && `Loading ${slsSelectedUser?.display_name || adminSelectedUser?.display_name || 'target user'}'s calendar...`}
-              {isLoadingOwnCalendar && "Loading your calendar..."}
+              {loading && "Loading calendar..."}
             </div>
           </div>
         )}
@@ -393,8 +457,8 @@ export default function CalendarPage() {
           onNavigateMonth={handleNavigateMonth}
           onGoToToday={handleGoToToday}
           onSetViewMode={setViewMode}
-          onOpenHoursModal={modalHandlers.handleLogHours}
-          onOpenEventModal={modalHandlers.handleCreateEvent}
+          onOpenHoursModal={handleLogHours}
+          onOpenEventModal={handleCreateEvent}
         />
 
         {finalPermissions.canExportData && (
@@ -421,10 +485,10 @@ export default function CalendarPage() {
           <UserCalendarViewer
             currentDate={currentDate}
             userRole={userRole}
-            onUserSelect={handleAdminUserSelect}
+            onUserSelect={setAdminSelectedUser}
             selectedUser={adminSelectedUser}
-            onOpenCalendarManager={handleOpenCalendarManager}
-            onOpenSLSManager={handleOpenSLSManager}
+            onOpenCalendarManager={() => { setShowCalendarManager(true); setShowSLSManager(false); }}
+            onOpenSLSManager={() => { setShowSLSManager(true); setShowCalendarManager(false); }}
           />
         )}
 
@@ -442,8 +506,8 @@ export default function CalendarPage() {
           displayEvents={displayEvents}
           viewMode={viewMode}
           userRole={userRole}
-          onDateClick={handleDateClick}
-          onEventClick={handleEventClick}
+          onDateClick={() => {}}
+          onEventClick={() => {}}
           onRefetch={refetch}
           onDateRightClick={handleDateRightClick}
           onEventRightClick={handleEventRightClick}
@@ -455,14 +519,17 @@ export default function CalendarPage() {
           permissions={finalPermissions}
           userRole={userRole}
           onClose={handleCloseContextMenu}
-          onCreateEvent={modalHandlers.handleCreateEvent}
-          onLogHours={modalHandlers.handleLogHours}
-          onEditEvent={modalHandlers.handleEditEvent}
+          onCreateEvent={handleCreateEvent}
+          onLogHours={handleLogHours}
+          onEditEvent={(event) => {
+            setSelectedEvent(event);
+            setSelectedDate(new Date(event.event_date));
+            setIsEventModalOpen(true);
+          }}
           onDeleteEvent={async (event) => {
             if (finalPermissions.canDeleteEvents) {
               try {
                 await deleteEvent(event.id);
-                console.log('Event deleted:', event.title);
               } catch (error) {
                 console.error('Failed to delete event:', error);
               }
@@ -473,21 +540,28 @@ export default function CalendarPage() {
 
         {(finalPermissions.canCreateEvents || finalPermissions.canEditEvents) && (
           <EventModal
-            isOpen={modalHandlers.isEventModalOpen}
-            onClose={modalHandlers.handleCloseEventModal}
-            onSubmit={modalHandlers.selectedEvent ? modalHandlers.handleUpdateEventSubmit : modalHandlers.handleCreateEventSubmit}
-            onDelete={modalHandlers.selectedEvent && finalPermissions.canDeleteEvents ? modalHandlers.handleDeleteEvent : undefined}
-            selectedDate={modalHandlers.selectedDate}
-            selectedEvent={modalHandlers.selectedEvent}
+            isOpen={isEventModalOpen}
+            onClose={() => {
+              setIsEventModalOpen(false);
+              setSelectedEvent(null);
+              setSelectedDate(null);
+            }}
+            onSubmit={selectedEvent ? handleUpdateEventSubmit : handleCreateEventSubmit}
+            onDelete={selectedEvent && finalPermissions.canDeleteEvents ? handleDeleteEvent : undefined}
+            selectedDate={selectedDate}
+            selectedEvent={selectedEvent}
           />
         )}
 
         {finalPermissions.canLogHours && (
           <CoachHoursModal
-            isOpen={modalHandlers.isHoursModalOpen}
-            onClose={modalHandlers.handleCloseHoursModal}
-            onSubmit={modalHandlers.handleHoursSubmit}
-            selectedDate={modalHandlers.selectedDate}
+            isOpen={isHoursModalOpen}
+            onClose={() => {
+              setIsHoursModalOpen(false);
+              setSelectedDate(null);
+            }}
+            onSubmit={handleHoursSubmit}
+            selectedDate={selectedDate}
             coachName={slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
           />
         )}
@@ -498,7 +572,12 @@ export default function CalendarPage() {
               <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
                 <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">Calendar Manager</h2>
                 <button
-                  onClick={handleCloseAdminModals}
+                  onClick={() => {
+                    setShowCalendarManager(false);
+                    setShowSLSManager(false);
+                    setAdminSelectedUser(null);
+                    setSlsSelectedUser(null);
+                  }}
                   className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] p-2 rounded-md hover:bg-[hsl(var(--background))] transition-colors"
                 >
                   ✕
@@ -520,7 +599,12 @@ export default function CalendarPage() {
               <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]">
                 <h2 className="text-lg font-semibold text-[hsl(var(--foreground))]">SLS Manager</h2>
                 <button
-                  onClick={handleCloseAdminModals}
+                  onClick={() => {
+                    setShowCalendarManager(false);
+                    setShowSLSManager(false);
+                    setAdminSelectedUser(null);
+                    setSlsSelectedUser(null);
+                  }}
                   className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] p-2 rounded-md hover:bg-[hsl(var(--background))] transition-colors"
                 >
                   ✕
@@ -530,7 +614,7 @@ export default function CalendarPage() {
                 <SLSManager
                   currentDate={currentDate}
                   userRole={userRole}
-                  onUserSelect={handleSlsUserSelect}
+                  onUserSelect={setSlsSelectedUser}
                   selectedUser={slsSelectedUser}
                   onCreateSlsEvent={handleCreateSlsEvent}
                 />
@@ -538,18 +622,6 @@ export default function CalendarPage() {
             </div>
           </div>
         )}
-
-        <div className="mt-4 p-3 bg-[hsl(var(--muted))] rounded-lg border">
-          <div className="text-sm text-[hsl(var(--muted-foreground))]">
-            <div className="font-medium mb-2 text-[hsl(var(--foreground))]">📱 Interaction Guide:</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-              <div>• <strong>Left click/tap:</strong> View details popup</div>
-              <div>• <strong>Right click:</strong> Action menu (create, edit, copy, delete)</div>
-              <div>• <strong>Mobile long press:</strong> Same as right click</div>
-              <div>• <strong>Browser selection:</strong> Disabled for better mobile experience</div>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

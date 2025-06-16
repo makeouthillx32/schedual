@@ -18,6 +18,7 @@ import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useAuth } from '@/app/provider';
 import { useCalendarPermissions } from '@/hooks/useCalendarPermissions';
 import { useCalendarRole } from '@/hooks/useCalendarRole';
+import { useCalendarModals } from '@/hooks/useCalendarModals';
 
 interface CalendarEvent {
   id: string;
@@ -41,16 +42,6 @@ interface CalendarEvent {
   duration_minutes: number;
 }
 
-interface CoachHoursData {
-  report_date: string;
-  hours_worked: number;
-  work_location_id?: string;
-  location?: string;
-  activity_type?: string;
-  notes?: string;
-  initials?: string;
-}
-
 interface UserProfile {
   id: string;
   email: string;
@@ -68,10 +59,6 @@ export default function CalendarPage() {
   const { userRole, setUserRole, roleLoading, isAdmin, fallbackPermissions } = useCalendarRole(user);
   
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
-  const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   
@@ -173,6 +160,11 @@ export default function CalendarPage() {
     coachName: slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'
   });
 
+  const modalHandlers = useCalendarModals(
+    { createEvent, updateEvent, deleteEvent, logHours },
+    finalPermissions
+  );
+
   const displayEvents = useMemo(() => {
     let baseEvents = events || [];
     
@@ -255,9 +247,7 @@ export default function CalendarPage() {
   const handleContextViewEvents = (date: Date, events: CalendarEvent[]) => {
     console.log(`📋 Viewing ${events.length} events for ${date.toLocaleDateString()}`);
     if (events.length > 0) {
-      setSelectedEvent(events[0]);
-      setSelectedDate(new Date(events[0].event_date));
-      setIsEventModalOpen(true);
+      modalHandlers.handleEditEvent(events[0]);
     }
   };
 
@@ -269,17 +259,6 @@ export default function CalendarPage() {
   const handleEventClick = (event: CalendarEvent) => {
     console.log('🎯 Event clicked (VIEW MODE):', event.title);
     return;
-  };
-
-  const handleLogHours = (date?: Date) => {
-    setSelectedDate(date || new Date());
-    setIsHoursModalOpen(true);
-  };
-
-  const handleCreateEvent = (date?: Date) => {
-    setSelectedDate(date || new Date());
-    setSelectedEvent(null);
-    setIsEventModalOpen(true);
   };
 
   const handleAdminUserSelect = (selectedUser: UserProfile | null) => {
@@ -357,59 +336,6 @@ export default function CalendarPage() {
     setSlsSelectedUser(null);
   };
 
-  const handleCreateEventSubmit = async (eventData: any) => {
-    if (!finalPermissions.canCreateEvents) return;
-
-    try {
-      await createEvent(eventData);
-      setIsEventModalOpen(false);
-      setSelectedEvent(null);
-      setSelectedDate(null);
-    } catch (error) {
-      console.error('Failed to create event:', error);
-    }
-  };
-
-  const handleUpdateEventSubmit = async (eventData: any) => {
-    if (!selectedEvent || !finalPermissions.canEditEvents) return;
-    
-    try {
-      await updateEvent(selectedEvent.id, eventData);
-      setIsEventModalOpen(false);
-      setSelectedEvent(null);
-      setSelectedDate(null);
-    } catch (error) {
-      console.error('Failed to update event:', error);
-    }
-  };
-
-  const handleDeleteEvent = async () => {
-    if (!selectedEvent || !finalPermissions.canDeleteEvents) return;
-    
-    try {
-      await deleteEvent(selectedEvent.id);
-      setIsEventModalOpen(false);
-      setSelectedEvent(null);
-      setSelectedDate(null);
-    } catch (error) {
-      console.error('Failed to delete event:', error);
-    }
-  };
-
-  const handleHoursSubmit = async (hoursData: CoachHoursData) => {
-    if (!finalPermissions.canLogHours) return;
-
-    try {
-      console.log('🏗️ Calendar page submitting hours:', hoursData);
-      await logHours(hoursData);
-      setIsHoursModalOpen(false);
-      setSelectedDate(null);
-    } catch (error) {
-      console.error('Failed to log hours:', error);
-      throw error;
-    }
-  };
-
   const exportHandlers = {
     onExportStart: () => {
       setExportMessage(null);
@@ -467,8 +393,8 @@ export default function CalendarPage() {
           onNavigateMonth={handleNavigateMonth}
           onGoToToday={handleGoToToday}
           onSetViewMode={setViewMode}
-          onOpenHoursModal={handleLogHours}
-          onOpenEventModal={handleCreateEvent}
+          onOpenHoursModal={modalHandlers.handleLogHours}
+          onOpenEventModal={modalHandlers.handleCreateEvent}
         />
 
         {finalPermissions.canExportData && (
@@ -529,13 +455,9 @@ export default function CalendarPage() {
           permissions={finalPermissions}
           userRole={userRole}
           onClose={handleCloseContextMenu}
-          onCreateEvent={handleCreateEvent}
-          onLogHours={handleLogHours}
-          onEditEvent={(event) => {
-            setSelectedEvent(event);
-            setSelectedDate(new Date(event.event_date));
-            setIsEventModalOpen(true);
-          }}
+          onCreateEvent={modalHandlers.handleCreateEvent}
+          onLogHours={modalHandlers.handleLogHours}
+          onEditEvent={modalHandlers.handleEditEvent}
           onDeleteEvent={async (event) => {
             if (finalPermissions.canDeleteEvents) {
               try {
@@ -551,28 +473,21 @@ export default function CalendarPage() {
 
         {(finalPermissions.canCreateEvents || finalPermissions.canEditEvents) && (
           <EventModal
-            isOpen={isEventModalOpen}
-            onClose={() => {
-              setIsEventModalOpen(false);
-              setSelectedEvent(null);
-              setSelectedDate(null);
-            }}
-            onSubmit={selectedEvent ? handleUpdateEventSubmit : handleCreateEventSubmit}
-            onDelete={selectedEvent && finalPermissions.canDeleteEvents ? handleDeleteEvent : undefined}
-            selectedDate={selectedDate}
-            selectedEvent={selectedEvent}
+            isOpen={modalHandlers.isEventModalOpen}
+            onClose={modalHandlers.handleCloseEventModal}
+            onSubmit={modalHandlers.selectedEvent ? modalHandlers.handleUpdateEventSubmit : modalHandlers.handleCreateEventSubmit}
+            onDelete={modalHandlers.selectedEvent && finalPermissions.canDeleteEvents ? modalHandlers.handleDeleteEvent : undefined}
+            selectedDate={modalHandlers.selectedDate}
+            selectedEvent={modalHandlers.selectedEvent}
           />
         )}
 
         {finalPermissions.canLogHours && (
           <CoachHoursModal
-            isOpen={isHoursModalOpen}
-            onClose={() => {
-              setIsHoursModalOpen(false);
-              setSelectedDate(null);
-            }}
-            onSubmit={handleHoursSubmit}
-            selectedDate={selectedDate}
+            isOpen={modalHandlers.isHoursModalOpen}
+            onClose={modalHandlers.handleCloseHoursModal}
+            onSubmit={modalHandlers.handleHoursSubmit}
+            selectedDate={modalHandlers.selectedDate}
             coachName={slsSelectedUser?.display_name || adminSelectedUser?.display_name || user?.user_metadata?.display_name || user?.email || 'Unknown Coach'}
           />
         )}

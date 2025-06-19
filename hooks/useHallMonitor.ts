@@ -1,4 +1,4 @@
-// hooks/useHallMonitor.ts - FIXED INFINITE LOADING ISSUE
+// hooks/useHallMonitor.ts - UPDATED TO WORK WITH API-BASED FACTORY
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { hallMonitorFactory } from '@/lib/monitors/HallMonitorFactory';
 import type { 
@@ -22,90 +22,89 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   const currentUserId = useRef<string | undefined>(undefined);
   const isCurrentlyLoading = useRef(false);
 
-  // ✅ FIXED: Simplified loading function with proper state management
+  // ✅ ENHANCED: Loading function optimized for API-based factory
   const loadUserData = useCallback(async (targetUserId: string) => {
     // Prevent duplicate calls
     if (isCurrentlyLoading.current) {
-      console.log('[useHallMonitor] ⏭️ Already loading, skipping');
+      console.log('[useHallMonitor] ⏭️ Already loading, skipping duplicate call');
       return;
     }
 
-    // Check if we already have data for this user
+    // Check if we already have complete data for this user
     if (currentUserId.current === targetUserId && user && monitor && contentConfig) {
-      console.log('[useHallMonitor] ⏭️ Data already loaded for user:', targetUserId);
+      console.log('[useHallMonitor] ⏭️ Complete data already loaded for user:', targetUserId.substring(0, 8));
       return;
     }
 
-    console.log('[useHallMonitor] 🔄 Loading user data for:', targetUserId);
+    console.log('[useHallMonitor] 🔄 Loading user data via APIs for:', targetUserId.substring(0, 8));
     
     try {
       isCurrentlyLoading.current = true;
       setIsLoading(true);
       setError(null);
 
-      // Get monitor and user data from factory
+      // ✅ Get monitor and user data from factory (now using your APIs)
+      console.log('[useHallMonitor] 📡 Calling factory.getMonitorForUser...');
       const result = await hallMonitorFactory.getMonitorForUser(targetUserId);
       
-      // Check if component was unmounted
+      // Check if component was unmounted during async operation
       if (!isMounted.current) {
-        console.log('[useHallMonitor] Component unmounted, aborting');
+        console.log('[useHallMonitor] Component unmounted during load, aborting');
         return;
       }
 
-      console.log('[useHallMonitor] ✅ Factory returned:', {
+      console.log('[useHallMonitor] ✅ Factory returned data:', {
         hasUser: !!result.user,
         hasMonitor: !!result.monitor,
-        userRole: result.user?.role_name
+        userRole: result.user?.role_name,
+        userEmail: result.user?.email ? '[PROVIDED]' : '[MISSING]'
       });
+
+      // ✅ Validate we got valid data
+      if (!result.user || !result.monitor) {
+        throw new Error('Factory returned incomplete data');
+      }
 
       // Set user and monitor immediately
       setUser(result.user);
       setMonitor(result.monitor);
+      currentUserId.current = targetUserId;
 
-      // Get content config with fallback
+      // ✅ Get content config with robust fallback
       let config: ContentConfig;
       try {
-        console.log('[useHallMonitor] 📋 Getting content config...');
+        console.log('[useHallMonitor] 📋 Getting content config for role:', result.user.role_name);
         config = await result.monitor.getContentConfig(targetUserId);
-        console.log('[useHallMonitor] ✅ Content config received');
+        console.log('[useHallMonitor] ✅ Content config received for role:', result.user.role_name);
       } catch (configError) {
-        console.warn('[useHallMonitor] Config error, using fallback:', configError);
+        console.warn('[useHallMonitor] ⚠️ Config error, using fallback:', configError);
         
-        // ✅ CRITICAL FIX: Always provide a fallback config
-        config = {
-          dashboardLayout: 'user-basic' as any,
-          availableFeatures: ['profile-view'],
-          primaryActions: [],
-          secondaryActions: [],
-          navigationItems: [],
-          hiddenSections: [],
-          customFields: {},
-          visibleComponents: [],
-          permissions: ['profile:read_own']
-        };
+        // ✅ Role-specific fallback configs
+        config = getFallbackConfig(result.user.role_name);
       }
 
       // Final state update
       if (isMounted.current) {
         setContentConfig(config);
-        currentUserId.current = targetUserId;
         setError(null);
-        console.log('[useHallMonitor] 🎉 Successfully loaded data for:', targetUserId);
+        console.log('[useHallMonitor] 🎉 Successfully loaded complete data for:', targetUserId.substring(0, 8));
       }
 
     } catch (err) {
       console.error('[useHallMonitor] ❌ Loading error:', err);
       
       if (isMounted.current) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load user data';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load user data via APIs';
         setError(errorMessage);
+        
+        // Clear incomplete state
         setUser(null);
         setMonitor(null);
         setContentConfig(null);
         currentUserId.current = undefined;
       }
     } finally {
-      // ✅ CRITICAL: Always clear loading state
+      // ✅ Always clear loading state
       if (isMounted.current) {
         setIsLoading(false);
         console.log('[useHallMonitor] ✅ Loading complete, isLoading set to false');
@@ -114,13 +113,13 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     }
   }, []); // No dependencies to prevent recreation
 
-  // ✅ Effect to handle userId changes
+  // ✅ Effect to handle userId changes - optimized
   useEffect(() => {
-    console.log('[useHallMonitor] Effect triggered with userId:', userId);
+    console.log('[useHallMonitor] Effect triggered with userId:', userId?.substring(0, 8) || 'undefined');
 
     // Reset everything if no userId
     if (!userId) {
-      console.log('[useHallMonitor] No userId, resetting state');
+      console.log('[useHallMonitor] No userId provided, resetting all state');
       setUser(null);
       setMonitor(null);
       setContentConfig(null);
@@ -131,21 +130,28 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
       return;
     }
 
-    // Only load if userId changed or we don't have complete data
-    const needsLoading = currentUserId.current !== userId || !user || !monitor || !contentConfig;
+    // Determine if we need to load data
+    const hasCompleteData = user && monitor && contentConfig;
+    const userIdChanged = currentUserId.current !== userId;
+    const needsLoading = userIdChanged || !hasCompleteData;
     
     if (needsLoading) {
-      console.log('[useHallMonitor] 🚀 Need to load data for:', userId);
+      console.log('[useHallMonitor] 🚀 Need to load data:', {
+        userIdChanged,
+        hasCompleteData,
+        currentUser: currentUserId.current?.substring(0, 8),
+        newUser: userId.substring(0, 8)
+      });
       loadUserData(userId);
     } else {
-      console.log('[useHallMonitor] ✅ Data already available for:', userId);
+      console.log('[useHallMonitor] ✅ Data already available and current for:', userId.substring(0, 8));
     }
   }, [userId, loadUserData]);
 
   // ✅ Cleanup effect
   useEffect(() => {
     return () => {
-      console.log('[useHallMonitor] 🧹 Cleanup');
+      console.log('[useHallMonitor] 🧹 Component cleanup');
       isMounted.current = false;
     };
   }, []);
@@ -156,10 +162,14 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     action: string, 
     context?: AccessContext
   ): Promise<boolean> => {
-    if (!monitor || !user) return false;
+    if (!monitor || !user) {
+      console.log('[useHallMonitor] canAccess: No monitor or user available');
+      return false;
+    }
 
     try {
       const result = await monitor.checkAccess(user.id, resource, action, context);
+      console.log(`[useHallMonitor] Access check result for ${resource}:${action}:`, result.hasAccess);
       return result.hasAccess;
     } catch (err) {
       console.error('[useHallMonitor] Access check error:', err);
@@ -168,23 +178,37 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
   }, [monitor, user]);
 
   const hasFeature = useCallback((feature: string): boolean => {
-    return contentConfig?.availableFeatures.includes(feature) ?? false;
+    const hasIt = contentConfig?.availableFeatures.includes(feature) ?? false;
+    console.log(`[useHallMonitor] Feature check for '${feature}':`, hasIt);
+    return hasIt;
   }, [contentConfig]);
 
   const hasSpecialization = useCallback((specialization: string): boolean => {
-    return user?.specializations?.some(spec => spec.name === specialization) ?? false;
+    const hasIt = user?.specializations?.some(spec => spec.name === specialization) ?? false;
+    console.log(`[useHallMonitor] Specialization check for '${specialization}':`, hasIt);
+    return hasIt;
   }, [user]);
 
   const refreshConfig = useCallback(async (): Promise<void> => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('[useHallMonitor] Cannot refresh: no userId');
+      return;
+    }
     
-    console.log('[useHallMonitor] 🔄 Refreshing config for:', userId);
+    console.log('[useHallMonitor] 🔄 Refreshing config for:', userId.substring(0, 8));
+    
+    // Clear cache and reset state
     hallMonitorFactory.clearUserCache(userId);
     currentUserId.current = undefined;
+    setUser(null);
+    setMonitor(null);
+    setContentConfig(null);
+    
+    // Reload data
     await loadUserData(userId);
   }, [userId, loadUserData]);
 
-  // ✅ SIMPLIFIED: Early return with fallback for no userId
+  // ✅ Early return with proper fallback for no userId
   if (!userId) {
     return {
       monitor: null,
@@ -199,14 +223,16 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     };
   }
 
-  // ✅ Debug current state (reduced logging)
+  // ✅ Debug logging for current state (only when relevant)
   const hasCompleteData = !!(user && monitor && contentConfig);
-  if (isLoading || !hasCompleteData) {
-    console.log('[useHallMonitor] 📊 State:', {
+  if (isLoading || !hasCompleteData || error) {
+    console.log('[useHallMonitor] 📊 Current state:', {
       userId: userId.substring(0, 8) + '...',
       hasCompleteData,
       isLoading,
-      error: !!error
+      hasError: !!error,
+      userRole: user?.role_name,
+      errorMessage: error
     });
   }
 
@@ -221,6 +247,59 @@ export function useHallMonitor(userId?: string): UseHallMonitorResult {
     hasSpecialization,
     refreshConfig
   };
+}
+
+// ✅ FALLBACK CONFIG FUNCTION - Role-specific fallbacks
+function getFallbackConfig(roleName: string): ContentConfig {
+  console.log('[useHallMonitor] Creating fallback config for role:', roleName);
+  
+  const baseConfig: ContentConfig = {
+    dashboardLayout: 'user-basic' as any,
+    availableFeatures: ['profile-view'],
+    primaryActions: [],
+    secondaryActions: [],
+    navigationItems: [
+      { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
+      { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
+    ],
+    hiddenSections: [],
+    customFields: {},
+    visibleComponents: ['header', 'sidebar', 'main-content'],
+    permissions: ['profile:read_own']
+  };
+
+  // Customize based on role
+  switch (roleName) {
+    case 'admin':
+      return {
+        ...baseConfig,
+        dashboardLayout: 'admin-content' as any,
+        availableFeatures: ['user-management', 'content-editor', 'system-settings'],
+        primaryActions: ['manage-users', 'system-config'],
+        permissions: ['admin:*']
+      };
+      
+    case 'jobcoach':
+      return {
+        ...baseConfig,
+        dashboardLayout: 'jobcoach-counselor' as any,
+        availableFeatures: ['client-profiles', 'session-scheduler'],
+        primaryActions: ['schedule-session', 'manage-clients'],
+        permissions: ['coach:*', 'client:read']
+      };
+      
+    case 'client':
+      return {
+        ...baseConfig,
+        dashboardLayout: 'client-seeker' as any,
+        availableFeatures: ['profile-editor', 'job-applications'],
+        primaryActions: ['update-profile', 'book-session'],
+        permissions: ['profile:read_own', 'profile:update_own']
+      };
+      
+    default:
+      return baseConfig;
+  }
 }
 
 export default useHallMonitor;

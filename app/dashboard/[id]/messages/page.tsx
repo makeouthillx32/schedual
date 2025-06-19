@@ -244,7 +244,6 @@ export default function ChatPage() {
     return null;
   }, [userProfiles, selectedChat?.participants]);
 
-  // Realtime message handler with better duplicate prevention
   const handleRealtimeMessage = useCallback((newMsg: any) => {
     console.log('[ChatPage] 🔥 REALTIME MESSAGE:', {
       messageId: newMsg.id,
@@ -264,51 +263,66 @@ export default function ChatPage() {
       return;
     }
     
-    // STRICT duplicate check - don't add if it exists anywhere
-    const existsInBase = baseMessages.some(msg => msg.id === newMsg.id);
-    const existsInRealtime = realtimeMessages.some(msg => msg.id === newMsg.id);
-    
-    if (existsInBase || existsInRealtime) {
-      console.log('[ChatPage] Message already exists, skipping:', newMsg.id);
-      return;
-    }
-    
-    // Show toast for messages from other users only
-    if (newMsg.sender_id !== currentUserId) {
-      toast.success('New message received!');
-    }
-    
-    // Get sender profile
-    let senderProfile = userProfiles[newMsg.sender_id];
-    if (!senderProfile && selectedChat?.participants) {
-      senderProfile = getUserProfileFromParticipants(newMsg.sender_id, selectedChat.participants);
-    }
-    
-    // If still no profile, create a basic one
-    if (!senderProfile) {
-      senderProfile = {
-        id: newMsg.sender_id,
-        name: 'Unknown User',
-        avatar: newMsg.sender_id.charAt(0).toUpperCase(),
-        email: ''
-      };
-    }
-    
-    // Transform the message
-    const transformedMessage = transformRealtimeMessage(newMsg, senderProfile);
-    console.log('[ChatPage] ✅ Adding realtime message:', transformedMessage.id);
-    
-    // ADD MESSAGE IMMEDIATELY to realtime messages
+    // CRITICAL FIX: Update realtime messages in one operation
     setRealtimeMessages(prev => {
-      // Double-check it doesn't exist before adding
-      if (prev.some(msg => msg.id === transformedMessage.id)) {
-        console.log('[ChatPage] Message already in realtime array, skipping');
-        return prev;
+      // First, remove any matching optimistic message
+      const withoutOptimistic = prev.filter(msg => {
+        // Keep non-temp messages
+        if (!String(msg.id).startsWith('temp-')) {
+          return true;
+        }
+        
+          // Remove temp message if it matches this real message
+          const isMatch = msg.content === newMsg.content &&
+                        msg.sender.id === newMsg.sender_id &&
+                        Math.abs(new Date(msg.timestamp).getTime() - new Date(newMsg.created_at).getTime()) < 15000;
+          
+          if (isMatch) {
+            console.log('[ChatPage] ✅ Removing optimistic message:', msg.id, 'for real message:', newMsg.id);
+            return false; // Remove this optimistic message
+          }
+          
+          return true;
+        });
+        
+        // Check if this real message already exists
+        const existsInRealtime = withoutOptimistic.some(msg => msg.id === newMsg.id);
+        const existsInBase = baseMessages.some(msg => msg.id === newMsg.id);
+        
+        if (existsInRealtime || existsInBase) {
+          console.log('[ChatPage] Real message already exists, skipping:', newMsg.id);
+          return withoutOptimistic; // Return without the optimistic, but don't add duplicate
+        }
+        
+        // Get sender profile
+        let senderProfile = userProfiles[newMsg.sender_id];
+        if (!senderProfile && selectedChat?.participants) {
+          senderProfile = getUserProfileFromParticipants(newMsg.sender_id, selectedChat.participants);
+        }
+        
+        // If still no profile, create a basic one
+        if (!senderProfile) {
+          senderProfile = {
+            id: newMsg.sender_id,
+            name: 'Unknown User',
+            avatar: newMsg.sender_id.charAt(0).toUpperCase(),
+            email: ''
+          };
+        }
+        
+        // Transform and add the real message
+        const transformedMessage = transformRealtimeMessage(newMsg, senderProfile);
+        console.log('[ChatPage] ✅ Adding real message:', transformedMessage.id);
+        
+        return [...withoutOptimistic, transformedMessage];
+      });
+      
+      // Show toast for messages from other users only
+      if (newMsg.sender_id !== currentUserId) {
+        toast.success('New message received!');
       }
-      return [...prev, transformedMessage];
-    });
-    
-  }, [currentUserId, selectedChat?.id, selectedChat?.participants, userProfiles, baseMessages, realtimeMessages]);
+      
+    }, [currentUserId, selectedChat?.id, selectedChat?.participants, userProfiles, baseMessages]);
 
   // Realtime subscription
   useRealtimeInsert({

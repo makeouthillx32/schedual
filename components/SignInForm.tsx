@@ -21,29 +21,14 @@ export default function SignInForm() {
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
-  const getRedirectPath = (): string => {
-    const lastPage = getCookie('lastPage');
-    if (!lastPage) {
-      console.log('[SignIn] No lastPage cookie, using homepage');
-      return '/';
-    }
-    const excludedPages = ['/sign-in', '/sign-up', '/forgot-password', '/CMS'];
-    const pageWithoutHash = lastPage.split('#')[0];
-    if (excludedPages.includes(pageWithoutHash)) {
-      console.log(`[SignIn] Excluded page detected (${lastPage}), using homepage`);
-      return '/';
-    }
-    console.log(`[SignIn] Using saved page: ${lastPage}`);
-    return lastPage;
-  };
-
   const populateUserCookies = async (userId: string) => {
     try {
       console.log(`[SignIn] 🍪 Populating cookies for user ${userId.slice(-4)}`);
       
+      // Fetch only the fields that actually exist in your database schema
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("role, display_name, department, specialization, avatar_url")
+        .select("id, role, avatar_url, initials, display_name")
         .eq("id", userId)
         .single();
 
@@ -63,16 +48,36 @@ export default function SignInForm() {
         profileData.role = 'user0x';
       }
 
+      // Get email from auth.users since it's not in profiles
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const userEmail = user?.email || '';
+
+      // Create complete profile object with all available data
+      const completeProfile = {
+        id: profileData.id,
+        role: profileData.role,
+        avatar_url: profileData.avatar_url,
+        initials: profileData.initials,
+        display_name: profileData.display_name || userEmail?.split('@')[0] || 'User',
+        email: userEmail
+      };
+
       userRoleCookies.setUserRole(profileData.role, userId);
-      profileCache.setProfile(userId, profileData);
+      profileCache.setProfile(userId, completeProfile);
 
-      const { data: rolePermissions } = await supabase
-        .rpc('get_role_permissions', {
-          user_role_type: profileData.role
-        });
+      // Try to get role permissions if the RPC function exists
+      try {
+        const { data: rolePermissions } = await supabase
+          .rpc('get_role_permissions', {
+            user_role_type: profileData.role
+          });
 
-      if (rolePermissions) {
-        profileCache.setPermissions(userId, rolePermissions);
+        if (rolePermissions) {
+          profileCache.setPermissions(userId, rolePermissions);
+        }
+      } catch (permError) {
+        console.log("[SignIn] ℹ️ Role permissions not available:", permError);
+        // This is fine, permissions are optional
       }
 
       console.log(`[SignIn] ✅ Cookies populated successfully for ${profileData.role} user`);
@@ -80,6 +85,22 @@ export default function SignInForm() {
     } catch (error) {
       console.error("[SignIn] ❌ Cookie population failed:", error);
     }
+  };
+
+  const getRedirectPath = (): string => {
+    const lastPage = getCookie('lastPage');
+    if (!lastPage) {
+      console.log('[SignIn] No lastPage cookie, using homepage');
+      return '/';
+    }
+    const excludedPages = ['/sign-in', '/sign-up', '/forgot-password', '/CMS'];
+    const pageWithoutHash = lastPage.split('#')[0];
+    if (excludedPages.includes(pageWithoutHash)) {
+      console.log(`[SignIn] Excluded page detected (${lastPage}), using homepage`);
+      return '/';
+    }
+    console.log(`[SignIn] Using saved page: ${lastPage}`);
+    return lastPage;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,6 +126,7 @@ export default function SignInForm() {
         router.push(`${redirectPath}?refresh=true`);
       }
     } catch (err) {
+      console.error('[SignIn] Error:', err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

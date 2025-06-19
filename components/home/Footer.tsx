@@ -4,7 +4,7 @@ import useLoginSession from "@/lib/useLoginSession";
 import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
 import { tools } from "@/lib/toolsConfig";
-import { useHallMonitor } from "@/hooks/useHallMonitor";
+import { useUserRole } from "@/hooks/useUserRole"; // Use the simpler role hook
 import { useMemo } from "react";
 
 const socialLinks = [
@@ -17,8 +17,9 @@ const socialLinks = [
 const Footer: React.FC = () => {
   const session = useLoginSession();
   
-  // ✅ FIXED: Call useHallMonitor at the top level, not inside useMemo
-  const { user, isLoading, error } = useHallMonitor(session?.user?.id);
+  // ✅ Use the simpler useUserRole hook instead of useHallMonitor
+  // This avoids the database schema issues in HallMonitorFactory
+  const { role, isLoading, error } = useUserRole(session?.user?.id);
 
   console.log('[Footer] Session state:', { 
     hasSession: !!session,
@@ -26,15 +27,13 @@ const Footer: React.FC = () => {
     userId: session?.user?.id 
   });
 
-  console.log('[Footer] HallMonitor state:', { 
-    hasUser: !!user, 
+  console.log('[Footer] UserRole state:', { 
+    role, 
     isLoading, 
-    error, 
-    userRoleId: user?.role_id,
-    userRoleName: user?.role_name 
+    error
   });
 
-  // ✅ Memoize the user section data based on user state
+  // ✅ Memoize the user section data based on role
   const userSectionData = useMemo(() => {
     // No session = no user sections
     if (!session?.user?.id) {
@@ -52,9 +51,9 @@ const Footer: React.FC = () => {
       };
     }
 
-    // Error or no user
-    if (error || !user) {
-      console.log('[Footer] Error or no user:', { error, hasUser: !!user });
+    // Error or no role
+    if (error || !role) {
+      console.log('[Footer] Error or no role:', { error, role });
       return {
         sectionTitle: "For Users",
         dashboardText: "Dashboard",
@@ -62,10 +61,10 @@ const Footer: React.FC = () => {
       };
     }
 
-    console.log('[Footer] ✅ User loaded successfully:', user.role_name);
+    console.log('[Footer] ✅ Role loaded successfully:', role);
 
-    // Return role-specific data using role_name
-    switch (user.role_name) {
+    // Return role-specific data using role name from useUserRole
+    switch (role) {
       case 'admin':
         return {
           sectionTitle: "For Admins",
@@ -91,14 +90,14 @@ const Footer: React.FC = () => {
           dashboardHref: "/dashboard/me"
         };
       default:
-        console.log('[Footer] Unknown role, using default:', user.role_name);
+        console.log('[Footer] Unknown role, using default:', role);
         return {
           sectionTitle: "For Users",
           dashboardText: "Dashboard",
           dashboardHref: "/dashboard/me"
         };
     }
-  }, [session?.user?.id, isLoading, error, user]); // ✅ Proper dependencies
+  }, [session?.user?.id, isLoading, error, role]); // ✅ Proper dependencies
 
   // ✅ Define sections based on user session and data
   const getSections = useMemo(() => {
@@ -114,7 +113,7 @@ const Footer: React.FC = () => {
       },
     ];
 
-    // ✅ Only show user sections when logged in AND we have user data
+    // ✅ Only show user sections when logged in AND we have role data
     if (session?.user?.id && userSectionData && userSectionData.sectionTitle !== "Loading...") {
       console.log('[Footer] Building sections with user data:', userSectionData);
       
@@ -148,7 +147,8 @@ const Footer: React.FC = () => {
     hasUserData: !!userSectionData,
     sectionsCount: getSections.length,
     userSectionData,
-    isLoading
+    isLoading,
+    role
   });
 
   return (

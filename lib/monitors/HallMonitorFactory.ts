@@ -1,5 +1,4 @@
-// lib/monitors/HallMonitorFactory.ts - FIXED VERSION
-import { supabase } from '@/lib/supabaseClient';
+// lib/monitors/HallMonitorFactory.ts - REFACTORED TO USE YOUR EXISTING APIS
 import type { 
   MonitorUser, 
   HallMonitor, 
@@ -9,7 +8,7 @@ import type {
   UserSpecialization 
 } from '@/types/monitors';
 
-// Role mapping
+// Role mapping (keep consistent with your useUserRole hook)
 const ROLE_MAP: Record<string, string> = {
   'admin1': 'admin',
   'coachx7': 'jobcoach', 
@@ -53,7 +52,57 @@ class BaseMonitor implements HallMonitor {
   }
 }
 
-// ✅ CLIENT MONITOR - Specific implementation for client role
+// ✅ ADMIN MONITOR
+class AdminMonitor extends BaseMonitor {
+  constructor() {
+    super('admin');
+  }
+
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'admin-content' as any,
+      availableFeatures: ['user-management', 'content-editor', 'system-settings'],
+      primaryActions: ['create-user', 'manage-roles', 'system-config'],
+      secondaryActions: ['export-data', 'view-logs'],
+      navigationItems: [
+        { id: 'dashboard', label: 'Admin Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'users', label: 'User Management', path: '/admin/users', icon: 'users' },
+        { id: 'settings', label: 'System Settings', path: '/admin/settings', icon: 'settings' }
+      ],
+      hiddenSections: [],
+      customFields: {},
+      visibleComponents: ['header', 'sidebar', 'main-content', 'admin-panel'],
+      permissions: ['admin:*']
+    };
+  }
+}
+
+// ✅ JOBCOACH MONITOR
+class JobCoachMonitor extends BaseMonitor {
+  constructor() {
+    super('jobcoach');
+  }
+
+  async getContentConfig(userId: string): Promise<ContentConfig> {
+    return {
+      dashboardLayout: 'jobcoach-counselor' as any,
+      availableFeatures: ['client-profiles', 'session-scheduler', 'progress-tracking'],
+      primaryActions: ['schedule-session', 'update-client-progress'],
+      secondaryActions: ['send-message', 'generate-report'],
+      navigationItems: [
+        { id: 'dashboard', label: 'Coach Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'clients', label: 'My Clients', path: '/coach/clients', icon: 'users' },
+        { id: 'calendar', label: 'Schedule', path: '/coach/calendar', icon: 'calendar' }
+      ],
+      hiddenSections: [],
+      customFields: {},
+      visibleComponents: ['header', 'sidebar', 'main-content', 'coach-tools'],
+      permissions: ['coach:*', 'client:read', 'session:*']
+    };
+  }
+}
+
+// ✅ CLIENT MONITOR
 class ClientMonitor extends BaseMonitor {
   constructor() {
     super('client');
@@ -78,217 +127,135 @@ class ClientMonitor extends BaseMonitor {
 
     return {
       hasAccess,
-      reason: hasAccess ? 'Access granted' : `Client role cannot ${action} ${resource}`,
+      reason: hasAccess ? 'Access granted' : `Action '${action}' not allowed on '${resource}' for clients`,
       context
     };
   }
 
   async getContentConfig(userId: string): Promise<ContentConfig> {
     return {
-      dashboardLayout: 'client-dashboard' as any,
-      availableFeatures: [
-        'profile-view',
-        'appointments-view', 
-        'calendar-view',
-        'messages-view',
-        'progress-tracking'
-      ],
-      primaryActions: [
-        { id: 'schedule-appointment', label: 'Schedule Appointment', type: 'button' },
-        { id: 'view-progress', label: 'View Progress', type: 'link' }
-      ],
-      secondaryActions: [
-        { id: 'update-profile', label: 'Update Profile', type: 'link' }
-      ],
+      dashboardLayout: 'client-seeker' as any,
+      availableFeatures: ['profile-editor', 'job-applications', 'skill-assessments'],
+      primaryActions: ['update-profile', 'apply-to-job', 'book-session'],
+      secondaryActions: ['message-coach', 'view-progress'],
       navigationItems: [
-        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
-        { id: 'appointments', label: 'Appointments', path: '/appointments', icon: 'calendar' },
-        { id: 'progress', label: 'My Progress', path: '/progress', icon: 'trending-up' },
-        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
-        { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
-      ],
-      hiddenSections: ['admin-tools', 'coaching-tools', 'analytics'],
-      customFields: {
-        'client_id': userId,
-        'show_progress': true,
-        'appointment_booking': true
-      },
-      visibleComponents: [
-        'header', 
-        'sidebar', 
-        'main-content', 
-        'appointment-widget',
-        'progress-widget'
-      ],
-      permissions: [
-        'profile:read_own',
-        'profile:update_own',
-        'calendar_events:read_own',
-        'appointments:read_own',
-        'appointments:create_own',
-        'messages:read_own',
-        'messages:create_own'
-      ]
-    };
-  }
-}
-
-// ✅ JOBCOACH MONITOR
-class JobCoachMonitor extends BaseMonitor {
-  constructor() {
-    super('jobcoach');
-  }
-
-  async checkAccess(
-    userId: string, 
-    resource: string, 
-    action: string, 
-    context?: AccessContext
-  ): Promise<AccessResult> {
-    const coachPermissions = {
-      'profile': ['read_own', 'update_own', 'read_assigned_clients'],
-      'calendar_events': ['read_own', 'create', 'update_own', 'read_assigned'],
-      'coach_daily_reports': ['create', 'read_own', 'update_own'],
-      'clients': ['read_assigned', 'update_assigned'],
-      'appointments': ['create', 'read_all', 'update_all']
-    };
-
-    const resourcePermissions = coachPermissions[resource as keyof typeof coachPermissions] || [];
-    const hasAccess = resourcePermissions.includes(action) || resourcePermissions.includes('*');
-
-    return {
-      hasAccess,
-      reason: hasAccess ? 'Access granted' : `JobCoach role cannot ${action} ${resource}`,
-      context
-    };
-  }
-
-  async getContentConfig(userId: string): Promise<ContentConfig> {
-    return {
-      dashboardLayout: 'coach-dashboard' as any,
-      availableFeatures: [
-        'profile-view',
-        'client-management',
-        'calendar-full',
-        'hour-logging',
-        'reporting',
-        'messages-view'
-      ],
-      primaryActions: [
-        { id: 'log-hours', label: 'Log Hours', type: 'button' },
-        { id: 'schedule-client', label: 'Schedule with Client', type: 'button' }
-      ],
-      secondaryActions: [
-        { id: 'view-reports', label: 'View Reports', type: 'link' },
-        { id: 'manage-clients', label: 'Manage Clients', type: 'link' }
-      ],
-      navigationItems: [
-        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
-        { id: 'calendar', label: 'Calendar', path: '/calendar', icon: 'calendar' },
-        { id: 'clients', label: 'My Clients', path: '/clients', icon: 'users' },
-        { id: 'reports', label: 'Reports', path: '/reports', icon: 'file-text' },
-        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
-        { id: 'profile', label: 'Profile', path: '/profile', icon: 'user' }
-      ],
-      hiddenSections: ['admin-tools'],
-      customFields: {
-        'coach_id': userId,
-        'hour_logging': true,
-        'client_management': true
-      },
-      visibleComponents: [
-        'header',
-        'sidebar', 
-        'main-content',
-        'hour-logging-widget',
-        'client-widget',
-        'calendar-widget'
-      ],
-      permissions: [
-        'profile:read_own',
-        'profile:update_own',
-        'calendar_events:create',
-        'calendar_events:read_own',
-        'calendar_events:update_own',
-        'coach_daily_reports:create',
-        'coach_daily_reports:read_own',
-        'clients:read_assigned',
-        'appointments:create',
-        'appointments:read_all',
-        'messages:read_own',
-        'messages:create_own'
-      ]
-    };
-  }
-}
-
-// ✅ ADMIN MONITOR
-class AdminMonitor extends BaseMonitor {
-  constructor() {
-    super('admin');
-  }
-
-  async checkAccess(): Promise<AccessResult> {
-    // Admins have access to everything
-    return {
-      hasAccess: true,
-      reason: 'Admin has full access',
-      context: undefined
-    };
-  }
-
-  async getContentConfig(userId: string): Promise<ContentConfig> {
-    return {
-      dashboardLayout: 'admin-dashboard' as any,
-      availableFeatures: [
-        'profile-view',
-        'user-management',
-        'calendar-admin',
-        'reporting-admin',
-        'system-settings',
-        'analytics',
-        'messages-admin'
-      ],
-      primaryActions: [
-        { id: 'manage-users', label: 'Manage Users', type: 'button' },
-        { id: 'system-reports', label: 'System Reports', type: 'button' }
-      ],
-      secondaryActions: [
-        { id: 'settings', label: 'Settings', type: 'link' },
-        { id: 'analytics', label: 'Analytics', type: 'link' }
-      ],
-      navigationItems: [
-        { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: 'home' },
-        { id: 'users', label: 'Users', path: '/users', icon: 'users' },
-        { id: 'calendar', label: 'Calendar', path: '/calendar', icon: 'calendar' },
-        { id: 'reports', label: 'Reports', path: '/reports', icon: 'file-text' },
-        { id: 'analytics', label: 'Analytics', path: '/analytics', icon: 'bar-chart' },
-        { id: 'messages', label: 'Messages', path: '/messages', icon: 'message-circle' },
-        { id: 'settings', label: 'Settings', path: '/settings', icon: 'settings' }
+        { id: 'dashboard', label: 'My Dashboard', path: '/dashboard', icon: 'home' },
+        { id: 'profile', label: 'My Profile', path: '/client/profile', icon: 'user' },
+        { id: 'jobs', label: 'Job Search', path: '/client/jobs', icon: 'briefcase' },
+        { id: 'sessions', label: 'My Sessions', path: '/client/sessions', icon: 'calendar' }
       ],
       hiddenSections: [],
-      customFields: {
-        'admin_id': userId,
-        'full_access': true
-      },
-      visibleComponents: [
-        'header',
-        'sidebar',
-        'main-content', 
-        'admin-widgets',
-        'user-management',
-        'system-status'
-      ],
-      permissions: ['*'] // Full access
+      customFields: {},
+      visibleComponents: ['header', 'sidebar', 'main-content', 'client-tools'],
+      permissions: ['profile:read_own', 'profile:update_own', 'session:read_own']
     };
   }
 }
 
-// ✅ MONITOR FACTORY WITH PROPER ERROR HANDLING
-class HallMonitorFactory {
+// ✅ API CLIENT - Uses your existing APIs instead of direct database calls
+class APIClient {
+  private static baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  // ✅ Use your existing /api/profile/{userId} endpoint
+  static async getUserProfile(userId: string): Promise<{
+    id: string;
+    role: string;
+    display_name?: string;
+    avatar_url?: string;
+    initials?: string;
+  } | null> {
+    try {
+      console.log(`[APIClient] 🔍 Fetching profile via /api/profile/${userId}`);
+      
+      const response = await fetch(`${this.baseUrl}/api/profile/${userId}`);
+      
+      if (!response.ok) {
+        console.warn(`[APIClient] ⚠️ Profile API returned: ${response.status}`);
+        return null;
+      }
+      
+      const profile = await response.json();
+      console.log(`[APIClient] ✅ Profile fetched via API:`, profile);
+      return profile;
+      
+    } catch (error) {
+      console.error(`[APIClient] ❌ Error fetching profile:`, error);
+      return null;
+    }
+  }
+
+  // ✅ Use your existing /api/get-all-users endpoint to get email
+  static async getUserEmail(userId: string): Promise<string> {
+    try {
+      console.log(`[APIClient] 📧 Fetching email via /api/get-all-users`);
+      
+      const response = await fetch(`${this.baseUrl}/api/get-all-users`);
+      
+      if (!response.ok) {
+        console.warn(`[APIClient] ⚠️ Users API returned: ${response.status}`);
+        return 'unknown@example.com';
+      }
+      
+      const users = await response.json();
+      const user = users.find((u: any) => u.id === userId);
+      
+      if (user?.email) {
+        console.log(`[APIClient] ✅ Email found via API: ${user.email}`);
+        return user.email;
+      }
+      
+      return 'unknown@example.com';
+      
+    } catch (error) {
+      console.warn(`[APIClient] ⚠️ Error fetching email:`, error);
+      return 'unknown@example.com';
+    }
+  }
+
+  // ✅ Use your existing specializations API
+  static async getUserSpecializations(userId: string): Promise<UserSpecialization[]> {
+    try {
+      console.log(`[APIClient] 🎨 Fetching specializations via API`);
+      
+      const response = await fetch(
+        `${this.baseUrl}/api/profile/specializations/get-user-specializations?userId=${userId}`
+      );
+      
+      if (!response.ok) {
+        console.warn(`[APIClient] ⚠️ Specializations API returned: ${response.status}`);
+        return [];
+      }
+      
+      const specializations = await response.json();
+      
+      // Transform to match your UserSpecialization interface
+      const transformedSpecs: UserSpecialization[] = specializations.map((spec: any) => ({
+        id: spec.id,
+        name: spec.name,
+        description: spec.description || '',
+        role_id: spec.role || 'user0x',
+        role_name: ROLE_MAP[spec.role] || 'user',
+        assigned_at: new Date().toISOString(),
+        assigned_by: undefined
+      }));
+      
+      console.log(`[APIClient] ✅ Found ${transformedSpecs.length} specializations via API`);
+      return transformedSpecs;
+      
+    } catch (error) {
+      console.warn(`[APIClient] ⚠️ Error fetching specializations:`, error);
+      return [];
+    }
+  }
+}
+
+// ✅ HALL MONITOR FACTORY - NOW USES YOUR EXISTING APIS
+export class HallMonitorFactory {
   private static instance: HallMonitorFactory;
   private userCache = new Map<string, { user: MonitorUser; monitor: HallMonitor; timestamp: number }>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  private constructor() {}
 
   static getInstance(): HallMonitorFactory {
     if (!HallMonitorFactory.instance) {
@@ -297,7 +264,7 @@ class HallMonitorFactory {
     return HallMonitorFactory.instance;
   }
 
-  // ✅ MAIN METHOD - Fixed with proper error handling
+  // ✅ MAIN METHOD - Now uses your existing APIs
   async getMonitorForUser(userId: string): Promise<{ user: MonitorUser; monitor: HallMonitor }> {
     try {
       console.log(`[HallMonitorFactory] 🚀 Starting getMonitorForUser for: ${userId}`);
@@ -309,9 +276,9 @@ class HallMonitorFactory {
         return { user: cached.user, monitor: cached.monitor };
       }
 
-      // Build user data
-      console.log(`[HallMonitorFactory] 👤 Building user data for: ${userId}`);
-      const user = await this.buildUserData(userId);
+      // ✅ Build user data using your existing APIs
+      console.log(`[HallMonitorFactory] 👤 Building user data via your APIs for: ${userId}`);
+      const user = await this.buildUserDataFromYourAPIs(userId);
       
       if (!user) {
         throw new Error(`Failed to build user data for: ${userId}`);
@@ -356,7 +323,7 @@ class HallMonitorFactory {
     }
   }
 
-  // ✅ GET MONITOR FOR ROLE - Fixed with all role implementations
+  // ✅ GET MONITOR FOR ROLE
   private getMonitorForRole(roleName: string): HallMonitor {
     console.log(`[HallMonitorFactory] 🏭 Creating monitor for role: ${roleName}`);
 
@@ -378,85 +345,41 @@ class HallMonitorFactory {
     }
   }
 
-  // ✅ BUILD USER DATA - Enhanced error handling
-  private async buildUserData(userId: string): Promise<MonitorUser | null> {
+  // ✅ BUILD USER DATA USING YOUR EXISTING APIS - NO MORE RAW DATABASE CALLS
+  private async buildUserDataFromYourAPIs(userId: string): Promise<MonitorUser | null> {
     try {
-      console.log(`[HallMonitorFactory] 📋 Step 1: Fetching profile for user ${userId}`);
+      console.log(`[HallMonitorFactory] 📋 Building user data via your existing APIs for: ${userId}`);
 
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, email, display_name')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) {
-        console.error(`[HallMonitorFactory] ❌ Profile fetch error:`, profileError);
-        return null;
-      }
-
+      // ✅ Step 1: Get profile using your /api/profile/{userId} endpoint
+      const profile = await APIClient.getUserProfile(userId);
       if (!profile) {
-        console.error(`[HallMonitorFactory] ❌ No profile found for user: ${userId}`);
+        console.error(`[HallMonitorFactory] ❌ Could not get profile for user: ${userId}`);
         return null;
       }
 
-      console.log(`[HallMonitorFactory] ✅ Profile fetched: roleId=${profile.role}`);
-
-      // Resolve role name
+      // ✅ Step 2: Map role using your existing ROLE_MAP logic
       const roleName = ROLE_MAP[profile.role] || 'user';
-      console.log(`[HallMonitorFactory] 🎯 Resolved role for ${userId}: ID="${profile.role}" -> NAME="${roleName}"`);
+      console.log(`[HallMonitorFactory] ✅ Role mapped: ${profile.role} -> ${roleName}`);
 
-      // Get email - try from profile first, then auth
-      let email = profile.email;
-      if (!email) {
-        console.log(`[HallMonitorFactory] 📧 No email in profile, fetching from auth...`);
-        const { data: authData } = await supabase.auth.getUser();
-        email = authData.user?.email || 'unknown@example.com';
-      }
-      console.log(`[HallMonitorFactory] 📧 Email retrieved for current user: ${email}`);
+      // ✅ Step 3: Get email using your /api/get-all-users endpoint
+      const email = await APIClient.getUserEmail(userId);
+      console.log(`[HallMonitorFactory] 📧 Email retrieved via API: ${email}`);
 
-      // Get specializations (with error handling)
-      console.log(`[HallMonitorFactory] 🎨 Step 4: Fetching specializations for user ${userId}`);
-      let specializations: UserSpecialization[] = [];
-      
-      try {
-        const { data: specializationData, error: specializationError } = await supabase
-          .from('user_specializations')
-          .select(`
-            specialization_id,
-            specializations(id, name, description)
-          `)
-          .eq('user_id', userId);
+      // ✅ Step 4: Get specializations using your existing API
+      const specializations = await APIClient.getUserSpecializations(userId);
+      console.log(`[HallMonitorFactory] ✅ Found ${specializations.length} specializations via your API`);
 
-        if (specializationError) {
-          console.warn(`[HallMonitorFactory] ⚠️ Specialization fetch warning:`, specializationError);
-        } else if (specializationData) {
-          specializations = specializationData
-            .filter(item => item.specializations)
-            .map(item => ({
-              id: item.specializations.id,
-              name: item.specializations.name,
-              description: item.specializations.description || ''
-            }));
-        }
-      } catch (specError) {
-        console.warn(`[HallMonitorFactory] ⚠️ Specialization table might not exist:`, specError);
-      }
-
-      console.log(`[HallMonitorFactory] ✅ Found ${specializations.length} specializations for user ${userId}:`, specializations);
-
-      // Build final user object
+      // ✅ Build final user object
       const userData: MonitorUser = {
         id: userId,
         role_id: profile.role,
         role_name: roleName,
         email: email,
-        display_name: profile.display_name || email,
+        display_name: profile.display_name || email.split('@')[0] || 'User',
         specializations
       };
 
-      console.log(`[HallMonitorFactory] 💾 User data cached for: ${userId} with role: ${roleName}`);
-      console.log(`[HallMonitorFactory] 🎉 Complete user data built for ${userId}:`, {
+      console.log(`[HallMonitorFactory] 🎉 Complete user data built via your APIs:`, {
         id: userData.id,
         role_id: userData.role_id,
         role_name: userData.role_name,
@@ -468,7 +391,7 @@ class HallMonitorFactory {
       return userData;
 
     } catch (error) {
-      console.error(`[HallMonitorFactory] ❌ Error building user data:`, error);
+      console.error(`[HallMonitorFactory] ❌ Error building user data via your APIs:`, error);
       return null;
     }
   }

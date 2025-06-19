@@ -1,10 +1,11 @@
-// Fixed CalendarBox - Original layout with unified interactions
+// Fixed CalendarBox - Original layout with separated tooltips
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
 import CalendarEvent from './CalendarEvent';
-import EventTooltip from './EventTooltip';
+import DayTooltip from './DayTooltip';
+import EventHoverTooltip from './EventHoverTooltip';
 
 interface CalendarEvent {
   id: string;
@@ -52,9 +53,14 @@ const CalendarBox = ({
   onDateRightClick,
   onEventRightClick
 }: CalendarBoxProps) => {
-  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
+  // Day tooltip state (replaces old EventTooltip for clicked dates)
   const [clickedDate, setClickedDate] = useState<Date | null>(null);
-  const [tooltipType, setTooltipType] = useState<'hover' | 'clicked-date' | 'clicked-event'>('hover');
+  const [dayTooltipType, setDayTooltipType] = useState<'clicked-date' | 'clicked-event'>('clicked-date');
+  
+  // Event hover tooltip state (new - for hovering over events)
+  const [hoveredEvent, setHoveredEvent] = useState<CalendarEvent | null>(null);
+  const [eventTooltipPosition, setEventTooltipPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  
   const calendarRef = useRef<HTMLDivElement>(null);
 
   // Calculate calendar days
@@ -114,27 +120,50 @@ const CalendarBox = ({
     return baseClass;
   };
 
-  // UNIFIED: Handle event click - combines page and component logic
+  // Handle event click - for opening modals or showing day tooltip
   const handleEventClick = (event: CalendarEvent) => {
+    // Clear event hover tooltip
+    setHoveredEvent(null);
+    
     if (event.is_hour_log) {
-      // For hour logs, show persistent tooltip in component
+      // For hour logs, show day tooltip in clicked-event mode
       const eventDate = new Date(event.event_date);
       setClickedDate(clickedDate && isSameDay(clickedDate, eventDate) ? null : eventDate);
-      setTooltipType('clicked-event');
+      setDayTooltipType('clicked-event');
     } else {
       // For regular events, use page callback (opens modal)
       onEventClick(event);
     }
   };
 
-  // UNIFIED: Handle date click - combines page and component logic
+  // Handle date click - for showing day tooltip
   const handleDateClick = (date: Date) => {
-    // Always show tooltip for clicked date
+    // Clear event hover tooltip
+    setHoveredEvent(null);
+    
+    // Toggle day tooltip
     setClickedDate(clickedDate && isSameDay(clickedDate, date) ? null : date);
-    setTooltipType('clicked-date');
+    setDayTooltipType('clicked-date');
     
     // Also call page callback
     onDateClick(date);
+  };
+
+  // Handle event hover - show event hover tooltip
+  const handleEventHover = (event: CalendarEvent, mouseEvent: React.MouseEvent) => {
+    // Don't show hover tooltip if day tooltip is open
+    if (clickedDate) return;
+    
+    setHoveredEvent(event);
+    setEventTooltipPosition({
+      x: mouseEvent.clientX,
+      y: mouseEvent.clientY
+    });
+  };
+
+  // Handle event hover end
+  const handleEventHoverEnd = () => {
+    setHoveredEvent(null);
   };
 
   // Handle right-click on date
@@ -157,13 +186,12 @@ const CalendarBox = ({
     }
   };
 
-  // Handle tooltip close
-  const handleTooltipClose = () => {
+  // Handle day tooltip close
+  const handleDayTooltipClose = () => {
     setClickedDate(null);
-    setHoveredDate(null);
   };
 
-  // Handle quick actions from tooltip
+  // Handle quick actions from day tooltip
   const handleQuickAction = (action: string, date: Date) => {
     switch (action) {
       case 'log-hours':
@@ -175,7 +203,7 @@ const CalendarBox = ({
       default:
         break;
     }
-    handleTooltipClose();
+    handleDayTooltipClose();
   };
 
   // Render calendar grid
@@ -203,14 +231,9 @@ const CalendarBox = ({
           return (
             <td
               key={date.toISOString()}
-              className={`${cellClass} calendar-day`} // Add class for context menu detection
+              className={`${cellClass} calendar-day`}
               onClick={() => handleDateClick(date)}
               onContextMenu={(e) => handleDateRightClick(e, date)}
-              onMouseEnter={() => {
-                setHoveredDate(date);
-                setTooltipType('hover');
-              }}
-              onMouseLeave={() => setHoveredDate(null)}
             >
               <span className={getDayNumberClass(date)}>
                 {format(date, 'd')}
@@ -220,12 +243,14 @@ const CalendarBox = ({
                 {dayEvents.slice(0, maxVisibleEvents).map((event, index) => (
                   <div
                     key={event.id}
-                    className="calendar-event" // Add class for context menu detection
+                    className="calendar-event"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(event);
                     }}
                     onContextMenu={(e) => handleEventRightClick(e, event)}
+                    onMouseEnter={(e) => handleEventHover(event, e)}
+                    onMouseLeave={handleEventHoverEnd}
                   >
                     <CalendarEvent
                       event={event}
@@ -249,20 +274,6 @@ const CalendarBox = ({
                   </div>
                 )}
               </div>
-
-              {/* Hover tooltip */}
-              {hoveredDate && isSameDay(hoveredDate, date) && dayEvents.length > 0 && tooltipType === 'hover' && (
-                <EventTooltip
-                  date={date}
-                  events={dayEvents}
-                  isVisible={true}
-                  onClose={() => setHoveredDate(null)}
-                  onEventClick={onEventClick}
-                  tooltipType="hover"
-                  userRole={userRole}
-                  parentRef={calendarRef}
-                />
-              )}
             </td>
           );
         })}
@@ -311,18 +322,28 @@ const CalendarBox = ({
         </tbody>
       </table>
 
-      {/* Persistent tooltip for clicked dates */}
+      {/* DayTooltip - for clicked dates (uses QuickActions component) */}
       {clickedDate && (
-        <EventTooltip
+        <DayTooltip
           date={clickedDate}
           events={getEventsForDate(clickedDate)}
           isVisible={true}
-          onClose={handleTooltipClose}
+          onClose={handleDayTooltipClose}
           onEventClick={handleEventClick}
-          tooltipType={tooltipType}
+          tooltipType={dayTooltipType}
           userRole={userRole}
           parentRef={calendarRef}
           onQuickAction={handleQuickAction}
+        />
+      )}
+
+      {/* EventHoverTooltip - for hovering over individual events */}
+      {hoveredEvent && (
+        <EventHoverTooltip
+          event={hoveredEvent}
+          isVisible={true}
+          position={eventTooltipPosition}
+          formatTime={formatTime}
         />
       )}
     </div>

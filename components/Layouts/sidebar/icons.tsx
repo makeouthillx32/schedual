@@ -38,6 +38,43 @@ export function HomeIcon(props: PropsType) {
     </svg>
   );
 }
+export function MessageIcon(props: PropsType) {
+  return (
+    <svg
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </svg>
+  );
+}
+
+export function SettingsIcon(props: PropsType) {
+  return (
+    <svg
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx={12} cy={12} r={3} />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.07.07a2 2 0 11-2.83 2.83l-.07-.07a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1.51.5l-.17.07a2 2 0 01-4 0l-.07-.07a1.65 1.65 0 00-1.51-.5 1.65 1.65 0 00-1.82.33l-.07.07a2 2 0 11-2.83-2.83l.07-.07a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-.5-1.51l-.07-.17a2 2 0 010-4l.07-.07a1.65 1.65 0 00.5-1.51 1.65 1.65 0 00-.33-1.82l-.07-.07a2 2 0 112.83-2.83l.07.07a1.65 1.65 0 001.82.33h.17a1.65 1.65 0 001.51-.5l.07-.17a2 2 0 014 0l.07.17a1.65 1.65 0 001.51.5h.17a1.65 1.65 0 001.82-.33l.07-.07a2 2 0 112.83 2.83l-.07.07a1.65 1.65 0 00-.33 1.82v.17a1.65 1.65 0 00.5 1.51l.17.07a2 2 0 010 4l-.17.07a1.65 1.65 0 00-1.51.5z" />
+    </svg>
+  );
+}
+
 
 export function Calendar(props: PropsType) {
   return (

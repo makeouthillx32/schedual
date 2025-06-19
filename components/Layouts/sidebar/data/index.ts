@@ -9,17 +9,9 @@ export const NAV_DATA = [
     items: [
       {
         title: "Dashboard",
+        url: "/",
         icon: Icons.HomeIcon,
-        items: [
-          {
-            title: "Homepage",
-            url: "/",
-          },
-          {
-            title: "Commercial Services",
-            url: "/commercial",
-          },
-        ],
+        items: [],
         roles: ["admin", "jobcoach"],
       },
       {
@@ -29,13 +21,7 @@ export const NAV_DATA = [
         items: [],
         roles: ["admin", "jobcoach", "client"],
       },
-      {
-        title: "Calendar Planner",
-        url: "/calendar/planner",
-        icon: Icons.Calendar,
-        items: [],
-        roles: ["admin"],
-      },
+      // Calendar Planner removed as not needed
       {
         title: "Profile",
         url: "/profile",
@@ -46,41 +32,37 @@ export const NAV_DATA = [
       {
         title: "Messages",
         url: "/messages",
-        icon: Icons.Authentication,
-        items: [
-          {
-            title: "Chats",
-            url: "/messages",
-          },
-          {
-            title: "Activity",
-            url: "/messages/activity",
-          }
-        ],
+        icon: Icons.MessageIcon,
+        items: [],  // No dropdown, Chats is the main messages URL
         roles: ["admin", "jobcoach", "client"],
       },
       {
         title: "Admin",
-        icon: Icons.Authentication,
+        icon: Icons.SettingsIcon,
         items: [
           {
             title: "Members",
             url: "/settings/members",
-            icon: Icons.User
+            icon: Icons.User,
           },
           {
             title: "Roles",
             url: "/settings/roles",
-            icon: Icons.Authentication
+            icon: Icons.Authentication,
           },
           {
             title: "Invites",
             url: "/settings/invites",
-            icon: Icons.Table
-          }
+            icon: Icons.Table,
+          },
+          {
+            title: "Permissions",
+            url: "/settings/permissions",
+            icon: Icons.Authentication,
+          },
         ],
         roles: ["admin"],
-      }
+      },
     ],
   },
   {

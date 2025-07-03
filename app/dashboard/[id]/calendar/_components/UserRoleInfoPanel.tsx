@@ -1,6 +1,9 @@
 // app/dashboard/[id]/calendar/_components/UserRoleInfoPanel.tsx
 'use client';
 
+import { useState } from 'react';
+import { Info, X } from 'lucide-react';
+
 interface UserRoleInfoPanelProps {
   userRole: string;
   roleLoading: boolean;
@@ -15,6 +18,8 @@ interface UserRoleInfoPanelProps {
 }
 
 const UserRoleInfoPanel = ({ userRole, roleLoading, selectedUser }: UserRoleInfoPanelProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   // Helper function to get role display name
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -93,38 +98,86 @@ const UserRoleInfoPanel = ({ userRole, roleLoading, selectedUser }: UserRoleInfo
     }
   };
 
+  if (roleLoading) {
+    return (
+      <div className="mb-4">
+        <button
+          className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg border border-gray-200 opacity-50 cursor-not-allowed"
+          disabled
+        >
+          <Info className="h-4 w-4 animate-pulse" />
+          <span className="text-sm">Loading role info...</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className={`mb-4 p-4 rounded-lg border ${getRoleColorTheme(userRole)}`}>
-      <div className="flex items-center gap-2">
-        {getRoleIcon(userRole)}
+    <div className="mb-4">
+      {/* Info Icon Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-200 transition-colors"
+        title="View role information"
+      >
+        <Info className="h-4 w-4 text-blue-600" />
         <span className="text-sm font-medium">
-          {selectedUser ? (
-            <>
-              Viewing: {selectedUser.display_name || selectedUser.email} 
-              <span className="text-xs opacity-75">
-                ({getRoleDisplayName(selectedUser.role)})
-              </span>
-            </>
-          ) : (
-            <>
-              Viewing as: {getRoleDisplayName(userRole)}
-              {roleLoading && ' (Loading role...)'}
-            </>
-          )}
+          {getRoleDisplayName(userRole)} Info
         </span>
-      </div>
-      <div className="text-xs mt-1 opacity-90">
-        {selectedUser ? (
-          <>
-            You are viewing <strong>{selectedUser.display_name || selectedUser.email}</strong>'s calendar. 
-            {selectedUser.role === 'coachx7' && ' You can see their hour logs and assigned client events.'}
-            {selectedUser.role === 'client7x' && ' You can see their scheduled appointments and meetings.'}
-            {selectedUser.role === 'admin1' && ' You can see all their administrative calendar entries.'}
-          </>
-        ) : (
-          getRoleDescription(userRole)
+        {selectedUser && (
+          <div className="text-xs px-2 py-1 bg-blue-600 text-white rounded">
+            Viewing: {selectedUser.display_name || selectedUser.email}
+          </div>
         )}
-      </div>
+      </button>
+
+      {/* Expandable Content */}
+      {isOpen && (
+        <div className={`mt-2 p-4 rounded-lg border transition-all duration-200 ${getRoleColorTheme(userRole)}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {getRoleIcon(userRole)}
+              <span className="text-sm font-medium">
+                {selectedUser ? (
+                  <>
+                    Viewing: {selectedUser.display_name || selectedUser.email} 
+                    <span className="text-xs opacity-75">
+                      ({getRoleDisplayName(selectedUser.role)})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Viewing as: {getRoleDisplayName(userRole)}
+                  </>
+                )}
+              </span>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1 hover:bg-black/10 rounded transition-colors"
+              title="Close info panel"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          
+          {/* Instructions */}
+          <div className="text-xs mt-2 opacity-90">
+            {selectedUser ? (
+              <>
+                You are viewing <strong>{selectedUser.display_name || selectedUser.email}</strong>'s calendar. 
+                {selectedUser.role === 'coachx7' && ' You can see their hour logs and assigned client events.'}
+                {selectedUser.role === 'client7x' && ' You can see their scheduled appointments and meetings.'}
+                {selectedUser.role === 'admin1' && ' You can see all their administrative calendar entries.'}
+              </>
+            ) : (
+              getRoleDescription(userRole)
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

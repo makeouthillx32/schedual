@@ -56,9 +56,9 @@ export default function CalendarHeader({
 
   return (
     <div className="mb-4 sm:mb-6">
-      {/* Top Row - Month/Year and Navigation */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <div className="flex-1 min-w-0">
+      {/* Main Header Row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex-1 min-w-0 pr-4">
           <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--foreground))] truncate">
             {formatMonthYear(currentDate)}
           </h1>
@@ -74,8 +74,8 @@ export default function CalendarHeader({
           </p>
         </div>
         
-        {/* Navigation Controls */}
-        <div className="flex items-center gap-2">
+        {/* Navigation Controls - Tighter grouping */}
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onNavigateMonth('prev')}
             className="flex h-8 w-8 items-center justify-center rounded-md border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
@@ -85,7 +85,7 @@ export default function CalendarHeader({
           </button>
           <button
             onClick={onGoToToday}
-            className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors whitespace-nowrap"
+            className="px-3 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors whitespace-nowrap min-w-0"
           >
             Today
           </button>
@@ -98,6 +98,35 @@ export default function CalendarHeader({
           </button>
         </div>
       </div>
+
+      {/* Action Buttons Row - Centered */}
+      {(permissions.canLogHours || permissions.canCreateEvents) && (
+        <div className="flex items-center justify-center gap-2">
+          {permissions.canLogHours && (
+            <button
+              onClick={onOpenHoursModal}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--secondary-foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
+              title="Log your work hours (supports quick entry like 'TB 7')"
+              disabled={loggingHours}
+            >
+              <Clock className="h-4 w-4" />
+              <span className="whitespace-nowrap">
+                {loggingHours ? 'Logging...' : 'Log Hours'}
+              </span>
+            </button>
+          )}
+
+          {permissions.canCreateEvents && (
+            <button
+              onClick={onOpenEventModal}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 rounded-md transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="whitespace-nowrap">New Event</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* View Mode Selection - COMMENTED OUT FOR NOW */}
       {/* 
@@ -119,35 +148,6 @@ export default function CalendarHeader({
         </div>
       </div>
       */}
-
-      {/* Action Buttons Row */}
-      {(permissions.canLogHours || permissions.canCreateEvents) && (
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          {permissions.canLogHours && (
-            <button
-              onClick={onOpenHoursModal}
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--secondary-foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
-              title="Log your work hours (supports quick entry like 'TB 7')"
-              disabled={loggingHours}
-            >
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="whitespace-nowrap">
-                {loggingHours ? 'Logging...' : 'Log Hours'}
-              </span>
-            </button>
-          )}
-
-          {permissions.canCreateEvents && (
-            <button
-              onClick={onOpenEventModal}
-              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 rounded-md transition-colors"
-            >
-              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="whitespace-nowrap">New Event</span>
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }

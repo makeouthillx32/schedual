@@ -82,58 +82,39 @@ const UserRoleInfoPanel = ({ userRole, roleLoading, selectedUser }: UserRoleInfo
     }
   };
 
-  // Helper function to get role color theme
-  const getRoleColorTheme = (role: string) => {
-    switch (role) {
-      case 'admin1': 
-        return 'bg-red-50 border-red-200 text-red-800';
-      case 'coachx7': 
-        return 'bg-blue-50 border-blue-200 text-blue-800';
-      case 'client7x': 
-        return 'bg-green-50 border-green-200 text-green-800';
-      case 'user0x': 
-        return 'bg-[hsl(var(--muted))] border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]';
-      default: 
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-    }
-  };
-
   if (roleLoading) {
     return (
       <div className="mb-4">
-        <button
-          className="flex items-center gap-2 p-2 rounded-lg opacity-50 cursor-not-allowed"
-          disabled
-        >
+        <div className="flex items-center gap-2 p-2 rounded-lg opacity-50">
           <Info className="h-4 w-4 animate-pulse" />
           <span className="text-sm">Loading role info...</span>
-        </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mb-4">
-      {/* Info Icon Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
-        title="View role information"
-      >
-        <Info className="h-4 w-4 text-[hsl(var(--primary))]" />
-        <span className="text-sm font-medium text-[hsl(var(--foreground))]">
-          {getRoleDisplayName(userRole)} Info
-        </span>
-        {selectedUser && (
-          <div className="text-xs px-2 py-1 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded">
-            Viewing: {selectedUser.display_name || selectedUser.email}
-          </div>
-        )}
-      </button>
-
-      {/* Expandable Content */}
-      {isOpen && (
-        <div className={`mt-2 p-4 rounded-lg border transition-all duration-200 ${getRoleColorTheme(userRole)}`}>
+      {!isOpen ? (
+        // Collapsed State - Info Button
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex items-center gap-2 p-2 hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+          title="View role information"
+        >
+          <Info className="h-4 w-4 text-[hsl(var(--primary))]" />
+          <span className="text-sm font-medium text-[hsl(var(--foreground))]">
+            {getRoleDisplayName(userRole)} Info
+          </span>
+          {selectedUser && (
+            <div className="text-xs px-2 py-1 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded">
+              Viewing: {selectedUser.display_name || selectedUser.email}
+            </div>
+          )}
+        </button>
+      ) : (
+        // Expanded State - Full Info Panel
+        <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-800 transition-all duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {getRoleIcon(userRole)}

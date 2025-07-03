@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Download, Calendar, FileSpreadsheet, Filter, Clock, Users, User, Briefcase } from 'lucide-react';
 import { CalendarTemplateUtils } from './CalendarTemplateUtils';
-import { CoachClientTimesheetTemplate } from '../exports/CoachClientTimesheetTemplate';
-import { JobCoachPersonalTimesheetTemplate } from '../exports/JobCoachPersonalTimesheetTemplate';
-import { ClientPersonalTimesheetTemplate } from '../exports/ClientPersonalTimesheetTemplate';
+import { CoachClientTimesheetTemplate } from './CoachClientTimesheetTemplate';
+import { JobCoachPersonalTimesheetTemplate } from './JobCoachPersonalTimesheetTemplate';
+import { ClientPersonalTimesheetTemplate } from './ClientPersonalTimesheetTemplate';
 
 interface CalendarEvent {
   id: string;

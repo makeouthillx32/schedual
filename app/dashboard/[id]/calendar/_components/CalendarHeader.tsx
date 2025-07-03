@@ -55,15 +55,16 @@ export default function CalendarHeader({
   };
 
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--foreground))]">
+    <div className="mb-4 sm:mb-6">
+      {/* Top Row - Month/Year and Navigation */}
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--foreground))] truncate">
             {formatMonthYear(currentDate)}
           </h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] mt-1">
             {getRoleDisplayName(userRole)} View
-            {roleLoading && ' (Loading role...)'}
+            {roleLoading && ' (Loading...)'}
             {/* Show optimistic entries count */}
             {optimisticCount > 0 && (
               <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
@@ -72,6 +73,8 @@ export default function CalendarHeader({
             )}
           </p>
         </div>
+        
+        {/* Navigation Controls */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => onNavigateMonth('prev')}
@@ -79,6 +82,12 @@ export default function CalendarHeader({
             aria-label="Previous month"
           >
             <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onGoToToday}
+            className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors whitespace-nowrap"
+          >
+            Today
           </button>
           <button
             onClick={() => onNavigateMonth('next')}
@@ -90,14 +99,9 @@ export default function CalendarHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onGoToToday}
-          className="px-4 py-2 text-sm font-medium text-[hsl(var(--foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
-        >
-          Today
-        </button>
-        
+      {/* View Mode Selection - COMMENTED OUT FOR NOW */}
+      {/* 
+      <div className="flex items-center justify-center mb-3 sm:mb-4">
         <div className="flex items-center rounded-md border border-[hsl(var(--border))]">
           {(['month', 'week', 'day'] as const).map((mode) => (
             <button
@@ -113,32 +117,37 @@ export default function CalendarHeader({
             </button>
           ))}
         </div>
+      </div>
+      */}
 
-        {/* Role-based action buttons */}
-        <div className="flex items-center gap-2">
+      {/* Action Buttons Row */}
+      {(permissions.canLogHours || permissions.canCreateEvents) && (
+        <div className="flex items-center justify-center gap-2 flex-wrap">
           {permissions.canLogHours && (
             <button
               onClick={onOpenHoursModal}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--secondary-foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--secondary-foreground))] bg-[hsl(var(--secondary))] hover:bg-[hsl(var(--secondary))]/80 rounded-md transition-colors"
               title="Log your work hours (supports quick entry like 'TB 7')"
               disabled={loggingHours}
             >
-              <Clock className="h-4 w-4" />
-              {loggingHours ? 'Logging...' : 'Log Hours'}
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="whitespace-nowrap">
+                {loggingHours ? 'Logging...' : 'Log Hours'}
+              </span>
             </button>
           )}
 
           {permissions.canCreateEvents && (
             <button
               onClick={onOpenEventModal}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 rounded-md transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-[hsl(var(--primary-foreground))] bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 rounded-md transition-colors"
             >
-              <Plus className="h-4 w-4" />
-              New Event
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="whitespace-nowrap">New Event</span>
             </button>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

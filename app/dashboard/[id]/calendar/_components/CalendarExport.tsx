@@ -336,7 +336,11 @@ const CalendarExport = ({
       </div>
 
       {showOptions && (
-        <div className="absolute top-full left-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-h-80 sm:max-h-96 overflow-y-auto
+                       /* Mobile positioning fixes */
+                       max-w-[calc(100vw-2rem)] 
+                       /* Ensure it doesn't go off-screen on mobile */
+                       transform -translate-x-2 sm:translate-x-0">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <Filter className="w-4 h-4" />
             Export Options
@@ -345,21 +349,21 @@ const CalendarExport = ({
           {/* Export Format */}
           <div className="space-y-2 mb-4">
             <label className="text-sm font-medium text-gray-700">Export Type:</label>
-            <div className="space-y-1 max-h-40 overflow-y-auto border rounded p-2">
+            <div className="space-y-1 max-h-32 sm:max-h-40 overflow-y-auto border rounded p-2">
               {formatOptions.map(format => {
                 const IconComponent = format.icon;
                 return (
-                  <label key={format.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded">
+                  <label key={format.value} className="flex items-center cursor-pointer hover:bg-gray-50 p-1 rounded text-xs sm:text-sm">
                     <input
                       type="radio"
                       name="exportFormat"
                       value={format.value}
                       checked={exportOptions.exportFormat === format.value}
                       onChange={(e) => setExportOptions(prev => ({ ...prev, exportFormat: e.target.value as any }))}
-                      className="border-gray-300"
+                      className="border-gray-300 scale-75 sm:scale-100"
                     />
-                    <IconComponent className="w-4 h-4 ml-2 mr-2 text-gray-600" />
-                    <span className="text-sm">{format.label}</span>
+                    <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 ml-1 sm:ml-2 mr-1 sm:mr-2 text-gray-600 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm leading-tight">{format.label}</span>
                   </label>
                 );
               })}
@@ -448,8 +452,8 @@ const CalendarExport = ({
 
           {/* Timesheet Info */}
           {isTimesheetFormat && (
-            <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 border border-blue-200 rounded p-2 sm:p-3 mb-4">
+              <p className="text-xs sm:text-sm text-blue-800">
                 <strong>Timesheet Export:</strong> This will generate a blank timesheet template for the selected month.
                 {exportOptions.exportFormat === 'coach-client-timesheet' && ' It will include all clients matching your specialization.'}
               </p>

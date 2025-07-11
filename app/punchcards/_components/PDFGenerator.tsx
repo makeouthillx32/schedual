@@ -1,7 +1,7 @@
 // app/punchcards/_components/PDFGenerator.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 
 interface PunchCard {
@@ -26,6 +26,8 @@ interface GenerationProgress {
 const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
+  const [generatedPDF, setGeneratedPDF] = useState<jsPDF | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   // A4 dimensions at 300 DPI
   const A4_WIDTH = 2480;
@@ -43,13 +45,6 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
   // Calculate spacing for A4 layout
   const MARGIN_X = (A4_WIDTH - (COLS * CARD_WIDTH)) / (COLS + 1);
   const MARGIN_Y = (A4_HEIGHT - (ROWS * CARD_HEIGHT)) / (ROWS + 1);
-
-  // Auto-generate PDF when cards are ready
-  useEffect(() => {
-    if (cards.length > 0 && !isGenerating) {
-      generateOptimizedPDF();
-    }
-  }, [cards]);
 
   const generateIndividualCard = async (card: PunchCard, isBackSide: boolean = false): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -263,6 +258,7 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
   const generateOptimizedPDF = async () => {
     try {
       setIsGenerating(true);
+      setIsReady(false);
       setProgress({ stage: 'Initializing...', progress: 0, total: cards.length * 2 });
 
       const pdf = new jsPDF({
@@ -311,14 +307,14 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
       }
 
       setProgress({
-        stage: 'Downloading PDF...',
+        stage: 'PDF Ready for Download!',
         progress: sheetsNeeded * 2,
         total: sheetsNeeded * 2
       });
 
-      // Auto-download the PDF
-      const fileName = `${batchName || 'PunchCards'}_${batchId}_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
+      // Store the PDF instead of auto-downloading
+      setGeneratedPDF(pdf);
+      setIsReady(true);
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -327,6 +323,19 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
       setIsGenerating(false);
       setProgress(null);
     }
+  };
+
+  const handleDownload = () => {
+    if (generatedPDF) {
+      const fileName = `${batchName || 'PunchCards'}_${batchId}_${new Date().toISOString().split('T')[0]}.pdf`;
+      generatedPDF.save(fileName);
+    }
+  };
+
+  const handleRegenerate = () => {
+    setGeneratedPDF(null);
+    setIsReady(false);
+    generateOptimizedPDF();
   };
 
   return (
@@ -352,12 +361,14 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
       )}
 
       {/* Generation Status */}
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <h4 className="font-medium text-green-900 mb-3">✅ Production Pipeline Active</h4>
+      <div className={`border rounded-lg p-4 ${isReady ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+        <h4 className={`font-medium mb-3 ${isReady ? 'text-green-900' : 'text-gray-900'}`}>
+          {isReady ? '✅ PDF Ready for Download!' : '⏳ Cards Generated - Click to Create PDF'}
+        </h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className="font-medium text-green-800">Cards Generated</div>
-            <ul className="text-green-700 space-y-1">
+            <div className={`font-medium ${isReady ? 'text-green-800' : 'text-gray-700'}`}>Cards Generated</div>
+            <ul className={`space-y-1 ${isReady ? 'text-green-700' : 'text-gray-600'}`}>
               <li>• {cards.length} individual cards</li>
               <li>• Batch ID: {batchId}</li>
               <li>• Dartboard watermark applied</li>
@@ -365,31 +376,65 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
             </ul>
           </div>
           <div>
-            <div className="font-medium text-green-800">PDF Layout</div>
-            <ul className="text-green-700 space-y-1">
+            <div className={`font-medium ${isReady ? 'text-green-800' : 'text-gray-700'}`}>PDF Layout</div>
+            <ul className={`space-y-1 ${isReady ? 'text-green-700' : 'text-gray-600'}`}>
               <li>• A4 optimized sheets</li>
               <li>• Duplex print ready</li>
               <li>• Cut guides included</li>
-              <li>• Auto-download enabled</li>
+              <li>• {isReady ? 'Ready to download' : 'Manual download'}</li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Manual Controls */}
+      {/* Download Controls */}
       <div className="flex space-x-4">
-        <button
-          onClick={generateOptimizedPDF}
-          disabled={isGenerating || cards.length === 0}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-            !isGenerating && cards.length > 0
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {isGenerating ? 'Generating PDF...' : 'Regenerate PDF'}
-        </button>
+        {isReady ? (
+          <>
+            <button
+              onClick={handleDownload}
+              className="flex-1 py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Download PDF</span>
+            </button>
+            <button
+              onClick={handleRegenerate}
+              className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              🔄 Regenerate
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={generateOptimizedPDF}
+            disabled={isGenerating || cards.length === 0}
+            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+              !isGenerating && cards.length > 0
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {isGenerating ? 'Generating PDF...' : 'Create PDF'}
+          </button>
+        )}
       </div>
+
+      {/* Success Message */}
+      {isReady && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-blue-900 font-medium">
+              PDF generated successfully! Click "Download PDF" above to save it.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Print Instructions */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

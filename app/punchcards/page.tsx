@@ -1,18 +1,18 @@
 // app/punchcards/page.tsx
+import dynamic from 'next/dynamic';
 import { Metadata } from 'next';
-import PunchCardClient from './PunchCardClient';
 
-// Metadata for OpenGraph and SEO
+// Dynamically import the client component
+const PunchCardClient = dynamic(() => import('./PunchCardClient'), { ssr: false });
+
 export const metadata: Metadata = {
   title: 'DARTS Punch Card Maker | Professional Card Generator',
   description: 'DARTS punchcard maker! Use one of our templates or upload your own! Create professional punch cards with A4-optimized layouts for easy printing.',
-  keywords: ['punch cards', 'card maker', 'DARTS', 'templates', 'printing', 'A4', 'professional cards'],
-  authors: [{ name: 'DARTS' }],
   openGraph: {
     title: 'DARTS Punch Card Maker',
     description: 'DARTS punchcard maker! Use one of our templates or upload your own!',
-    type: 'website',
     url: 'https://schedual-five.vercel.app/punchcards',
+    type: 'website',
     images: [
       {
         url: 'https://schedual-five.vercel.app/images/Punchcardmaker.png',
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
     description: 'DARTS punchcard maker! Use one of our templates or upload your own!',
     images: ['https://schedual-five.vercel.app/images/Punchcardmaker.png'],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
 };
 
 export default function PunchCardsPage() {
-  return <PunchCardClient />;
+  return (
+    <div>
+      <PunchCardClient />
+    </div>
+  );
 }

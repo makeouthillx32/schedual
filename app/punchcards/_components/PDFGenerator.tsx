@@ -113,32 +113,20 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
         templateImg.crossOrigin = 'anonymous';
         
         templateImg.onload = () => {
-          // Draw template image
+          // Draw template image only - no card number
           ctx.drawImage(templateImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
-          
-          // Add card number (top-left)
-          ctx.fillStyle = '#000000';
-          ctx.font = 'bold 48px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`#${card.cardNumber.toString().padStart(3, '0')}`, 40, 80);
           
           resolve(canvas.toDataURL('image/png'));
         };
 
         templateImg.onerror = () => {
-          // Fallback template
+          // Fallback template - no card number
           ctx.fillStyle = '#f0f0f0';
           ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
           ctx.fillStyle = '#666666';
           ctx.font = '48px Arial';
           ctx.textAlign = 'center';
           ctx.fillText('Template', CARD_WIDTH/2, CARD_HEIGHT/2);
-          
-          // Add card number
-          ctx.fillStyle = '#000000';
-          ctx.font = 'bold 48px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`#${card.cardNumber.toString().padStart(3, '0')}`, 40, 80);
           
           resolve(canvas.toDataURL('image/png'));
         };

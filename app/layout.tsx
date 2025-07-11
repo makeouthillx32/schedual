@@ -23,48 +23,27 @@ export default function RootLayout({
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
   const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
 
-  // ✅ FIXED: Connected to actual Tailwind CSS background values
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Get theme from localStorage
       const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      // ✅ FIXED: Read actual CSS background color from computed styles
       const updateThemeColor = () => {
         const root = document.documentElement;
-        
-        // Get the actual background color from CSS variables
         let backgroundColor = getComputedStyle(root).getPropertyValue('--background').trim();
-        
-        console.log('🔍 Raw CSS --background value:', backgroundColor);
-        
-        // Convert HSL values to hex for iOS
-        let themeColor = '#ffffff'; // fallback
-        
-        if (backgroundColor) {
-          // Handle HSL format: "220 14.75% 11.96%" -> hsl(220, 14.75%, 11.96%)
-          const hslMatch = backgroundColor.match(/(\d+\.?\d*)\s+(\d+\.?\d*)%\s+(\d+\.?\d*)%/);
-          
-          if (hslMatch) {
-            const [, h, s, l] = hslMatch;
-            const hslString = `hsl(${h}, ${s}%, ${l}%)`;
-            console.log('🎨 Converted to HSL:', hslString);
-            
-            // Convert HSL to hex
-            themeColor = hslToHex(parseFloat(h), parseFloat(s), parseFloat(l));
-          } else {
-            // Try to get computed background color from body
-            const bodyBg = getComputedStyle(document.body).backgroundColor;
-            if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') {
-              themeColor = rgbToHex(bodyBg);
-            }
+        let themeColor = '#ffffff';
+
+        const hslMatch = backgroundColor.match(/(\d+\.?\d*)\s+(\d+\.?\d*)%\s+(\d+\.?\d*)%/);
+        if (hslMatch) {
+          const [, h, s, l] = hslMatch;
+          themeColor = hslToHex(parseFloat(h), parseFloat(s), parseFloat(l));
+        } else {
+          const bodyBg = getComputedStyle(document.body).backgroundColor;
+          if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') {
+            themeColor = rgbToHex(bodyBg);
           }
         }
-        
-        console.log('🎨 Final theme color for iOS:', themeColor);
 
-        // Update meta tag
         let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
         if (metaTag) {
           metaTag.setAttribute("content", themeColor);
@@ -74,18 +53,10 @@ export default function RootLayout({
           metaTag.content = themeColor;
           document.head.appendChild(metaTag);
         }
-
-        console.log('📱 iOS theme-color updated:', {
-          theme,
-          pathname,
-          cssBackground: backgroundColor,
-          finalColor: themeColor
-        });
       };
 
-      // Wait for styles to load, then update
       setTimeout(updateThemeColor, 100);
-      setTimeout(updateThemeColor, 500); // Extra delay for theme system
+      setTimeout(updateThemeColor, 500);
     }
   }, [pathname, isHome, isDarkMode]);
 
@@ -102,7 +73,6 @@ export default function RootLayout({
     }
   }, [pathname]);
 
-  // ✅ OPTIMIZED: Analytics tracking with better navigation handling
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -111,27 +81,21 @@ export default function RootLayout({
                       pathname.startsWith("/auth");
 
     if (isAuthPage) {
-      console.log('🚫 Skipping analytics for auth page:', pathname);
       return;
     }
 
     if (isFirstLoad) {
-      console.log('🏠 First load detected, analytics will auto-track initial page view');
       setIsFirstLoad(false);
       return;
     }
 
-    // ✅ SIMPLIFIED: Only call onRouteChange - it handles the page view tracking
-    console.log('🔄 SPA navigation detected:', pathname);
     analytics.onRouteChange(window.location.href);
-    
-    // ✅ SEPARATE: Track navigation event for analysis (separate from page view)
+
     let pageCategory = 'general';
     if (isHome) pageCategory = 'landing';
     else if (isToolsPage) pageCategory = 'tools';
     else if (isDashboardPage) pageCategory = 'dashboard';
-    
-    // Add a small delay to avoid race conditions with page view tracking
+
     setTimeout(() => {
       analytics.trackEvent('navigation', {
         category: 'user_flow',
@@ -148,18 +112,15 @@ export default function RootLayout({
 
   }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
 
-  // ✅ NEW: Debug analytics on development
   useEffect(() => {
     if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
-      // Add analytics debug to window for easy access
       (window as any).debugAnalytics = () => {
         console.log('🔍 Analytics Debug Info:');
         console.log('Session ID:', analytics.getSessionId());
         console.log('Stats:', analytics.getStats());
         analytics.debug();
       };
-      
-      // Log analytics status on mount
+
       console.log('📊 Analytics Status:', {
         sessionId: analytics.getSessionId(),
         isEnabled: analytics.getStats().isEnabled,
@@ -177,11 +138,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""} suppressHydrationWarning>
-      <head>
-        <meta name="theme-color" content="#ffffff" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      </head>
+      {/* ✅ This <head /> enables route-specific metadata like for /punchcards */}
+      <head />
       <body className={`min-h-screen font-[var(--font-sans)] ${
         isDarkMode 
           ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]" 
@@ -198,11 +156,10 @@ export default function RootLayout({
   );
 }
 
-// ✅ Helper functions to convert colors
+// ✅ Color helpers (unchanged)
 function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
   l /= 100;
-
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs((h / 60) % 2 - 1));
   const m = l - c / 2;
@@ -237,5 +194,5 @@ function rgbToHex(rgb: string): string {
     const b = parseInt(match[3]).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
   }
-  return rgb; // fallback
+  return rgb;
 }

@@ -100,7 +100,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ templatePath, cardCount }) =>
                           {/* Card preview */}
                           <div className="w-full h-full relative">
                             <Image
-                              src={`/images/${templatePath}`}
+                              src={templatePath}
                               alt={`Card ${cardNumber}`}
                               fill
                               className="object-cover"

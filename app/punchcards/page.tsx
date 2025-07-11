@@ -1,4 +1,4 @@
-// app/punchcards/main.tsx
+// app/punchcards/page.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -7,22 +7,27 @@ import CardPreview from './_components/CardPreview';
 import PDFGenerator from './_components/PDFGenerator';
 import BatchSettings from './_components/BatchSettings';
 
-interface PunchCardBatch {
-  templateId: string;
-  templatePath: string;
-  cardCount: number;
-  batchName: string;
+interface PunchCard {
+  front: string;
+  back: string;
+  cardNumber: number;
+  batchNumber: string;
 }
 
 const PunchCardMain: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [cardCount, setCardCount] = useState<number>(8);
   const [batchName, setBatchName] = useState<string>('');
-  const [generatedCards, setGeneratedCards] = useState<string[]>([]);
+  const [generatedCards, setGeneratedCards] = useState<PunchCard[]>([]);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [currentBatchId, setCurrentBatchId] = useState<string>('');
 
   const handleTemplateSelect = (templatePath: string) => {
     setSelectedTemplate(templatePath);
+  };
+
+  const generateBatchId = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const handleGenerateCards = async () => {
@@ -32,15 +37,30 @@ const PunchCardMain: React.FC = () => {
     }
 
     setIsGenerating(true);
+    const batchId = generateBatchId();
+    setCurrentBatchId(batchId);
+
     try {
-      // This will be implemented by the PDFGenerator component
-      console.log('Generating cards...', {
-        template: selectedTemplate,
-        count: cardCount,
-        batchName
-      });
+      const cards: PunchCard[] = [];
+      
+      // Generate individual cards
+      for (let i = 1; i <= cardCount; i++) {
+        const cardNumber = i;
+        const batchNumber = `${batchId}-${i.toString().padStart(3, '0')}`;
+        
+        // This will be handled by PDFGenerator
+        cards.push({
+          front: selectedTemplate,
+          back: '/images/home/dartboard.png',
+          cardNumber,
+          batchNumber
+        });
+      }
+
+      setGeneratedCards(cards);
     } catch (error) {
       console.error('Error generating cards:', error);
+      alert('Error generating cards. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +107,7 @@ const PunchCardMain: React.FC = () => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {isGenerating ? 'Generating...' : 'Generate Punch Cards'}
+            {isGenerating ? 'Generating Cards...' : 'Generate Punch Cards'}
           </button>
         </div>
 
@@ -99,6 +119,7 @@ const PunchCardMain: React.FC = () => {
               <CardPreview 
                 templatePath={selectedTemplate}
                 cardCount={cardCount}
+                batchId={currentBatchId}
               />
             </div>
           )}
@@ -109,6 +130,7 @@ const PunchCardMain: React.FC = () => {
               <PDFGenerator 
                 cards={generatedCards}
                 batchName={batchName}
+                batchId={currentBatchId}
               />
             </div>
           )}

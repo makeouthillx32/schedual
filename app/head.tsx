@@ -1,1 +1,0 @@
-<script src="/ios-fix.js" async></script>

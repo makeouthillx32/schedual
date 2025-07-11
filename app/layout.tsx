@@ -1,5 +1,4 @@
-"use client";
-
+import type { Metadata } from "next";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Providers } from "./provider";
@@ -10,11 +9,40 @@ import analytics from "@/lib/analytics";
 import "./globals.css";
 import { setCookie } from "@/lib/cookieUtils";
 
+// Add metadata export
+export const metadata: Metadata = {
+  title: {
+    template: '%s | CMS Schedule App',
+    default: 'CMS Schedule App',
+  },
+  description: 'Desert Area Resources and Training Schedule Management System',
+  openGraph: {
+    title: 'CMS Schedule App',
+    description: 'Desert Area Resources and Training Schedule Management System',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://schedual-five.vercel.app',
+    siteName: 'CMS Schedule App',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CMS Schedule App',
+    description: 'Desert Area Resources and Training Schedule Management System',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://schedual-five.vercel.app'),
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // NOTE: These hooks won't work in server components
+  // You'll need to move this logic to a client component
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -23,27 +51,22 @@ export default function RootLayout({
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
   const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
 
-  // ✅ FIXED: Connected to actual Tailwind CSS background values
+  // All your existing useEffect code...
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Get theme from localStorage
       const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      // ✅ FIXED: Read actual CSS background color from computed styles
       const updateThemeColor = () => {
         const root = document.documentElement;
         
-        // Get the actual background color from CSS variables
         let backgroundColor = getComputedStyle(root).getPropertyValue('--background').trim();
         
         console.log('🔍 Raw CSS --background value:', backgroundColor);
         
-        // Convert HSL values to hex for iOS
-        let themeColor = '#ffffff'; // fallback
+        let themeColor = '#ffffff';
         
         if (backgroundColor) {
-          // Handle HSL format: "220 14.75% 11.96%" -> hsl(220, 14.75%, 11.96%)
           const hslMatch = backgroundColor.match(/(\d+\.?\d*)\s+(\d+\.?\d*)%\s+(\d+\.?\d*)%/);
           
           if (hslMatch) {
@@ -51,10 +74,8 @@ export default function RootLayout({
             const hslString = `hsl(${h}, ${s}%, ${l}%)`;
             console.log('🎨 Converted to HSL:', hslString);
             
-            // Convert HSL to hex
             themeColor = hslToHex(parseFloat(h), parseFloat(s), parseFloat(l));
           } else {
-            // Try to get computed background color from body
             const bodyBg = getComputedStyle(document.body).backgroundColor;
             if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') {
               themeColor = rgbToHex(bodyBg);
@@ -64,7 +85,6 @@ export default function RootLayout({
         
         console.log('🎨 Final theme color for iOS:', themeColor);
 
-        // Update meta tag
         let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
         if (metaTag) {
           metaTag.setAttribute("content", themeColor);
@@ -83,9 +103,8 @@ export default function RootLayout({
         });
       };
 
-      // Wait for styles to load, then update
       setTimeout(updateThemeColor, 100);
-      setTimeout(updateThemeColor, 500); // Extra delay for theme system
+      setTimeout(updateThemeColor, 500);
     }
   }, [pathname, isHome, isDarkMode]);
 
@@ -102,7 +121,6 @@ export default function RootLayout({
     }
   }, [pathname]);
 
-  // ✅ OPTIMIZED: Analytics tracking with better navigation handling
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -121,17 +139,14 @@ export default function RootLayout({
       return;
     }
 
-    // ✅ SIMPLIFIED: Only call onRouteChange - it handles the page view tracking
     console.log('🔄 SPA navigation detected:', pathname);
     analytics.onRouteChange(window.location.href);
     
-    // ✅ SEPARATE: Track navigation event for analysis (separate from page view)
     let pageCategory = 'general';
     if (isHome) pageCategory = 'landing';
     else if (isToolsPage) pageCategory = 'tools';
     else if (isDashboardPage) pageCategory = 'dashboard';
     
-    // Add a small delay to avoid race conditions with page view tracking
     setTimeout(() => {
       analytics.trackEvent('navigation', {
         category: 'user_flow',
@@ -148,10 +163,8 @@ export default function RootLayout({
 
   }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
 
-  // ✅ NEW: Debug analytics on development
   useEffect(() => {
     if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
-      // Add analytics debug to window for easy access
       (window as any).debugAnalytics = () => {
         console.log('🔍 Analytics Debug Info:');
         console.log('Session ID:', analytics.getSessionId());
@@ -159,7 +172,6 @@ export default function RootLayout({
         analytics.debug();
       };
       
-      // Log analytics status on mount
       console.log('📊 Analytics Status:', {
         sessionId: analytics.getSessionId(),
         isEnabled: analytics.getStats().isEnabled,
@@ -198,7 +210,7 @@ export default function RootLayout({
   );
 }
 
-// ✅ Helper functions to convert colors
+// Helper functions
 function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
   l /= 100;
@@ -237,5 +249,5 @@ function rgbToHex(rgb: string): string {
     const b = parseInt(match[3]).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
   }
-  return rgb; // fallback
+  return rgb;
 }

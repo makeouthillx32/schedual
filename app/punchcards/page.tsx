@@ -1,4 +1,4 @@
-// app/punchcards/page.tsx
+// app/punchcards/PunchCardMain.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -70,10 +70,10 @@ const PunchCardMain: React.FC = () => {
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Punch Card Generator
+          DARTS Punch Card Maker
         </h1>
         <p className="text-gray-600">
-          Create professional punch cards with A4-optimized layouts for easy printing
+          Use one of our templates or upload your own! Create professional punch cards with A4-optimized layouts for easy printing.
         </p>
       </div>
 

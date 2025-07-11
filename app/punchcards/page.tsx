@@ -1,9 +1,6 @@
 // app/punchcards/page.tsx
-import dynamic from 'next/dynamic';
 import { Metadata } from 'next';
-
-// Dynamically import the client component
-const PunchCardClient = dynamic(() => import('./PunchCardClient'), { ssr: false });
+import PunchCardClient from './PunchCardClient';
 
 export const metadata: Metadata = {
   title: 'DARTS Punch Card Maker | Professional Card Generator',

@@ -1,13 +1,20 @@
 // app/punchcards/_components/PDFGenerator.tsx
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+
+interface PunchCard {
+  front: string;
+  back: string;
+  cardNumber: number;
+  batchNumber: string;
+}
 
 interface PDFGeneratorProps {
-  cards: string[];
+  cards: PunchCard[];
   batchName: string;
+  batchId: string;
 }
 
 interface GenerationProgress {
@@ -16,7 +23,7 @@ interface GenerationProgress {
   total: number;
 }
 
-const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
+const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
 
@@ -37,8 +44,117 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
   const MARGIN_X = (A4_WIDTH - (COLS * CARD_WIDTH)) / (COLS + 1);
   const MARGIN_Y = (A4_HEIGHT - (ROWS * CARD_HEIGHT)) / (ROWS + 1);
 
-  const generateCardSheet = async (templatePath: string, cardNumbers: number[], isBackSide: boolean = false) => {
-    return new Promise<string>((resolve, reject) => {
+  // Auto-generate PDF when cards are ready
+  useEffect(() => {
+    if (cards.length > 0 && !isGenerating) {
+      generateOptimizedPDF();
+    }
+  }, [cards]);
+
+  const generateIndividualCard = async (card: PunchCard, isBackSide: boolean = false): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = CARD_WIDTH;
+      canvas.height = CARD_HEIGHT;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('Failed to get canvas context'));
+        return;
+      }
+
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+
+      if (isBackSide) {
+        // Generate back side with dartboard logo watermark
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        logoImg.onload = () => {
+          // Draw dartboard logo as watermark (centered, low opacity)
+          ctx.globalAlpha = 0.15;
+          const logoSize = Math.min(CARD_WIDTH, CARD_HEIGHT) * 0.6;
+          const logoX = (CARD_WIDTH - logoSize) / 2;
+          const logoY = (CARD_HEIGHT - logoSize) / 2;
+          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+          
+          // Reset opacity for text
+          ctx.globalAlpha = 1.0;
+          
+          // Add batch number (bottom-right)
+          ctx.fillStyle = '#333333';
+          ctx.font = 'bold 36px Arial';
+          ctx.textAlign = 'right';
+          ctx.fillText(card.batchNumber, CARD_WIDTH - 40, CARD_HEIGHT - 40);
+          
+          // Add date (bottom-left)
+          ctx.textAlign = 'left';
+          ctx.font = '24px Arial';
+          ctx.fillText(new Date().toLocaleDateString(), 40, CARD_HEIGHT - 40);
+          
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        logoImg.onerror = () => {
+          // Fallback without logo
+          ctx.fillStyle = '#333333';
+          ctx.font = 'bold 36px Arial';
+          ctx.textAlign = 'right';
+          ctx.fillText(card.batchNumber, CARD_WIDTH - 40, CARD_HEIGHT - 40);
+          
+          ctx.textAlign = 'left';
+          ctx.font = '24px Arial';
+          ctx.fillText(new Date().toLocaleDateString(), 40, CARD_HEIGHT - 40);
+          
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        logoImg.src = '/images/home/dartboard.png';
+      } else {
+        // Generate front side with template + card number
+        const templateImg = new Image();
+        templateImg.crossOrigin = 'anonymous';
+        
+        templateImg.onload = () => {
+          // Draw template image
+          ctx.drawImage(templateImg, 0, 0, CARD_WIDTH, CARD_HEIGHT);
+          
+          // Add card number (top-left)
+          ctx.fillStyle = '#000000';
+          ctx.font = 'bold 48px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`#${card.cardNumber.toString().padStart(3, '0')}`, 40, 80);
+          
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        templateImg.onerror = () => {
+          // Fallback template
+          ctx.fillStyle = '#f0f0f0';
+          ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+          ctx.fillStyle = '#666666';
+          ctx.font = '48px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('Template', CARD_WIDTH/2, CARD_HEIGHT/2);
+          
+          // Add card number
+          ctx.fillStyle = '#000000';
+          ctx.font = 'bold 48px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`#${card.cardNumber.toString().padStart(3, '0')}`, 40, 80);
+          
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        templateImg.src = card.front;
+      }
+    });
+  };
+
+  const generateCardSheet = async (cardBatch: PunchCard[], isBackSide: boolean = false): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
       const canvas = document.createElement('canvas');
       canvas.width = A4_WIDTH;
       canvas.height = A4_HEIGHT;
@@ -53,100 +169,101 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, A4_WIDTH, A4_HEIGHT);
 
-      let loadedImages = 0;
-      const totalImages = cardNumbers.filter(n => n !== null).length;
+      try {
+        // Generate individual cards first
+        const cardImages: string[] = [];
+        for (const card of cardBatch) {
+          if (card) {
+            const cardImage = await generateIndividualCard(card, isBackSide);
+            cardImages.push(cardImage);
+          } else {
+            cardImages.push('');
+          }
+        }
 
-      if (totalImages === 0) {
-        resolve(canvas.toDataURL('image/png'));
-        return;
+        // Draw cards on sheet
+        let loadedCards = 0;
+        const totalCards = cardImages.filter(img => img !== '').length;
+
+        if (totalCards === 0) {
+          resolve(canvas.toDataURL('image/png'));
+          return;
+        }
+
+        cardImages.forEach((cardImage, index) => {
+          if (!cardImage) {
+            loadedCards++;
+            if (loadedCards === totalCards) {
+              resolve(canvas.toDataURL('image/png'));
+            }
+            return;
+          }
+
+          const row = Math.floor(index / COLS);
+          const col = index % COLS;
+          
+          // Calculate position (mirror for back side)
+          const x = isBackSide 
+            ? A4_WIDTH - MARGIN_X - ((col + 1) * CARD_WIDTH) - (col * MARGIN_X)
+            : MARGIN_X + (col * (CARD_WIDTH + MARGIN_X));
+          const y = MARGIN_Y + (row * (CARD_HEIGHT + MARGIN_Y));
+
+          const img = new Image();
+          img.onload = () => {
+            ctx.drawImage(img, x, y, CARD_WIDTH, CARD_HEIGHT);
+            
+            // Draw cut lines
+            ctx.strokeStyle = '#cccccc';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            
+            // Vertical cut lines
+            if (col < COLS - 1) {
+              const cutX = x + CARD_WIDTH + (MARGIN_X / 2);
+              ctx.beginPath();
+              ctx.moveTo(cutX, y - 20);
+              ctx.lineTo(cutX, y + CARD_HEIGHT + 20);
+              ctx.stroke();
+            }
+            
+            // Horizontal cut lines
+            if (row < ROWS - 1) {
+              const cutY = y + CARD_HEIGHT + (MARGIN_Y / 2);
+              ctx.beginPath();
+              ctx.moveTo(x - 20, cutY);
+              ctx.lineTo(x + CARD_WIDTH + 20, cutY);
+              ctx.stroke();
+            }
+            
+            loadedCards++;
+            if (loadedCards === totalCards) {
+              // Add sheet info
+              ctx.setLineDash([]);
+              ctx.fillStyle = '#666666';
+              ctx.font = '24px Arial';
+              ctx.textAlign = 'right';
+              ctx.fillText(
+                `${isBackSide ? 'Back' : 'Front'} - ${batchName || 'Punch Cards'}`,
+                A4_WIDTH - 40,
+                A4_HEIGHT - 40
+              );
+              
+              resolve(canvas.toDataURL('image/png'));
+            }
+          };
+
+          img.src = cardImage;
+        });
+      } catch (error) {
+        reject(error);
       }
-
-      // Load and draw each card
-      cardNumbers.forEach((cardNumber, index) => {
-        if (cardNumber === null) return;
-
-        const row = Math.floor(index / COLS);
-        const col = index % COLS;
-        
-        // Calculate position (mirror for back side)
-        const x = isBackSide 
-          ? A4_WIDTH - MARGIN_X - ((col + 1) * CARD_WIDTH) - (col * MARGIN_X)
-          : MARGIN_X + (col * (CARD_WIDTH + MARGIN_X));
-        const y = MARGIN_Y + (row * (CARD_HEIGHT + MARGIN_Y));
-
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        img.onload = () => {
-          // Draw card image
-          ctx.drawImage(img, x, y, CARD_WIDTH, CARD_HEIGHT);
-          
-          // Add card number
-          ctx.fillStyle = '#000000';
-          ctx.font = 'bold 24px Arial';
-          ctx.fillText(`#${cardNumber}`, x + 20, y + 40);
-          
-          // Add batch info for back side
-          if (isBackSide) {
-            ctx.font = '18px Arial';
-            ctx.fillText(batchName || 'Punch Cards', x + 20, y + CARD_HEIGHT - 40);
-            ctx.fillText(new Date().toLocaleDateString(), x + 20, y + CARD_HEIGHT - 20);
-          }
-          
-          // Draw cut lines
-          ctx.strokeStyle = '#cccccc';
-          ctx.setLineDash([5, 5]);
-          ctx.lineWidth = 1;
-          
-          // Vertical cut lines
-          if (col < COLS - 1) {
-            const cutX = x + CARD_WIDTH + (MARGIN_X / 2);
-            ctx.beginPath();
-            ctx.moveTo(cutX, y - 10);
-            ctx.lineTo(cutX, y + CARD_HEIGHT + 10);
-            ctx.stroke();
-          }
-          
-          // Horizontal cut lines
-          if (row < ROWS - 1) {
-            const cutY = y + CARD_HEIGHT + (MARGIN_Y / 2);
-            ctx.beginPath();
-            ctx.moveTo(x - 10, cutY);
-            ctx.lineTo(x + CARD_WIDTH + 10, cutY);
-            ctx.stroke();
-          }
-          
-          loadedImages++;
-          if (loadedImages === totalImages) {
-            resolve(canvas.toDataURL('image/png'));
-          }
-        };
-
-        img.onerror = () => {
-          // Fallback for missing images
-          ctx.fillStyle = '#f0f0f0';
-          ctx.fillRect(x, y, CARD_WIDTH, CARD_HEIGHT);
-          ctx.fillStyle = '#666666';
-          ctx.font = '48px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('Template', x + CARD_WIDTH/2, y + CARD_HEIGHT/2);
-          ctx.textAlign = 'left';
-          
-          loadedImages++;
-          if (loadedImages === totalImages) {
-            resolve(canvas.toDataURL('image/png'));
-          }
-        };
-
-        img.src = `/images/${templatePath}`;
-      });
     });
   };
 
-  const generatePDF = async (templatePath: string, totalCards: number) => {
+  const generateOptimizedPDF = async () => {
     try {
       setIsGenerating(true);
-      setProgress({ stage: 'Preparing...', progress: 0, total: totalCards });
+      setProgress({ stage: 'Initializing...', progress: 0, total: cards.length * 2 });
 
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -154,16 +271,17 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
         format: [A4_WIDTH, A4_HEIGHT]
       });
 
-      const sheetsNeeded = Math.ceil(totalCards / CARDS_PER_SHEET);
-      
+      const sheetsNeeded = Math.ceil(cards.length / CARDS_PER_SHEET);
+      let pageAdded = false;
+
       for (let sheetIndex = 0; sheetIndex < sheetsNeeded; sheetIndex++) {
-        const startCard = sheetIndex * CARDS_PER_SHEET + 1;
-        const endCard = Math.min(startCard + CARDS_PER_SHEET - 1, totalCards);
+        const startCard = sheetIndex * CARDS_PER_SHEET;
+        const endCard = Math.min(startCard + CARDS_PER_SHEET, cards.length);
         
-        // Generate card numbers for this sheet
-        const cardNumbers = Array.from({ length: CARDS_PER_SHEET }, (_, i) => {
-          const cardNumber = startCard + i;
-          return cardNumber <= endCard ? cardNumber : null;
+        // Get cards for this sheet (pad with null if needed)
+        const sheetCards = Array.from({ length: CARDS_PER_SHEET }, (_, i) => {
+          const cardIndex = startCard + i;
+          return cardIndex < cards.length ? cards[cardIndex] : null;
         });
 
         setProgress({
@@ -173,10 +291,11 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
         });
 
         // Generate front side
-        const frontSide = await generateCardSheet(templatePath, cardNumbers, false);
+        const frontSide = await generateCardSheet(sheetCards, false);
         
-        if (sheetIndex > 0) pdf.addPage();
+        if (pageAdded) pdf.addPage();
         pdf.addImage(frontSide, 'PNG', 0, 0, A4_WIDTH, A4_HEIGHT);
+        pageAdded = true;
 
         setProgress({
           stage: `Generating sheet ${sheetIndex + 1} back side...`,
@@ -185,20 +304,20 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
         });
 
         // Generate back side (mirrored)
-        const backSide = await generateCardSheet(templatePath, cardNumbers, true);
+        const backSide = await generateCardSheet(sheetCards, true);
         
         pdf.addPage();
         pdf.addImage(backSide, 'PNG', 0, 0, A4_WIDTH, A4_HEIGHT);
       }
 
       setProgress({
-        stage: 'Saving PDF...',
+        stage: 'Downloading PDF...',
         progress: sheetsNeeded * 2,
         total: sheetsNeeded * 2
       });
 
-      // Save the PDF
-      const fileName = `${batchName || 'PunchCards'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Auto-download the PDF
+      const fileName = `${batchName || 'PunchCards'}_${batchId}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
 
     } catch (error) {
@@ -210,35 +329,8 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
     }
   };
 
-  // Mock data for testing
-  const mockGenerate = () => {
-    generatePDF('classic-punch-card.png', 10);
-  };
-
   return (
     <div className="space-y-4">
-      {/* Generation Controls */}
-      <div className="flex space-x-4">
-        <button
-          onClick={mockGenerate}
-          disabled={isGenerating}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-            !isGenerating
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {isGenerating ? 'Generating PDF...' : 'Download PDF'}
-        </button>
-        
-        <button
-          className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          onClick={() => alert('Excel tracking sheet feature coming soon!')}
-        >
-          📊 Excel Sheet
-        </button>
-      </div>
-
       {/* Progress Indicator */}
       {progress && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -250,38 +342,53 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
               {progress.progress}/{progress.total}
             </span>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-2">
+          <div className="w-full bg-blue-200 rounded-full h-3">
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
               style={{ width: `${(progress.progress / progress.total) * 100}%` }}
             ></div>
           </div>
         </div>
       )}
 
-      {/* PDF Info */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h4 className="font-medium text-gray-900 mb-3">PDF Output Details</h4>
+      {/* Generation Status */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h4 className="font-medium text-green-900 mb-3">✅ Production Pipeline Active</h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className="font-medium text-gray-700">Format</div>
-            <ul className="text-gray-600 space-y-1">
-              <li>• A4 paper size</li>
-              <li>• 300 DPI quality</li>
-              <li>• Front and back pages</li>
-              <li>• Cut guides included</li>
+            <div className="font-medium text-green-800">Cards Generated</div>
+            <ul className="text-green-700 space-y-1">
+              <li>• {cards.length} individual cards</li>
+              <li>• Batch ID: {batchId}</li>
+              <li>• Dartboard watermark applied</li>
+              <li>• Sequential numbering</li>
             </ul>
           </div>
           <div>
-            <div className="font-medium text-gray-700">Features</div>
-            <ul className="text-gray-600 space-y-1">
-              <li>• Card numbering</li>
-              <li>• Batch information</li>
-              <li>• Print date stamp</li>
-              <li>• Proper alignment</li>
+            <div className="font-medium text-green-800">PDF Layout</div>
+            <ul className="text-green-700 space-y-1">
+              <li>• A4 optimized sheets</li>
+              <li>• Duplex print ready</li>
+              <li>• Cut guides included</li>
+              <li>• Auto-download enabled</li>
             </ul>
           </div>
         </div>
+      </div>
+
+      {/* Manual Controls */}
+      <div className="flex space-x-4">
+        <button
+          onClick={generateOptimizedPDF}
+          disabled={isGenerating || cards.length === 0}
+          className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+            !isGenerating && cards.length > 0
+              ? 'bg-green-600 hover:bg-green-700 text-white'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {isGenerating ? 'Generating PDF...' : 'Regenerate PDF'}
+        </button>
       </div>
 
       {/* Print Instructions */}
@@ -291,34 +398,9 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName }) => {
           <li>Load A4 paper in your printer</li>
           <li>Print at 100% scale (no scaling)</li>
           <li>Use duplex printing for front/back alignment</li>
-          <li>Let sheets dry before cutting</li>
+          <li>Pages alternate: Front1, Back1, Front2, Back2...</li>
           <li>Cut along dotted lines with sharp blade</li>
         </ol>
-      </div>
-
-      {/* Test Controls (remove in production) */}
-      <div className="border-t pt-4">
-        <h4 className="font-medium text-gray-600 mb-2">Test Controls</h4>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => generatePDF('classic-punch-card.png', 4)}
-            className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Test 4 Cards
-          </button>
-          <button
-            onClick={() => generatePDF('classic-punch-card.png', 8)}
-            className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Test 8 Cards
-          </button>
-          <button
-            onClick={() => generatePDF('classic-punch-card.png', 20)}
-            className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Test 20 Cards
-          </button>
-        </div>
       </div>
     </div>
   );

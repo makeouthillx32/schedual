@@ -12,10 +12,10 @@ export const metadata: Metadata = {
     title: 'DARTS Punch Card Maker',
     description: 'DARTS punchcard maker! Use one of our templates or upload your own!',
     type: 'website',
-    url: '/punchcards',
+    url: 'https://schedual-five.vercel.app/punchcards',
     images: [
       {
-        url: '/punchcards/opengraph-image.png',
+        url: 'https://schedual-five.vercel.app/images/Punchcardmaker.png',
         width: 1200,
         height: 630,
         alt: 'DARTS Punch Card Maker - Professional card templates',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'DARTS Punch Card Maker',
     description: 'DARTS punchcard maker! Use one of our templates or upload your own!',
-    images: ['/punchcards/opengraph-image.png'],
+    images: ['https://schedual-five.vercel.app/images/Punchcardmaker.png'],
   },
   robots: {
     index: true,

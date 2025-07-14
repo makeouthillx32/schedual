@@ -327,36 +327,94 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
   };
 
   return (
-    <div className="space-y-4">
+    <div 
+      className="space-y-4"
+      style={{ 
+        fontFamily: 'var(--font-sans)',
+        transition: 'all 0.3s ease'
+      }}
+    >
       {/* Progress Indicator */}
       {progress && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div 
+          className="border rounded-lg p-4"
+          style={{
+            backgroundColor: 'hsl(var(--primary) / 0.1)',
+            borderColor: 'hsl(var(--primary))',
+            borderRadius: 'var(--radius)',
+            color: 'hsl(var(--primary-foreground))'
+          }}
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-blue-900">
+            <span 
+              className="text-sm font-medium"
+              style={{ 
+                color: 'hsl(var(--primary))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
               {progress.stage}
             </span>
-            <span className="text-sm text-blue-700">
+            <span 
+              className="text-sm"
+              style={{ color: 'hsl(var(--primary))' }}
+            >
               {progress.progress}/{progress.total}
             </span>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-3">
+          <div 
+            className="w-full rounded-full h-3"
+            style={{ 
+              backgroundColor: 'hsl(var(--primary) / 0.2)',
+              borderRadius: 'var(--radius)'
+            }}
+          >
             <div 
-              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${(progress.progress / progress.total) * 100}%` }}
+              className="h-3 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${(progress.progress / progress.total) * 100}%`,
+                backgroundColor: 'hsl(var(--primary))',
+                borderRadius: 'var(--radius)'
+              }}
             ></div>
           </div>
         </div>
       )}
 
       {/* Generation Status */}
-      <div className={`border rounded-lg p-4 ${isReady ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-        <h4 className={`font-medium mb-3 ${isReady ? 'text-green-900' : 'text-gray-900'}`}>
+      <div 
+        className="border rounded-lg p-4"
+        style={{
+          backgroundColor: isReady ? 'hsl(var(--accent) / 0.1)' : 'hsl(var(--muted) / 0.5)',
+          borderColor: isReady ? 'hsl(var(--accent))' : 'hsl(var(--border))',
+          borderRadius: 'var(--radius)',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <h4 
+          className="font-medium mb-3"
+          style={{ 
+            color: isReady ? 'hsl(var(--accent-foreground))' : 'hsl(var(--foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
           {isReady ? '✅ PDF Ready for Download!' : '⏳ Cards Generated - Click to Create PDF'}
         </h4>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className={`font-medium ${isReady ? 'text-green-800' : 'text-gray-700'}`}>Cards Generated</div>
-            <ul className={`space-y-1 ${isReady ? 'text-green-700' : 'text-gray-600'}`}>
+            <div 
+              className="font-medium"
+              style={{ 
+                color: isReady ? 'hsl(var(--accent-foreground))' : 'hsl(var(--foreground))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
+              Cards Generated
+            </div>
+            <ul 
+              className="space-y-1"
+              style={{ color: isReady ? 'hsl(var(--accent-foreground))' : 'hsl(var(--muted-foreground))' }}
+            >
               <li>• {cards.length} individual cards</li>
               <li>• Batch ID: {batchId}</li>
               <li>• Dartboard watermark applied</li>
@@ -364,8 +422,19 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
             </ul>
           </div>
           <div>
-            <div className={`font-medium ${isReady ? 'text-green-800' : 'text-gray-700'}`}>PDF Layout</div>
-            <ul className={`space-y-1 ${isReady ? 'text-green-700' : 'text-gray-600'}`}>
+            <div 
+              className="font-medium"
+              style={{ 
+                color: isReady ? 'hsl(var(--accent-foreground))' : 'hsl(var(--foreground))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
+              PDF Layout
+            </div>
+            <ul 
+              className="space-y-1"
+              style={{ color: isReady ? 'hsl(var(--accent-foreground))' : 'hsl(var(--muted-foreground))' }}
+            >
               <li>• A4 optimized sheets</li>
               <li>• Duplex print ready</li>
               <li>• Cut guides included</li>
@@ -381,7 +450,27 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
           <>
             <button
               onClick={handleDownload}
-              className="flex-1 py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+              className="flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2"
+              style={{
+                backgroundColor: 'hsl(var(--accent))',
+                color: 'hsl(var(--accent-foreground))',
+                borderRadius: 'var(--radius)',
+                fontFamily: 'var(--font-sans)',
+                boxShadow: 'var(--shadow-sm)',
+                border: '1px solid hsl(var(--accent))'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--accent))';
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -390,7 +479,22 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
             </button>
             <button
               onClick={handleRegenerate}
-              className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-3 rounded-lg transition-all duration-200"
+              style={{
+                border: '1px solid hsl(var(--border))',
+                backgroundColor: 'hsl(var(--secondary))',
+                color: 'hsl(var(--secondary-foreground))',
+                borderRadius: 'var(--radius)',
+                fontFamily: 'var(--font-sans)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--secondary))';
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--secondary))';
+                e.currentTarget.style.opacity = '1';
+              }}
             >
               🔄 Regenerate
             </button>
@@ -399,11 +503,41 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
           <button
             onClick={generateOptimizedPDF}
             disabled={isGenerating || cards.length === 0}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-              !isGenerating && cards.length > 0
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+            className="flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200"
+            style={{
+              backgroundColor: !isGenerating && cards.length > 0 
+                ? 'hsl(var(--primary))' 
+                : 'hsl(var(--muted))',
+              color: !isGenerating && cards.length > 0 
+                ? 'hsl(var(--primary-foreground))' 
+                : 'hsl(var(--muted-foreground))',
+              borderRadius: 'var(--radius)',
+              border: `1px solid ${!isGenerating && cards.length > 0 
+                ? 'hsl(var(--primary))' 
+                : 'hsl(var(--border))'}`,
+              cursor: !isGenerating && cards.length > 0 ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-sans)',
+              boxShadow: !isGenerating && cards.length > 0 
+                ? 'var(--shadow-sm)' 
+                : 'none',
+              opacity: !isGenerating && cards.length > 0 ? 1 : 0.6
+            }}
+            onMouseEnter={(e) => {
+              if (!isGenerating && cards.length > 0) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isGenerating && cards.length > 0) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }
+            }}
           >
             {isGenerating ? 'Generating PDF...' : 'Create PDF'}
           </button>
@@ -412,12 +546,30 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
 
       {/* Success Message */}
       {isReady && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div 
+          className="border rounded-lg p-4"
+          style={{
+            backgroundColor: 'hsl(var(--primary) / 0.1)',
+            borderColor: 'hsl(var(--primary))',
+            borderRadius: 'var(--radius)'
+          }}
+        >
           <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            <svg 
+              className="w-5 h-5" 
+              fill="currentColor" 
+              viewBox="0 0 20 20"
+              style={{ color: 'hsl(var(--primary))' }}
+            >
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <span className="text-blue-900 font-medium">
+            <span 
+              className="font-medium"
+              style={{ 
+                color: 'hsl(var(--primary))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
               PDF generated successfully! Click "Download PDF" above to save it.
             </span>
           </div>
@@ -425,9 +577,30 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ cards, batchName, batchId }
       )}
 
       {/* Print Instructions */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h4 className="font-medium text-yellow-800 mb-2">📋 Print Instructions</h4>
-        <ol className="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+      <div 
+        className="border rounded-lg p-4"
+        style={{
+          backgroundColor: 'hsl(var(--secondary) / 0.5)',
+          borderColor: 'hsl(var(--secondary))',
+          borderRadius: 'var(--radius)'
+        }}
+      >
+        <h4 
+          className="font-medium mb-2"
+          style={{ 
+            color: 'hsl(var(--secondary-foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
+          📋 Print Instructions
+        </h4>
+        <ol 
+          className="text-sm space-y-1 list-decimal list-inside"
+          style={{ 
+            color: 'hsl(var(--secondary-foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
           <li>Load A4 paper in your printer</li>
           <li>Print at 100% scale (no scaling)</li>
           <li>Use duplex printing for front/back alignment</li>

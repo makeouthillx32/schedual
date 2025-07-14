@@ -42,12 +42,7 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
         <h1 className="text-lg font-bold font-[var(--font-sans)]">
           {isCMSRoute ? (
             <>
-              App CMS
-              {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
-            </>
-          ) : pathname.startsWith('/Tools') ? (
-            <>
-              App Tools
+              CMS Scheduling App
               {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
             </>
           ) : (

@@ -24,10 +24,7 @@ export const metadata: Metadata = {
     description: "Welcome to Desert Area Resources and Training.",
     images: ['/opengraph-image.png'],
   },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" }, // Light for home
-    { media: "(prefers-color-scheme: dark)", color: "#2d3142" },  // Dark for home
-  ],
+  // Remove the themeColor stuff I added!
 };
 
 export default function Page() {

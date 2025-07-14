@@ -3,7 +3,8 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 
-export default function OGImage({ params }: { params: { tool: string } }) {
+export default async function OGImage({ params }: { params: Promise<{ tool: string }> }) {
+  const { tool } = await params;
   // Map tool name to image filename
   const getImagePath = (toolName: string) => {
     return `https://schedual-five.vercel.app/images/${toolName}.png`;
@@ -12,8 +13,8 @@ export default function OGImage({ params }: { params: { tool: string } }) {
   return new ImageResponse(
     (
       <img
-        src={getImagePath(params.tool)}
-        alt={`${params.tool} Preview`}
+        src={getImagePath(tool)}
+        alt={`${tool} Preview`}
         style={{ width: "100%", height: "100%", objectFit: "cover" }}
       />
     ),

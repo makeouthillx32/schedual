@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/Layouts/appheader/dropdown-menu";
@@ -12,6 +13,10 @@ interface NavProps {
 const Nav: React.FC<NavProps> = ({ pageTitle }) => {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
+  const pathname = usePathname();
+  
+  // Check if we're on CMS route
+  const isCMSRoute = pathname.startsWith('/CMS');
 
   return (
     <nav
@@ -21,10 +26,32 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
           : "bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"
       } shadow-[var(--shadow-sm)]`}
     >
-      <h1 className="text-lg font-bold font-[var(--font-sans)]">
-        CMS Schedule App
-        {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
-      </h1>
+      <div className="flex items-center gap-3">
+        {/* Logo */}
+        <img
+          src={
+            themeType === "dark"
+              ? "/images/home/dartlogowhite.svg"
+              : "/images/home/dartlogo.svg"
+          }
+          alt="DART Logo"
+          className="h-10 w-auto"
+        />
+        
+        {/* App Title */}
+        <h1 className="text-lg font-bold font-[var(--font-sans)]">
+          {isCMSRoute ? (
+            <>
+              CMS Schedule
+              {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
+            </>
+          ) : (
+            <>
+              {pageTitle && <span className="text-lg font-normal">{pageTitle}</span>}
+            </>
+          )}
+        </h1>
+      </div>
       <div className="flex items-center gap-4">
         {/* Theme toggle */}
         <SwitchtoDarkMode />

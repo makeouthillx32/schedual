@@ -1,11 +1,13 @@
-// app/layout.tsx
+// app/layout.tsx - MINIMAL CHANGE TO YOUR EXISTING CODE
 import { Providers } from "./provider";
-import ClientLayout from "@/components/ClientLayout";
+import Nav from "@/components/nav";
+import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
 import "./globals.css";
 import type { Metadata } from "next";
+import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 
-// ✅ This is now a SERVER COMPONENT - enables OpenGraph auto-detection
+// ✅ Add this metadata to enable OpenGraph auto-detection
 export const metadata: Metadata = {
   title: {
     template: '%s | Desert Area Resources and Training',
@@ -13,20 +15,9 @@ export const metadata: Metadata = {
   },
   description: 'Welcome to Desert Area Resources and Training.',
   metadataBase: new URL('https://schedual-five.vercel.app'),
-  openGraph: {
-    title: 'Desert Area Resources and Training',
-    description: 'Welcome to Desert Area Resources and Training.',
-    url: 'https://schedual-five.vercel.app',
-    siteName: 'Desert Area Resources and Training',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Desert Area Resources and Training',
-    description: 'Welcome to Desert Area Resources and Training.',
-  },
 };
 
+// ✅ Keep the HTML structure server-side, move client logic to wrapper
 export default function RootLayout({
   children,
 }: {
@@ -34,12 +25,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      </head>
+      <body className="min-h-screen font-[var(--font-sans)]">
         <Providers>
-          <ClientLayout>
+          <ClientLayoutWrapper>
             {children}
-          </ClientLayout>
-          <AccessibilityOverlay />
+          </ClientLayoutWrapper>
         </Providers>
       </body>
     </html>

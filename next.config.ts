@@ -12,6 +12,37 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Add CORS headers for OpenGraph images
+  async headers() {
+    return [
+      {
+        source: '/opengraph-image.png',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600',
+          },
+        ],
+      },
+      {
+        source: '/twitter-image.png',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600',
+          },
+        ],
+      },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true, // ⛔ Temporarily disables type-checking for production builds
   },

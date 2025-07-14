@@ -6,7 +6,7 @@ export const runtime = "edge";
 export default function OGImage({ params }: { params: { tool: string } }) {
   // Map tool name to image filename
   const getImagePath = (toolName: string) => {
-    return `https://schedual-five.vercel.app/images/tools/${toolName}.png`;
+    return `https://schedual-five.vercel.app/images/${toolName}.png`;
   };
 
   return new ImageResponse(

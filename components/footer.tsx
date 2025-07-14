@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
 import { tools } from "@/lib/toolsConfig";
 import { useUserRole } from "@/hooks/useUserRole"; // Use the simpler role hook
+import { useTheme } from "@/app/provider";
 import { useMemo } from "react";
 
 const socialLinks = [
@@ -16,6 +17,7 @@ const socialLinks = [
 
 const footer: React.FC = () => {
   const session = useLoginSession();
+  const { themeType } = useTheme();
   
   // ✅ Use the simpler useUserRole hook instead of useHallMonitor
   // This avoids the database schema issues in HallMonitorFactory
@@ -160,7 +162,15 @@ const footer: React.FC = () => {
             {/* Logo */}
             <div className="flex items-center gap-3 lg:justify-start">
               <div className="flex items-center">
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">DART</h2>
+                <img
+                  src={
+                    themeType === "dark"
+                      ? "/images/home/dartlogowhite.svg"
+                      : "/images/home/dartlogo.svg"
+                  }
+                  alt="DART Logo"
+                  className="h-12 w-auto"
+                />
               </div>
             </div>
             

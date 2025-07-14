@@ -67,12 +67,31 @@ const PunchCardClient: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div 
+      className="container mx-auto p-6 max-w-6xl"
+      style={{ 
+        fontFamily: 'var(--font-sans)',
+        backgroundColor: 'hsl(var(--background))',
+        color: 'hsl(var(--foreground))',
+        transition: 'background-color 0.3s ease, color 0.3s ease'
+      }}
+    >
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 
+          className="text-3xl font-bold mb-2"
+          style={{ 
+            color: 'hsl(var(--foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
           DARTS Punch Card Maker
         </h1>
-        <p className="text-gray-600">
+        <p 
+          style={{ 
+            color: 'hsl(var(--muted-foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
           Use one of our templates or upload your own! Create professional punch cards with A4-optimized layouts for easy printing.
         </p>
       </div>
@@ -80,16 +99,52 @@ const PunchCardClient: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Template Selection & Settings */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Select Template</h2>
+          <div 
+            className="p-6"
+            style={{
+              backgroundColor: 'hsl(var(--card))',
+              color: 'hsl(var(--card-foreground))',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow-md)',
+              border: '1px solid hsl(var(--border))',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <h2 
+              className="text-xl font-semibold mb-4"
+              style={{ 
+                color: 'hsl(var(--card-foreground))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
+              Select Template
+            </h2>
             <TemplateSelector 
               onTemplateSelect={handleTemplateSelect}
               selectedTemplate={selectedTemplate}
             />
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Batch Settings</h2>
+          <div 
+            className="p-6"
+            style={{
+              backgroundColor: 'hsl(var(--card))',
+              color: 'hsl(var(--card-foreground))',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow-md)',
+              border: '1px solid hsl(var(--border))',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <h2 
+              className="text-xl font-semibold mb-4"
+              style={{ 
+                color: 'hsl(var(--card-foreground))',
+                fontFamily: 'var(--font-sans)'
+              }}
+            >
+              Batch Settings
+            </h2>
             <BatchSettings
               cardCount={cardCount}
               onCardCountChange={setCardCount}
@@ -101,11 +156,41 @@ const PunchCardClient: React.FC = () => {
           <button
             onClick={handleGenerateCards}
             disabled={!selectedTemplate || isGenerating}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-              selectedTemplate && !isGenerating
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+            className="w-full py-3 px-4 font-medium transition-all duration-200"
+            style={{
+              backgroundColor: selectedTemplate && !isGenerating 
+                ? 'hsl(var(--primary))' 
+                : 'hsl(var(--muted))',
+              color: selectedTemplate && !isGenerating 
+                ? 'hsl(var(--primary-foreground))' 
+                : 'hsl(var(--muted-foreground))',
+              borderRadius: 'var(--radius)',
+              border: `1px solid ${selectedTemplate && !isGenerating 
+                ? 'hsl(var(--primary))' 
+                : 'hsl(var(--border))'}`,
+              cursor: selectedTemplate && !isGenerating ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-sans)',
+              boxShadow: selectedTemplate && !isGenerating 
+                ? 'var(--shadow-sm)' 
+                : 'none',
+              opacity: selectedTemplate && !isGenerating ? 1 : 0.6
+            }}
+            onMouseEnter={(e) => {
+              if (selectedTemplate && !isGenerating) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                e.currentTarget.style.opacity = '0.9';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--shadow)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedTemplate && !isGenerating) {
+                e.currentTarget.style.backgroundColor = 'hsl(var(--primary))';
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              }
+            }}
           >
             {isGenerating ? 'Generating Cards...' : 'Generate Punch Cards'}
           </button>
@@ -114,8 +199,26 @@ const PunchCardClient: React.FC = () => {
         {/* Right Column - Preview & Results */}
         <div className="lg:col-span-2 space-y-6">
           {selectedTemplate && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Preview</h2>
+            <div 
+              className="p-6"
+              style={{
+                backgroundColor: 'hsl(var(--card))',
+                color: 'hsl(var(--card-foreground))',
+                borderRadius: 'var(--radius)',
+                boxShadow: 'var(--shadow-md)',
+                border: '1px solid hsl(var(--border))',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <h2 
+                className="text-xl font-semibold mb-4"
+                style={{ 
+                  color: 'hsl(var(--card-foreground))',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                Preview
+              </h2>
               <CardPreview 
                 templatePath={selectedTemplate}
                 cardCount={cardCount}
@@ -125,8 +228,26 @@ const PunchCardClient: React.FC = () => {
           )}
 
           {generatedCards.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Generated Cards</h2>
+            <div 
+              className="p-6"
+              style={{
+                backgroundColor: 'hsl(var(--card))',
+                color: 'hsl(var(--card-foreground))',
+                borderRadius: 'var(--radius)',
+                boxShadow: 'var(--shadow-md)',
+                border: '1px solid hsl(var(--border))',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <h2 
+                className="text-xl font-semibold mb-4"
+                style={{ 
+                  color: 'hsl(var(--card-foreground))',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                Generated Cards
+              </h2>
               <PDFGenerator 
                 cards={generatedCards}
                 batchName={batchName}

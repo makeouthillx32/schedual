@@ -5,7 +5,7 @@ import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
 import "./globals.css";
 import type { Metadata } from "next";
-import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
+import ClientLayoutWrapper from "@/components/ClientLayout";
 
 // ✅ Add this metadata to enable OpenGraph auto-detection
 export const metadata: Metadata = {

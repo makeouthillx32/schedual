@@ -190,7 +190,7 @@ export default function ClientLayoutWrapper({
   }, [isDarkMode]);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
-  const showFooter = !isHome && !isDashboardPage;
+  const showFooter = !isHome && !isDashboardPage && !isToolsPage; // ✅ FIXED: Added !isToolsPage
   const showAccessibility = !pathname.startsWith("/auth") && 
                             pathname !== "/sign-in" && 
                             pathname !== "/sign-up";

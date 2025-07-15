@@ -1,3 +1,4 @@
+// Enhanced app/provider.tsx with proper coordinate handling
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
@@ -23,86 +24,60 @@ const ThemeContext = createContext<EnhancedThemeContextType | undefined>(undefin
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
+  if (context === undefined) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
   return context;
 };
 
+// Auth context interface
 interface AuthContextType {
   user: User | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  session: Session | null;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
   return context;
-}
+};
 
 function InternalAuthProvider({ children }: { children: React.ReactNode }) {
-  const { supabaseClient, session, isLoading } = useSessionContext();
-  const user = session?.user || null;
-  const pathname = usePathname();
+  const { session, isLoading } = useSessionContext();
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
-  const protectedPaths = ["/dashboard", "/dashboard/me"];
-  
+  const pathname = usePathname();
+
   useEffect(() => {
-    const isProtected = protectedPaths.some((path) => pathname?.startsWith(path));
-    if (!isLoading && isProtected && !user) {
-      router.push("/sign-in");
+    if (session?.user) {
+      setUser(session.user);
+    } else {
+      setUser(null);
     }
-  }, [isLoading, user, pathname, router]);
-  
-  async function signIn(email: string, password: string) {
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) console.error("Sign-in error:", error.message);
-  }
-  
-  async function signOut() {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) console.error("Sign-out error:", error.message);
-    else router.push("/");
-  }
-  
+  }, [session]);
+
+  useEffect(() => {
+    if (!isLoading && !session) {
+      const publicRoutes = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password"];
+      if (!publicRoutes.includes(pathname)) {
+        router.push("/sign-in");
+      }
+    }
+  }, [session, isLoading, pathname, router]);
+
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut }}>
-      {!isLoading && children}
+    <AuthContext.Provider value={{ user, session, isLoading }}>
+      {children}
     </AuthContext.Provider>
   );
 }
 
-function logThemeInfo(themeId: string, themeType: "light" | "dark") {
-  if (typeof window === "undefined") return;
-  const root = document.documentElement;
-  const getVar = (name: string) => getComputedStyle(root).getPropertyValue(name).trim();
-  const fontSans = getVar('--font-sans');
-  const background = getVar('--background');
-  const primary = getVar('--primary');
-  const radius = getVar('--radius');
-  const loadedFonts = dynamicFontManager.getLoadedFonts();
-  
-  console.log(
-    "%cTheme Inspector%c\n\n" + 
-    "Theme ID: %c" + themeId + "%c\n" +
-    "Theme Mode: %c" + themeType + "%c\n\n" +
-    "Font Sans: %c" + fontSans + "%c\n" +
-    "Background: %c" + background + "%c\n" +
-    "Primary: %c" + primary + "%c\n" +
-    "Border Radius: %c" + radius + "%c\n\n" +
-    "Loaded Fonts: %c" + loadedFonts.join(', ') + "%c",
-    "font-size: 16px; font-weight: bold; color: #3b82f6;", "", 
-    "color: #10b981; font-weight: bold", "",
-    themeType === "dark" ? "color: #6366f1; font-weight: bold" : "color: #eab308; font-weight: bold", "",
-    "color: #f97316;", "",
-    "color: #f97316;", "",
-    "color: #f97316;", "",
-    "color: #f97316;", "",
-    "color: #8b5cf6;", ""
-  );
-}
-
+// Theme provider implementation
 export const Providers: React.FC<{
   children: React.ReactNode;
   session?: Session | null;
@@ -112,7 +87,7 @@ export const Providers: React.FC<{
   const [mounted, setMounted] = useState(false);
   const [availableThemes, setAvailableThemes] = useState<string[]>([]);
   
-  // Updated getTheme function - now async and uses database
+  // Updated getTheme function
   const getTheme = async (id?: string): Promise<Theme | null> => {
     const targetId = id || themeId;
     try {
@@ -144,6 +119,20 @@ export const Providers: React.FC<{
       } catch (error) {
         console.error(`❌ Error setting theme ${id}:`, error);
       }
+    };
+
+    // Use smooth transition if element provided, otherwise regular transition
+    if (element) {
+      await smoothThemeToggle(element, themeChangeCallback);
+    } else {
+      await transitionTheme(themeChangeCallback);
+    }
+  };
+
+  // Enhanced toggleTheme with smooth transitions
+  const toggleTheme = async (element?: HTMLElement) => {
+    const themeChangeCallback = () => {
+      setThemeType((prev) => (prev === "light" ? "dark" : "light"));
     };
 
     // Use smooth transition if element provided, otherwise regular transition
@@ -289,9 +278,6 @@ export const Providers: React.FC<{
         
         console.log(`✅ Theme applied: ${theme.name} (${themeType}) - iOS color: ${themeColor}`);
         
-        // Log theme info
-        logThemeInfo(themeId, themeType);
-        
       } catch (error) {
         console.error("❌ Error applying theme:", error);
       }
@@ -299,20 +285,6 @@ export const Providers: React.FC<{
 
     applyTheme();
   }, [themeType, themeId, mounted, availableThemes]);
-
-  // Enhanced toggleTheme with smooth transitions
-  const toggleTheme = async (element?: HTMLElement) => {
-    const themeChangeCallback = () => {
-      setThemeType((prev) => (prev === "light" ? "dark" : "light"));
-    };
-
-    // Use smooth transition if element provided, otherwise regular transition
-    if (element) {
-      await smoothThemeToggle(element, themeChangeCallback);
-    } else {
-      await transitionTheme(themeChangeCallback);
-    }
-  };
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

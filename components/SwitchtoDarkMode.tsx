@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { getCookie } from "@/lib/cookieUtils";
 import { useTheme } from "@/app/provider";
+import { handleThemeToggleClick } from "@/utils/themeTransitions";
 
 const SwitchtoDarkMode: React.FC = () => {
   const { themeType, toggleTheme } = useTheme();
@@ -19,15 +20,15 @@ const SwitchtoDarkMode: React.FC = () => {
     setIsDark(theme === "dark");
   }, []);
 
-  // TweakCN-style click handler - EXACT same approach
+  // Enhanced click handler with proper coordinates for mobile
   const handleThemeToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    const { clientX: x, clientY: y } = event;
-    
-    // Update local state immediately
+    // Update local state immediately for visual feedback
     setIsDark((prev) => !prev);
     
-    // Call toggleTheme with coordinates (TweakCN style)
-    await toggleTheme(event.currentTarget, { x, y });
+    // Use the enhanced click handler that properly gets coordinates
+    await handleThemeToggleClick(event, async () => {
+      await toggleTheme(event.currentTarget);
+    });
   };
 
   return (

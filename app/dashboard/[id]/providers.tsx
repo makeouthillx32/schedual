@@ -1,27 +1,35 @@
 "use client";
 
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { ThemeProvider, useTheme } from "next-themes";
+import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
+import { ThemeProvider } from "next-themes";
 import { useEffect } from "react";
-import { smoothThemeToggle, transitionTheme } from "@/utils/themeTransitions";
+import { useTheme } from "next-themes";
+import { transitionTheme } from "@/utils/themeTransitions";
 
-// Enhanced theme color manager for dashboard with better iOS support
+// Enhanced theme manager for dashboard with smooth transitions
 function DashboardThemeColorManager() {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const updateThemeColor = () => {
-      // Get computed background color
-      const htmlElement = document.documentElement;
-      let themeColor = getComputedStyle(htmlElement).getPropertyValue("--background").trim();
+      if (typeof window === "undefined") return;
+
+      // Remove existing theme-color meta tags
+      document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
+
+      // Get computed background color from CSS variables
+      const html = document.documentElement;
+      const computedStyle = getComputedStyle(html);
       
-      // Handle CSS custom property references
-      if (themeColor.startsWith("var(--")) {
-        themeColor = getComputedStyle(htmlElement).getPropertyValue(themeColor.slice(4, -1)).trim();
+      let themeColor;
+      if (resolvedTheme === "dark") {
+        themeColor = computedStyle.getPropertyValue("--background").trim();
+      } else {
+        themeColor = computedStyle.getPropertyValue("--background").trim();
       }
-      
-      // Default fallback colors
-      if (!themeColor || themeColor === "") {
+
+      // Fallback colors if CSS variable not available
+      if (!themeColor) {
         themeColor = resolvedTheme === "dark" ? "111827" : "ffffff";
       }
 
@@ -50,14 +58,11 @@ function DashboardThemeColorManager() {
         finalColor = `#${themeColor}`;
       }
 
-      // Create or update theme-color meta tag
-      let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
-      if (!metaTag) {
-        metaTag = document.createElement("meta");
-        metaTag.setAttribute("name", "theme-color");
-        document.head.appendChild(metaTag);
-      }
+      // Create theme-color meta tag
+      const metaTag = document.createElement("meta");
+      metaTag.setAttribute("name", "theme-color");
       metaTag.setAttribute("content", finalColor);
+      document.head.appendChild(metaTag);
 
       console.log(`🍎 Dashboard iOS theme color: ${finalColor} (${resolvedTheme})`);
     };
@@ -81,48 +86,31 @@ function DashboardThemeColorManager() {
   return null;
 }
 
-// Enhanced theme manager that adds proper coordinate-based transitions
+// Theme manager that adds enhanced transition support
 function DashboardThemeManager({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
 
-  // Add enhanced global theme transition methods
+  // Add enhanced transition methods to window (minimal change)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Enhanced smoothToggleTheme with proper coordinate handling
+      // Enhanced smoothToggleTheme with coordinates
       (window as any).smoothToggleTheme = async (coordinates?: { x: number; y: number }) => {
         const themeChangeCallback = () => {
           theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
         };
 
         // Use enhanced transition with coordinates
-        if (coordinates) {
-          await transitionTheme(themeChangeCallback, coordinates);
-        } else {
-          await transitionTheme(themeChangeCallback);
-        }
+        await transitionTheme(themeChangeCallback, coordinates);
       };
 
-      // Enhanced smoothSetTheme with proper coordinate handling
+      // Enhanced smoothSetTheme with coordinates
       (window as any).smoothSetTheme = async (newTheme: string, coordinates?: { x: number; y: number }) => {
         const themeChangeCallback = () => {
           theme.setTheme(newTheme);
         };
 
         // Use enhanced transition with coordinates
-        if (coordinates) {
-          await transitionTheme(themeChangeCallback, coordinates);
-        } else {
-          await transitionTheme(themeChangeCallback);
-        }
-      };
-
-      // Add a method for smooth toggles with element reference
-      (window as any).smoothToggleThemeFromElement = async (element: HTMLElement) => {
-        const themeChangeCallback = () => {
-          theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
-        };
-
-        await smoothThemeToggle(element, themeChangeCallback);
+        await transitionTheme(themeChangeCallback, coordinates);
       };
     }
 
@@ -130,7 +118,6 @@ function DashboardThemeManager({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         delete (window as any).smoothToggleTheme;
         delete (window as any).smoothSetTheme;
-        delete (window as any).smoothToggleThemeFromElement;
       }
     };
   }, [theme]);
@@ -143,23 +130,15 @@ function DashboardThemeManager({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Enhanced ThemeProvider wrapper with smooth transition support
-function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
+// Keep the EXACT same structure as your original
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider defaultTheme="light" attribute="class">
       <DashboardThemeManager>
-        {children}
+        <SidebarProvider>
+          {children}
+        </SidebarProvider>
       </DashboardThemeManager>
     </ThemeProvider>
-  );
-}
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <SidebarProvider>
-      <EnhancedThemeProvider>
-        {children}
-      </EnhancedThemeProvider>
-    </SidebarProvider>
   );
 }

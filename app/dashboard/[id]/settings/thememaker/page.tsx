@@ -8,7 +8,7 @@ import { Eye, ArrowLeft, Menu, X } from 'lucide-react';
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 // Import components
-import { ThemeHeader } from './_components/Header';
+import { ThemeHeader } from './_components/ThemeHeader';
 import { ThemeForm } from './_components/ThemeForm';
 import { ColorPicker } from './_components/ColorPicker';
 import { FontControls } from './_components/FontControls';
@@ -266,46 +266,31 @@ const ThemeCreator = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Import theme
-  const importTheme = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Import theme from CSS
+  const importTheme = (themeData: any) => {
+    try {
+      setCurrentTheme({
+        id: themeData.id || '',
+        name: themeData.name,
+        description: themeData.description || '',
+        previewColor: themeData.previewColor || '#3b82f6',
+        light: themeData.light || {},
+        dark: themeData.dark || {},
+        fonts: themeData.fonts || {
+          sans: 'Inter, sans-serif',
+          serif: 'Georgia, serif',
+          mono: 'Monaco, monospace'
+        },
+        radii: themeData.radii || { radius: '0.5rem' },
+        shadows: themeData.shadows || currentTheme.shadows,
+        typography: themeData.typography || { trackingNormal: '0px' }
+      });
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const imported = JSON.parse(e.target?.result as string);
-        
-        if (!imported.name || !imported.light || !imported.dark) {
-          alert('Invalid theme file - missing required properties');
-          return;
-        }
-
-        setCurrentTheme({
-          id: imported.id || '',
-          name: imported.name,
-          description: imported.description || '',
-          previewColor: imported.previewColor || '#3b82f6',
-          light: imported.light || {},
-          dark: imported.dark || {},
-          fonts: imported.fonts || {
-            sans: 'Inter, sans-serif',
-            serif: 'Georgia, serif',
-            mono: 'Monaco, monospace'
-          },
-          radii: imported.radii || { radius: '0.5rem' },
-          shadows: imported.shadows || currentTheme.shadows,
-          typography: imported.typography || { trackingNormal: '0px' }
-        });
-
-        alert('Theme imported successfully!');
-      } catch (error) {
-        console.error('Error importing theme:', error);
-        alert('Failed to import theme - invalid JSON file');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+      alert('Theme imported successfully from CSS!');
+    } catch (error) {
+      console.error('Error importing theme:', error);
+      alert('Failed to import theme');
+    }
   };
 
   // Load existing theme

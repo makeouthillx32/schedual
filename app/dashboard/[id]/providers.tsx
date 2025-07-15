@@ -156,10 +156,10 @@ function EnhancedThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <EnhancedThemeProvider>
-      <SidebarProvider>
+    <SidebarProvider>
+      <EnhancedThemeProvider>
         {children}
-      </SidebarProvider>
-    </EnhancedThemeProvider>
+      </EnhancedThemeProvider>
+    </SidebarProvider>
   );
 }

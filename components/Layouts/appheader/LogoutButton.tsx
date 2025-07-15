@@ -2,35 +2,23 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { DropdownMenuItem } from "./dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
 import { signOutAction } from "@/app/actions";
 
 const LogoutButton: React.FC = () => {
-  const router = useRouter();
-  const { signOut } = useAuth();
-
   const handleLogout = async () => {
     try {
       console.log("🚪 [LOGOUT] Starting logout process...");
       
-      // Option 1: Use the client-side signOut from useAuth hook
-      await signOut();
-      
-      // Option 2: Also call the server action to ensure cookies are cleared
-      // This ensures complete cleanup on both client and server
+      // Use the server action which properly clears cookies and session
       await signOutAction();
       
-      console.log("🚪 [LOGOUT] Logout completed, redirecting...");
-      
-      // Force a hard navigation to ensure clean state
-      window.location.href = "/sign-in";
+      console.log("🚪 [LOGOUT] Logout completed");
       
     } catch (error) {
       console.error("🚪 [LOGOUT] Error during logout:", error);
       
-      // Fallback: Force redirect even if there's an error
+      // Fallback: Force redirect to sign-in if there's an error
       window.location.href = "/sign-in";
     }
   };

@@ -1,35 +1,27 @@
-// app/dashboard/[id]/providers.tsx
 "use client";
 
-import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
-import { ThemeProvider } from "next-themes";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProvider, useTheme } from "next-themes";
 import { useEffect } from "react";
-import { useTheme } from "next-themes";
+import { smoothThemeToggle, transitionTheme } from "@/utils/themeTransitions";
 
-// Enhanced theme manager for dashboard with smooth transitions
+// Enhanced theme color manager for dashboard with better iOS support
 function DashboardThemeColorManager() {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const updateThemeColor = () => {
-      if (typeof window === "undefined") return;
-
-      // Remove existing theme-color meta tags
-      document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
-
-      // Get computed background color from CSS variables
-      const html = document.documentElement;
-      const computedStyle = getComputedStyle(html);
+      // Get computed background color
+      const htmlElement = document.documentElement;
+      let themeColor = getComputedStyle(htmlElement).getPropertyValue("--background").trim();
       
-      let themeColor;
-      if (resolvedTheme === "dark") {
-        themeColor = computedStyle.getPropertyValue("--background").trim();
-      } else {
-        themeColor = computedStyle.getPropertyValue("--background").trim();
+      // Handle CSS custom property references
+      if (themeColor.startsWith("var(--")) {
+        themeColor = getComputedStyle(htmlElement).getPropertyValue(themeColor.slice(4, -1)).trim();
       }
-
-      // Fallback colors if CSS variable not available
-      if (!themeColor) {
+      
+      // Default fallback colors
+      if (!themeColor || themeColor === "") {
         themeColor = resolvedTheme === "dark" ? "111827" : "ffffff";
       }
 
@@ -58,11 +50,14 @@ function DashboardThemeColorManager() {
         finalColor = `#${themeColor}`;
       }
 
-      // Create theme-color meta tag
-      const metaTag = document.createElement("meta");
-      metaTag.setAttribute("name", "theme-color");
+      // Create or update theme-color meta tag
+      let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
+      if (!metaTag) {
+        metaTag = document.createElement("meta");
+        metaTag.setAttribute("name", "theme-color");
+        document.head.appendChild(metaTag);
+      }
       metaTag.setAttribute("content", finalColor);
-      document.head.appendChild(metaTag);
 
       console.log(`🍎 Dashboard iOS theme color: ${finalColor} (${resolvedTheme})`);
     };
@@ -86,68 +81,48 @@ function DashboardThemeColorManager() {
   return null;
 }
 
-// Theme manager that adds TweakCN-style circular transition support
+// Enhanced theme manager that adds proper coordinate-based transitions
 function DashboardThemeManager({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
 
-  // Add TweakCN-style circular transition methods to the window
+  // Add enhanced global theme transition methods
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // TweakCN-style theme toggle with coordinates
+      // Enhanced smoothToggleTheme with proper coordinate handling
       (window as any).smoothToggleTheme = async (coordinates?: { x: number; y: number }) => {
         const themeChangeCallback = () => {
           theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
         };
 
-        // Set animation origin coordinates (TweakCN style)
+        // Use enhanced transition with coordinates
         if (coordinates) {
-          document.documentElement.style.setProperty('--x', `${coordinates.x}px`);
-          document.documentElement.style.setProperty('--y', `${coordinates.y}px`);
-          console.log(`🎯 Setting animation origin: (${coordinates.x}, ${coordinates.y})`);
+          await transitionTheme(themeChangeCallback, coordinates);
         } else {
-          // Default to center
-          document.documentElement.style.setProperty('--x', `${window.innerWidth / 2}px`);
-          document.documentElement.style.setProperty('--y', `${window.innerHeight / 2}px`);
-        }
-
-        // Start the view transition (TweakCN approach)
-        if (document.startViewTransition) {
-          console.log('🎨 Starting view transition...');
-          const transition = document.startViewTransition(async () => {
-            await themeChangeCallback();
-          });
-          await transition.finished;
-          console.log('✨ View transition completed');
-        } else {
-          console.log('⚠️ View transitions not supported, using fallback');
-          await themeChangeCallback();
+          await transitionTheme(themeChangeCallback);
         }
       };
 
-      // TweakCN-style theme setter with coordinates
+      // Enhanced smoothSetTheme with proper coordinate handling
       (window as any).smoothSetTheme = async (newTheme: string, coordinates?: { x: number; y: number }) => {
         const themeChangeCallback = () => {
           theme.setTheme(newTheme);
         };
 
-        // Set animation origin coordinates
+        // Use enhanced transition with coordinates
         if (coordinates) {
-          document.documentElement.style.setProperty('--x', `${coordinates.x}px`);
-          document.documentElement.style.setProperty('--y', `${coordinates.y}px`);
+          await transitionTheme(themeChangeCallback, coordinates);
         } else {
-          document.documentElement.style.setProperty('--x', `${window.innerWidth / 2}px`);
-          document.documentElement.style.setProperty('--y', `${window.innerHeight / 2}px`);
+          await transitionTheme(themeChangeCallback);
         }
+      };
 
-        // Start the view transition
-        if (document.startViewTransition) {
-          const transition = document.startViewTransition(async () => {
-            await themeChangeCallback();
-          });
-          await transition.finished;
-        } else {
-          await themeChangeCallback();
-        }
+      // Add a method for smooth toggles with element reference
+      (window as any).smoothToggleThemeFromElement = async (element: HTMLElement) => {
+        const themeChangeCallback = () => {
+          theme.setTheme(theme.resolvedTheme === 'dark' ? 'light' : 'dark');
+        };
+
+        await smoothThemeToggle(element, themeChangeCallback);
       };
     }
 
@@ -155,6 +130,7 @@ function DashboardThemeManager({ children }: { children: React.ReactNode }) {
       if (typeof window !== 'undefined') {
         delete (window as any).smoothToggleTheme;
         delete (window as any).smoothSetTheme;
+        delete (window as any).smoothToggleThemeFromElement;
       }
     };
   }, [theme]);

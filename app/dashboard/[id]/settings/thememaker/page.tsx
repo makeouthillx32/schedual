@@ -435,7 +435,7 @@ const ThemeCreator = () => {
   return (
     <>
       <Breadcrumb pageName="Theme Creator" />
-      <div className="flex h-[calc(100vh-8rem)] bg-background">
+      <div className={`${isMobile ? 'flex flex-col min-h-0' : 'flex h-[calc(100vh-8rem)]'} bg-background`}>
       {/* Theme Creator Panel - Full width on mobile */}
       <div className={`${isMobile ? 'w-full' : 'w-80'} border-r border-border bg-card overflow-hidden flex flex-col`}>
         {/* Header */}

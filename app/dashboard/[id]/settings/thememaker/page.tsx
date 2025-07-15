@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Eye, ArrowLeft, Menu, X } from 'lucide-react';
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 // Import components
 import { ThemeHeader } from './_components/Header';
@@ -352,27 +353,32 @@ const ThemeCreator = () => {
   // Mobile Preview Modal
   if (isMobile && showPreview) {
     return (
-      <div className="fixed inset-0 bg-background z-[60] pt-[70px]">
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-          <button
-            onClick={() => setShowPreview(false)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Editor
-          </button>
-          <h2 className="font-semibold">Preview</h2>
-          <div className="w-16"></div> {/* Spacer */}
+      <>
+        <Breadcrumb pageName="Theme Preview" />
+        <div className="fixed inset-0 bg-background z-[60] pt-[140px]">
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+            <button
+              onClick={() => setShowPreview(false)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Editor
+            </button>
+            <h2 className="font-semibold">Live Preview</h2>
+            <div className="w-16"></div> {/* Spacer */}
+          </div>
+          <div className="h-[calc(100vh-140px-64px)] overflow-auto">
+            <ThemePreview currentTheme={currentTheme} mode={mode} />
+          </div>
         </div>
-        <div className="h-[calc(100vh-70px-64px)] overflow-auto">
-          <ThemePreview currentTheme={currentTheme} mode={mode} />
-        </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background">
+    <>
+      <Breadcrumb pageName="Theme Creator" />
+      <div className="flex h-[calc(100vh-8rem)] bg-background">
       {/* Theme Creator Panel - Full width on mobile */}
       <div className={`${isMobile ? 'w-full' : 'w-80'} border-r border-border bg-card overflow-hidden flex flex-col`}>
         {/* Header */}
@@ -462,6 +468,7 @@ const ThemeCreator = () => {
         </button>
       )}
     </div>
+    </>
   );
 };
 

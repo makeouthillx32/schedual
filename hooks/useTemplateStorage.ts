@@ -26,7 +26,7 @@ export interface Template {
 // Template write format for uploading
 export interface TemplateUpload {
   file: File;
-  category: string;
+  categories: string[]; // Changed from single category to array
   description?: string;
   customName?: string;
 }
@@ -74,8 +74,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     return `${category}_${sanitizedName}_${timestamp}`;
   }, []);
 
-  // Generate filename following your naming pattern (Pc1.png, Pc2.png, etc.)
-  const generateFilename = useCallback(async (category: string): Promise<string> => {
+  // Generate filename following your naming pattern (Pc1.png, Pc2_vintage_modern.png, etc.)
+  const generateFilename = useCallback(async (categories: string | string[]): Promise<string> => {
     try {
       // Get existing files to determine next number
       const { data: existingFiles } = await supabase.storage
@@ -86,13 +86,14 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         });
 
       if (!existingFiles) {
-        return `Pc1.png`;
+        const categoryString = Array.isArray(categories) ? categories.join('_') : categories;
+        return categoryString ? `Pc1_${categoryString}.png` : `Pc1.png`;
       }
 
-      // Extract numbers from existing files (Pc1.png, Pc2.png, etc.)
+      // Extract numbers from existing files (Pc1.png, Pc2_vintage.png, etc.)
       const numbers = existingFiles
         .map(file => {
-          const match = file.name.match(/^Pc(\d+)\.png$/);
+          const match = file.name.match(/^Pc(\d+)(?:_.*)?\.png$/);
           return match ? parseInt(match[1]) : 0;
         })
         .filter(num => num > 0)
@@ -108,11 +109,14 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         }
       }
 
-      return `Pc${nextNumber}.png`;
+      // Build filename with categories
+      const categoryString = Array.isArray(categories) ? categories.join('_') : categories;
+      return categoryString ? `Pc${nextNumber}_${categoryString}.png` : `Pc${nextNumber}.png`;
     } catch (err) {
       console.error('Error generating filename:', err);
       // Fallback to timestamp-based naming
-      return `Pc${Date.now()}.png`;
+      const categoryString = Array.isArray(categories) ? categories.join('_') : categories;
+      return categoryString ? `Pc${Date.now()}_${categoryString}.png` : `Pc${Date.now()}.png`;
     }
   }, [supabase]);
 
@@ -121,13 +125,43 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     const filename = filePath.split('/').pop() || '';
     const id = filename.replace(/\.[^/.]+$/, ''); // Remove extension for ID
     
-    // Extract number from filename for ordering
-    const numberMatch = filename.match(/Pc(\d+)/);
+    // Parse filename format: Pc3_vintage_modern.png or Pc1.png
+    const parts = filename.replace(/\.[^/.]+$/, '').split('_');
+    const numberMatch = parts[0].match(/Pc(\d+)/);
     const number = numberMatch ? parseInt(numberMatch[1]) : 999;
+    
+    // Extract categories from filename (everything after Pc#_)
+    const categories = parts.slice(1).filter(Boolean);
+    let category = 'modern'; // default
+    
+    if (categories.length > 0) {
+      // Use categories from filename
+      category = categories.join('_');
+    } else {
+      // Fallback to number-based categorization for legacy files
+      if (number >= 1 && number <= 10) category = 'vintage';
+      else if (number >= 11 && number <= 20) category = 'modern';
+      else if (number >= 21 && number <= 30) category = 'professional';
+      else if (number >= 31 && number <= 40) category = 'creative';
+    }
 
-    // Default categorization based on number ranges
-    let category = 'modern';
-    if (number >= 1 && number <= 10) category = 'vintage';
+    return {
+      id,
+      name: `Punch Card Design ${number}`,
+      path: `${BASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filePath}`,
+      category,
+      description: getCategoryDescription(categories[0] || category),
+      metadata: {
+        originalName: filename,
+        uploadedAt: fileMetadata?.created_at || new Date().toISOString(),
+        fileSize: fileMetadata?.metadata?.size,
+        dimensions: {
+          width: 1088, // Standard punch card width
+          height: 638  // Standard punch card height
+        }
+      }
+    };
+  }, []);'vintage';
     else if (number >= 11 && number <= 20) category = 'modern';
     else if (number >= 21 && number <= 30) category = 'professional';
     else if (number >= 31 && number <= 40) category = 'creative';
@@ -153,12 +187,18 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
   // Get category description
   const getCategoryDescription = useCallback((category: string): string => {
     const descriptions = {
-      vintage: 'Classic design style',
-      modern: 'Modern layout design',
-      professional: 'Professional business format',
-      creative: 'Creative artistic design'
+      vintage: 'Classic retro design style',
+      modern: 'Contemporary clean layout',
+      professional: 'Business-ready format',
+      creative: 'Artistic and unique design',
+      minimal: 'Simple and clean aesthetic',
+      colorful: 'Vibrant and eye-catching',
+      elegant: 'Sophisticated and refined',
+      playful: 'Fun and engaging design',
+      corporate: 'Professional business style',
+      artistic: 'Creative and expressive'
     };
-    return descriptions[category as keyof typeof descriptions] || 'Custom design';
+    return descriptions[category as keyof typeof descriptions] || 'Custom design template';
   }, []);
 
   // Load all templates from storage
@@ -210,10 +250,15 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     }
   }, [supabase, parseTemplateFromPath]);
 
-  // Get templates by category
+  // Get templates by category (supports multi-category filtering)
   const getTemplatesByCategory = useCallback((category: string): Template[] => {
     if (category === 'all') return templates;
-    return templates.filter(template => template.category === category);
+    
+    return templates.filter(template => {
+      // Check if the category exists in any part of the template's category string
+      const templateCategories = template.category.split('_');
+      return templateCategories.includes(category);
+    });
   }, [templates]);
 
   // Get template by ID
@@ -235,8 +280,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         throw new Error('File size must be less than 5MB');
       }
 
-      // Generate filename
-      const filename = await generateFilename(upload.category);
+      // Generate filename with categories
+      const filename = await generateFilename(upload.categories);
       
       // Upload file
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -255,8 +300,8 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         id: filename.replace(/\.[^/.]+$/, ''),
         name: upload.customName || `Punch Card Design ${filename.match(/\d+/)?.[0] || 'Custom'}`,
         path: `${BASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filename}`,
-        category: upload.category,
-        description: upload.description || getCategoryDescription(upload.category),
+        category: upload.categories.join('_'),
+        description: upload.description || getCategoryDescription(upload.categories[0] || 'modern'),
         metadata: {
           originalName: upload.file.name,
           fileSize: upload.file.size,
@@ -393,8 +438,25 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     }
   }, [refreshTemplates]);
 
+  // Get unique categories from all templates
+  const getAllCategories = useCallback((): string[] => {
+    const categorySet = new Set<string>();
+    
+    templates.forEach(template => {
+      // Split multi-category templates and add each category individually
+      const cats = template.category.split('_');
+      cats.forEach(cat => {
+        if (cat && cat.trim()) {
+          categorySet.add(cat.trim());
+        }
+      });
+    });
+
+    return Array.from(categorySet).sort();
+  }, [templates]);
+
   // Get unique categories
-  const categories = ['all', ...Array.from(new Set(templates.map(t => t.category)))];
+  const categories = ['all', ...getAllCategories()];
 
   // Load templates on mount
   useEffect(() => {

@@ -339,20 +339,92 @@ const ThemeCreator = () => {
   if (isMobile && showPreview) {
     return (
       <>
-        <Breadcrumb pageName="Theme Preview" />
-        <div className="fixed inset-0 bg-background z-[60] pt-[140px]">
-          <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-            <button
-              onClick={() => setShowPreview(false)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Editor
-            </button>
-            <h2 className="font-semibold">Live Preview</h2>
-            <div className="w-16"></div> {/* Spacer */}
+        <Breadcrumb pageName="Theme Creator" />
+        <div className="space-y-6">
+          {/* Theme Editor */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <ThemeHeader
+              currentTheme={currentTheme}
+              showPresets={showPresets}
+              setShowPresets={setShowPresets}
+              onImportTheme={importTheme}
+              onExportTheme={exportTheme}
+              existingThemes={existingThemes}
+              onLoadTheme={loadExistingTheme}
+            />
+
+            <div className="px-4 pb-4 border-b border-border">
+              <ThemeForm
+                currentTheme={currentTheme}
+                onThemeChange={handleThemeChange}
+                mode={mode}
+                onModeChange={setMode}
+                onSaveTheme={saveTheme}
+                saving={saving}
+              />
+            </div>
+
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setActiveTab('colors')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  activeTab === 'colors' 
+                    ? 'bg-background text-foreground border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Colors
+              </button>
+              <button
+                onClick={() => setActiveTab('fonts')}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                  activeTab === 'fonts' 
+                    ? 'bg-background text-foreground border-b-2 border-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Fonts & Style
+              </button>
+            </div>
+
+            <div className="p-4">
+              {activeTab === 'colors' ? (
+                <ColorPicker
+                  mode={mode}
+                  currentTheme={currentTheme}
+                  expandedSections={expandedSections}
+                  onToggleSection={toggleSection}
+                  onUpdateColor={handleColorUpdate}
+                />
+              ) : (
+                <FontControls
+                  currentTheme={currentTheme}
+                  onFontChange={handleFontChange}
+                  onRadiusChange={handleRadiusChange}
+                  onShadowChange={handleShadowChange}
+                  onTypographyChange={handleTypographyChange}
+                />
+              )}
+            </div>
+
+            {/* Mobile Preview Toggle */}
+            <div className="p-4 border-t border-border">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mb-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Editor
+              </button>
+            </div>
           </div>
-          <div className="h-[calc(100vh-140px-64px)] overflow-auto">
+
+          {/* Live Preview Section */}
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h2 className="text-lg font-semibold">Live Preview</h2>
+              <p className="text-sm text-muted-foreground">See how your theme looks in real-time</p>
+            </div>
             <ThemePreview currentTheme={currentTheme} mode={mode} />
           </div>
         </div>
@@ -442,19 +514,35 @@ const ThemeCreator = () => {
         <ThemePreview currentTheme={currentTheme} mode={mode} />
       )}
 
-      {/* Mobile Preview Button */}
-      {isMobile && (
-        <button
-          onClick={() => setShowPreview(true)}
-          className="fixed bottom-6 left-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-40"
-          aria-label="Show Preview"
-        >
-          <Eye className="w-6 h-6" />
-        </button>
+      {/* Mobile Preview Toggle Button */}
+      {isMobile && !showPreview && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowPreview(true)}
+            className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <Eye className="w-5 h-5" />
+            Show Live Preview
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Inline Preview */}
+      {isMobile && showPreview && (
+        <div className="mt-6 bg-card border border-border rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h2 className="text-lg font-semibold">Live Preview</h2>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="px-3 py-1 text-sm border border-border rounded-md hover:bg-muted transition-colors"
+            >
+              Hide Preview
+            </button>
+          </div>
+          <ThemePreview currentTheme={currentTheme} mode={mode} />
+        </div>
       )}
     </div>
     </>
   );
 };
-
-export default ThemeCreator;

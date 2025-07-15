@@ -3,10 +3,13 @@
 "use client";
 
 import React from 'react';
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 export const ThemeCreatorSkeleton = () => {
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background">
+    <>
+      <Breadcrumb pageName="Theme Creator" />
+      <div className="flex h-[calc(100vh-8rem)] bg-background">
       {/* Mobile/Desktop Sidebar */}
       <div className="w-full md:w-80 border-r border-border bg-card overflow-hidden flex flex-col">
         {/* Header Skeleton */}
@@ -198,6 +201,6 @@ export const ThemeCreatorSkeleton = () => {
       <div className="md:hidden fixed bottom-4 left-4">
         <div className="w-14 h-14 bg-muted rounded-full animate-pulse"></div>
       </div>
-    </div>
+    </>
   );
 };

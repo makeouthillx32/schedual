@@ -161,50 +161,6 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
         }
       }
     };
-  }, []);'vintage';
-      else if (number >= 11 && number <= 20) category = 'modern';
-      else if (number >= 21 && number <= 30) category = 'professional';
-      else if (number >= 31 && number <= 40) category = 'creative';
-    }
-
-    return {
-      id,
-      name: `Punch Card Design ${number}`,
-      path: `${BASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filePath}`,
-      category,
-      description: getCategoryDescription(categories[0] || category),
-      metadata: {
-        originalName: filename,
-        uploadedAt: fileMetadata?.created_at || new Date().toISOString(),
-        fileSize: fileMetadata?.metadata?.size,
-        dimensions: {
-          width: 1088, // Standard punch card width
-          height: 638  // Standard punch card height
-        }
-      }
-    };
-  }, []);'vintage';
-    else if (number >= 11 && number <= 20) category = 'modern';
-    else if (number >= 21 && number <= 30) category = 'professional';
-    else if (number >= 31 && number <= 40) category = 'creative';
-    }
-
-    return {
-      id,
-      name: `Punch Card Design ${number}`,
-      path: `${BASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${filePath}`,
-      category,
-      description: getCategoryDescription(category),
-      metadata: {
-        originalName: filename,
-        uploadedAt: fileMetadata?.created_at || new Date().toISOString(),
-        fileSize: fileMetadata?.metadata?.size,
-        dimensions: {
-          width: 1088, // Standard punch card width
-          height: 638  // Standard punch card height
-        }
-      }
-    };
   }, []);
 
   // Get category description

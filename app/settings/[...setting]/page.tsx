@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
 import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
+import { SettingsToast } from "@/components/settings/SettingsToast";
 
 type DynComp = FC<{}>;
 
@@ -58,15 +59,52 @@ export default async function SettingsPage(
     data: { session },
   } = await supabase.auth.getSession();
 
+  // Handle authentication and role-based access
   if (!session) {
     const target = "/settings/" + settingPath;
-    redirect(`/sign-in?redirect_to=${encodeURIComponent(target)}`, RedirectType.replace);
+    
+    // Show toast for unauthenticated users
+    return (
+      <SettingsToast 
+        type="auth"
+        message="Company feature - Please sign in to access settings"
+        redirectTo={`/sign-in?redirect_to=${encodeURIComponent(target)}`}
+      />
+    );
+  }
+
+  // Get user profile and role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single();
+
+  const userRole = profile?.role;
+  const allowedRoles = ['admin', 'jobcoach', 'client'];
+
+  // Check if user has proper role
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return (
+      <SettingsToast 
+        type="role"
+        message="Access denied - Please contact administrator for proper role assignment"
+        userRole={userRole}
+        redirectTo="/dashboard"
+      />
+    );
   }
 
   // Handle settings component selection
   const SettingsComponent = settingsMap[settingPath];
   if (!SettingsComponent) {
-    redirect("/settings/profile", RedirectType.replace);
+    return (
+      <SettingsToast 
+        type="missing"
+        message="Settings page not found - Redirecting to profile settings"
+        redirectTo="/settings/profile"
+      />
+    );
   }
 
   const settingTitle = getSettingTitle(settingPath);

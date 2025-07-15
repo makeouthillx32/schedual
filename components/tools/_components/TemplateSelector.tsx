@@ -160,8 +160,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         transition: 'all 0.3s ease'
       }}
     >
-      {/* Category Filter */}
-      <CollapsibleSection title="Categories" defaultOpen={true} icon="🏷️">
+      {/* Category Filter - No Dropdown */}
+      <div className="mb-6">
+        <h3 
+          className="font-medium mb-3 text-sm"
+          style={{ 
+            color: 'hsl(var(--foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
+          🏷️ Filter by Category
+        </h3>
         <div className="flex flex-wrap gap-2">
           {categories.map(category => (
             <button
@@ -196,10 +205,19 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             </button>
           ))}
         </div>
-      </CollapsibleSection>
+      </div>
 
-      {/* Template Grid */}
-      <CollapsibleSection title="Available Templates" defaultOpen={true} icon="🎨">
+      {/* Template Grid - No Dropdown */}
+      <div className="mb-6">
+        <h3 
+          className="font-medium mb-3 text-sm"
+          style={{ 
+            color: 'hsl(var(--foreground))',
+            fontFamily: 'var(--font-sans)'
+          }}
+        >
+          🎨 Available Templates
+        </h3>
         {isLoading ? (
           <div 
             className="flex items-center justify-center py-8"
@@ -286,17 +304,23 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       {template.description}
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <span 
-                        className="inline-block px-2 py-0.5 text-xs rounded capitalize"
-                        style={{
-                          backgroundColor: 'hsl(var(--secondary) / 0.5)',
-                          color: 'hsl(var(--secondary-foreground))',
-                          borderRadius: 'calc(var(--radius) - 2px)',
-                          fontFamily: 'var(--font-sans)'
-                        }}
-                      >
-                        {template.category}
-                      </span>
+                      <div className="flex gap-1 flex-wrap">
+                        {template.category.split('_').map((cat, index) => (
+                          <span 
+                            key={index}
+                            className="inline-block px-2 py-0.5 text-xs rounded capitalize"
+                            style={{
+                              backgroundColor: `hsl(var(--chart-${(index % 5) + 1}) / 0.2)`,
+                              color: 'hsl(var(--foreground))',
+                              borderRadius: 'calc(var(--radius) - 2px)',
+                              fontFamily: 'var(--font-sans)',
+                              border: `1px solid hsl(var(--chart-${(index % 5) + 1}) / 0.3)`
+                            }}
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -338,7 +362,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             )}
           </div>
         )}
-      </CollapsibleSection>
+      </div>
 
       {/* Template Stats */}
       <div 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as Icons from "../icons";
@@ -59,6 +58,11 @@ export const NAV_DATA = [
             title: "Permissions",
             url: "/settings/permissions",
             icon: Icons.Authentication,
+          },
+          {
+            title: "Theme Maker",
+            url: "/settings/thememaker",
+            icon: Icons.Palette,
           },
         ],
         roles: ["admin"],

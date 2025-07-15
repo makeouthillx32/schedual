@@ -1,7 +1,8 @@
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { getCookie } from "@/lib/cookieUtils";
-import { useTheme } from "@/app/provider"; // ✅ Use your custom theme context
+import { useTheme } from "@/app/provider";
+import { handleThemeToggleClick } from "@/utils/themeTransitions";
 import { Moon, Sun } from "./icons";
 
 const THEMES = [
@@ -16,7 +17,7 @@ const THEMES = [
 ];
 
 export function ThemeToggleSwitch() {
-  const { toggleTheme } = useTheme(); // ✅ Use your custom context instead of next-themes
+  const { toggleTheme } = useTheme();
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -27,9 +28,15 @@ export function ThemeToggleSwitch() {
     setIsDark(theme === "dark");
   }, []);
 
-  const handleToggle = () => {
+  // Enhanced click handler with proper coordinates for mobile
+  const handleToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Update local state immediately for visual feedback
     setIsDark((prev) => !prev);
-    toggleTheme(); // ✅ Use your custom toggle function
+    
+    // Use the enhanced click handler that properly gets coordinates
+    await handleThemeToggleClick(event, async () => {
+      await toggleTheme(event.currentTarget);
+    });
   };
 
   if (!mounted) {

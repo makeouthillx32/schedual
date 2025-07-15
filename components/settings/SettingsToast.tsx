@@ -81,116 +81,127 @@ export const SettingsToast: React.FC<SettingsToastProps> = ({
   const config = getAlertConfig();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div 
-        className={`max-w-2xl w-full transition-all duration-300 ${
-          isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}
-      >
-        {/* Custom Alert with countdown */}
+    <>
+      {/* Full page overlay for mobile, fixed positioning for desktop */}
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-start justify-center pt-20 px-4">
         <div 
-          className="flex gap-5 w-full rounded-[10px] border-l-6 px-7 py-8 relative"
-          style={{
-            borderColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
-            backgroundColor: config.variant === 'error' ? '#FEF2F2' : '#FEF5DE',
-            color: config.variant === 'error' ? '#BC1C21' : '#9D5425'
-          }}
+          className={`max-w-md w-full transition-all duration-300 ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'
+          }`}
         >
-          {/* Icon */}
-          <div className="flex-shrink-0">
-            {config.icon}
-          </div>
-
-          {/* Content */}
-          <div className="w-full">
-            <h5 
-              className="mb-4 font-bold leading-[22px] text-lg"
-              style={{ 
-                color: config.variant === 'error' ? '#BC1C21' : '#9D5425',
-                fontFamily: 'var(--font-sans)'
-              }}
-            >
-              {config.title}
-            </h5>
-
-            <div 
-              className="mb-4"
-              style={{ 
-                color: config.variant === 'error' ? '#CD5D5D' : '#D0915C',
-                fontFamily: 'var(--font-sans)'
-              }}
-            >
-              {config.description}
-            </div>
-
-            {/* Countdown and redirect info */}
-            <div 
-              className="flex items-center gap-2 text-sm"
-              style={{ 
-                color: config.variant === 'error' ? '#BC1C21' : '#9D5425',
-                fontFamily: 'var(--font-sans)'
-              }}
-            >
-              <ArrowRight className="w-4 h-4" />
-              <span>Redirecting in {countdown} second{countdown !== 1 ? 's' : ''}...</span>
-            </div>
-
-            {/* Progress bar */}
-            <div 
-              className="mt-3 w-full bg-white bg-opacity-30 rounded-full h-2"
-            >
-              <div 
-                className="h-2 rounded-full transition-all duration-1000 ease-linear"
-                style={{
-                  backgroundColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
-                  width: `${((delay / 1000 - countdown) / (delay / 1000)) * 100}%`
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Manual redirect button */}
-          <button
-            onClick={() => {
-              setIsVisible(false);
-              setTimeout(() => router.push(redirectTo), 300);
-            }}
-            className="absolute top-4 right-4 px-3 py-1 rounded text-xs font-medium transition-all duration-200 hover:scale-105"
+          {/* iOS-style notification card */}
+          <div 
+            className="rounded-xl shadow-lg overflow-hidden"
             style={{
-              backgroundColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
-              color: 'white'
+              backgroundColor: 'hsl(var(--card))',
+              borderColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
+              borderWidth: '1px',
+              borderStyle: 'solid'
             }}
           >
-            Go Now
-          </button>
-        </div>
+            {/* Header with icon and close */}
+            <div 
+              className="flex items-center gap-3 p-4 pb-3"
+              style={{
+                backgroundColor: config.variant === 'error' 
+                  ? 'hsl(var(--destructive) / 0.1)' 
+                  : 'hsl(var(--secondary) / 0.3)'
+              }}
+            >
+              <div className="flex-shrink-0">
+                {config.icon}
+              </div>
+              <h5 
+                className="font-semibold text-sm flex-1"
+                style={{ 
+                  color: config.variant === 'error' ? '#BC1C21' : '#9D5425',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                {config.title}
+              </h5>
+              <button
+                onClick={() => {
+                  setIsVisible(false);
+                  setTimeout(() => router.push(redirectTo), 300);
+                }}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 hover:scale-110"
+                style={{
+                  backgroundColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
+                  color: 'white'
+                }}
+              >
+                ×
+              </button>
+            </div>
 
-        {/* Additional help text */}
-        <div 
-          className="mt-4 p-4 rounded-lg text-sm"
-          style={{
-            backgroundColor: 'hsl(var(--muted) / 0.3)',
-            color: 'hsl(var(--muted-foreground))',
-            fontFamily: 'var(--font-sans)'
-          }}
-        >
-          {type === 'auth' && (
-            <div>
-              <strong>Need help?</strong> Contact your administrator or use the sign-in link above.
+            {/* Content */}
+            <div className="px-4 pb-4">
+              <div 
+                className="text-sm mb-3 leading-relaxed"
+                style={{ 
+                  color: 'hsl(var(--foreground))',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                {config.description}
+              </div>
+
+              {/* Countdown */}
+              <div 
+                className="flex items-center gap-2 text-xs mb-3"
+                style={{ 
+                  color: 'hsl(var(--muted-foreground))',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                <ArrowRight className="w-3 h-3" />
+                <span>Redirecting in {countdown}s</span>
+              </div>
+
+              {/* Progress bar */}
+              <div 
+                className="w-full bg-gray-200 rounded-full h-1.5"
+                style={{ backgroundColor: 'hsl(var(--muted) / 0.3)' }}
+              >
+                <div 
+                  className="h-1.5 rounded-full transition-all duration-1000 ease-linear"
+                  style={{
+                    backgroundColor: config.variant === 'error' ? '#BC1C21' : '#FFB800',
+                    width: `${((delay / 1000 - countdown) / (delay / 1000)) * 100}%`
+                  }}
+                />
+              </div>
             </div>
-          )}
-          {type === 'role' && (
-            <div>
-              <strong>Role Requirements:</strong> Settings access requires admin, job coach, or client role.
-            </div>
-          )}
-          {type === 'missing' && (
-            <div>
-              <strong>Available Settings:</strong> Profile, CMS, Catalog, Tools (Punch Card Maker, Timesheet Calculator)
-            </div>
-          )}
+          </div>
+
+          {/* Additional help text */}
+          <div 
+            className="mt-3 p-3 rounded-lg text-xs"
+            style={{
+              backgroundColor: 'hsl(var(--muted) / 0.8)',
+              color: 'hsl(var(--muted-foreground))',
+              fontFamily: 'var(--font-sans)'
+            }}
+          >
+            {type === 'auth' && (
+              <div>
+                <strong>Need help?</strong> Contact your administrator or use the sign-in link.
+              </div>
+            )}
+            {type === 'role' && (
+              <div>
+                <strong>Role Requirements:</strong> Settings access requires admin, job coach, or client role.
+              </div>
+            )}
+            {type === 'missing' && (
+              <div>
+                <strong>Available Settings:</strong> Profile, CMS, Catalog, Tools
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

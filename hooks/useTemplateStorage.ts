@@ -165,6 +165,7 @@ export const useTemplateStorage = (): UseTemplateStorageReturn => {
     else if (number >= 11 && number <= 20) category = 'modern';
     else if (number >= 21 && number <= 30) category = 'professional';
     else if (number >= 31 && number <= 40) category = 'creative';
+    }
 
     return {
       id,

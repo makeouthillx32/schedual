@@ -8,7 +8,7 @@ import { Eye, ArrowLeft, Menu, X } from 'lucide-react';
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 
 // Import components
-import { ThemeHeader } from './_components/ThemeHeader';
+import { ThemeHeader } from './_components/Header';
 import { ThemeForm } from './_components/ThemeForm';
 import { ColorPicker } from './_components/ColorPicker';
 import { FontControls } from './_components/FontControls';

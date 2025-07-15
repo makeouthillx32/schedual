@@ -1,4 +1,4 @@
-// app/dashboard/[id]/settings/thememaker/_components/ThemeHeader.tsx
+// app/dashboard/[id]/settings/thememaker/_components/Header.tsx
 
 "use client";
 

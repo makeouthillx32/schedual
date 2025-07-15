@@ -514,20 +514,18 @@ const ThemeCreator = () => {
         <ThemePreview currentTheme={currentTheme} mode={mode} />
       )}
 
-      {/* Mobile Preview Toggle Button */}
+      {/* Mobile Preview Floating Button - Overlay */}
       {isMobile && !showPreview && (
-        <div className="mt-6">
-          <button
-            onClick={() => setShowPreview(true)}
-            className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-          >
-            <Eye className="w-5 h-5" />
-            Show Live Preview
-          </button>
-        </div>
+        <button
+          onClick={() => setShowPreview(true)}
+          className="fixed bottom-6 left-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-40"
+          aria-label="Show Preview"
+        >
+          <Eye className="w-6 h-6" />
+        </button>
       )}
 
-      {/* Mobile Inline Preview */}
+      {/* Mobile Inline Preview - NOT an overlay */}
       {isMobile && showPreview && (
         <div className="mt-6 bg-card border border-border rounded-lg overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-border">

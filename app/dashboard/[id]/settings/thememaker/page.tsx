@@ -7,7 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Eye, ArrowLeft, Menu, X } from 'lucide-react';
 
 // Import components
-import { ThemeHeader } from './_components/Header';
+import { ThemeHeader } from './_components/ThemeHeader';
 import { ThemeForm } from './_components/ThemeForm';
 import { ColorPicker } from './_components/ColorPicker';
 import { FontControls } from './_components/FontControls';
@@ -364,7 +364,7 @@ const ThemeCreator = () => {
           <h2 className="font-semibold">Preview</h2>
           <div className="w-16"></div> {/* Spacer */}
         </div>
-        <div className="h-[calc(100vh-64px)] overflow-auto">
+        <div className="h-[calc(100vh-4rem)] overflow-auto">
           <ThemePreview currentTheme={currentTheme} mode={mode} />
         </div>
       </div>
@@ -372,7 +372,7 @@ const ThemeCreator = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-[calc(100vh-4rem)] bg-background">
       {/* Theme Creator Panel - Full width on mobile */}
       <div className={`${isMobile ? 'w-full' : 'w-80'} border-r border-border bg-card overflow-hidden flex flex-col`}>
         {/* Header */}
@@ -455,7 +455,7 @@ const ThemeCreator = () => {
       {isMobile && (
         <button
           onClick={() => setShowPreview(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-40"
+          className="fixed bottom-6 left-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors z-40"
           aria-label="Show Preview"
         >
           <Eye className="w-6 h-6" />

@@ -1,9 +1,10 @@
+// app/settings/[...setting]/page.tsx
 import { RedirectType, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
-import { Settings, User, ShoppingCart, Calendar } from "lucide-react";
+import { Settings, User, ShoppingCart, Calendar, Wrench, Clock, CreditCard, Tool, Cog } from "lucide-react";
 
 type DynComp = FC<{}>;
 
@@ -16,6 +17,13 @@ const settingsMap: Record<string, DynComp> = {
   "CMS/schedule": dynamic(
     () => import("@/components/settings/cms-settings")
   ) as DynComp,
+  
+  // Tools settings - general and specific
+  Tools: dynamic(() => import("@/components/settings/tools-settings")) as DynComp,
+  "Tools/timesheet-calculator": dynamic(() => import("@/components/settings/timesheet-calculator-settings")) as DynComp,
+  "Tools/punch-card-maker": dynamic(() => import("@/components/settings/punch-card-maker-settings")) as DynComp,
+  "Tools/tool-1": dynamic(() => import("@/components/settings/tool-1-settings")) as DynComp,
+  "Tools/tool-2": dynamic(() => import("@/components/settings/tool-2-settings")) as DynComp,
 };
 
 // Map settings to icons
@@ -25,6 +33,13 @@ const settingIcons: Record<string, JSX.Element> = {
   catalog: <ShoppingCart size={20} />,
   CMS: <Calendar size={20} />,
   "CMS/schedule": <Calendar size={20} />,
+  
+  // Tools icons
+  Tools: <Wrench size={20} />,
+  "Tools/timesheet-calculator": <Clock size={20} />,
+  "Tools/punch-card-maker": <CreditCard size={20} />,
+  "Tools/tool-1": <Tool size={20} />,
+  "Tools/tool-2": <Cog size={20} />,
 };
 
 export default async function SettingsPage(
@@ -94,7 +109,14 @@ function getSettingTitle(settingPath: string): string {
     profile: "Profile Settings",
     catalog: "Catalog Settings",
     CMS: "CMS Settings",
-    "CMS/schedule": "Schedule Settings"
+    "CMS/schedule": "Schedule Settings",
+    
+    // Tools titles
+    Tools: "Tools Settings",
+    "Tools/timesheet-calculator": "Timesheet Calculator Settings",
+    "Tools/punch-card-maker": "Punch Card Maker Settings", 
+    "Tools/tool-1": "Tool 1 Settings",
+    "Tools/tool-2": "Tool 2 Settings",
   };
   
   return titles[settingPath] || "Settings";
@@ -107,7 +129,14 @@ function getSettingDescription(settingPath: string): string {
     profile: "Update your profile information and account preferences",
     catalog: "Manage your product catalog and inventory settings",
     CMS: "Configure your content management system settings",
-    "CMS/schedule": "Customize your cleaning schedule and team assignments"
+    "CMS/schedule": "Customize your cleaning schedule and team assignments",
+    
+    // Tools descriptions
+    Tools: "Configure general tool preferences and settings",
+    "Tools/timesheet-calculator": "Customize timesheet calculation preferences and default settings",
+    "Tools/punch-card-maker": "Configure punch card templates, layouts, and printing preferences",
+    "Tools/tool-1": "Manage settings and preferences for Tool 1",
+    "Tools/tool-2": "Manage settings and preferences for Tool 2",
   };
   
   return descriptions[settingPath] || "Manage your settings and preferences";

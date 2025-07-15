@@ -5,6 +5,44 @@ import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
 import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
+
+type DynComp = FC<{}>;
+
+const settingsMap: Record<string, DynComp> = {
+  // Add default root component
+  "": dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
+  catalog: dynamic(() => import("@/components/settings/catalog-settings")) as DynComp,
+  profile: dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
+  CMS: dynamic(() => import("@/components/settings/cms-settings")) as DynComp,
+  "CMS/schedule": dynamic(
+    () => import("@/components/settings/cms-settings")
+  ) as DynComp,
+  
+  // Tools settings - only include existing ones
+  "Tools/punch-card-maker": dynamic(() => import("@/components/settings/punch-card-maker-settings")) as DynComp,
+  "Tools/timesheet-calculator": dynamic(() => import("@/components/settings/timesheet-calculator-settings")) as DynComp,
+};
+
+// Map settings to icons
+const settingIcons: Record<string, JSX.Element> = {
+  "": <User size={20} />,
+  profile: <User size={20} />,
+  catalog: <ShoppingCart size={20} />,
+  CMS: <Calendar size={20} />,
+  "CMS/schedule": <Calendar size={20} />,
+  
+  // Tools icons - only for existing tools
+  "Tools/timesheet-calculator": <Clock size={20} />,
+  "Tools/punch-card-maker": <CreditCard size={20} />,
+};
+
+// app/settings/[...setting]/page.tsx
+import { RedirectType, redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import dynamic from "next/dynamic";
+import type { FC } from "react";
+import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
 import { SettingsToast } from "@/components/settings/SettingsToast";
 
 type DynComp = FC<{}>;
@@ -37,11 +75,34 @@ const settingIcons: Record<string, JSX.Element> = {
   "Tools/punch-card-maker": <CreditCard size={20} />,
 };
 
-export default async function SettingsPage(
-  props: { params: Promise<{ setting?: string[] }> }
-) {
+interface SettingsPageProps {
+  params: Promise<{ setting?: string[] }>;
+  searchParams?: Promise<{ 
+    toast?: string; 
+    message?: string; 
+    userRole?: string; 
+  }>;
+}
+
+export default async function SettingsPage(props: SettingsPageProps) {
   const { setting = [] } = await props.params;
+  const searchParams = await props.searchParams;
   const settingPath = setting.join("/");
+
+  // Check if we have toast parameters from middleware redirect
+  if (searchParams?.toast && searchParams?.message) {
+    const toastType = searchParams.toast === 'auth-required' ? 'auth' : 'role';
+    const redirectTo = searchParams.toast === 'auth-required' ? '/sign-in' : '/dashboard';
+    
+    return (
+      <SettingsToast 
+        type={toastType}
+        message={searchParams.message}
+        userRole={searchParams.userRole}
+        redirectTo={redirectTo}
+      />
+    );
+  }
 
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -59,52 +120,16 @@ export default async function SettingsPage(
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Handle authentication and role-based access
+  // Simple auth check - redirect to sign-in if no session
   if (!session) {
     const target = "/settings/" + settingPath;
-    
-    // Show toast for unauthenticated users
-    return (
-      <SettingsToast 
-        type="auth"
-        message="Company feature - Please sign in to access settings"
-        redirectTo={`/sign-in?redirect_to=${encodeURIComponent(target)}`}
-      />
-    );
-  }
-
-  // Get user profile and role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', session.user.id)
-    .single();
-
-  const userRole = profile?.role;
-  const allowedRoles = ['admin', 'jobcoach', 'client'];
-
-  // Check if user has proper role
-  if (!userRole || !allowedRoles.includes(userRole)) {
-    return (
-      <SettingsToast 
-        type="role"
-        message="Access denied - Please contact administrator for proper role assignment"
-        userRole={userRole}
-        redirectTo="/dashboard"
-      />
-    );
+    redirect(`/sign-in?redirect_to=${encodeURIComponent(target)}`, RedirectType.replace);
   }
 
   // Handle settings component selection
   const SettingsComponent = settingsMap[settingPath];
   if (!SettingsComponent) {
-    return (
-      <SettingsToast 
-        type="missing"
-        message="Settings page not found - Redirecting to profile settings"
-        redirectTo="/settings/profile"
-      />
-    );
+    redirect("/settings/profile", RedirectType.replace);
   }
 
   const settingTitle = getSettingTitle(settingPath);

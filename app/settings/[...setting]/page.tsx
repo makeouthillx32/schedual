@@ -5,44 +5,6 @@ import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
 import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
-
-type DynComp = FC<{}>;
-
-const settingsMap: Record<string, DynComp> = {
-  // Add default root component
-  "": dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
-  catalog: dynamic(() => import("@/components/settings/catalog-settings")) as DynComp,
-  profile: dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
-  CMS: dynamic(() => import("@/components/settings/cms-settings")) as DynComp,
-  "CMS/schedule": dynamic(
-    () => import("@/components/settings/cms-settings")
-  ) as DynComp,
-  
-  // Tools settings - only include existing ones
-  "Tools/punch-card-maker": dynamic(() => import("@/components/settings/punch-card-maker-settings")) as DynComp,
-  "Tools/timesheet-calculator": dynamic(() => import("@/components/settings/timesheet-calculator-settings")) as DynComp,
-};
-
-// Map settings to icons
-const settingIcons: Record<string, JSX.Element> = {
-  "": <User size={20} />,
-  profile: <User size={20} />,
-  catalog: <ShoppingCart size={20} />,
-  CMS: <Calendar size={20} />,
-  "CMS/schedule": <Calendar size={20} />,
-  
-  // Tools icons - only for existing tools
-  "Tools/timesheet-calculator": <Clock size={20} />,
-  "Tools/punch-card-maker": <CreditCard size={20} />,
-};
-
-// app/settings/[...setting]/page.tsx
-import { RedirectType, redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
-import dynamic from "next/dynamic";
-import type { FC } from "react";
-import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
 import { SettingsToast } from "@/components/settings/SettingsToast";
 
 type DynComp = FC<{}>;

@@ -62,7 +62,6 @@ export const NAV_DATA = [
           {
             title: "Theme Maker",
             url: "/settings/thememaker",
-            icon: Icons.Palette,
           },
         ],
         roles: ["admin"],

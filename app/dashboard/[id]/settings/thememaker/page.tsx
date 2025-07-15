@@ -352,11 +352,11 @@ const ThemeCreator = () => {
   // Mobile Preview Modal
   if (isMobile && showPreview) {
     return (
-      <div className="fixed inset-0 bg-background z-50">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="fixed inset-0 bg-background z-[60] pt-[70px]">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
           <button
             onClick={() => setShowPreview(false)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Editor
@@ -364,7 +364,7 @@ const ThemeCreator = () => {
           <h2 className="font-semibold">Preview</h2>
           <div className="w-16"></div> {/* Spacer */}
         </div>
-        <div className="h-[calc(100vh-4rem)] overflow-auto">
+        <div className="h-[calc(100vh-70px-64px)] overflow-auto">
           <ThemePreview currentTheme={currentTheme} mode={mode} />
         </div>
       </div>

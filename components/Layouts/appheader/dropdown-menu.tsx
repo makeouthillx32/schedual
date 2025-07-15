@@ -1,4 +1,4 @@
-// components/ui/dropdown-menu.tsx
+// components/Layouts/appheader/dropdown-menu.tsx
 "use client";
 
 import * as React from "react";
@@ -80,7 +80,28 @@ const CustomDropdown: React.FC = () => {
   const pathname = usePathname();
   const session = useLoginSession();
 
-  const activePage = pathname.split("/")[1] || "home";
+  // Fixed: Get the full path context for settings, not just the first segment
+  const getActivePage = (pathname: string): string => {
+    // Remove leading slash and split
+    const segments = pathname.slice(1).split('/').filter(Boolean);
+    
+    if (segments.length === 0) return "home";
+    
+    // For Tools pages, preserve the full path structure
+    if (segments[0] === "Tools" && segments.length > 1) {
+      return `Tools/${segments[1]}`;
+    }
+    
+    // For CMS pages with sub-paths
+    if (segments[0] === "CMS" && segments.length > 1) {
+      return `CMS/${segments[1]}`;
+    }
+    
+    // For other pages, return the first segment
+    return segments[0];
+  };
+
+  const activePage = getActivePage(pathname);
   const handleMenuClick = () => setOpen(false);
 
   return (

@@ -1,4 +1,4 @@
-/ app/layout.tsx - UPDATED WITH ENHANCED METADATA
+// app/layout.tsx - UPDATED WITH ENHANCED METADATA
 import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";

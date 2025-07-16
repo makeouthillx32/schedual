@@ -20,12 +20,15 @@ const SwitchtoDarkMode: React.FC = () => {
     setIsDark(theme === "dark");
   }, []);
 
-  // Enhanced click handler with proper coordinates for mobile
-  const handleThemeToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  // Enhanced click handler with iOS support for both touch and click events
+  const handleThemeToggle = async (event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    // Prevent default to avoid double-firing on iOS
+    event.preventDefault();
+    
     // Update local state immediately for visual feedback
     setIsDark((prev) => !prev);
     
-    // Use the enhanced click handler that properly gets coordinates
+    // Use the iOS-compatible click handler
     await handleThemeToggleClick(event, async () => {
       await toggleTheme(event.currentTarget);
     });
@@ -37,6 +40,13 @@ const SwitchtoDarkMode: React.FC = () => {
       className="theme-toggle-button"
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       onClick={handleThemeToggle}
+      onTouchEnd={handleThemeToggle} // Add touch support for iOS
+      style={{ 
+        // Ensure button is touchable on iOS
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'manipulation'
+      }}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

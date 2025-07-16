@@ -74,19 +74,19 @@ export default function MobileDrawer({
       <div className="mobile-menu-container bg-background border-b border-border shadow-lg rounded-b-xl">
         {navTree.map((node) => (
           <div key={node.key}>
-            {/* Main category item - using vibrant colors for distinction */}
-            <div className="mobile-menu-item bg-secondary/20 hover:bg-secondary/30 border-b border-border/50 border-l-4 border-l-secondary">
+            {/* Main category item - using primary color for distinction */}
+            <div className="mobile-menu-item bg-primary/5 hover:bg-primary/10 border-b border-border/50 border-l-4 border-l-primary/30">
               <a
                 href="#"
                 onClick={handleClickAndClose(node.key)}
-                className="menu-link focus:outline-none text-secondary-foreground no-underline font-semibold"
+                className="menu-link focus:outline-none text-primary-foreground no-underline font-medium"
               >
                 {node.label}
               </a>
               {node.children ? (
                 <button
                   onClick={() => toggleExpand(node.key)}
-                  className="menu-toggle text-secondary-foreground hover:scale-110 transition-transform"
+                  className="menu-toggle text-primary-foreground hover:scale-110 transition-transform"
                   aria-label={`Toggle ${node.label}`}
                 >
                   {expanded === node.key ? (
@@ -98,20 +98,20 @@ export default function MobileDrawer({
               ) : (
                 <MdArrowForwardIos
                   size={14}
-                  className="ml-2 text-secondary/70"
+                  className="ml-2 text-primary/60"
                 />
               )}
             </div>
 
-            {/* Submenu items - using much lighter/muted colors for clear distinction */}
+            {/* Submenu items - using muted colors for distinction */}
             {node.children && expanded === node.key && (
-              <div className="mobile-submenu bg-card border-l-2 border-border">
+              <div className="mobile-submenu bg-muted/30 border-l-2 border-muted/40">
                 {node.children.map((child) => (
                   <a
                     key={child.key}
                     href="#"
                     onClick={handleClickAndClose(child.key)}
-                    className="submenu-link text-card-foreground/70 hover:text-card-foreground hover:bg-muted/20 hover:border-l-accent/50 hover:pl-9 no-underline pl-8 py-3 block border-l-2 border-l-transparent transition-all duration-200 text-sm"
+                    className="submenu-link text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-l-primary/40 hover:pl-9 no-underline pl-8 py-3 block border-l-2 border-l-transparent transition-all duration-200"
                   >
                     {child.label}
                   </a>

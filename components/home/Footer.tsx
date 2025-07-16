@@ -15,7 +15,7 @@ const socialLinks = [
   { icon: <FaLinkedinIn className="size-5" />, href: 'https://linkedin.com/company/YourPage', label: 'LinkedIn' },
 ];
 
-const footer: React.FC = () => {
+const Footer: React.FC = () => {
   const session = useLoginSession();
   const { themeType } = useTheme();
   
@@ -23,13 +23,13 @@ const footer: React.FC = () => {
   // This avoids the database schema issues in HallMonitorFactory
   const { role, isLoading, error } = useUserRole(session?.user?.id);
 
-  console.log('[footer] Session state:', { 
+  console.log('[Footer] Session state:', { 
     hasSession: !!session,
     hasUser: !!session?.user,
     userId: session?.user?.id 
   });
 
-  console.log('[footer] UserRole state:', { 
+  console.log('[Footer] UserRole state:', { 
     role, 
     isLoading, 
     error
@@ -39,13 +39,13 @@ const footer: React.FC = () => {
   const userSectionData = useMemo(() => {
     // No session = no user sections
     if (!session?.user?.id) {
-      console.log('[footer] No user session, returning null');
+      console.log('[Footer] No user session, returning null');
       return null;
     }
 
     // Loading state
     if (isLoading) {
-      console.log('[footer] Still loading user data');
+      console.log('[Footer] Still loading user data');
       return {
         sectionTitle: "Loading...",
         dashboardText: "Loading Dashboard...",
@@ -239,4 +239,4 @@ const footer: React.FC = () => {
   );
 };
 
-export default footer;
+export default Footer;

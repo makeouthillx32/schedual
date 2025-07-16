@@ -1,4 +1,4 @@
-// components/ClientLayoutWrapper.tsx - YOUR EXACT EXISTING LOGIC
+// components/ClientLayout.tsx - UPDATED WITH COOKIE CONSENT
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
+import { CookieConsent } from "@/components/CookieConsent"; // ✅ ADD THIS IMPORT
 import analytics from "@/lib/analytics";
 import { setCookie } from "@/lib/cookieUtils";
 
@@ -201,6 +202,26 @@ export default function ClientLayoutWrapper({
       <main className="flex-1">{children}</main>
       {showFooter && <Footer />}
       {showAccessibility && <AccessibilityOverlay />}
+      
+      {/* ✅ ADD COOKIE CONSENT COMPONENT HERE */}
+      <CookieConsent
+        variant="default" // You can change this to "small" or "mini"
+        showCustomize={true} // Enable the customize button
+        description="We use cookies to enhance your experience, analyze site usage, and improve our services. Essential cookies are required for basic functionality."
+        learnMoreHref="/privacy-policy" // Update this to your actual privacy policy URL
+        onAcceptCallback={(preferences) => {
+          console.log('✅ Cookies accepted:', preferences);
+          // Analytics will be automatically initialized by the updated analytics.ts
+        }}
+        onDeclineCallback={(preferences) => {
+          console.log('🚫 Non-essential cookies declined:', preferences);
+          // Analytics will be automatically disabled by the updated analytics.ts
+        }}
+        onCustomizeCallback={(preferences) => {
+          console.log('⚙️ Custom preferences saved:', preferences);
+          // Analytics state will be updated based on preferences
+        }}
+      />
     </>
   );
 }

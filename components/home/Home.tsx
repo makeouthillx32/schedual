@@ -1,4 +1,3 @@
-// app/page.tsx or components/home/Home.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -7,7 +6,7 @@ import SectionPanel from "@/components/home/SectionPanel";
 import BackButton from "@/components/home/_components/BackButton";
 import AnchorSection from "@/components/home/_components/AnchorSection";
 import { pageTree, sectionId } from "@/components/home/_components/pageTree";
-import Footer from "@/components/home/Footer";
+import Footer from "@/components/footer"; // Changed from home/Footer to footer
 import useThemeCookie from "@/lib/useThemeCookie";
 
 export default function Home() {

@@ -15,7 +15,7 @@ const socialLinks = [
   { icon: <FaLinkedinIn className="size-5" />, href: 'https://linkedin.com/company/YourPage', label: 'LinkedIn' },
 ];
 
-const Footer: React.FC<{ navigateTo?: (key: string) => (e?: React.MouseEvent) => void }> = ({ navigateTo }) => {
+const Footer: React.FC = () => {
   const session = useLoginSession();
   const { themeType } = useTheme();
   
@@ -139,9 +139,29 @@ const Footer: React.FC<{ navigateTo?: (key: string) => (e?: React.MouseEvent) =>
     return baseSections;
   }, [session?.user?.id, userSectionData]);
 
+  // ✅ Custom navigation function for hash-based routing
+  const handleHashNavigation = (href: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Check if it's a hash-based route
+    if (href.startsWith('/#')) {
+      const hash = href.replace('/#', '');
+      console.log('🔗 Footer navigation to hash:', hash);
+      
+      // Update URL
+      window.history.pushState(null, '', href);
+      
+      // Trigger hash change event manually to ensure the routing system picks it up
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    } else {
+      // For non-hash routes, use normal navigation
+      window.location.href = href;
+    }
+  };
+
   const legalLinks = [
-    { name: "Privacy Policy", href: "/#privacy", key: "privacy" },
-    { name: "Terms & Conditions", href: "/#terms", key: "terms" },
+    { name: "Privacy Policy", href: "/#privacy" },
+    { name: "Terms & Conditions", href: "/#terms" },
   ];
 
   console.log('[Footer] Final render state:', {
@@ -208,9 +228,20 @@ const Footer: React.FC<{ navigateTo?: (key: string) => (e?: React.MouseEvent) =>
                       key={linkIdx}
                       className="font-medium hover:text-primary transition-colors"
                     >
-                      <Link href={link.href} className="hover:underline">
-                        {link.name}
-                      </Link>
+                      {/* ✅ Use custom onClick for hash routes, Link for others */}
+                      {link.href.startsWith('/#') ? (
+                        <a
+                          href={link.href}
+                          onClick={handleHashNavigation(link.href)}
+                          className="hover:underline cursor-pointer"
+                        >
+                          {link.name}
+                        </a>
+                      ) : (
+                        <Link href={link.href} className="hover:underline">
+                          {link.name}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -227,19 +258,14 @@ const Footer: React.FC<{ navigateTo?: (key: string) => (e?: React.MouseEvent) =>
           <ul className="order-1 flex flex-col gap-4 md:order-2 md:flex-row md:gap-6">
             {legalLinks.map((link, idx) => (
               <li key={idx} className="hover:text-primary transition-colors">
-                {navigateTo ? (
-                  <a
-                    href={link.href}
-                    onClick={navigateTo(link.key)}
-                    className="hover:underline cursor-pointer"
-                  >
-                    {link.name}
-                  </a>
-                ) : (
-                  <Link href={link.href} className="hover:underline">
-                    {link.name}
-                  </Link>
-                )}
+                {/* ✅ Use custom onClick for legal hash routes */}
+                <a
+                  href={link.href}
+                  onClick={handleHashNavigation(link.href)}
+                  className="hover:underline cursor-pointer"
+                >
+                  {link.name}
+                </a>
               </li>
             ))}
           </ul>

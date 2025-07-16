@@ -58,8 +58,8 @@ export default function MobileDrawer({
       className={`drawer-content md:hidden
         ${isClosing ? "animate-slide-up" : "animate-slide-down"}`}
       style={{
-        // Position directly under header with no overlap
-        position: 'fixed',
+        // Position absolutely instead of fixed so it scrolls with page
+        position: 'absolute',
         top: '4rem', // 64px - exactly below header
         left: 0,
         right: 0,

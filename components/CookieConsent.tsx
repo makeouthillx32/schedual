@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { CookieConsentManager } from "@/lib/analytics"; // ✅ Import from analytics.ts
 
 // Cookie consent categories
 export interface CookiePreferences {
@@ -33,9 +34,8 @@ interface CookieConsentProps extends React.HTMLAttributes<HTMLDivElement> {
   showCustomize?: boolean;
 }
 
-// Cookie management utility functions
-export const CookieManager = {
-  // Cookie consent status
+// ✅ UPDATED: Cookie management utility functions using analytics.ts
+const CookieManager = {
   CONSENT_COOKIE_NAME: 'cookie_consent_v1',
   PREFERENCES_COOKIE_NAME: 'cookie_preferences_v1',
   CONSENT_EXPIRY_DAYS: 365,
@@ -54,7 +54,7 @@ export const CookieManager = {
     console.log('🍪 Cookie consent set:', { hasConsented, preferences });
   },
 
-  // Get consent status
+  // Get consent status - delegate to analytics.ts
   getConsent(): { hasConsented: boolean; preferences: CookiePreferences | null } {
     if (typeof document === 'undefined') {
       return { hasConsented: false, preferences: null };
@@ -86,36 +86,41 @@ export const CookieManager = {
     return { hasConsented, preferences };
   },
 
-  // Clear all non-necessary cookies
-  clearNonNecessaryCookies(): void {
-    // Clear analytics session data
+  // Clear analytics data - delegate to analytics.ts
+  clearAnalyticsData(): void {
     if (typeof window !== 'undefined') {
+      // Clear analytics session data
       localStorage.removeItem('analytics_session_id');
       localStorage.removeItem('analytics_last_activity');
       sessionStorage.removeItem('analytics_session_id');
       
-      // Clear any other tracking-related localStorage items
+      // Clear any other analytics-related localStorage items
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('analytics_') || key.startsWith('tracking_')) {
           localStorage.removeItem(key);
         }
       });
 
-      console.log('🧹 Non-necessary cookies and storage cleared');
+      console.log('🧹 Analytics data cleared due to consent change');
     }
   },
 
-  // Initialize analytics based on consent
+  // Check if analytics is allowed - delegate to analytics.ts  
+  isAnalyticsAllowed(): boolean {
+    return CookieConsentManager.isAnalyticsAllowed();
+  },
+
+  // Initialize analytics - delegate to analytics.ts
   initializeAnalytics(preferences: CookiePreferences): void {
     if (typeof window !== 'undefined' && window.analytics) {
       if (preferences.analytics) {
-        console.log('✅ Analytics enabled - initializing tracking');
+        console.log('✅ Analytics enabled via cookie consent');
         window.analytics.enable();
-        window.analytics.init();
+        // Analytics will automatically initialize due to consent monitoring
       } else {
-        console.log('🚫 Analytics disabled - stopping tracking');
+        console.log('🚫 Analytics disabled via cookie consent');
         window.analytics.disable();
-        this.clearNonNecessaryCookies();
+        this.clearAnalyticsData();
       }
     }
   }
@@ -458,9 +463,10 @@ const CookieConsent = React.forwardRef<HTMLDivElement, CookieConsentProps>(
 
 CookieConsent.displayName = "CookieConsent";
 
-// Export everything needed
-export { CookieConsent, CookieManager };
+// ✅ FIXED: Only export what's needed, no duplicate CookieManager
+export { CookieConsent };
 export default CookieConsent;
+export type { CookiePreferences };
 
 // Global type declaration for analytics
 declare global {

@@ -83,4 +83,6 @@ export const sectionId: Record<string, string> = {
   carf: "carf",
   thriftstore: "thriftstore",
   shredding: "shredding",
+  terms: "terms",
+  privacy: "privacy",
 };

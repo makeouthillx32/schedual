@@ -74,19 +74,18 @@ export default function MobileDrawer({
       <div className="mobile-menu-container bg-background border-b border-border shadow-lg rounded-b-xl">
         {navTree.map((node) => (
           <div key={node.key}>
-            {/* Main category item - using primary color for distinction */}
-            <div className="mobile-menu-item bg-primary/5 hover:bg-primary/10 border-b border-border/50 border-l-4 border-l-primary/30">
+            <div className="mobile-menu-item text-foreground hover:bg-secondary">
               <a
                 href="#"
                 onClick={handleClickAndClose(node.key)}
-                className="menu-link focus:outline-none text-primary-foreground no-underline font-medium"
+                className="menu-link focus:outline-none text-foreground no-underline"
               >
                 {node.label}
               </a>
               {node.children ? (
                 <button
                   onClick={() => toggleExpand(node.key)}
-                  className="menu-toggle text-primary-foreground hover:scale-110 transition-transform"
+                  className="menu-toggle text-foreground"
                   aria-label={`Toggle ${node.label}`}
                 >
                   {expanded === node.key ? (
@@ -98,20 +97,19 @@ export default function MobileDrawer({
               ) : (
                 <MdArrowForwardIos
                   size={14}
-                  className="ml-2 text-primary/60"
+                  className="ml-2 text-muted-foreground"
                 />
               )}
             </div>
 
-            {/* Submenu items - using muted colors for distinction */}
             {node.children && expanded === node.key && (
-              <div className="mobile-submenu bg-muted/30 border-l-2 border-muted/40">
+              <div className="mobile-submenu bg-background">
                 {node.children.map((child) => (
                   <a
                     key={child.key}
                     href="#"
                     onClick={handleClickAndClose(child.key)}
-                    className="submenu-link text-muted-foreground hover:text-foreground hover:bg-muted/50 hover:border-l-primary/40 hover:pl-9 no-underline pl-8 py-3 block border-l-2 border-l-transparent transition-all duration-200"
+                    className="submenu-link text-foreground hover:bg-secondary no-underline"
                   >
                     {child.label}
                   </a>
@@ -121,12 +119,12 @@ export default function MobileDrawer({
           </div>
         ))}
 
-        <div className="mobile-auth-section border-t-2 border-border bg-background pt-3 mt-2">
+        <div className="mobile-auth-section border-t border-border bg-background">
           {!session ? (
             <a
               href="/sign-in"
               onClick={handleClose}
-              className="auth-button text-accent-foreground bg-accent/10 hover:bg-accent/20 hover:-translate-y-0.5 no-underline font-medium rounded-md mx-1 my-1 w-[calc(100%-0.5rem)] block transition-all duration-200"
+              className="auth-button text-accent hover:bg-secondary no-underline"
             >
               Sign In
             </a>
@@ -136,7 +134,7 @@ export default function MobileDrawer({
                 window.location.href = "/auth/logout";
                 handleClose();
               }}
-              className="auth-button text-destructive-foreground bg-destructive/10 hover:bg-destructive/20 hover:-translate-y-0.5 font-medium rounded-md mx-1 my-1 w-[calc(100%-0.5rem)] transition-all duration-200"
+              className="auth-button text-destructive hover:bg-secondary"
             >
               Log Out
             </button>

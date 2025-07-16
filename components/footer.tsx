@@ -15,7 +15,7 @@ const socialLinks = [
   { icon: <FaLinkedinIn className="size-5" />, href: 'https://linkedin.com/company/YourPage', label: 'LinkedIn' },
 ];
 
-const Footer: React.FC = () => {
+const Footer: React.FC<{ navigateTo?: (key: string) => (e?: React.MouseEvent) => void }> = ({ navigateTo }) => {
   const session = useLoginSession();
   const { themeType } = useTheme();
   
@@ -140,8 +140,8 @@ const Footer: React.FC = () => {
   }, [session?.user?.id, userSectionData]);
 
   const legalLinks = [
-    { name: "Privacy Policy", href: "/#privacy" },
-    { name: "Terms & Conditions", href: "/#terms" },
+    { name: "Privacy Policy", href: "/#privacy", key: "privacy" },
+    { name: "Terms & Conditions", href: "/#terms", key: "terms" },
   ];
 
   console.log('[Footer] Final render state:', {
@@ -227,9 +227,19 @@ const Footer: React.FC = () => {
           <ul className="order-1 flex flex-col gap-4 md:order-2 md:flex-row md:gap-6">
             {legalLinks.map((link, idx) => (
               <li key={idx} className="hover:text-primary transition-colors">
-                <Link href={link.href} className="hover:underline">
-                  {link.name}
-                </Link>
+                {navigateTo ? (
+                  <a
+                    href={link.href}
+                    onClick={navigateTo(link.key)}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {link.name}
+                  </a>
+                ) : (
+                  <Link href={link.href} className="hover:underline">
+                    {link.name}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

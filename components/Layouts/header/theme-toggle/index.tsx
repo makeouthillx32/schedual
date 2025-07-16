@@ -28,12 +28,15 @@ export function ThemeToggleSwitch() {
     setIsDark(theme === "dark");
   }, []);
 
-  // Enhanced click handler with proper coordinates for mobile
-  const handleToggle = async (event: React.MouseEvent<HTMLButtonElement>) => {
+  // Enhanced click handler with iOS support for both touch and click events
+  const handleToggle = async (event: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    // Prevent default to avoid double-firing on iOS
+    event.preventDefault();
+    
     // Update local state immediately for visual feedback
     setIsDark((prev) => !prev);
     
-    // Use the enhanced click handler that properly gets coordinates
+    // Use the iOS-compatible click handler
     await handleThemeToggleClick(event, async () => {
       await toggleTheme(event.currentTarget);
     });
@@ -46,7 +49,14 @@ export function ThemeToggleSwitch() {
   return (
     <button
       onClick={handleToggle}
+      onTouchEnd={handleToggle} // Add touch support for iOS
       className="group rounded-full bg-gray-3 p-[5px] text-[hsl(var(--foreground))] outline-1 outline-[hsl(var(--sidebar-primary))] focus-visible:outline dark:bg-[hsl(var(--background))] dark:text-current"
+      style={{ 
+        // Ensure button is touchable on iOS
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        touchAction: 'manipulation'
+      }}
     >
       <span className="sr-only">
         Switch to {isDark ? "light" : "dark"} mode

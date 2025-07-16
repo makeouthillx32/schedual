@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
 import { tools } from "@/lib/toolsConfig";
 import { useUserRole } from "@/hooks/useUserRole"; // Use the simpler role hook
+import { useTheme } from "@/app/provider";
 import { useMemo } from "react";
 
 const socialLinks = [
@@ -14,20 +15,21 @@ const socialLinks = [
   { icon: <FaLinkedinIn className="size-5" />, href: 'https://linkedin.com/company/YourPage', label: 'LinkedIn' },
 ];
 
-const Footer: React.FC = () => {
+const footer: React.FC = () => {
   const session = useLoginSession();
+  const { themeType } = useTheme();
   
   // ✅ Use the simpler useUserRole hook instead of useHallMonitor
   // This avoids the database schema issues in HallMonitorFactory
   const { role, isLoading, error } = useUserRole(session?.user?.id);
 
-  console.log('[Footer] Session state:', { 
+  console.log('[footer] Session state:', { 
     hasSession: !!session,
     hasUser: !!session?.user,
     userId: session?.user?.id 
   });
 
-  console.log('[Footer] UserRole state:', { 
+  console.log('[footer] UserRole state:', { 
     role, 
     isLoading, 
     error
@@ -37,13 +39,13 @@ const Footer: React.FC = () => {
   const userSectionData = useMemo(() => {
     // No session = no user sections
     if (!session?.user?.id) {
-      console.log('[Footer] No user session, returning null');
+      console.log('[footer] No user session, returning null');
       return null;
     }
 
     // Loading state
     if (isLoading) {
-      console.log('[Footer] Still loading user data');
+      console.log('[footer] Still loading user data');
       return {
         sectionTitle: "Loading...",
         dashboardText: "Loading Dashboard...",
@@ -142,7 +144,7 @@ const Footer: React.FC = () => {
     { name: "Terms & Conditions", href: "/terms" },
   ];
 
-  console.log('[Footer] Final render state:', {
+  console.log('[footer] Final render state:', {
     hasSession: !!session,
     hasUserData: !!userSectionData,
     sectionsCount: getSections.length,
@@ -160,7 +162,15 @@ const Footer: React.FC = () => {
             {/* Logo */}
             <div className="flex items-center gap-3 lg:justify-start">
               <div className="flex items-center">
-                <h2 className="text-2xl font-bold text-[var(--foreground)]">DART</h2>
+                <img
+                  src={
+                    themeType === "dark"
+                      ? "/images/home/dartlogowhite.svg"
+                      : "/images/home/dartlogo.svg"
+                  }
+                  alt="DART Logo"
+                  className="h-12 w-auto"
+                />
               </div>
             </div>
             
@@ -229,4 +239,4 @@ const Footer: React.FC = () => {
   );
 };
 
-export default Footer;
+export default footer;

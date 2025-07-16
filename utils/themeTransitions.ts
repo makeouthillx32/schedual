@@ -1,14 +1,21 @@
-// Enhanced Theme Transition System with Mobile Fix
+// Enhanced Theme Transition System with iOS Support
 "use client";
 
 /**
- * Enhanced theme transitions with proper mobile support
- * Fixes the issue where animations start from center instead of button position
+ * Enhanced theme transitions with iOS compatibility and mobile support
+ * Includes fallbacks for browsers that don't support View Transitions API
  */
 
 interface ThemeToggleOptions {
   x?: number;
   y?: number;
+}
+
+/**
+ * Check if View Transitions are supported
+ */
+function supportsViewTransitions(): boolean {
+  return typeof window !== 'undefined' && 'startViewTransition' in document;
 }
 
 /**
@@ -26,6 +33,7 @@ function setThemeOrigin(x: number, y: number) {
   if (process.env.NODE_ENV === 'development') {
     console.log(`🎯 Animation origin set: (${clampedX}, ${clampedY})`);
     console.log(`📱 Viewport: ${window.innerWidth}x${window.innerHeight}`);
+    console.log(`🔍 View Transitions supported: ${supportsViewTransitions()}`);
   }
 }
 
@@ -50,13 +58,35 @@ function getElementCoordinates(element: HTMLElement): { x: number; y: number } {
 }
 
 /**
- * Enhanced theme transition with better mobile support
+ * iOS-compatible fallback animation using CSS transitions
+ */
+function createFallbackAnimation(coordinates?: ThemeToggleOptions): Promise<void> {
+  return new Promise((resolve) => {
+    // Set origin coordinates for fallback
+    if (coordinates) {
+      setThemeOrigin(coordinates.x!, coordinates.y!);
+    }
+    
+    // Add a temporary CSS class for fallback animation
+    const root = document.documentElement;
+    root.classList.add('theme-transition-fallback');
+    
+    // Remove the class after animation completes
+    setTimeout(() => {
+      root.classList.remove('theme-transition-fallback');
+      resolve();
+    }, 400); // Match the animation duration in CSS
+  });
+}
+
+/**
+ * Enhanced theme transition with iOS fallback support
  */
 export async function transitionTheme(
   themeCallback: () => void | Promise<void>,
   coordinates?: ThemeToggleOptions
 ): Promise<void> {
-  // Set animation origin
+  // Set animation origin for both View Transitions and fallback
   if (coordinates) {
     setThemeOrigin(coordinates.x!, coordinates.y!);
   } else {
@@ -64,18 +94,35 @@ export async function transitionTheme(
     setThemeOrigin(window.innerWidth / 2, window.innerHeight / 2);
   }
 
-  // Check for View Transitions support
-  if (!document.startViewTransition) {
-    await themeCallback();
-    return;
+  // Check for View Transitions support (not available on iOS yet)
+  if (supportsViewTransitions()) {
+    try {
+      // Use View Transitions API
+      const transition = document.startViewTransition(async () => {
+        await themeCallback();
+      });
+      await transition.finished;
+    } catch (error) {
+      console.warn('View Transition failed, using fallback:', error);
+      // Fallback if View Transition fails
+      await createFallbackAnimation(coordinates);
+      await themeCallback();
+    }
+  } else {
+    // iOS/Safari fallback - use CSS transition
+    console.log('📱 Using iOS fallback animation');
+    
+    // Start fallback animation first
+    const animationPromise = createFallbackAnimation(coordinates);
+    
+    // Apply theme change during animation
+    setTimeout(async () => {
+      await themeCallback();
+    }, 200); // Halfway through the animation
+    
+    // Wait for animation to complete
+    await animationPromise;
   }
-
-  // Start the transition
-  const transition = document.startViewTransition(async () => {
-    await themeCallback();
-  });
-
-  await transition.finished;
 }
 
 /**
@@ -92,15 +139,29 @@ export async function smoothThemeToggle(
 }
 
 /**
- * Enhanced click handler for theme toggle buttons
- * Use this in your click handlers for the most accurate coordinates
+ * Enhanced click handler for theme toggle buttons with touch event support
  */
 export async function handleThemeToggleClick(
-  event: React.MouseEvent<HTMLElement>,
+  event: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>,
   themeCallback: () => void | Promise<void>
 ): Promise<void> {
-  // Use click coordinates if available (most accurate)
-  const { clientX, clientY } = event;
+  let clientX: number, clientY: number;
+  
+  // Handle both mouse and touch events
+  if ('touches' in event && event.touches.length > 0) {
+    // Touch event (mobile)
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else if ('changedTouches' in event && event.changedTouches.length > 0) {
+    // Touch end event (mobile)
+    clientX = event.changedTouches[0].clientX;
+    clientY = event.changedTouches[0].clientY;
+  } else {
+    // Mouse event (desktop)
+    const mouseEvent = event as React.MouseEvent<HTMLElement>;
+    clientX = mouseEvent.clientX;
+    clientY = mouseEvent.clientY;
+  }
   
   // Account for scroll position
   const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
@@ -115,43 +176,48 @@ export async function handleThemeToggleClick(
 }
 
 /**
- * Global theme toggle method for use with window object
- * This is what your dashboard providers call
+ * Enhanced click handler that works with any pointer event
  */
-export function setupGlobalThemeTransitions() {
-  if (typeof window !== 'undefined') {
-    // Enhanced smoothToggleTheme that properly handles coordinates
-    (window as any).smoothToggleTheme = async (coordinates?: { x: number; y: number }) => {
-      // This should be overridden by the actual theme provider
-      console.warn('🚨 smoothToggleTheme called but no theme provider found');
-    };
-    
-    // Enhanced smoothSetTheme that properly handles coordinates  
-    (window as any).smoothSetTheme = async (newTheme: string, coordinates?: { x: number; y: number }) => {
-      // This should be overridden by the actual theme provider
-      console.warn('🚨 smoothSetTheme called but no theme provider found');
-    };
-  }
+export async function handleThemeTogglePointer(
+  event: PointerEvent,
+  themeCallback: () => void | Promise<void>
+): Promise<void> {
+  const coordinates = {
+    x: event.clientX + (window.pageXOffset || document.documentElement.scrollLeft),
+    y: event.clientY + (window.pageYOffset || document.documentElement.scrollTop)
+  };
+  
+  await transitionTheme(themeCallback, coordinates);
 }
 
 /**
- * Cleanup global theme transition methods
- */
-export function cleanupGlobalThemeTransitions() {
-  if (typeof window !== 'undefined') {
-    delete (window as any).smoothToggleTheme;
-    delete (window as any).smoothSetTheme;
-  }
-}
-
-/**
- * Hook for getting theme toggle handler with proper coordinates
+ * Hook for getting theme toggle handler with proper coordinates and iOS support
  */
 export function useThemeToggleHandler(toggleTheme: (element?: HTMLElement) => Promise<void>) {
-  return async (event: React.MouseEvent<HTMLElement>) => {
-    // Use the enhanced click handler
+  return async (event: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+    // Use the enhanced click handler with iOS support
     await handleThemeToggleClick(event, async () => {
       await toggleTheme(event.currentTarget);
     });
+  };
+}
+
+/**
+ * Alternative hook using pointer events (more reliable on mobile)
+ */
+export function useThemeTogglePointerHandler(toggleTheme: (element?: HTMLElement) => Promise<void>) {
+  return (element: HTMLElement) => {
+    const handlePointer = async (event: PointerEvent) => {
+      await handleThemeTogglePointer(event, async () => {
+        await toggleTheme(element);
+      });
+    };
+    
+    element.addEventListener('pointerdown', handlePointer);
+    
+    // Return cleanup function
+    return () => {
+      element.removeEventListener('pointerdown', handlePointer);
+    };
   };
 }

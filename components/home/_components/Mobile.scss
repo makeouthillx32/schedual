@@ -258,7 +258,7 @@
 }
 
 /* ========== ANIMATION KEYFRAMES ========== */
-@keyframes slide-down {
+@keyframes mobile-drawer-slide-down {
   from {
     opacity: 0;
     transform: translateY(-20px);
@@ -271,7 +271,7 @@
   }
 }
 
-@keyframes slide-up {
+@keyframes mobile-drawer-slide-up {
   from {
     opacity: 1;
     transform: translateY(0);
@@ -286,13 +286,13 @@
 
 /* Animation classes with consistent timing */
 .animate-slide-down {
-  animation: slide-down 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  visibility: visible;
+  animation: mobile-drawer-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  visibility: visible !important;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  visibility: visible;
+  animation: mobile-drawer-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  visibility: visible !important;
 }
 
 /* Ensure drawer starts hidden but animatable */

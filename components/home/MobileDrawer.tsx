@@ -43,7 +43,7 @@ export default function MobileDrawer({
     setTimeout(() => {
       setIsClosing(false);
       onClose();
-    }, 350); // Match the animation duration
+    }, 400); // Match the animation duration
   };
 
   const handleClickAndClose = (key: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {

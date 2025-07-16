@@ -1,4 +1,5 @@
-// components/ClientLayout.tsx - UPDATED WITH COOKIE CONSENT
+// components/ClientLayout.tsx - ADD RESPONSIVE COOKIE CONSENT VARIANT
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,9 +7,52 @@ import { usePathname } from "next/navigation";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
-import { CookieConsent } from "@/components/CookieConsent"; // ✅ ADD THIS IMPORT
+import { CookieConsent } from "@/components/CookieConsent";
 import analytics from "@/lib/analytics";
 import { setCookie } from "@/lib/cookieUtils";
+
+// ✅ ADD: Hook to detect screen size
+function useScreenSize() {
+  const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      
+      if (width < 768) {
+        setScreenSize('mobile');    // < 768px = mobile
+      } else if (width < 1024) {
+        setScreenSize('tablet');    // 768px - 1023px = tablet  
+      } else {
+        setScreenSize('desktop');   // >= 1024px = desktop
+      }
+    };
+
+    // Check on mount
+    checkScreenSize();
+
+    // Listen for window resize
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
+  return screenSize;
+}
+
+// ✅ ADD: Get variant based on screen size
+function getCookieConsentVariant(screenSize: 'mobile' | 'tablet' | 'desktop') {
+  switch (screenSize) {
+    case 'mobile':
+      return 'small';   // Mobile uses 'small' variant
+    case 'tablet':
+      return 'mini';    // Tablet uses 'mini' variant
+    case 'desktop':
+    default:
+      return 'default'; // Desktop uses 'default' variant
+  }
+}
 
 export default function ClientLayoutWrapper({
   children,
@@ -18,43 +62,38 @@ export default function ClientLayoutWrapper({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  
+  // ✅ ADD: Screen size detection
+  const screenSize = useScreenSize();
+  const cookieVariant = getCookieConsentVariant(screenSize);
 
   const isHome = pathname === "/";
   const isToolsPage = pathname.toLowerCase().startsWith("/tools");
   const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
 
-  // ✅ FIXED: Connected to actual Tailwind CSS background values
+  // ✅ EXISTING: All your existing useEffect hooks remain the same...
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Get theme from localStorage
       const theme = localStorage.getItem("theme") || "light";
       setIsDarkMode(theme === "dark");
 
-      // ✅ FIXED: Read actual CSS background color from computed styles
       const updateThemeColor = () => {
         const root = document.documentElement;
-        
-        // Get the actual background color from CSS variables
         let backgroundColor = getComputedStyle(root).getPropertyValue('--background').trim();
-        
         console.log('🔍 Raw CSS --background value:', backgroundColor);
         
-        // Convert HSL values to hex for iOS
-        let themeColor = '#ffffff'; // fallback
+        let themeColor = '#ffffff';
         
         if (backgroundColor) {
-          // Handle HSL format: "220 14.75% 11.96%" -> hsl(220, 14.75%, 11.96%)
           const hslMatch = backgroundColor.match(/(\d+\.?\d*)\s+(\d+\.?\d*)%\s+(\d+\.?\d*)%/);
           
           if (hslMatch) {
             const [, h, s, l] = hslMatch;
             const hslString = `hsl(${h}, ${s}%, ${l}%)`;
             console.log('🎨 Converted to HSL:', hslString);
-            
-            // Convert HSL to hex
             themeColor = hslToHex(parseFloat(h), parseFloat(s), parseFloat(l));
           } else {
-            // Try to get computed background color from body
             const bodyBg = getComputedStyle(document.body).backgroundColor;
             if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') {
               themeColor = rgbToHex(bodyBg);
@@ -64,7 +103,6 @@ export default function ClientLayoutWrapper({
         
         console.log('🎨 Final theme color for iOS:', themeColor);
 
-        // Update meta tag
         let metaTag = document.querySelector("meta[name='theme-color']") as HTMLMetaElement;
         if (metaTag) {
           metaTag.setAttribute("content", themeColor);
@@ -83,9 +121,8 @@ export default function ClientLayoutWrapper({
         });
       };
 
-      // Wait for styles to load, then update
       setTimeout(updateThemeColor, 100);
-      setTimeout(updateThemeColor, 500); // Extra delay for theme system
+      setTimeout(updateThemeColor, 500);
     }
   }, [pathname, isHome, isDarkMode]);
 
@@ -102,7 +139,6 @@ export default function ClientLayoutWrapper({
     }
   }, [pathname]);
 
-  // ✅ OPTIMIZED: Analytics tracking with better navigation handling
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -121,17 +157,14 @@ export default function ClientLayoutWrapper({
       return;
     }
 
-    // ✅ SIMPLIFIED: Only call onRouteChange - it handles the page view tracking
     console.log('🔄 SPA navigation detected:', pathname);
     analytics.onRouteChange(window.location.href);
     
-    // ✅ SEPARATE: Track navigation event for analysis (separate from page view)
     let pageCategory = 'general';
     if (isHome) pageCategory = 'landing';
     else if (isToolsPage) pageCategory = 'tools';
     else if (isDashboardPage) pageCategory = 'dashboard';
     
-    // Add a small delay to avoid race conditions with page view tracking
     setTimeout(() => {
       analytics.trackEvent('navigation', {
         category: 'user_flow',
@@ -148,10 +181,8 @@ export default function ClientLayoutWrapper({
 
   }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
 
-  // ✅ NEW: Debug analytics on development
   useEffect(() => {
     if (typeof window !== "undefined" && process.env.NODE_ENV === 'development') {
-      // Add analytics debug to window for easy access
       (window as any).debugAnalytics = () => {
         console.log('🔍 Analytics Debug Info:');
         console.log('Session ID:', analytics.getSessionId());
@@ -159,7 +190,6 @@ export default function ClientLayoutWrapper({
         analytics.debug();
       };
       
-      // Log analytics status on mount
       console.log('📊 Analytics Status:', {
         sessionId: analytics.getSessionId(),
         isEnabled: analytics.getStats().isEnabled,
@@ -169,7 +199,6 @@ export default function ClientLayoutWrapper({
     }
   }, []);
 
-  // ✅ Update body classes dynamically
   useEffect(() => {
     if (typeof window !== "undefined") {
       const body = document.body;
@@ -180,7 +209,6 @@ export default function ClientLayoutWrapper({
       }`;
       body.className = className;
       
-      // Update html class for dark mode
       const html = document.documentElement;
       if (isDarkMode) {
         html.classList.add('dark');
@@ -191,7 +219,7 @@ export default function ClientLayoutWrapper({
   }, [isDarkMode]);
 
   const showNav = !isHome && !isToolsPage && !isDashboardPage;
-  const showFooter = !isHome && !isDashboardPage && !isToolsPage; // ✅ FIXED: Added !isToolsPage
+  const showFooter = !isHome && !isDashboardPage && !isToolsPage;
   const showAccessibility = !pathname.startsWith("/auth") && 
                             pathname !== "/sign-in" && 
                             pathname !== "/sign-up";
@@ -203,30 +231,43 @@ export default function ClientLayoutWrapper({
       {showFooter && <Footer />}
       {showAccessibility && <AccessibilityOverlay />}
       
-      {/* ✅ ADD COOKIE CONSENT COMPONENT HERE */}
+      {/* ✅ UPDATED: Responsive Cookie Consent */}
       <CookieConsent
-        variant="default" // You can change this to "small" or "mini"
-        showCustomize={true} // Enable the customize button
-        description="We use cookies to enhance your experience, analyze site usage, and improve our services. Essential cookies are required for basic functionality."
-        learnMoreHref="/privacy-policy" // Update this to your actual privacy policy URL
+        variant={cookieVariant} // 🎯 Dynamic variant based on screen size
+        showCustomize={screenSize !== 'mobile'} // Hide customize button on mobile for space
+        description={
+          screenSize === 'mobile' 
+            ? "We use cookies to enhance your experience. Essential cookies are required for functionality."
+            : screenSize === 'tablet'
+            ? "We use cookies to enhance your experience and analyze usage. Essential cookies required."
+            : "We use cookies to enhance your experience, analyze site usage, and improve our services. Essential cookies are required for basic functionality."
+        }
+        learnMoreHref="/privacy-policy"
         onAcceptCallback={(preferences) => {
           console.log('✅ Cookies accepted:', preferences);
-          // Analytics will be automatically initialized by the updated analytics.ts
+          console.log('📱 Screen size:', screenSize, '| Variant used:', cookieVariant);
         }}
         onDeclineCallback={(preferences) => {
           console.log('🚫 Non-essential cookies declined:', preferences);
-          // Analytics will be automatically disabled by the updated analytics.ts
+          console.log('📱 Screen size:', screenSize, '| Variant used:', cookieVariant);
         }}
         onCustomizeCallback={(preferences) => {
           console.log('⚙️ Custom preferences saved:', preferences);
-          // Analytics state will be updated based on preferences
+          console.log('📱 Screen size:', screenSize, '| Variant used:', cookieVariant);
         }}
       />
+      
+      {/* ✅ ADD: Debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 right-4 bg-black/80 text-white text-xs p-2 rounded z-[60] pointer-events-none">
+          Screen: {screenSize} | Variant: {cookieVariant}
+        </div>
+      )}
     </>
   );
 }
 
-// ✅ Helper functions to convert colors (SAME AS YOUR ORIGINAL)
+// ✅ EXISTING: Keep all your helper functions
 function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
   l /= 100;
@@ -265,5 +306,5 @@ function rgbToHex(rgb: string): string {
     const b = parseInt(match[3]).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
   }
-  return rgb; // fallback
+  return rgb;
 }

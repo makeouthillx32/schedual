@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const { themeType } = useTheme();
 
   return (
-    <>
+    <div className="relative"> {/* Add relative positioning container */}
       <header className="header-container bg-background text-foreground border-border">
         <div className="header-content">
           {/* Left: Logo */}
@@ -92,17 +92,15 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
         </div>
       </header>
 
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer - positioned relative to this container */}
       {mobileMenuOpen && (
-        <div className="mobile-drawer-overlay">
-          <MobileDrawer
-            navigateTo={navigateTo}
-            session={session}
-            onClose={() => setMobileMenuOpen(false)}
-          />
-        </div>
+        <MobileDrawer
+          navigateTo={navigateTo}
+          session={session}
+          onClose={() => setMobileMenuOpen(false)}
+        />
       )}
-    </>
+    </div>
   );
 };
 

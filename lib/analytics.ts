@@ -1,4 +1,4 @@
-// lib/analytics.ts - FIXED WITH GLOBAL DEBUG ACCESS
+// lib/analytics.ts - UPDATED WITH COOKIE CONSENT INTEGRATION
 import { v4 as uuidv4 } from 'uuid';
 
 interface PerformanceMetric {
@@ -45,16 +45,80 @@ interface EventPayload {
   metadata?: Record<string, any>;
 }
 
+// Cookie consent interfaces
+interface CookiePreferences {
+  necessary: boolean;
+  analytics: boolean;
+  functional: boolean;
+  marketing: boolean;
+}
+
+// Cookie management utilities
+const CookieConsentManager = {
+  CONSENT_COOKIE_NAME: 'cookie_consent_v1',
+  PREFERENCES_COOKIE_NAME: 'cookie_preferences_v1',
+
+  // Check if analytics tracking is allowed
+  isAnalyticsAllowed(): boolean {
+    if (typeof document === 'undefined') return false;
+
+    const consentCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`${this.CONSENT_COOKIE_NAME}=`));
+    
+    const preferencesCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith(`${this.PREFERENCES_COOKIE_NAME}=`));
+
+    if (!consentCookie || consentCookie.split('=')[1] !== 'true') {
+      return false;
+    }
+
+    if (preferencesCookie) {
+      try {
+        const preferences: CookiePreferences = JSON.parse(preferencesCookie.split('=')[1]);
+        return preferences.analytics === true;
+      } catch (error) {
+        console.warn('⚠️ Failed to parse cookie preferences:', error);
+        return false;
+      }
+    }
+
+    return false;
+  },
+
+  // Clear analytics-related storage when consent is revoked
+  clearAnalyticsData(): void {
+    if (typeof window === 'undefined') return;
+
+    // Clear analytics session data
+    localStorage.removeItem('analytics_session_id');
+    localStorage.removeItem('analytics_last_activity');
+    sessionStorage.removeItem('analytics_session_id');
+    
+    // Clear any other analytics-related localStorage items
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('analytics_') || key.startsWith('tracking_')) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    console.log('🧹 Analytics data cleared due to consent revocation');
+  }
+};
+
 class AnalyticsClient {
   private sessionId: string;
   private apiBase: string;
   private isInitialized = false;
   private isEnabled = true;
+  private consentCheckInterval: NodeJS.Timeout | null = null;
   private trackingStats = {
     pageViews: 0,
     events: 0,
     performance: 0,
-    errors: 0
+    errors: 0,
+    consentBlocked: 0
   };
 
   constructor(apiBase = '/api/analytics') {
@@ -62,14 +126,34 @@ class AnalyticsClient {
     this.sessionId = this.initSession();
     console.log('📊 Analytics Client initialized:', {
       sessionId: this.sessionId,
-      apiBase: this.apiBase
+      apiBase: this.apiBase,
+      consentRequired: true
     });
   }
 
-  // FIXED: Initialize session with proper persistence
+  // Check consent before any tracking operation
+  private checkConsent(): boolean {
+    const isAllowed = CookieConsentManager.isAnalyticsAllowed();
+    
+    if (!isAllowed) {
+      this.trackingStats.consentBlocked++;
+      console.log('🍪 Analytics tracking blocked - no consent');
+      return false;
+    }
+    
+    return true;
+  }
+
+  // UPDATED: Initialize session with consent checking
   private initSession(): string {
     if (typeof window === 'undefined') {
       return uuidv4(); // Server-side fallback
+    }
+
+    // Don't create/use sessions without consent
+    if (!CookieConsentManager.isAnalyticsAllowed()) {
+      console.log('🍪 Session creation blocked - awaiting consent');
+      return uuidv4(); // Temporary session for initialization
     }
 
     // Try to get session from localStorage first (persists across browser tabs/sessions)
@@ -106,18 +190,22 @@ class AnalyticsClient {
     // Generate new session ID
     const newSessionId = uuidv4();
     
-    // Store in both localStorage and sessionStorage
-    localStorage.setItem('analytics_session_id', newSessionId);
-    localStorage.setItem('analytics_last_activity', now.toString());
-    sessionStorage.setItem('analytics_session_id', newSessionId);
+    // Store in both localStorage and sessionStorage (only if consent given)
+    if (CookieConsentManager.isAnalyticsAllowed()) {
+      localStorage.setItem('analytics_session_id', newSessionId);
+      localStorage.setItem('analytics_last_activity', now.toString());
+      sessionStorage.setItem('analytics_session_id', newSessionId);
+      console.log('✨ Created new session with consent:', newSessionId);
+    } else {
+      console.log('✨ Created temporary session (no storage):', newSessionId);
+    }
     
-    console.log('✨ Created new session:', newSessionId);
     return newSessionId;
   }
 
-  // Update last activity on each tracking call
+  // Update last activity on each tracking call (only with consent)
   private updateActivity(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && CookieConsentManager.isAnalyticsAllowed()) {
       const now = Date.now();
       localStorage.setItem('analytics_last_activity', now.toString());
     }
@@ -143,14 +231,17 @@ class AnalyticsClient {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
     };
 
-    console.log('🖥️ Device info collected:', {
-      device: this.detectDeviceType(info.userAgent),
-      browser: this.extractBrowser(info.userAgent),
-      os: this.extractOS(info.userAgent),
-      screen: `${info.screenWidth}x${info.screenHeight}`,
-      language: info.language,
-      timezone: info.timezone
-    });
+    // Only log device info if consent is given
+    if (CookieConsentManager.isAnalyticsAllowed()) {
+      console.log('🖥️ Device info collected:', {
+        device: this.detectDeviceType(info.userAgent),
+        browser: this.extractBrowser(info.userAgent),
+        os: this.extractOS(info.userAgent),
+        screen: `${info.screenWidth}x${info.screenHeight}`,
+        language: info.language,
+        timezone: info.timezone
+      });
+    }
 
     return info;
   }
@@ -203,7 +294,7 @@ class AnalyticsClient {
       if (params.get('utm_content')) utmParams.content = params.get('utm_content')!;
 
       const hasUtmParams = Object.keys(utmParams).length > 0;
-      if (hasUtmParams) {
+      if (hasUtmParams && CookieConsentManager.isAnalyticsAllowed()) {
         console.log('🎯 UTM parameters detected:', utmParams);
       }
 
@@ -214,9 +305,12 @@ class AnalyticsClient {
     }
   }
 
-  // Auto-track page views
+  // UPDATED: Auto-track page views with consent check
   async trackPageView(url?: string): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    // Check consent before tracking
+    if (!this.checkConsent()) return;
 
     // Update activity timestamp
     this.updateActivity();
@@ -284,7 +378,7 @@ class AnalyticsClient {
     }
   }
 
-  // Track custom events
+  // UPDATED: Track custom events with consent check
   async trackEvent(
     name: string, 
     properties?: {
@@ -296,6 +390,9 @@ class AnalyticsClient {
     }
   ): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    // Check consent before tracking
+    if (!this.checkConsent()) return;
 
     // Update activity timestamp
     this.updateActivity();
@@ -354,9 +451,12 @@ class AnalyticsClient {
     }
   }
 
-  // Track performance metrics
+  // UPDATED: Track performance metrics with consent check
   async trackPerformance(metrics: PerformanceMetric[]): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    // Check consent before tracking
+    if (!this.checkConsent()) return;
 
     this.updateActivity();
 
@@ -394,9 +494,15 @@ class AnalyticsClient {
     }
   }
 
-  // Track Web Vitals automatically
+  // UPDATED: Track Web Vitals with consent check
   async trackWebVitals(): Promise<void> {
     if (typeof window === 'undefined' || !this.isEnabled) return;
+
+    // Check consent before setting up Web Vitals tracking
+    if (!CookieConsentManager.isAnalyticsAllowed()) {
+      console.log('🍪 Web Vitals tracking blocked - no consent');
+      return;
+    }
 
     try {
       console.log('🔄 Loading Web Vitals library...');
@@ -405,45 +511,103 @@ class AnalyticsClient {
       // Check if functions exist before calling
       if (webVitals.getCLS) {
         webVitals.getCLS((metric) => {
-          console.log('📊 CLS metric:', metric.value);
-          this.trackPerformance([{ type: 'CLS', value: metric.value }]);
+          if (this.checkConsent()) {
+            console.log('📊 CLS metric:', metric.value);
+            this.trackPerformance([{ type: 'CLS', value: metric.value }]);
+          }
         });
       }
 
       if (webVitals.getFID) {
         webVitals.getFID((metric) => {
-          console.log('📊 FID metric:', metric.value);
-          this.trackPerformance([{ type: 'FID', value: metric.value }]);
+          if (this.checkConsent()) {
+            console.log('📊 FID metric:', metric.value);
+            this.trackPerformance([{ type: 'FID', value: metric.value }]);
+          }
         });
       }
 
       if (webVitals.getLCP) {
         webVitals.getLCP((metric) => {
-          console.log('📊 LCP metric:', metric.value);
-          this.trackPerformance([{ type: 'LCP', value: metric.value }]);
+          if (this.checkConsent()) {
+            console.log('📊 LCP metric:', metric.value);
+            this.trackPerformance([{ type: 'LCP', value: metric.value }]);
+          }
         });
       }
 
       if (webVitals.getTTFB) {
         webVitals.getTTFB((metric) => {
-          console.log('📊 TTFB metric:', metric.value);
-          this.trackPerformance([{ type: 'TTFB', value: metric.value }]);
+          if (this.checkConsent()) {
+            console.log('📊 TTFB metric:', metric.value);
+            this.trackPerformance([{ type: 'TTFB', value: metric.value }]);
+          }
         });
       }
 
-      console.log('✅ Web Vitals tracking initialized');
+      console.log('✅ Web Vitals tracking initialized with consent checks');
 
     } catch (error) {
       console.info('ℹ️ Web Vitals not available - skipping performance tracking');
     }
   }
 
-  // Initialize automatic tracking
+  // UPDATED: Initialize with consent monitoring
   init(): void {
     if (typeof window === 'undefined' || this.isInitialized) return;
 
-    console.log('🚀 Initializing analytics tracking...');
+    console.log('🚀 Initializing analytics tracking with consent monitoring...');
     this.isInitialized = true;
+
+    // Start monitoring consent status
+    this.startConsentMonitoring();
+
+    // Only proceed with tracking setup if consent is already given
+    if (CookieConsentManager.isAnalyticsAllowed()) {
+      this.setupTracking();
+    } else {
+      console.log('🍪 Analytics initialization deferred - awaiting consent');
+    }
+  }
+
+  // NEW: Start monitoring consent status
+  private startConsentMonitoring(): void {
+    // Check consent every 2 seconds to detect changes
+    this.consentCheckInterval = setInterval(() => {
+      const hasConsent = CookieConsentManager.isAnalyticsAllowed();
+      
+      if (hasConsent && !this.isTrackingActive()) {
+        console.log('✅ Consent granted - activating analytics');
+        this.setupTracking();
+        this.reinitializeSession();
+      } else if (!hasConsent && this.isTrackingActive()) {
+        console.log('🚫 Consent revoked - deactivating analytics');
+        this.deactivateTracking();
+      }
+    }, 2000);
+
+    // Also listen for storage changes (consent updates from other tabs)
+    window.addEventListener('storage', (e) => {
+      if (e.key?.includes('cookie_')) {
+        const hasConsent = CookieConsentManager.isAnalyticsAllowed();
+        if (!hasConsent) {
+          this.deactivateTracking();
+        } else if (!this.isTrackingActive()) {
+          this.setupTracking();
+          this.reinitializeSession();
+        }
+      }
+    });
+  }
+
+  // NEW: Check if tracking is currently active
+  private isTrackingActive(): boolean {
+    return this.isEnabled && CookieConsentManager.isAnalyticsAllowed();
+  }
+
+  // NEW: Setup all tracking functionality
+  private setupTracking(): void {
+    console.log('🔧 Setting up analytics tracking...');
 
     // Track initial page view
     this.trackPageView();
@@ -453,7 +617,7 @@ class AnalyticsClient {
 
     // Track page visibility changes
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && this.isEnabled) {
+      if (document.visibilityState === 'hidden' && this.checkConsent()) {
         console.log('👋 Page hidden - tracking exit');
         this.trackEvent('page_exit', {
           category: 'engagement',
@@ -466,7 +630,7 @@ class AnalyticsClient {
     // Track scroll depth
     let maxScrollDepth = 0;
     const trackScrollDepth = () => {
-      if (!this.isEnabled) return;
+      if (!this.checkConsent()) return;
       
       const scrollDepth = Math.round(
         (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
@@ -497,7 +661,7 @@ class AnalyticsClient {
     // Track time on page
     const startTime = Date.now();
     window.addEventListener('beforeunload', () => {
-      if (this.isEnabled) {
+      if (this.checkConsent()) {
         const timeOnPage = Math.round((Date.now() - startTime) / 1000);
         console.log('⏱️ Time on page:', timeOnPage, 'seconds');
         this.trackEvent('time_on_page', {
@@ -508,7 +672,24 @@ class AnalyticsClient {
       }
     });
 
-    console.log('✅ Analytics tracking initialized successfully');
+    console.log('✅ Analytics tracking setup complete');
+  }
+
+  // NEW: Deactivate tracking and clear data
+  private deactivateTracking(): void {
+    console.log('🛑 Deactivating analytics tracking');
+    CookieConsentManager.clearAnalyticsData();
+    this.isEnabled = false;
+    
+    // Clear the session to force regeneration when consent is granted again
+    this.sessionId = uuidv4();
+  }
+
+  // NEW: Reinitialize session when consent is granted
+  private reinitializeSession(): void {
+    this.isEnabled = true;
+    this.sessionId = this.initSession();
+    console.log('🔄 Analytics session reinitialized:', this.sessionId);
   }
 
   // Get current session ID
@@ -518,38 +699,44 @@ class AnalyticsClient {
 
   // Manual page view tracking for SPA navigation
   onRouteChange(url: string): void {
-    console.log('🔄 Route change detected:', url);
-    this.trackPageView(url);
+    if (this.checkConsent()) {
+      console.log('🔄 Route change detected:', url);
+      this.trackPageView(url);
+    }
   }
 
-  // Get tracking statistics
+  // Get tracking statistics with consent info
   getStats() {
     return {
       ...this.trackingStats,
       isEnabled: this.isEnabled,
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
+      consentGranted: CookieConsentManager.isAnalyticsAllowed(),
+      consentChecked: true
     };
   }
 
-  // Method to re-enable tracking
+  // Method to re-enable tracking (called by consent manager)
   enable(): void {
     this.isEnabled = true;
     console.log('✅ Analytics tracking enabled');
   }
 
-  // Method to disable tracking
+  // Method to disable tracking (called by consent manager)
   disable(): void {
     this.isEnabled = false;
+    CookieConsentManager.clearAnalyticsData();
     console.log('🚫 Analytics tracking disabled');
   }
 
-  // Debug method to check if everything is working
+  // UPDATED: Debug method with consent status
   async debug(): Promise<void> {
     console.log('🔍 Analytics Debug Report:');
     console.log('Session ID:', this.sessionId);
     console.log('API Base:', this.apiBase);
     console.log('Is Enabled:', this.isEnabled);
     console.log('Is Initialized:', this.isInitialized);
+    console.log('Consent Granted:', CookieConsentManager.isAnalyticsAllowed());
     console.log('Tracking Stats:', this.trackingStats);
     console.log('Device Info:', this.getDeviceInfo());
     
@@ -562,17 +749,29 @@ class AnalyticsClient {
       });
     }
     
-    // Test API connectivity
-    try {
-      console.log('🧪 Testing API connectivity...');
-      await this.trackEvent('debug_test', {
-        category: 'debug',
-        action: 'connectivity_test',
-        metadata: { timestamp: Date.now() }
-      });
-      console.log('✅ API connectivity test passed');
-    } catch (error) {
-      console.error('❌ API connectivity test failed:', error);
+    // Test API connectivity (only if consent given)
+    if (CookieConsentManager.isAnalyticsAllowed()) {
+      try {
+        console.log('🧪 Testing API connectivity...');
+        await this.trackEvent('debug_test', {
+          category: 'debug',
+          action: 'connectivity_test',
+          metadata: { timestamp: Date.now() }
+        });
+        console.log('✅ API connectivity test passed');
+      } catch (error) {
+        console.error('❌ API connectivity test failed:', error);
+      }
+    } else {
+      console.log('🍪 API connectivity test skipped - no consent');
+    }
+  }
+
+  // NEW: Cleanup method
+  destroy(): void {
+    if (this.consentCheckInterval) {
+      clearInterval(this.consentCheckInterval);
+      this.consentCheckInterval = null;
     }
   }
 }
@@ -580,7 +779,7 @@ class AnalyticsClient {
 // Create singleton instance
 const analytics = new AnalyticsClient();
 
-// ✅ FIXED: Always expose analytics globally for debugging
+// ✅ UPDATED: Global exposure with consent awareness
 if (typeof window !== 'undefined') {
   // Expose analytics instance globally
   (window as any).analytics = analytics;
@@ -589,19 +788,23 @@ if (typeof window !== 'undefined') {
   (window as any).analyticsDebug = () => analytics.debug();
   (window as any).analyticsStats = () => console.log(analytics.getStats());
   
-  // Add more debug utilities
+  // Add consent-aware test method
   (window as any).analyticsTest = () => {
-    console.log('🧪 Testing analytics tracking...');
-    analytics.trackEvent('manual_test', {
-      category: 'debug',
-      action: 'manual_trigger',
-      label: 'console_test',
-      value: 1,
-      metadata: { 
-        timestamp: Date.now(),
-        source: 'browser_console'
-      }
-    });
+    if (CookieConsentManager.isAnalyticsAllowed()) {
+      console.log('🧪 Testing analytics tracking...');
+      analytics.trackEvent('manual_test', {
+        category: 'debug',
+        action: 'manual_trigger',
+        label: 'console_test',
+        value: 1,
+        metadata: { 
+          timestamp: Date.now(),
+          source: 'browser_console'
+        }
+      });
+    } else {
+      console.log('🍪 Analytics test blocked - no consent given');
+    }
   };
 
   // Wait for DOM to be ready
@@ -609,7 +812,7 @@ if (typeof window !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
       try {
         analytics.init();
-        console.log('📊 Analytics ready! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
+        console.log('📊 Analytics ready with consent monitoring! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
       } catch (error) {
         console.error('Analytics initialization failed:', error);
       }
@@ -619,14 +822,19 @@ if (typeof window !== 'undefined') {
     setTimeout(() => {
       try {
         analytics.init();
-        console.log('📊 Analytics ready! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
+        console.log('📊 Analytics ready with consent monitoring! Try: analyticsDebug(), analyticsStats(), or analyticsTest()');
       } catch (error) {
         console.error('Analytics initialization failed:', error);
       }
     }, 0);
   }
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    analytics.destroy();
+  });
 }
 
 export default analytics;
-export { AnalyticsClient };
-export type { PerformanceMetric, DeviceInfo, TrackingPayload, EventPayload };
+export { AnalyticsClient, CookieConsentManager };
+export type { PerformanceMetric, DeviceInfo, TrackingPayload, EventPayload, CookiePreferences };

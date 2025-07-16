@@ -14,9 +14,6 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
   const pathname = usePathname();
-  
-  // Check if we're on CMS route
-  const isCMSRoute = pathname.startsWith('/CMS');
 
   return (
     <nav
@@ -38,20 +35,12 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
           className="h-10 w-auto"
         />
         
-        {/* App Title */}
-        <h1 className="text-lg font-bold font-[var(--font-sans)]">
-          {isCMSRoute ? (
-            <>
-              CMS Scheduling App
-              {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
-            </>
-          ) : (
-            <>
-              App
-              {pageTitle && <span className="ml-2 text-lg font-normal">{pageTitle}</span>}
-            </>
-          )}
-        </h1>
+        {/* Page Title Only */}
+        {pageTitle && (
+          <h1 className="text-lg font-medium font-[var(--font-sans)]">
+            {pageTitle}
+          </h1>
+        )}
       </div>
       <div className="flex items-center gap-4">
         {/* Theme toggle */}

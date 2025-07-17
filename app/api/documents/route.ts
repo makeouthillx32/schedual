@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient(); // ✅ AWAIT ADDED
     const { searchParams } = new URL(req.url);
     const folder = searchParams.get("folder");
     const search = searchParams.get("search");
@@ -30,11 +30,7 @@ export async function GET(req: NextRequest) {
         updated_at,
         is_favorite,
         is_shared,
-        tags,
-        uploader:uploaded_by(
-          raw_user_meta_data,
-          email
-        )
+        tags
       `)
       .is("deleted_at", null)
       .order("type", { ascending: false }) // Folders first
@@ -99,8 +95,8 @@ export async function GET(req: NextRequest) {
       is_favorite: doc.is_favorite || false,
       is_shared: doc.is_shared || false,
       tags: doc.tags || [],
-      uploader_name: doc.uploader?.raw_user_meta_data?.display_name || doc.uploader?.email?.split('@')[0] || 'Unknown',
-      uploader_email: doc.uploader?.email || ''
+      uploader_name: 'Unknown', // Will add user join later
+      uploader_email: ''
     })) || [];
 
     console.log(`📁 Fetched ${transformedDocuments.length} documents for folder: ${folder || 'root'}`);
@@ -114,7 +110,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient(); // ✅ AWAIT ADDED
     const body = await req.json();
     const { type, name, path, parentPath, mime_type, size_bytes, storage_path, tags } = body;
 

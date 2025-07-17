@@ -1,3 +1,4 @@
+// components/Auth/SigninWithPassword.tsx - Updated to use server actions with Remember Me
 "use client";
 import { EmailIcon, PasswordIcon } from "@/assets/icons";
 import Link from "next/link";
@@ -6,6 +7,7 @@ import InputGroup from "../FormElements/InputGroup";
 import { Checkbox } from "../FormElements/checkbox";
 import { useTheme } from "@/app/provider";
 import { Loader2 } from "lucide-react";
+import { signInAction } from "@/app/actions";
 
 export default function SigninWithPassword() {
   const { themeType } = useTheme();
@@ -26,15 +28,35 @@ export default function SigninWithPassword() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleRememberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setData({
+      ...data,
+      remember: e.target.checked,
+    });
+    console.log('[SignIn] Remember me:', e.target.checked);
+  };
 
-    // Simulate loading
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      console.log('[SignIn] Submitting with remember me:', data.remember);
+      
+      // Create FormData with all fields including remember
+      const formData = new FormData();
+      formData.append('email', data.email);
+      formData.append('password', data.password);
+      formData.append('remember', data.remember.toString());
+
+      // Call your server action
+      await signInAction(formData);
+      
+    } catch (error) {
+      console.error('[SignIn] Error:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -48,6 +70,8 @@ export default function SigninWithPassword() {
         handleChange={handleChange}
         value={data.email}
         icon={<EmailIcon className="text-[hsl(var(--muted-foreground))]" />}
+        required
+        disabled={loading}
       />
 
       <InputGroup
@@ -59,21 +83,20 @@ export default function SigninWithPassword() {
         handleChange={handleChange}
         value={data.password}
         icon={<PasswordIcon className="text-[hsl(var(--muted-foreground))]" />}
+        required
+        disabled={loading}
       />
 
       <div className="flex items-center justify-between gap-2 py-2 font-medium">
         <Checkbox
           label="Remember me"
           name="remember"
+          checked={data.remember}
           withIcon="check"
           minimal
           radius="md"
-          onChange={(e) =>
-            setData({
-              ...data,
-              remember: e.target.checked,
-            })
-          }
+          onChange={handleRememberChange}
+          disabled={loading}
         />
 
         <Link
@@ -102,6 +125,13 @@ export default function SigninWithPassword() {
           )}
         </button>
       </div>
+      
+      {/* Debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-[hsl(var(--muted-foreground))] mt-2">
+          Remember me: {data.remember ? 'Enabled' : 'Disabled'}
+        </div>
+      )}
     </form>
   );
 }

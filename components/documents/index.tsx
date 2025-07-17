@@ -1,16 +1,28 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useDocuments } from '@/hooks/useDocuments';
-import { useFileUpload } from '@/hooks/useFileUpload';
-import { useFolderFavorites } from '@/hooks/useFolderFavorites';
-import { DocumentsSkeleton, SearchSkeleton, UploadSkeleton } from './Skeleton';
-import { FileIcon, FolderIcon, getBrandedIcon } from './icons';
 import { 
+  useDocuments, 
+  useFileUpload, 
+  useFolderFavorites 
+} from '@/hooks/useDocuments';
+import { 
+  DocumentSkeleton, 
+  HeaderSkeleton, 
+  UploadSkeleton 
+} from './Skeleton';
+import { 
+  FileIcon, 
+  FolderIcon, 
+  StatusIcon, 
+  ActionIcon, 
+  NavIcon,
   Search, 
   Plus, 
   Grid3X3, 
   List, 
   Star, 
   Upload,
+  Folder,
+  File,
   Home,
   ChevronRight,
   MoreVertical,
@@ -21,7 +33,7 @@ import {
   Eye,
   Heart,
   Filter
-} from 'lucide-react';
+} from './icons';
 
 // Mock theme context - replace with your actual theme hook
 const useTheme = () => ({ isDark: false });
@@ -42,6 +54,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
     y: number;
     documentId: string;
   } | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const {
     documents,
@@ -57,7 +70,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
     fetchDocuments
   } = useDocuments();
 
-  const { uploadFiles, isUploading, uploads } = useFileUpload();
+  const { uploadFiles, isUploading, uploads, clearUploads, cancelUpload } = useFileUpload();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFolderFavorites();
 
   // Generate breadcrumb from current path
@@ -132,9 +145,9 @@ export default function Documents({ className = '' }: DocumentsProps) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Get file icon based on MIME type
-  const getFileIcon = (mimeType?: string, fileName?: string, size: 'sm' | 'md' | 'lg' | 'xl' = 'lg') => {
-    return getBrandedIcon(mimeType, fileName, size);
+  // Get file icon based on MIME type using our FileIcon component
+  const getFileIcon = (mimeType?: string) => {
+    return <FileIcon mimeType={mimeType} size="lg" withBackground />;
   };
 
   // Close context menu when clicking outside
@@ -145,7 +158,26 @@ export default function Documents({ className = '' }: DocumentsProps) {
   }, []);
 
   return (
-    <div className={`documents-container ${isDark ? 'dark' : ''} ${className}`}>
+    <div 
+      className={`documents-container ${isDark ? 'dark' : ''} ${className} ${dragOver ? 'drag-over' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag Overlay */}
+      {dragOver && (
+        <div className="fixed inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg text-center">
+            <Upload className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 dark:text-white">
+              Drop files to upload
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Release to upload to {currentPath || 'root folder'}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="documents-header border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -224,6 +256,32 @@ export default function Documents({ className = '' }: DocumentsProps) {
               onClick={() => setShowCreateFolder(true)}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
+              <NavIcon type="plus" />
+              New Folder
+            </button>
+            
+            <button
+              onClick={() => setShowUpload(true)}
+              disabled={isUploading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                isUploading 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white`}
+            >
+              {isUploading ? (
+                <>
+                  <StatusIcon status="uploading" className="text-white" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </>
+              )}
+            </button>-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
               <Plus className="w-4 h-4" />
               New Folder
             </button>
@@ -257,7 +315,11 @@ export default function Documents({ className = '' }: DocumentsProps) {
       </div>
 
       {/* Loading State */}
-      {loading && <DocumentsSkeleton viewMode={viewMode} />}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
 
       {/* Error State */}
       {error && (
@@ -275,7 +337,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
         }`}>
           {documents.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <FolderIcon size="xl" className="mx-auto mb-4 text-gray-400" />
+              <Folder className="mx-auto w-12 h-12 text-gray-400 mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
                 {searchQuery ? 'No documents found' : 'This folder is empty'}
               </p>
@@ -300,13 +362,9 @@ export default function Documents({ className = '' }: DocumentsProps) {
                     <div className="flex flex-col items-center text-center">
                       <div className="mb-3">
                         {doc.type === 'folder' ? (
-                          <FolderIcon 
-                            size="xl" 
-                            isFavorite={doc.is_favorite}
-                            className="text-blue-500" 
-                          />
+                          <FolderIcon size="xl" isFavorite={doc.is_favorite} />
                         ) : (
-                          getFileIcon(doc.mime_type, doc.name, 'xl')
+                          getFileIcon(doc.mime_type)
                         )}
                       </div>
                       
@@ -347,13 +405,9 @@ export default function Documents({ className = '' }: DocumentsProps) {
                     {/* List View */}
                     <div className="flex-shrink-0">
                       {doc.type === 'folder' ? (
-                        <FolderIcon 
-                          size="md" 
-                          isFavorite={doc.is_favorite}
-                          className="text-blue-500" 
-                        />
+                        <FolderIcon size="md" isFavorite={doc.is_favorite} />
                       ) : (
-                        getFileIcon(doc.mime_type, doc.name, 'md')
+                        <FileIcon mimeType={doc.mime_type} size="md" />
                       )}
                     </div>
                     
@@ -375,10 +429,10 @@ export default function Documents({ className = '' }: DocumentsProps) {
                     {/* List Actions */}
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       {doc.is_favorite && (
-                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        <ActionIcon action="favorite" isActive={true} />
                       )}
                       {doc.is_shared && (
-                        <Share className="w-4 h-4 text-green-500" />
+                        <ActionIcon action="share" />
                       )}
                       <button
                         onClick={(e) => {
@@ -407,25 +461,47 @@ export default function Documents({ className = '' }: DocumentsProps) {
             top: contextMenu.y
           }}
         >
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-            <Eye className="w-4 h-4" />
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onClick={() => handleDocumentAction('preview', contextMenu.documentId)}
+          >
+            <ActionIcon action="preview" />
             Preview
           </button>
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-            <Download className="w-4 h-4" />
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onClick={() => handleDocumentAction('download', contextMenu.documentId)}
+          >
+            <ActionIcon action="download" />
             Download
           </button>
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-            <Edit className="w-4 h-4" />
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onClick={() => handleDocumentAction('favorite', contextMenu.documentId)}
+          >
+            <ActionIcon action="favorite" />
+            {documents.find(d => d.id === contextMenu.documentId)?.is_favorite ? 'Remove from Favorites' : 'Add to Favorites'}
+          </button>
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onClick={() => handleDocumentAction('edit', contextMenu.documentId)}
+          >
+            <ActionIcon action="edit" />
             Rename
           </button>
-          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-            <Share className="w-4 h-4" />
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            onClick={() => handleDocumentAction('share', contextMenu.documentId)}
+          >
+            <ActionIcon action="share" />
             Share
           </button>
           <hr className="my-2 border-gray-200 dark:border-gray-700" />
-          <button className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
+          <button 
+            className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+            onClick={() => handleDocumentAction('delete', contextMenu.documentId)}
+          >
+            <ActionIcon action="delete" />
             Delete
           </button>
         </div>
@@ -433,7 +509,61 @@ export default function Documents({ className = '' }: DocumentsProps) {
 
       {/* Upload Progress */}
       {uploads.length > 0 && (
-        <UploadSkeleton fileCount={uploads.length} />
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[300px]">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-gray-900 dark:text-white">
+              Uploading Files ({uploads.filter(u => u.status === 'completed').length}/{uploads.length})
+            </h4>
+            <button
+              onClick={clearUploads}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {uploads.slice(0, 3).map((upload) => (
+              <div key={upload.id} className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                    {upload.file.name}
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        upload.status === 'completed' ? 'bg-green-500' :
+                        upload.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${upload.progress}%` }}
+                    />
+                  </div>
+                  {upload.error && (
+                    <div className="text-xs text-red-500 mt-1">{upload.error}</div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <StatusIcon status={upload.status} />
+                  {upload.status === 'uploading' && (
+                    <button
+                      onClick={() => cancelUpload(upload.id)}
+                      className="text-xs text-gray-500 hover:text-red-500"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            
+            {uploads.length > 3 && (
+              <div className="text-xs text-gray-500 text-center">
+                +{uploads.length - 3} more files
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

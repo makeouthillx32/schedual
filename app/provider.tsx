@@ -1,10 +1,10 @@
-// Enhanced app/provider.tsx with proper coordinate handling
+// Enhanced app/provider.tsx with iOS session persistence added
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import type { Session, User } from "@supabase/auth-helpers-nextjs";
 import { SessionContextProvider, useSessionContext } from "@supabase/auth-helpers-react";
-import { setCookie, getCookie } from "@/lib/cookieUtils";
+import { setCookie, getCookie, iosSessionHelpers } from "@/lib/cookieUtils";
 import { usePathname, useRouter } from "next/navigation";
 import { Theme } from "@/types/theme"; 
 import { defaultThemeId, getThemeById, getAvailableThemeIds } from "@/themes";
@@ -35,6 +35,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  refreshSession: () => void; // Added for iOS session refresh
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,11 +48,32 @@ export const useAuth = () => {
   return context;
 };
 
+// 🍎 iOS Session Persistence Component
+function IOSSessionManager({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // Setup iOS session persistence handlers
+    const cleanup = iosSessionHelpers.setupIOSHandlers();
+    
+    console.log('[Provider] 🍎 iOS session persistence initialized');
+    
+    // Return cleanup function
+    return cleanup;
+  }, []);
+
+  return <>{children}</>;
+}
+
 function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useSessionContext();
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  // 🍎 Manual session refresh function for iOS
+  const refreshSession = () => {
+    iosSessionHelpers.refreshSession();
+    console.log('[Provider] 🔄 Manual session refresh triggered');
+  };
 
   useEffect(() => {
     if (session?.user) {
@@ -71,10 +93,18 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, isLoading, pathname, router]);
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading }}>
-      {children}
+    <AuthContext.Provider value={{ user, session, isLoading, refreshSession }}>
+      <IOSSessionManager>
+        {children}
+      </IOSSessionManager>
     </AuthContext.Provider>
   );
+}
+
+// Hook for components that need to manually refresh session
+export function useIOSSessionRefresh() {
+  const { refreshSession } = useAuth();
+  return { refreshSession };
 }
 
 // Theme provider implementation

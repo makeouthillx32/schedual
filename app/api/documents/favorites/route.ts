@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient(); // ✅ AWAIT ADDED
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient(); // ✅ AWAIT ADDED
     const body = await req.json();
     const { folderPath, folderName } = body;
 
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient(); // ✅ AWAIT ADDED
     const { searchParams } = new URL(req.url);
     const folderPath = searchParams.get("folderPath");
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/app/provider";
+import Link from "next/link";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
 import { CustomDropdown } from "@/components/Layouts/appheader/dropdown-menu";
 
@@ -24,16 +25,18 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
       } shadow-[var(--shadow-sm)]`}
     >
       <div className="flex items-center gap-3">
-        {/* Logo */}
-        <img
-          src={
-            themeType === "dark"
-              ? "/images/home/dartlogowhite.svg"
-              : "/images/home/dartlogo.svg"
-          }
-          alt="DART Logo"
-          className="h-10 w-auto"
-        />
+        {/* Logo - Now clickable and takes you to home */}
+        <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
+          <img
+            src={
+              themeType === "dark"
+                ? "/images/home/dartlogowhite.svg"
+                : "/images/home/dartlogo.svg"
+            }
+            alt="DART Logo"
+            className="h-10 w-auto cursor-pointer"
+          />
+        </Link>
         
         {/* Page Title Only */}
         {pageTitle && (

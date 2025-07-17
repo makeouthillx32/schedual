@@ -1,12 +1,23 @@
-// components/documents/index.tsx - SIMPLIFIED DEBUG VERSION
+// components/documents/index.tsx - Adding back components step by step
 'use client';
 
 import React, { useState, useEffect } from 'react';
+
+// Import the working components one by one - we'll test each
+// import Folder from './Folder';
+// import File from './File';
+// import UploadZone from './UploadZone';
+import Toolbar from './Toolbar';
+// import ContextMenu from './ContextMenu';
+// import Preview from './Preview';
+// import FavoritesBar from './FavoritesBar';
 
 export default function Documents({ className = '' }: { className?: string }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -32,6 +43,26 @@ export default function Documents({ className = '' }: { className?: string }) {
     fetchDocuments();
   }, []);
 
+  // Handle search
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    console.log('🔍 Search:', query);
+  };
+
+  // Handle toolbar actions
+  const handleCreateFolder = () => {
+    console.log('📁 Create folder clicked');
+  };
+
+  const handleUpload = () => {
+    console.log('📤 Upload clicked');
+  };
+
+  const handleRefresh = () => {
+    console.log('🔄 Refresh clicked');
+    window.location.reload();
+  };
+
   if (loading) {
     return (
       <div className="p-8">
@@ -53,8 +84,30 @@ export default function Documents({ className = '' }: { className?: string }) {
   }
 
   return (
-    <div className={`documents-simple p-8 ${className}`}>
+    <div className={`documents-container p-8 ${className}`}>
       <h1 className="text-2xl font-bold mb-6">Documents</h1>
+      
+      {/* Step 1: Test Toolbar Component */}
+      <Toolbar
+        searchQuery={searchQuery}
+        onSearchChange={handleSearch}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onUpload={handleUpload}
+        onCreateFolder={handleCreateFolder}
+        onRefresh={handleRefresh}
+        sortBy="name"
+        sortOrder="asc"
+        onSortChange={(sortBy, sortOrder) => console.log('Sort:', sortBy, sortOrder)}
+        showFavoritesOnly={false}
+        onToggleFavorites={() => console.log('Toggle favorites')}
+        selectedCount={0}
+        onClearSelection={() => console.log('Clear selection')}
+        onSelectAll={() => console.log('Select all')}
+        isUploading={false}
+        isLoading={loading}
+        className="mb-6"
+      />
       
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-medium mb-4">
@@ -90,7 +143,7 @@ export default function Documents({ className = '' }: { className?: string }) {
       <div className="mt-6 text-sm text-gray-500">
         <p>✅ API connection working</p>
         <p>✅ Component rendering successfully</p>
-        <p>🎉 Ready to add full functionality!</p>
+        <p>🧪 Testing Toolbar component...</p>
       </div>
     </div>
   );

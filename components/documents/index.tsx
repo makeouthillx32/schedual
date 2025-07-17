@@ -178,13 +178,10 @@ export default function Documents({ className = '' }: DocumentsProps) {
           </div>
         </div>
       )}
-      {/* Header */}
-      <div className="documents-header border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+
+      {/* Toolbar - Search and Actions */}
+      <div className="documents-toolbar bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Documents
-          </h1>
-          
           {/* View Controls */}
           <div className="flex items-center gap-2">
             <button
@@ -208,47 +205,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
               <List className="w-5 h-5" />
             </button>
           </div>
-        </div>
-
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-          <button
-            onClick={() => navigateToFolder('')}
-            className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-          >
-            <Home className="w-4 h-4" />
-            Home
-          </button>
-          
-          {breadcrumbs.map((crumb, index) => {
-            const path = breadcrumbs.slice(0, index + 1).join('/') + '/';
-            return (
-              <React.Fragment key={path}>
-                <ChevronRight className="w-4 h-4" />
-                <button
-                  onClick={() => navigateToFolder(path)}
-                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  {crumb}
-                </button>
-              </React.Fragment>
-            );
-          })}
-        </div>
-
-        {/* Search and Actions */}
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
@@ -256,7 +212,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
               onClick={() => setShowCreateFolder(true)}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              <NavIcon type="plus" />
+              <Plus className="w-4 h-4" />
               New Folder
             </button>
             
@@ -284,9 +240,50 @@ export default function Documents({ className = '' }: DocumentsProps) {
           </div>
         </div>
 
+        {/* Search and Breadcrumb */}
+        <div className="flex items-center gap-4">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <button
+              onClick={() => navigateToFolder('')}
+              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              Home
+            </button>
+            
+            {breadcrumbs.map((crumb, index) => {
+              const path = breadcrumbs.slice(0, index + 1).join('/') + '/';
+              return (
+                <React.Fragment key={path}>
+                  <ChevronRight className="w-4 h-4" />
+                  <button
+                    onClick={() => navigateToFolder(path)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    {crumb}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          {/* Search */}
+          <div className="flex-1 relative max-w-md ml-auto">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+
         {/* Current Folder Actions */}
         {currentPath && (
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => handleToggleFavorite(currentPath, breadcrumbs[breadcrumbs.length - 1] || 'Root')}
               className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm transition-colors ${

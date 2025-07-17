@@ -23,12 +23,13 @@ const getAndClearLastPage = async (): Promise<string> => {
   return lastPage;
 };
 
-const populateUserCookies = async (userId: string) => {
+// 🍎 Enhanced populateUserCookies function with Remember Me support
+const populateUserCookies = async (userId: string, remember: boolean = false) => {
   try {
     const supabase = await createClient();
     const store = await cookies();
     
-    console.log(`[Auth] 🍪 Populating cookies for user ${userId.slice(-4)}`);
+    console.log(`[Auth] 🍪 Populating cookies for user ${userId.slice(-4)} (remember: ${remember})`);
     
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
@@ -52,36 +53,29 @@ const populateUserCookies = async (userId: string) => {
       profileData.role = 'user0x';
     }
 
-    store.set("userRole", profileData.role, { 
-      maxAge: 30 * 24 * 60 * 60,
+    // 🍎 Enhanced cookie options with Remember Me support
+    const cookieOptions = {
       path: "/",
       secure: true,
-      sameSite: "lax" 
-    });
-    
-    store.set("userRoleUserId", userId, { 
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-      secure: true,
-      sameSite: "lax" 
-    });
+      sameSite: "lax" as const,
+      // Adjust maxAge based on remember me setting
+      maxAge: remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60, // 30 days vs 1 day
+    };
+
+    console.log(`[Auth] 🍪 Setting cookies with ${remember ? '30-day' : '1-day'} expiry`);
+
+    store.set("userRole", profileData.role, cookieOptions);
+    store.set("userRoleUserId", userId, cookieOptions);
+
+    // Store remember me preference for iOS session persistence
+    store.set("rememberMe", remember.toString(), cookieOptions);
 
     if (profileData.display_name) {
-      store.set("userDisplayName", profileData.display_name, { 
-        maxAge: 30 * 24 * 60 * 60,
-        path: "/",
-        secure: true,
-        sameSite: "lax" 
-      });
+      store.set("userDisplayName", profileData.display_name, cookieOptions);
     }
 
     if (profileData.department) {
-      store.set("userDepartment", profileData.department, { 
-        maxAge: 30 * 24 * 60 * 60,
-        path: "/",
-        secure: true,
-        sameSite: "lax" 
-      });
+      store.set("userDepartment", profileData.department, cookieOptions);
     }
 
     const rolePermissions = await supabase
@@ -97,14 +91,14 @@ const populateUserCookies = async (userId: string) => {
       };
       
       store.set("userPermissions", JSON.stringify(permissionsData), { 
-        maxAge: 5 * 60,
+        maxAge: 5 * 60, // Permissions expire faster for security
         path: "/",
         secure: true,
         sameSite: "lax" 
       });
     }
 
-    console.log(`[Auth] ✅ Cookies populated successfully for ${profileData.role} user`);
+    console.log(`[Auth] ✅ Cookies populated successfully for ${profileData.role} user (remember: ${remember})`);
     
   } catch (error) {
     console.error("[Auth] ❌ Cookie population failed:", error);
@@ -218,12 +212,14 @@ export const signUpAction = async (formData: FormData) => {
   );
 };
 
+// 🍎 Enhanced signInAction with Remember Me support
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const remember = formData.get("remember") === "true"; // Get remember me value
   const supabase = await createClient();
 
-  console.log("[Auth] 🔐 Sign-in attempt for:", email);
+  console.log("[Auth] 🔐 Sign-in attempt for:", email, "| Remember me:", remember);
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -239,7 +235,8 @@ export const signInAction = async (formData: FormData) => {
 
   console.log(`[Auth] ✅ Sign-in successful for user ${data.user.id.slice(-4)}`);
 
-  await populateUserCookies(data.user.id);
+  // 🍎 Enhanced cookie population with Remember Me support
+  await populateUserCookies(data.user.id, remember);
 
   const lastPage = await getAndClearLastPage();
   console.log(`[Auth] 🚀 Redirecting to: ${lastPage}`);
@@ -297,6 +294,7 @@ export const resetPasswordAction = async (formData: FormData) => {
   return encodedRedirect("success", "/protected/reset-password", "Password updated");
 };
 
+// 🍎 Enhanced signOutAction with remember me cleanup
 export const signOutAction = async () => {
   const supabase = await createClient();
   const store = await cookies();
@@ -308,6 +306,7 @@ export const signOutAction = async () => {
   store.delete("userDisplayName");
   store.delete("userDepartment");
   store.delete("userPermissions");
+  store.delete("rememberMe"); // Clear remember me preference
   
   await supabase.auth.signOut();
   return redirect("/sign-in");

@@ -1,134 +1,127 @@
-// components/documents/index.tsx - Adding Folder and File components
+// components/documents/index.tsx - CLEAN VERSION
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { 
+  useDocuments, 
+  useFileUpload, 
+  useFolderFavorites 
+} from '@/hooks/useDocuments';
 
-// Import the working components one by one - we'll test each
+// Import individual components
 import Folder from './Folder';
 import File from './File';
-// import UploadZone from './UploadZone';
 import Toolbar from './Toolbar';
-// import ContextMenu from './ContextMenu';
-// import Preview from './Preview';
+import ContextMenu from './ContextMenu';
+import Preview from './Preview';
 import FavoritesBar from './FavoritesBar';
 
-export default function Documents({ className = '' }: { className?: string }) {
-  const [documents, setDocuments] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Only use Lucide icons - no custom icon conflicts
+import { 
+  Folder as FolderLucide,
+  File as FileLucide,
+  Upload,
+  MoreVertical
+} from 'lucide-react';
+
+interface DocumentsProps {
+  className?: string;
+}
+
+export default function Documents({ className = '' }: DocumentsProps) {
+  // Basic state
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    documentId: string;
+  } | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<string | null>(null);
+  const [showUploadZone, setShowUploadZone] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log('📁 Fetching documents and favorites...');
-        
-        // Fetch documents
-        const documentsResponse = await fetch('/api/documents');
-        if (!documentsResponse.ok) {
-          throw new Error(`Documents API: ${documentsResponse.status}`);
-        }
-        const documentsData = await documentsResponse.json();
-        console.log('📁 Documents data:', documentsData);
-        setDocuments(documentsData);
+  // Hooks
+  const {
+    documents,
+    loading,
+    error,
+    currentPath,
+    navigateToFolder,
+    createFolder,
+    updateDocument,
+    deleteDocument,
+    searchDocuments,
+    fetchDocuments
+  } = useDocuments();
 
-        // Fetch favorites
-        const favoritesResponse = await fetch('/api/documents/favorites');
-        if (!favoritesResponse.ok) {
-          throw new Error(`Favorites API: ${favoritesResponse.status}`);
-        }
-        const favoritesData = await favoritesResponse.json();
-        console.log('⭐ Favorites data:', favoritesData);
-        setFavorites(favoritesData);
-        
-      } catch (err) {
-        console.error('📁 Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-      } finally {
-        setLoading(false);
+  const { uploadFiles, isUploading, uploads } = useFileUpload();
+  const { favorites, addFavorite, removeFavorite, isFavorite } = useFolderFavorites();
+
+  // Handlers
+  const handleSearch = useCallback(async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      await searchDocuments(query, currentPath);
+    } else {
+      await fetchDocuments();
+    }
+  }, [searchDocuments, fetchDocuments, currentPath]);
+
+  const handleFileUpload = useCallback(async (files: File[]) => {
+    try {
+      await uploadFiles(files, currentPath);
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Upload failed:', error);
+    }
+  }, [uploadFiles, currentPath, fetchDocuments]);
+
+  const handleDocumentAction = useCallback(async (action: string, documentId: string) => {
+    const document = documents.find(d => d.id === documentId);
+    if (!document) return;
+
+    try {
+      switch (action) {
+        case 'preview':
+          setPreviewDocument(documentId);
+          break;
+        case 'download':
+          window.open(`/api/documents/${documentId}/download`, '_blank');
+          break;
+        case 'favorite':
+          await updateDocument(documentId, { is_favorite: !document.is_favorite });
+          break;
+        case 'delete':
+          if (confirm(`Are you sure you want to delete "${document.name}"?`)) {
+            await deleteDocument(documentId);
+          }
+          break;
+        case 'edit':
+          const newName = prompt('Enter new name:', document.name);
+          if (newName && newName !== document.name) {
+            await updateDocument(documentId, { name: newName });
+          }
+          break;
       }
-    };
+    } catch (error) {
+      console.error(`Failed to ${action} document:`, error);
+    }
+    
+    setContextMenu(null);
+  }, [documents, updateDocument, deleteDocument]);
 
-    fetchData();
+  const handleContextMenu = useCallback((e: React.MouseEvent, documentId: string) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      documentId
+    });
   }, []);
 
-  // Handle search
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    console.log('🔍 Search:', query);
-  };
-
-  // Handle toolbar actions
-  const handleCreateFolder = () => {
-    console.log('📁 Create folder clicked');
-  };
-
-  const handleUpload = () => {
-    console.log('📤 Upload clicked');
-  };
-
-  const handleRefresh = () => {
-    console.log('🔄 Refresh clicked');
-    window.location.reload();
-  };
-
-  // Handle favorites
-  const handleNavigate = (path: string) => {
-    console.log('🧭 Navigate to:', path);
-  };
-
-  const handleAddFavorite = async (path: string, name: string) => {
-    console.log('⭐ Add favorite:', path, name);
-  };
-
-  const handleRemoveFavorite = async (favoriteId: string) => {
-    console.log('⭐ Remove favorite:', favoriteId);
-  };
-
-  // Handle document interactions
-  const handleFolderNavigate = (path: string) => {
-    console.log('📁 Navigate to folder:', path);
-  };
-
-  const handleToggleFavorite = (folderPath: string, folderName: string) => {
-    console.log('⭐ Toggle favorite:', folderPath, folderName);
-  };
-
-  const handleContextMenu = (e: React.MouseEvent, documentId: string) => {
-    e.preventDefault();
-    console.log('📋 Context menu for:', documentId);
-  };
-
-  const handleItemSelect = (id: string, isMultiSelect?: boolean) => {
-    console.log('✅ Select item:', id, isMultiSelect);
-    if (isMultiSelect) {
-      setSelectedItems(prev => 
-        prev.includes(id) 
-          ? prev.filter(item => item !== id)
-          : [...prev, id]
-      );
-    } else {
-      setSelectedItems([id]);
-    }
-  };
-
-  const handlePreview = (fileId: string) => {
-    console.log('👁️ Preview file:', fileId);
-  };
-
-  const handleDownload = (fileId: string) => {
-    console.log('📥 Download file:', fileId);
-  };
-
-  const handleFileToggleFavorite = (fileId: string) => {
-    console.log('⭐ Toggle file favorite:', fileId);
-  };
-
-  // Convert favorites to the format expected by FavoritesBar
-  const favoriteItems = favorites.map((fav: any) => ({
+  // Convert favorites for FavoritesBar
+  const favoriteItems = favorites.map(fav => ({
     id: fav.id,
     name: fav.folder_name,
     path: fav.folder_path,
@@ -136,6 +129,16 @@ export default function Documents({ className = '' }: { className?: string }) {
     isPinned: false,
     created_at: fav.created_at
   }));
+
+  // Get preview document
+  const previewDoc = previewDocument ? documents.find(d => d.id === previewDocument) : undefined;
+
+  // Close context menu on outside click
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -158,103 +161,163 @@ export default function Documents({ className = '' }: { className?: string }) {
   }
 
   return (
-    <div className={`documents-container p-8 ${className}`}>
-      <h1 className="text-2xl font-bold mb-6">Documents</h1>
-      
-      {/* Step 2: FavoritesBar Component - ✅ Working */}
+    <div className={`documents-container space-y-6 ${className}`}>
+      {/* Favorites Bar */}
       <FavoritesBar
         favorites={favoriteItems}
-        currentPath=""
-        onNavigate={handleNavigate}
-        onAddFavorite={handleAddFavorite}
-        onRemoveFavorite={handleRemoveFavorite}
-        className="mb-6"
+        currentPath={currentPath}
+        onNavigate={navigateToFolder}
+        onAddFavorite={(path, name) => addFavorite(path, name)}
+        onRemoveFavorite={(favoriteId) => {
+          const favorite = favorites.find(f => f.id === favoriteId);
+          if (favorite) removeFavorite(favorite.folder_path);
+        }}
       />
-      
-      {/* Step 1: Toolbar Component - ✅ Working */}
+
+      {/* Toolbar */}
       <Toolbar
         searchQuery={searchQuery}
         onSearchChange={handleSearch}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        onUpload={handleUpload}
-        onCreateFolder={handleCreateFolder}
-        onRefresh={handleRefresh}
+        onUpload={() => setShowUploadZone(true)}
+        onCreateFolder={async () => {
+          const name = prompt('Enter folder name:');
+          if (name) {
+            await createFolder(name, currentPath);
+          }
+        }}
+        onRefresh={fetchDocuments}
         sortBy="name"
         sortOrder="asc"
-        onSortChange={(sortBy, sortOrder) => console.log('Sort:', sortBy, sortOrder)}
+        onSortChange={() => {}}
         showFavoritesOnly={false}
-        onToggleFavorites={() => console.log('Toggle favorites')}
+        onToggleFavorites={() => {}}
         selectedCount={selectedItems.length}
         onClearSelection={() => setSelectedItems([])}
-        onSelectAll={() => setSelectedItems(documents.map((d: any) => d.id))}
-        isUploading={false}
+        onSelectAll={() => setSelectedItems(documents.map(d => d.id))}
+        isUploading={isUploading}
         isLoading={loading}
-        className="mb-6"
       />
-      
-      {/* Step 3: Document Grid with Folder and File Components */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-medium mb-4">
-          Found {documents.length} documents
-        </h2>
-        
+
+      {/* Documents Grid/List */}
+      <div className={`documents-content ${
+        viewMode === 'grid' 
+          ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
+          : 'space-y-2'
+      }`}>
         {documents.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
-            <p className="text-gray-500">This folder is empty. Upload some files to get started!</p>
+          <div className="col-span-full text-center py-12">
+            <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
+            <p className="text-gray-500">
+              {searchQuery ? 'No documents found' : 'This folder is empty'}
+            </p>
           </div>
         ) : (
-          <div className={`documents-grid ${
-            viewMode === 'grid' 
-              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
-              : 'space-y-2'
-          }`}>
-            {documents.map((doc: any) => (
-              doc.type === 'folder' ? (
-                <Folder
-                  key={doc.id}
-                  folder={doc}
-                  viewMode={viewMode}
-                  isSelected={selectedItems.includes(doc.id)}
-                  isFavorite={doc.is_favorite}
-                  onNavigate={handleFolderNavigate}
-                  onToggleFavorite={handleToggleFavorite}
-                  onContextMenu={handleContextMenu}
-                  onSelect={handleItemSelect}
-                />
-              ) : (
-                <File
-                  key={doc.id}
-                  file={doc}
-                  viewMode={viewMode}
-                  isSelected={selectedItems.includes(doc.id)}
-                  isFavorite={doc.is_favorite}
-                  onPreview={handlePreview}
-                  onDownload={handleDownload}
-                  onToggleFavorite={handleFileToggleFavorite}
-                  onContextMenu={handleContextMenu}
-                  onSelect={handleItemSelect}
-                />
-              )
-            ))}
-          </div>
+          documents.map((doc) => (
+            doc.type === 'folder' ? (
+              <Folder
+                key={doc.id}
+                folder={doc}
+                viewMode={viewMode}
+                isSelected={selectedItems.includes(doc.id)}
+                isFavorite={doc.is_favorite}
+                onNavigate={navigateToFolder}
+                onToggleFavorite={(path, name) => addFavorite(path, name)}
+                onContextMenu={handleContextMenu}
+                onSelect={(id, isMulti) => {
+                  if (isMulti) {
+                    setSelectedItems(prev => 
+                      prev.includes(id) 
+                        ? prev.filter(item => item !== id)
+                        : [...prev, id]
+                    );
+                  } else {
+                    setSelectedItems([id]);
+                  }
+                }}
+              />
+            ) : (
+              <File
+                key={doc.id}
+                file={doc}
+                viewMode={viewMode}
+                isSelected={selectedItems.includes(doc.id)}
+                isFavorite={doc.is_favorite}
+                onPreview={() => setPreviewDocument(doc.id)}
+                onDownload={() => handleDocumentAction('download', doc.id)}
+                onToggleFavorite={() => handleDocumentAction('favorite', doc.id)}
+                onContextMenu={handleContextMenu}
+                onSelect={(id, isMulti) => {
+                  if (isMulti) {
+                    setSelectedItems(prev => 
+                      prev.includes(id) 
+                        ? prev.filter(item => item !== id)
+                        : [...prev, id]
+                    );
+                  } else {
+                    setSelectedItems([id]);
+                  }
+                }}
+              />
+            )
+          ))
         )}
       </div>
-      
-      <div className="mt-6 text-sm text-gray-500">
-        <p>✅ API connection working</p>
-        <p>✅ Toolbar component working</p>
-        <p>✅ FavoritesBar with real data</p>
-        <p>🧪 Testing Folder & File components...</p>
-        <p>📊 {favorites.length} favorites loaded</p>
-        <p>🎯 {selectedItems.length} items selected</p>
-      </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          isOpen={true}
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          document={documents.find(d => d.id === contextMenu.documentId)}
+          onClose={() => setContextMenu(null)}
+          onAction={handleDocumentAction}
+        />
+      )}
+
+      {/* Preview Modal */}
+      {previewDocument && (
+        <Preview
+          isOpen={true}
+          document={previewDoc}
+          documents={documents}
+          onClose={() => setPreviewDocument(null)}
+          onDownload={(docId) => handleDocumentAction('download', docId)}
+          onDelete={(docId) => handleDocumentAction('delete', docId)}
+          onNext={(docId) => setPreviewDocument(docId)}
+          onPrevious={(docId) => setPreviewDocument(docId)}
+        />
+      )}
+
+      {/* Simple upload zone instead of complex UploadZone component */}
+      {showUploadZone && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium mb-4">Upload Files</h3>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length > 0) {
+                  handleFileUpload(files);
+                  setShowUploadZone(false);
+                }
+              }}
+              className="block w-full border border-gray-300 rounded-lg p-2"
+            />
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setShowUploadZone(false)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

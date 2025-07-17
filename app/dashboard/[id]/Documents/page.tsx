@@ -2,72 +2,23 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { useParams } from 'next/navigation';
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import Documents from '@/components/documents';
 import { DocumentSkeleton } from '@/components/documents/skeleton';
 
-interface DocumentsPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function DocumentsPage({ params }: DocumentsPageProps) {
-  // Get the dashboard ID from params
-  const { id } = useParams();
-
+export default function DocumentsPage() {
   return (
-    <div className="documents-page min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
-      {/* Page Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
-                Document Management
-              </h1>
-              <p className="mt-2" style={{ color: 'var(--muted-foreground)' }}>
-                Organize, upload, and manage your files and folders
-              </p>
-            </div>
-            
-            {/* Optional: Dashboard context info */}
-            <div className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-              Dashboard: {id}
-            </div>
-          </div>
-        </div>
-
-        {/* Documents Component with Error Boundary */}
-        <Suspense 
-          fallback={<DocumentsLoadingFallback />}
-        >
-          <DocumentsErrorBoundary>
-            <Documents className="documents-main" />
-          </DocumentsErrorBoundary>
-        </Suspense>
-      </div>
-    </div>
-  );
-}
-
-// Loading fallback component
-function DocumentsLoadingFallback() {
-  return (
-    <div className="space-y-6">
-      <div className="animate-pulse">
-        <div 
-          className="h-8 rounded w-1/4 mb-4" 
-          style={{ backgroundColor: 'var(--muted)' }}
-        ></div>
-        <div 
-          className="h-12 rounded mb-6" 
-          style={{ backgroundColor: 'var(--muted)' }}
-        ></div>
-      </div>
-      <DocumentSkeleton viewMode="grid" count={12} />
-    </div>
+    <>
+      <Breadcrumb pageName="Documents" />
+      
+      <Suspense 
+        fallback={<DocumentSkeleton viewMode="grid" count={12} />}
+      >
+        <DocumentsErrorBoundary>
+          <Documents />
+        </DocumentsErrorBoundary>
+      </Suspense>
+    </>
   );
 }
 
@@ -92,62 +43,32 @@ class DocumentsErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div 
-          className="documents-error-boundary border rounded-lg p-8 text-center"
-          style={{ 
-            backgroundColor: 'var(--destructive-background)',
-            borderColor: 'var(--destructive-border)',
-            color: 'var(--destructive-foreground)'
-          }}
-        >
-          <div 
-            className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: 'var(--destructive)' }}
-          >
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center dark:border-red-800 dark:bg-red-900/20">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+            <svg className="h-8 w-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
           
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="mb-2 text-xl font-semibold text-red-800 dark:text-red-200">
             Something went wrong
           </h2>
           
-          <p className="mb-4" style={{ color: 'var(--muted-foreground)' }}>
+          <p className="mb-4 text-red-600 dark:text-red-400">
             The document management system encountered an error. Please try refreshing the page.
           </p>
           
           <div className="space-x-4">
             <button
               onClick={() => window.location.reload()}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-              style={{ 
-                backgroundColor: 'var(--destructive)',
-                color: 'var(--destructive-foreground)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--destructive-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--destructive)';
-              }}
+              className="inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
               Refresh Page
             </button>
             
             <button
               onClick={() => this.setState({ hasError: false })}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors"
-              style={{ 
-                backgroundColor: 'var(--secondary)',
-                color: 'var(--secondary-foreground)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--secondary-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--secondary)';
-              }}
+              className="inline-flex items-center rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >
               Try Again
             </button>
@@ -156,20 +77,10 @@ class DocumentsErrorBoundary extends React.Component<
           {/* Development Error Details */}
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <details className="mt-6 text-left">
-              <summary 
-                className="cursor-pointer text-sm font-medium"
-                style={{ color: 'var(--accent-foreground)' }}
-              >
+              <summary className="cursor-pointer text-sm font-medium text-red-700 dark:text-red-300">
                 Error Details (Development)
               </summary>
-              <pre 
-                className="mt-2 p-4 border rounded text-xs overflow-auto"
-                style={{ 
-                  backgroundColor: 'var(--muted)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--foreground)'
-                }}
-              >
+              <pre className="mt-2 overflow-auto rounded border border-red-200 bg-red-100 p-4 text-xs text-red-800 dark:border-red-800 dark:bg-red-900/40 dark:text-red-200">
                 {this.state.error.stack}
               </pre>
             </details>

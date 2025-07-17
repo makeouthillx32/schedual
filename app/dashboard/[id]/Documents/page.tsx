@@ -4,7 +4,7 @@
 import React, { Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import Documents from '@/components/documents';
-import { DocumentSkeleton } from '@/components/documents/Skeleton';
+import { DocumentSkeleton } from '@/components/documents/skeleton';
 
 interface DocumentsPageProps {
   params: {

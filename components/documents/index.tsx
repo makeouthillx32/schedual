@@ -280,18 +280,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
                   Upload
                 </>
               )}
-            </button>-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Folder
-            </button>
-            
-            <button
-              onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Upload className="w-4 h-4" />
-              Upload
             </button>
           </div>
         </div>
@@ -567,13 +555,4 @@ export default function Documents({ className = '' }: DocumentsProps) {
       )}
     </div>
   );
-
-  // Helper function to toggle favorite (moved outside of component for clarity)
-  function handleToggleFavorite(folderPath: string, folderName: string) {
-    if (isFavorite(folderPath)) {
-      removeFavorite(folderPath);
-    } else {
-      addFavorite(folderPath, folderName);
-    }
-  }
 }

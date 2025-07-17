@@ -42,19 +42,7 @@ export default function DocumentsPage({ params }: DocumentsPageProps) {
         {/* Documents Component with Error Boundary */}
         <Suspense 
           fallback={
-            <div className="space-y-6">
-              <div className="animate-pulse">
-                <div 
-                  className="h-8 rounded w-1/4 mb-4" 
-                  style={{ backgroundColor: 'var(--muted)' }}
-                ></div>
-                <div 
-                  className="h-12 rounded mb-6" 
-                  style={{ backgroundColor: 'var(--muted)' }}
-                ></div>
-              </div>
-              <DocumentSkeleton viewMode="grid" count={12} />
-            </div>
+            <DocumentsLoadingFallback />
           }
         >
           <DocumentsErrorBoundary>
@@ -62,6 +50,25 @@ export default function DocumentsPage({ params }: DocumentsPageProps) {
           </DocumentsErrorBoundary>
         </Suspense>
       </div>
+    </div>
+  );
+}
+
+// Loading fallback component
+function DocumentsLoadingFallback() {
+  return (
+    <div className="space-y-6">
+      <div className="animate-pulse">
+        <div 
+          className="h-8 rounded w-1/4 mb-4" 
+          style={{ backgroundColor: 'var(--muted)' }}
+        ></div>
+        <div 
+          className="h-12 rounded mb-6" 
+          style={{ backgroundColor: 'var(--muted)' }}
+        ></div>
+      </div>
+      <DocumentSkeleton viewMode="grid" count={12} />
     </div>
   );
 }
@@ -175,52 +182,4 @@ class DocumentsErrorBoundary extends React.Component<
 
     return this.props.children;
   }
-}
-
-// Metadata for the page (Next.js 13+)
-export const metadata = {
-  title: 'Documents - Dashboard',
-  description: 'Manage your files and folders with our document management system',
-};
-
-// Optional: Add loading component
-export function Loading() {
-  return (
-    <div className="documents-loading min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="space-y-6">
-          {/* Header skeleton */}
-          <div className="animate-pulse">
-            <div 
-              className="h-8 rounded w-1/3 mb-2" 
-              style={{ backgroundColor: 'var(--muted)' }}
-            ></div>
-            <div 
-              className="h-4 rounded w-1/2" 
-              style={{ backgroundColor: 'var(--muted)' }}
-            ></div>
-          </div>
-          
-          {/* Search and controls skeleton */}
-          <div className="animate-pulse flex items-center gap-4">
-            <div 
-              className="flex-1 h-10 rounded" 
-              style={{ backgroundColor: 'var(--muted)' }}
-            ></div>
-            <div 
-              className="w-32 h-10 rounded" 
-              style={{ backgroundColor: 'var(--muted)' }}
-            ></div>
-            <div 
-              className="w-24 h-10 rounded" 
-              style={{ backgroundColor: 'var(--muted)' }}
-            ></div>
-          </div>
-          
-          {/* Documents grid skeleton */}
-          <DocumentSkeleton viewMode="grid" count={12} />
-        </div>
-      </div>
-    </div>
-  );
 }

@@ -1,10 +1,10 @@
-// ============================================================================
-// DOCUMENTS REACT HOOKS - Complete document management functionality
-// ============================================================================
-
-// File: hooks/useDocuments.ts
+// hooks/useDocuments.ts
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
+
+// ============================================================================
+// INTERFACES
+// ============================================================================
 
 export interface DocumentItem {
   id: string;
@@ -35,6 +35,34 @@ export interface DocumentActivity {
     raw_user_meta_data?: any;
   };
 }
+
+interface UploadProgress {
+  file: File;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
+  result?: any;
+}
+
+interface FolderFavorite {
+  id: string;
+  user_id: string;
+  folder_path: string;
+  folder_name: string;
+  created_at: string;
+}
+
+interface ShareDocument {
+  documentId: string;
+  sharedWithUserId?: string;
+  sharedWithRole?: string;
+  permissionLevel: 'read' | 'write' | 'admin';
+  expiresAt?: string;
+}
+
+// ============================================================================
+// MAIN DOCUMENTS HOOK
+// ============================================================================
 
 export function useDocuments(initialFolderPath: string = '') {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -135,7 +163,7 @@ export function useDocuments(initialFolderPath: string = '') {
   // Update document
   const updateDocument = useCallback(async (
     documentId: string, 
-    updates: Partial<Pick<DocumentItem, 'name' | 'description' | 'tags' | 'is_favorite'>>
+    updates: Partial<Pick<DocumentItem, 'name' | 'tags' | 'is_favorite'>>
   ) => {
     try {
       const response = await fetch(`/api/documents/${documentId}`, {
@@ -236,17 +264,9 @@ export function useDocuments(initialFolderPath: string = '') {
   };
 }
 
-// File: hooks/useFileUpload.ts
-import { useState, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
-
-interface UploadProgress {
-  file: File;
-  progress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
-  error?: string;
-  result?: any;
-}
+// ============================================================================
+// FILE UPLOAD HOOK
+// ============================================================================
 
 export function useFileUpload() {
   const [uploads, setUploads] = useState<Map<string, UploadProgress>>(new Map());
@@ -372,59 +392,9 @@ export function useFileUpload() {
   };
 }
 
-// File: hooks/useDocumentActivity.ts
-import { useState, useEffect, useCallback } from 'react';
-
-export function useDocumentActivity(documentId: string) {
-  const [activity, setActivity] = useState<DocumentActivity[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchActivity = useCallback(async (limit: number = 20) => {
-    if (!documentId) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/documents/activity/${documentId}?limit=${limit}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch activity: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setActivity(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch activity';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [documentId]);
-
-  useEffect(() => {
-    fetchActivity();
-  }, [fetchActivity]);
-
-  return {
-    activity,
-    loading,
-    error,
-    refetch: fetchActivity
-  };
-}
-
-// File: hooks/useFolderFavorites.ts
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
-
-interface FolderFavorite {
-  id: string;
-  user_id: string;
-  folder_path: string;
-  folder_name: string;
-  created_at: string;
-}
+// ============================================================================
+// FOLDER FAVORITES HOOK
+// ============================================================================
 
 export function useFolderFavorites() {
   const [favorites, setFavorites] = useState<FolderFavorite[]>([]);
@@ -505,17 +475,52 @@ export function useFolderFavorites() {
   };
 }
 
-// File: hooks/useDocumentSharing.ts
-import { useState, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
+// ============================================================================
+// DOCUMENT ACTIVITY HOOK
+// ============================================================================
 
-interface ShareDocument {
-  documentId: string;
-  sharedWithUserId?: string;
-  sharedWithRole?: string;
-  permissionLevel: 'read' | 'write' | 'admin';
-  expiresAt?: string;
+export function useDocumentActivity(documentId: string) {
+  const [activity, setActivity] = useState<DocumentActivity[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchActivity = useCallback(async (limit: number = 20) => {
+    if (!documentId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/documents/activity/${documentId}?limit=${limit}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch activity: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setActivity(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch activity';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [documentId]);
+
+  useEffect(() => {
+    fetchActivity();
+  }, [fetchActivity]);
+
+  return {
+    activity,
+    loading,
+    error,
+    refetch: fetchActivity
+  };
 }
+
+// ============================================================================
+// DOCUMENT SHARING HOOK
+// ============================================================================
 
 export function useDocumentSharing() {
   const [sharing, setSharing] = useState(false);

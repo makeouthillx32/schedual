@@ -41,9 +41,7 @@ export default function DocumentsPage({ params }: DocumentsPageProps) {
 
         {/* Documents Component with Error Boundary */}
         <Suspense 
-          fallback={
-            <DocumentsLoadingFallback />
-          }
+          fallback={<DocumentsLoadingFallback />}
         >
           <DocumentsErrorBoundary>
             <Documents className="documents-main" />

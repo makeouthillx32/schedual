@@ -1,4 +1,4 @@
-// components/documents/index.tsx - Adding FavoritesBar
+// components/documents/index.tsx - Adding FavoritesBar with real data
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,33 +14,44 @@ import FavoritesBar from './FavoritesBar';
 
 export default function Documents({ className = '' }: { className?: string }) {
   const [documents, setDocuments] = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    const fetchDocuments = async () => {
+    const fetchData = async () => {
       try {
-        console.log('📁 Fetching documents...');
-        const response = await fetch('/api/documents');
+        console.log('📁 Fetching documents and favorites...');
         
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Fetch documents
+        const documentsResponse = await fetch('/api/documents');
+        if (!documentsResponse.ok) {
+          throw new Error(`Documents API: ${documentsResponse.status}`);
         }
+        const documentsData = await documentsResponse.json();
+        console.log('📁 Documents data:', documentsData);
+        setDocuments(documentsData);
+
+        // Fetch favorites
+        const favoritesResponse = await fetch('/api/documents/favorites');
+        if (!favoritesResponse.ok) {
+          throw new Error(`Favorites API: ${favoritesResponse.status}`);
+        }
+        const favoritesData = await favoritesResponse.json();
+        console.log('⭐ Favorites data:', favoritesData);
+        setFavorites(favoritesData);
         
-        const data = await response.json();
-        console.log('📁 Documents data:', data);
-        setDocuments(data);
       } catch (err) {
         console.error('📁 Fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch documents');
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDocuments();
+    fetchData();
   }, []);
 
   // Handle search
@@ -68,25 +79,23 @@ export default function Documents({ className = '' }: { className?: string }) {
     console.log('🧭 Navigate to:', path);
   };
 
-  // Mock favorites data
-  const favoriteItems = [
-    {
-      id: 'fav1',
-      name: 'Financial Documents',
-      path: '/financial',
-      type: 'folder' as const,
-      isPinned: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'fav2', 
-      name: 'Project Files',
-      path: '/projects',
-      type: 'folder' as const,
-      isPinned: false,
-      created_at: new Date().toISOString()
-    }
-  ];
+  const handleAddFavorite = async (path: string, name: string) => {
+    console.log('⭐ Add favorite:', path, name);
+  };
+
+  const handleRemoveFavorite = async (favoriteId: string) => {
+    console.log('⭐ Remove favorite:', favoriteId);
+  };
+
+  // Convert favorites to the format expected by FavoritesBar
+  const favoriteItems = favorites.map((fav: any) => ({
+    id: fav.id,
+    name: fav.folder_name,
+    path: fav.folder_path,
+    type: 'folder' as const,
+    isPinned: false,
+    created_at: fav.created_at
+  }));
 
   if (loading) {
     return (
@@ -112,13 +121,13 @@ export default function Documents({ className = '' }: { className?: string }) {
     <div className={`documents-container p-8 ${className}`}>
       <h1 className="text-2xl font-bold mb-6">Documents</h1>
       
-      {/* Step 2: Test FavoritesBar Component */}
+      {/* Step 2: Test FavoritesBar Component with real data */}
       <FavoritesBar
         favorites={favoriteItems}
         currentPath=""
         onNavigate={handleNavigate}
-        onAddFavorite={(path, name) => console.log('Add favorite:', path, name)}
-        onRemoveFavorite={(favoriteId) => console.log('Remove favorite:', favoriteId)}
+        onAddFavorite={handleAddFavorite}
+        onRemoveFavorite={handleRemoveFavorite}
         className="mb-6"
       />
       
@@ -178,7 +187,8 @@ export default function Documents({ className = '' }: { className?: string }) {
       <div className="mt-6 text-sm text-gray-500">
         <p>✅ API connection working</p>
         <p>✅ Toolbar component working</p>
-        <p>🧪 Testing FavoritesBar component...</p>
+        <p>✅ FavoritesBar with real data</p>
+        <p>📊 {favorites.length} favorites loaded</p>
       </div>
     </div>
   );

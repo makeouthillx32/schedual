@@ -1,11 +1,11 @@
-// components/documents/index.tsx - Adding FavoritesBar with real data
+// components/documents/index.tsx - Adding Folder and File components
 'use client';
 
 import React, { useState, useEffect } from 'react';
 
 // Import the working components one by one - we'll test each
-// import Folder from './Folder';
-// import File from './File';
+import Folder from './Folder';
+import File from './File';
 // import UploadZone from './UploadZone';
 import Toolbar from './Toolbar';
 // import ContextMenu from './ContextMenu';
@@ -19,6 +19,7 @@ export default function Documents({ className = '' }: { className?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,6 +88,45 @@ export default function Documents({ className = '' }: { className?: string }) {
     console.log('⭐ Remove favorite:', favoriteId);
   };
 
+  // Handle document interactions
+  const handleFolderNavigate = (path: string) => {
+    console.log('📁 Navigate to folder:', path);
+  };
+
+  const handleToggleFavorite = (folderPath: string, folderName: string) => {
+    console.log('⭐ Toggle favorite:', folderPath, folderName);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, documentId: string) => {
+    e.preventDefault();
+    console.log('📋 Context menu for:', documentId);
+  };
+
+  const handleItemSelect = (id: string, isMultiSelect?: boolean) => {
+    console.log('✅ Select item:', id, isMultiSelect);
+    if (isMultiSelect) {
+      setSelectedItems(prev => 
+        prev.includes(id) 
+          ? prev.filter(item => item !== id)
+          : [...prev, id]
+      );
+    } else {
+      setSelectedItems([id]);
+    }
+  };
+
+  const handlePreview = (fileId: string) => {
+    console.log('👁️ Preview file:', fileId);
+  };
+
+  const handleDownload = (fileId: string) => {
+    console.log('📥 Download file:', fileId);
+  };
+
+  const handleFileToggleFavorite = (fileId: string) => {
+    console.log('⭐ Toggle file favorite:', fileId);
+  };
+
   // Convert favorites to the format expected by FavoritesBar
   const favoriteItems = favorites.map((fav: any) => ({
     id: fav.id,
@@ -121,7 +161,7 @@ export default function Documents({ className = '' }: { className?: string }) {
     <div className={`documents-container p-8 ${className}`}>
       <h1 className="text-2xl font-bold mb-6">Documents</h1>
       
-      {/* Step 2: Test FavoritesBar Component with real data */}
+      {/* Step 2: FavoritesBar Component - ✅ Working */}
       <FavoritesBar
         favorites={favoriteItems}
         currentPath=""
@@ -145,14 +185,15 @@ export default function Documents({ className = '' }: { className?: string }) {
         onSortChange={(sortBy, sortOrder) => console.log('Sort:', sortBy, sortOrder)}
         showFavoritesOnly={false}
         onToggleFavorites={() => console.log('Toggle favorites')}
-        selectedCount={0}
-        onClearSelection={() => console.log('Clear selection')}
-        onSelectAll={() => console.log('Select all')}
+        selectedCount={selectedItems.length}
+        onClearSelection={() => setSelectedItems([])}
+        onSelectAll={() => setSelectedItems(documents.map((d: any) => d.id))}
         isUploading={false}
         isLoading={loading}
         className="mb-6"
       />
       
+      {/* Step 3: Document Grid with Folder and File Components */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-medium mb-4">
           Found {documents.length} documents
@@ -169,16 +210,38 @@ export default function Documents({ className = '' }: { className?: string }) {
             <p className="text-gray-500">This folder is empty. Upload some files to get started!</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className={`documents-grid ${
+            viewMode === 'grid' 
+              ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
+              : 'space-y-2'
+          }`}>
             {documents.map((doc: any) => (
-              <div key={doc.id} className="flex items-center p-3 border border-gray-100 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-medium">{doc.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {doc.type} • Created {new Date(doc.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
+              doc.type === 'folder' ? (
+                <Folder
+                  key={doc.id}
+                  folder={doc}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  onNavigate={handleFolderNavigate}
+                  onToggleFavorite={handleToggleFavorite}
+                  onContextMenu={handleContextMenu}
+                  onSelect={handleItemSelect}
+                />
+              ) : (
+                <File
+                  key={doc.id}
+                  file={doc}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  onPreview={handlePreview}
+                  onDownload={handleDownload}
+                  onToggleFavorite={handleFileToggleFavorite}
+                  onContextMenu={handleContextMenu}
+                  onSelect={handleItemSelect}
+                />
+              )
             ))}
           </div>
         )}
@@ -188,7 +251,9 @@ export default function Documents({ className = '' }: { className?: string }) {
         <p>✅ API connection working</p>
         <p>✅ Toolbar component working</p>
         <p>✅ FavoritesBar with real data</p>
+        <p>🧪 Testing Folder & File components...</p>
         <p>📊 {favorites.length} favorites loaded</p>
+        <p>🎯 {selectedItems.length} items selected</p>
       </div>
     </div>
   );

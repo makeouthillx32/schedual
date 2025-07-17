@@ -1,4 +1,4 @@
-// components/documents/index.tsx - Adding back components step by step
+// components/documents/index.tsx - Adding FavoritesBar
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import Toolbar from './Toolbar';
 // import ContextMenu from './ContextMenu';
 // import Preview from './Preview';
-// import FavoritesBar from './FavoritesBar';
+import FavoritesBar from './FavoritesBar';
 
 export default function Documents({ className = '' }: { className?: string }) {
   const [documents, setDocuments] = useState([]);
@@ -63,6 +63,31 @@ export default function Documents({ className = '' }: { className?: string }) {
     window.location.reload();
   };
 
+  // Handle favorites
+  const handleNavigate = (path: string) => {
+    console.log('🧭 Navigate to:', path);
+  };
+
+  // Mock favorites data
+  const favoriteItems = [
+    {
+      id: 'fav1',
+      name: 'Financial Documents',
+      path: '/financial',
+      type: 'folder' as const,
+      isPinned: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'fav2', 
+      name: 'Project Files',
+      path: '/projects',
+      type: 'folder' as const,
+      isPinned: false,
+      created_at: new Date().toISOString()
+    }
+  ];
+
   if (loading) {
     return (
       <div className="p-8">
@@ -87,7 +112,17 @@ export default function Documents({ className = '' }: { className?: string }) {
     <div className={`documents-container p-8 ${className}`}>
       <h1 className="text-2xl font-bold mb-6">Documents</h1>
       
-      {/* Step 1: Test Toolbar Component */}
+      {/* Step 2: Test FavoritesBar Component */}
+      <FavoritesBar
+        favorites={favoriteItems}
+        currentPath=""
+        onNavigate={handleNavigate}
+        onAddFavorite={(path, name) => console.log('Add favorite:', path, name)}
+        onRemoveFavorite={(favoriteId) => console.log('Remove favorite:', favoriteId)}
+        className="mb-6"
+      />
+      
+      {/* Step 1: Toolbar Component - ✅ Working */}
       <Toolbar
         searchQuery={searchQuery}
         onSearchChange={handleSearch}
@@ -142,8 +177,8 @@ export default function Documents({ className = '' }: { className?: string }) {
       
       <div className="mt-6 text-sm text-gray-500">
         <p>✅ API connection working</p>
-        <p>✅ Component rendering successfully</p>
-        <p>🧪 Testing Toolbar component...</p>
+        <p>✅ Toolbar component working</p>
+        <p>🧪 Testing FavoritesBar component...</p>
       </div>
     </div>
   );

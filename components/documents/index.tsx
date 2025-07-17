@@ -8,13 +8,15 @@ import {
   DocumentSkeleton, 
   HeaderSkeleton, 
   UploadSkeleton 
-} from './Skeleton';
+} from './skeleton';
 import { 
   FileIcon, 
   FolderIcon, 
   StatusIcon, 
   ActionIcon, 
-  NavIcon,
+  NavIcon
+} from './icons';
+import { 
   Search, 
   Plus, 
   Grid3X3, 
@@ -33,7 +35,7 @@ import {
   Eye,
   Heart,
   Filter
-} from './icons';
+} from 'lucide-react';
 
 // Mock theme context - replace with your actual theme hook
 const useTheme = () => ({ isDark: false });

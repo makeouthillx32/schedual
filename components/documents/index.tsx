@@ -1,4 +1,4 @@
-// components/documents/index.tsx - OPTIMIZED VERSION
+// components/documents/index.tsx - FIXED VERSION
 'use client';
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -41,6 +41,11 @@ export default function Documents({ className = '' }: DocumentsProps) {
   } | null>(null);
   const [previewDocument, setPreviewDocument] = useState<string | null>(null);
   const [showUploadZone, setShowUploadZone] = useState(false);
+  
+  // Separate loading states for different operations
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Hooks
   const {
@@ -59,13 +64,25 @@ export default function Documents({ className = '' }: DocumentsProps) {
   const { uploadFiles, isUploading, uploads } = useFileUpload();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFolderFavorites();
 
+  // Track initial load completion
+  useEffect(() => {
+    if (!loading && isInitialLoading) {
+      setIsInitialLoading(false);
+    }
+  }, [loading, isInitialLoading]);
+
   // Debounced search handler to prevent excessive re-renders
   const debouncedSearch = useCallback(
     debounce(async (query: string, path: string) => {
-      if (query.trim()) {
-        await searchDocuments(query, path);
-      } else {
-        await fetchDocuments();
+      setIsSearching(true);
+      try {
+        if (query.trim()) {
+          await searchDocuments(query, path);
+        } else {
+          await fetchDocuments();
+        }
+      } finally {
+        setIsSearching(false);
       }
     }, 300),
     [searchDocuments, fetchDocuments]
@@ -76,6 +93,16 @@ export default function Documents({ className = '' }: DocumentsProps) {
     setSearchQuery(query);
     debouncedSearch(query, currentPath);
   }, [debouncedSearch, currentPath]);
+
+  // Optimized navigation handler
+  const handleNavigate = useCallback(async (path: string) => {
+    setIsNavigating(true);
+    try {
+      await navigateToFolder(path);
+    } finally {
+      setIsNavigating(false);
+    }
+  }, [navigateToFolder]);
 
   // Memoized handlers to prevent child re-renders
   const handleFileUpload = useCallback(async (files: File[]) => {
@@ -147,11 +174,11 @@ export default function Documents({ className = '' }: DocumentsProps) {
     onPreview: (id: string) => setPreviewDocument(id),
     onDownload: (id: string) => handleDocumentAction('download', id),
     onToggleFavorite: (id: string) => handleDocumentAction('favorite', id),
-    onNavigate: navigateToFolder,
+    onNavigate: handleNavigate, // Use our optimized navigation handler
     onAddFavorite: addFavorite,
     onContextMenu: handleContextMenu,
     onSelect: handleSelect
-  }), [handleDocumentAction, navigateToFolder, addFavorite, handleContextMenu, handleSelect]);
+  }), [handleDocumentAction, handleNavigate, addFavorite, handleContextMenu, handleSelect]);
 
   // Convert favorites for FavoritesBar - memoized to prevent recalculation
   const favoriteItems = useMemo(() => 
@@ -179,8 +206,8 @@ export default function Documents({ className = '' }: DocumentsProps) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // Loading state
-  if (loading) {
+  // ONLY show full loading screen on INITIAL load or error
+  if (isInitialLoading && loading) {
     return (
       <div className="p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -209,7 +236,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
         <FavoritesBar
           favorites={favoriteItems}
           currentPath={currentPath}
-          onNavigate={navigateToFolder}
+          onNavigate={handleNavigate}
           onAddFavorite={(path, name) => addFavorite(path, name)}
           onRemoveFavorite={(favoriteId) => {
             const favorite = favorites.find(f => f.id === favoriteId);
@@ -220,11 +247,11 @@ export default function Documents({ className = '' }: DocumentsProps) {
         {/* Breadcrumb Navigation */}
         <Breadcrumb
           currentPath={currentPath}
-          onNavigate={navigateToFolder}
+          onNavigate={handleNavigate}
         />
       </div>
 
-      {/* Sticky Toolbar */}
+      {/* Sticky Toolbar with loading indicator */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <Toolbar
           searchQuery={searchQuery}
@@ -248,7 +275,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
           onClearSelection={() => setSelectedItems([])}
           onSelectAll={() => setSelectedItems(documents.map(d => d.id))}
           isUploading={isUploading}
-          isLoading={loading}
+          isLoading={isSearching || isNavigating} // Show loading in toolbar instead
         />
       </div>
 
@@ -264,16 +291,17 @@ export default function Documents({ className = '' }: DocumentsProps) {
                   const parentPath = pathParts.length > 1 
                     ? pathParts.slice(0, -1).join('/') + '/'
                     : '';
-                  navigateToFolder(parentPath);
+                  handleNavigate(parentPath);
                 }}
-                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                disabled={isNavigating}
+                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Back to {currentPath.split('/').filter(Boolean).length > 1 
+                {isNavigating ? 'Loading...' : `Back to ${currentPath.split('/').filter(Boolean).length > 1 
                   ? currentPath.split('/').filter(Boolean).slice(-2, -1)[0] 
-                  : 'Home'}
+                  : 'Home'}`}
               </button>
               
               <div className="text-sm text-gray-500">
@@ -282,15 +310,26 @@ export default function Documents({ className = '' }: DocumentsProps) {
             </div>
           )}
 
-          {/* Optimized File Grid - Only this re-renders when documents change */}
-          <FileGrid
-            documents={documents}
-            viewMode={viewMode}
-            selectedItems={selectedItems}
-            searchQuery={searchQuery}
-            currentPath={currentPath}
-            {...fileGridHandlers}
-          />
+          {/* Optimized File Grid with loading overlay */}
+          <div className="relative">
+            {(isSearching || isNavigating) && (
+              <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span>{isSearching ? 'Searching...' : 'Loading...'}</span>
+                </div>
+              </div>
+            )}
+            
+            <FileGrid
+              documents={documents}
+              viewMode={viewMode}
+              selectedItems={selectedItems}
+              searchQuery={searchQuery}
+              currentPath={currentPath}
+              {...fileGridHandlers}
+            />
+          </div>
         </div>
       </div>
 

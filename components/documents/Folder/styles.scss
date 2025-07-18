@@ -1,4 +1,4 @@
-// components/documents/Folder/styles.scss - LAYOUT ONLY, NO COLORS
+// components/documents/Folder/styles.scss - CLEAN VERSION WITH PAPERS PEEKING
 
 .folder-container {
   position: relative;
@@ -34,9 +34,9 @@
   transform: translateZ(0);
 }
 
-/* ===== LAYERING STRUCTURE - NO COLORS ===== */
+/* ===== LAYERING - PAPERS PEEK OUT ===== */
 
-/* 1. FOLDER BACK - Furthest back (z-index: 0) */
+/* 1. FOLDER BACK - Furthest back */
 .folder-back {
   position: absolute;
   width: 100%;
@@ -49,7 +49,7 @@
   z-index: 0;
 }
 
-/* 2. PAPER LAYERS - Middle layers (z-index: 1-5) */
+/* 2. PAPER LAYERS - Peek out at different edges */
 .folder-paper {
   position: absolute;
   border-radius: 6px;
@@ -58,66 +58,53 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
+/* Papers peek out at TOP and RIGHT edges */
 .paper-layer-1 {
-  width: 95%;
-  height: 90%;
-  left: 2.5%;
-  top: 0%; // Peek out at top
-  transform: translateZ(-20px);
+  width: 94%;
+  height: 88%;
+  left: 3%;
+  top: -2%; /* PEEK OUT AT TOP */
+  transform: translateZ(-25px);
   z-index: 1;
 }
 
 .paper-layer-2 {
-  width: 93%;
-  height: 88%;
-  left: 3.5%;
-  top: 2%;
-  transform: translateZ(-15px);
+  width: 92%;
+  height: 86%;
+  left: 4%;
+  top: 0%;
+  transform: translateZ(-20px);
   z-index: 2;
 }
 
 .paper-layer-3 {
-  width: 91%;
-  height: 86%;
-  left: 4.5%;
-  top: 4%;
-  transform: translateZ(-10px);
+  width: 90%;
+  height: 84%;
+  left: 5%;
+  top: 2%;
+  transform: translateZ(-15px);
   z-index: 3;
 }
 
 .paper-layer-4 {
-  width: 89%;
-  height: 84%;
-  left: 5.5%;
-  top: 6%;
-  transform: translateZ(-5px);
+  width: 88%;
+  height: 82%;
+  left: 6%;
+  top: 4%;
+  transform: translateZ(-10px);
   z-index: 4;
 }
 
 .paper-layer-5 {
-  width: 87%;
-  height: 82%;
-  left: 6.5%;
-  top: 8%;
-  transform: translateZ(0px);
+  width: 86%;
+  height: 80%;
+  left: 7%;
+  top: 6%;
+  transform: translateZ(-5px);
   z-index: 5;
 }
 
-/* 3. FOLDER COVER - Front but behind content (z-index: 10) */
-.folder-cover {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 12px 6px 12px 12px;
-  box-shadow: 
-    0 6px 12px rgba(0,0,0,0.25),
-    0 2px 6px rgba(0,0,0,0.15);
-  image-rendering: crisp-edges;
-  transform: translateZ(10px);
-  z-index: 10;
-}
-
-/* 4. FOLDER TAB - Inside cover (relative positioning) */
+/* 3. FOLDER TAB - Behind cover, positioned properly */
 .folder-tab {
   position: absolute;
   top: -8px;
@@ -126,12 +113,24 @@
   height: 20px;
   border-radius: 12px 12px 0 0;
   box-shadow: 0 -3px 6px rgba(0,0,0,0.15);
-  image-rendering: crisp-edges;
-  // NO translateZ - inherits from parent cover
-  z-index: 1; // Relative to cover
+  transform: translateZ(5px); /* Behind cover but in front of papers */
+  z-index: 8;
 }
 
-/* 5. FOLDER CONTENT - Always on top (z-index: 100) */
+/* 4. FOLDER COVER - In front of tab and papers */
+.folder-cover {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px 6px 12px 12px;
+  box-shadow: 
+    0 6px 12px rgba(0,0,0,0.25),
+    0 2px 6px rgba(0,0,0,0.15);
+  transform: translateZ(10px);
+  z-index: 10;
+}
+
+/* 5. FOLDER CONTENT - Always on top */
 .folder-content {
   position: absolute;
   width: 100%;
@@ -141,9 +140,6 @@
   justify-content: space-between;
   padding: 16px;
   pointer-events: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   transform: translateZ(20px);
   z-index: 100;
 }
@@ -178,10 +174,11 @@
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: auto;
+}
 
-  &.visible {
-    opacity: 1;
-  }
+.folder-actions.visible,
+.folder-container:hover .folder-actions {
+  opacity: 1;
 }
 
 .action-btn {

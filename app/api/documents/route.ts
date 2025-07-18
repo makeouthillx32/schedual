@@ -1,17 +1,21 @@
 // app/api/documents/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient(); // ✅ AWAIT ADDED
+    const supabase = await createClient();
     const { searchParams } = new URL(req.url);
     const folder = searchParams.get("folder");
     const search = searchParams.get("search");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -30,7 +34,8 @@ export async function GET(req: NextRequest) {
         updated_at,
         is_favorite,
         is_shared,
-        tags
+        tags,
+        parent_path
       `)
       .is("deleted_at", null)
       .order("type", { ascending: false }) // Folders first
@@ -40,20 +45,19 @@ export async function GET(req: NextRequest) {
     // If searching, use full-text search
     if (search) {
       console.log("🔍 Searching documents for:", search);
-      
-      // Use the search function from the database schema
-      const { data: searchResults, error: searchError } = await supabase
-        .rpc("search_documents", {
-          p_query: search,
-          p_user_id: user.id,
-          p_folder_path: folder || "",
-          p_file_types: null,
-          p_limit: limit
-        });
+      const {
+        data: searchResults,
+        error: searchError,
+      } = await supabase.rpc("search_documents", {
+        p_query: search,
+        p_user_id: user.id,
+        p_folder_path: folder || "",
+        p_file_types: null,
+        p_limit: limit,
+      });
 
       if (searchError) {
         console.error("Search error:", searchError);
-        // Fallback to basic text search
         query = query.ilike("name", `%${search}%`);
       } else {
         return NextResponse.json(searchResults || []);
@@ -75,69 +79,122 @@ export async function GET(req: NextRequest) {
     }
 
     const { data: documents, error } = await query;
-
     if (error) {
       console.error("Database error:", error);
-      return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to fetch documents" },
+        { status: 500 }
+      );
     }
 
-    // Transform the data to match the expected format
-    const transformedDocuments = documents?.map(doc => ({
-      id: doc.id,
-      name: doc.name,
-      path: doc.path,
-      type: doc.type,
-      mime_type: doc.mime_type,
-      size_bytes: doc.size_bytes || 0,
-      uploaded_by: doc.uploaded_by,
-      created_at: doc.created_at,
-      updated_at: doc.updated_at,
-      is_favorite: doc.is_favorite || false,
-      is_shared: doc.is_shared || false,
-      tags: doc.tags || [],
-      uploader_name: 'Unknown', // Will add user join later
-      uploader_email: ''
-    })) || [];
+    // Transform and add fileCount for folders
+    const transformed = await Promise.all(
+      (documents || []).map(async (doc) => {
+        let fileCount: number | undefined;
 
-    console.log(`📁 Fetched ${transformedDocuments.length} documents for folder: ${folder || 'root'}`);
-    return NextResponse.json(transformedDocuments);
+        if (doc.type === "folder") {
+          const {
+            count,
+            error: countError,
+          } = await supabase
+            .from("documents")
+            .select("id", { head: true, count: "exact" })
+            .is("deleted_at", null)
+            .eq("parent_path", doc.path);
 
+          if (countError) {
+            console.error(`Count error for folder ${doc.path}:`, countError);
+            fileCount = 0;
+          } else {
+            fileCount = count ?? 0;
+          }
+        }
+
+        return {
+          id: doc.id,
+          name: doc.name,
+          path: doc.path,
+          type: doc.type,
+          mime_type: doc.mime_type,
+          size_bytes: doc.size_bytes || 0,
+          uploaded_by: doc.uploaded_by,
+          created_at: doc.created_at,
+          updated_at: doc.updated_at,
+          is_favorite: doc.is_favorite || false,
+          is_shared: doc.is_shared || false,
+          tags: doc.tags || [],
+          uploader_name: "Unknown",
+          uploader_email: "",
+          fileCount,
+        };
+      })
+    );
+
+    console.log(
+      `📁 Fetched ${transformed.length} documents for folder: ${
+        folder || "root"
+      }`
+    );
+    return NextResponse.json(transformed);
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient(); // ✅ AWAIT ADDED
+    const supabase = await createClient();
     const body = await req.json();
-    const { type, name, path, parentPath, mime_type, size_bytes, storage_path, tags } = body;
+    const {
+      type,
+      name,
+      path,
+      parentPath,
+      mime_type,
+      size_bytes,
+      storage_path,
+      tags,
+    } = body;
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Validate required fields
     if (!name || !type) {
-      return NextResponse.json({ error: "Name and type are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Name and type are required" },
+        { status: 400 }
+      );
     }
 
     // For folders, use the create_folder_path function
     if (type === "folder") {
       const folderPath = parentPath ? `${parentPath}${name}/` : `${name}/`;
-      
-      const { data: folderId, error: folderError } = await supabase
-        .rpc("create_folder_path", {
+
+      const { data: folderId, error: folderError } = await supabase.rpc(
+        "create_folder_path",
+        {
           p_path: folderPath,
-          p_user_id: user.id
-        });
+          p_user_id: user.id,
+        }
+      );
 
       if (folderError) {
         console.error("Folder creation error:", folderError);
-        return NextResponse.json({ error: "Failed to create folder" }, { status: 500 });
+        return NextResponse.json(
+          { error: "Failed to create folder" },
+          { status: 500 }
+        );
       }
 
       // Fetch the created folder to return complete data
@@ -149,7 +206,10 @@ export async function POST(req: NextRequest) {
 
       if (fetchError) {
         console.error("Fetch folder error:", fetchError);
-        return NextResponse.json({ error: "Failed to fetch created folder" }, { status: 500 });
+        return NextResponse.json(
+          { error: "Failed to fetch created folder" },
+          { status: 500 }
+        );
       }
 
       return NextResponse.json(folder);
@@ -169,7 +229,7 @@ export async function POST(req: NextRequest) {
       uploaded_by: user.id,
       is_favorite: false,
       is_shared: false,
-      visibility: "private"
+      visibility: "private",
     };
 
     const { data: document, error } = await supabase
@@ -180,23 +240,28 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("Document creation error:", error);
-      return NextResponse.json({ error: "Failed to create document" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to create document" },
+        { status: 500 }
+      );
     }
 
     // Log the activity
-    await supabase
-      .from("document_activity")
-      .insert([{
+    await supabase.from("document_activity").insert([
+      {
         document_id: document.id,
         user_id: user.id,
-        activity_type: type === "folder" ? "created" : "uploaded"
-      }]);
+        activity_type: type === "folder" ? "created" : "uploaded",
+      },
+    ]);
 
     console.log(`📄 Created ${type}: ${name}`);
     return NextResponse.json(document);
-
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

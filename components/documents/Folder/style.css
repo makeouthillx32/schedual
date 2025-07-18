@@ -8,14 +8,18 @@
   height: 160px;
   cursor: pointer;
   transition: transform 0.2s ease;
+  /* Improve sharpness */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 .folder-container:hover {
-  transform: translateY(-5px);
+  transform: translateY(-5px) translateZ(0);
 }
 
 .folder-container.selected {
-  transform: translateY(-5px) scale(1.05);
+  transform: translateY(-5px) scale(1.05) translateZ(0);
 }
 
 .folder-3d {
@@ -24,30 +28,147 @@
   height: 100%;
   transform-style: preserve-3d;
   transition: transform 0.3s ease;
+  /* Sharper rendering */
+  transform: translateZ(0);
 }
 
 .folder-container:hover .folder-3d {
-  transform: rotateX(5deg) rotateY(-5deg);
+  transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
 }
 
-/* Folder Back */
+/* Dynamic Folder Colors Based on Chart Variables */
+.folder-container.chart-1 .folder-back {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-1)) 0%, 
+    hsl(var(--chart-1) / 0.8) 50%, 
+    hsl(var(--chart-1) / 0.6) 100%
+  );
+}
+
+.folder-container.chart-1 .folder-cover {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-1) / 0.9) 0%, 
+    hsl(var(--chart-1)) 50%, 
+    hsl(var(--chart-1) / 0.8) 100%
+  );
+}
+
+.folder-container.chart-1 .folder-tab {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-1) / 0.9) 0%, 
+    hsl(var(--chart-1)) 100%
+  );
+}
+
+.folder-container.chart-2 .folder-back {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-2)) 0%, 
+    hsl(var(--chart-2) / 0.8) 50%, 
+    hsl(var(--chart-2) / 0.6) 100%
+  );
+}
+
+.folder-container.chart-2 .folder-cover {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-2) / 0.9) 0%, 
+    hsl(var(--chart-2)) 50%, 
+    hsl(var(--chart-2) / 0.8) 100%
+  );
+}
+
+.folder-container.chart-2 .folder-tab {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-2) / 0.9) 0%, 
+    hsl(var(--chart-2)) 100%
+  );
+}
+
+.folder-container.chart-3 .folder-back {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-3)) 0%, 
+    hsl(var(--chart-3) / 0.8) 50%, 
+    hsl(var(--chart-3) / 0.6) 100%
+  );
+}
+
+.folder-container.chart-3 .folder-cover {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-3) / 0.9) 0%, 
+    hsl(var(--chart-3)) 50%, 
+    hsl(var(--chart-3) / 0.8) 100%
+  );
+}
+
+.folder-container.chart-3 .folder-tab {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-3) / 0.9) 0%, 
+    hsl(var(--chart-3)) 100%
+  );
+}
+
+.folder-container.chart-4 .folder-back {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-4)) 0%, 
+    hsl(var(--chart-4) / 0.8) 50%, 
+    hsl(var(--chart-4) / 0.6) 100%
+  );
+}
+
+.folder-container.chart-4 .folder-cover {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-4) / 0.9) 0%, 
+    hsl(var(--chart-4)) 50%, 
+    hsl(var(--chart-4) / 0.8) 100%
+  );
+}
+
+.folder-container.chart-4 .folder-tab {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-4) / 0.9) 0%, 
+    hsl(var(--chart-4)) 100%
+  );
+}
+
+.folder-container.chart-5 .folder-back {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-5)) 0%, 
+    hsl(var(--chart-5) / 0.8) 50%, 
+    hsl(var(--chart-5) / 0.6) 100%
+  );
+}
+
+.folder-container.chart-5 .folder-cover {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-5) / 0.9) 0%, 
+    hsl(var(--chart-5)) 50%, 
+    hsl(var(--chart-5) / 0.8) 100%
+  );
+}
+
+.folder-container.chart-5 .folder-tab {
+  background: linear-gradient(135deg, 
+    hsl(var(--chart-5) / 0.9) 0%, 
+    hsl(var(--chart-5)) 100%
+  );
+}
+
+/* Folder Back - Sharper Definition */
 .folder-back {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: calc(var(--radius) * 1.5);
-  background: linear-gradient(135deg, 
-    hsl(var(--warning)) 0%, 
-    hsl(var(--warning) / 0.8) 50%, 
-    hsl(var(--warning) / 0.6) 100%
-  );
   box-shadow: 
-    inset 2px -3px 8px -3px hsl(var(--foreground) / 0.3),
-    0 8px 16px hsl(var(--foreground) / 0.2);
+    inset 3px -4px 12px -4px hsl(var(--foreground) / 0.4),
+    0 10px 20px hsl(var(--foreground) / 0.25),
+    0 4px 8px hsl(var(--foreground) / 0.15);
   transform: translateZ(-10px);
+  /* Sharper edges */
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
 
-/* Dynamic Paper Layers */
+/* Dynamic Paper Layers - Sharper and More Defined */
 .folder-paper {
   position: absolute;
   width: 90%;
@@ -55,43 +176,72 @@
   left: 5%;
   top: 10%;
   background: hsl(var(--card));
-  border-radius: var(--radius);
-  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+  border-radius: calc(var(--radius) * 0.75);
+  box-shadow: 
+    0 3px 6px hsl(var(--foreground) / 0.15),
+    0 1px 3px hsl(var(--foreground) / 0.1),
+    inset 0 1px 0 hsl(var(--background) / 0.5);
   border: 1px solid hsl(var(--border));
   transform-style: preserve-3d;
+  /* Sharper rendering */
+  image-rendering: crisp-edges;
+  /* Paper texture effect */
+  background-image: 
+    linear-gradient(45deg, hsl(var(--muted) / 0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, hsl(var(--muted) / 0.05) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, hsl(var(--muted) / 0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, hsl(var(--muted) / 0.05) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 
-/* Folder Cover */
+/* Folder Cover - Enhanced Definition */
 .folder-cover {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius) * 1.5) var(--radius) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
-  background: linear-gradient(135deg, 
-    hsl(var(--warning) / 0.9) 0%, 
-    hsl(var(--warning)) 50%, 
-    hsl(var(--warning) / 0.8) 100%
-  );
+  border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
   box-shadow: 
-    0 4px 8px hsl(var(--foreground) / 0.2),
-    inset 0 2px 4px hsl(var(--background) / 0.3);
+    0 6px 12px hsl(var(--foreground) / 0.25),
+    0 2px 6px hsl(var(--foreground) / 0.15),
+    inset 0 2px 4px hsl(var(--background) / 0.4),
+    inset 0 -1px 2px hsl(var(--foreground) / 0.1);
+  /* Sharper rendering */
+  image-rendering: crisp-edges;
+  /* Subtle gradient overlay for depth */
+  position: relative;
 }
 
-/* Folder Tab */
+.folder-cover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, 
+    hsl(var(--background) / 0.2) 0%, 
+    transparent 30%, 
+    hsl(var(--foreground) / 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+/* Folder Tab - Sharper and More Defined */
 .folder-tab {
   position: absolute;
   top: -8px;
   left: 20px;
   width: 60px;
   height: 20px;
-  background: linear-gradient(135deg, 
-    hsl(var(--warning) / 0.9) 0%, 
-    hsl(var(--warning)) 100%
-  );
   border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
   box-shadow: 
-    0 -2px 4px hsl(var(--foreground) / 0.1),
-    inset 0 1px 2px hsl(var(--background) / 0.3);
+    0 -3px 6px hsl(var(--foreground) / 0.15),
+    inset 0 1px 2px hsl(var(--background) / 0.4),
+    inset 0 -1px 1px hsl(var(--foreground) / 0.1);
+  /* Sharper rendering */
+  image-rendering: crisp-edges;
 }
 
 /* Folder Content Overlay */
@@ -104,6 +254,10 @@
   justify-content: space-between;
   padding: 16px;
   pointer-events: none;
+  /* Sharper text rendering */
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .folder-info {
@@ -115,22 +269,30 @@
   font-weight: 600;
   color: hsl(var(--foreground));
   margin: 0 0 4px 0;
-  text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+  text-shadow: 
+    0 1px 2px hsl(var(--background) / 0.9),
+    0 0 1px hsl(var(--background) / 0.8);
   line-height: 1.2;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Sharper text */
+  font-feature-settings: "liga" 1, "kern" 1;
 }
 
 .folder-count {
   font-size: 12px;
   color: hsl(var(--muted-foreground));
   margin: 0;
-  text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+  text-shadow: 
+    0 1px 2px hsl(var(--background) / 0.9),
+    0 0 1px hsl(var(--background) / 0.8);
+  /* Sharper text */
+  font-feature-settings: "liga" 1, "kern" 1;
 }
 
-/* Action Buttons */
+/* Action Buttons - Enhanced Sharpness */
 .folder-actions {
   display: flex;
   gap: 8px;
@@ -149,31 +311,39 @@
   height: 28px;
   border-radius: var(--radius);
   border: none;
-  background: hsl(var(--card) / 0.9);
+  background: hsl(var(--card) / 0.95);
   color: hsl(var(--muted-foreground));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+  box-shadow: 
+    0 3px 6px hsl(var(--foreground) / 0.15),
+    0 1px 3px hsl(var(--foreground) / 0.1),
+    inset 0 1px 0 hsl(var(--background) / 0.5);
   border: 1px solid hsl(var(--border));
+  /* Sharper rendering */
+  image-rendering: crisp-edges;
 }
 
 .action-btn:hover {
   background: hsl(var(--card));
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px hsl(var(--foreground) / 0.15);
+  box-shadow: 
+    0 6px 12px hsl(var(--foreground) / 0.2),
+    0 2px 6px hsl(var(--foreground) / 0.15),
+    inset 0 1px 0 hsl(var(--background) / 0.5);
   color: hsl(var(--foreground));
 }
 
 .action-btn.favorite.active {
   color: hsl(var(--warning));
-  background: hsl(var(--warning) / 0.1);
+  background: hsl(var(--warning) / 0.15);
 }
 
 .action-btn.favorite.active:hover {
-  background: hsl(var(--warning) / 0.2);
+  background: hsl(var(--warning) / 0.25);
 }
 
 /* Empty Folder State */
@@ -288,4 +458,3 @@
   .folder-count {
     font-size: 9px;
   }
-}

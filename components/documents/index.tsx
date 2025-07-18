@@ -1,4 +1,4 @@
-// components/documents/index.tsx - FIXED VERSION
+// components/documents/index.tsx - CLEANED VERSION (No Breadcrumbs)
 'use client';
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -13,7 +13,6 @@ import Toolbar from './Toolbar';
 import ContextMenu from './ContextMenu';
 import Preview from './Preview';
 import FavoritesBar from './FavoritesBar';
-import Breadcrumb from './Breadcrumb';
 import FileGrid from './FileGrid';
 
 interface DocumentsProps {
@@ -174,7 +173,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
     onPreview: (id: string) => setPreviewDocument(id),
     onDownload: (id: string) => handleDocumentAction('download', id),
     onToggleFavorite: (id: string) => handleDocumentAction('favorite', id),
-    onNavigate: handleNavigate, // Use our optimized navigation handler
+    onNavigate: handleNavigate,
     onAddFavorite: addFavorite,
     onContextMenu: handleContextMenu,
     onSelect: handleSelect
@@ -243,12 +242,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
             if (favorite) removeFavorite(favorite.folder_path);
           }}
         />
-
-        {/* Breadcrumb Navigation */}
-        <Breadcrumb
-          currentPath={currentPath}
-          onNavigate={handleNavigate}
-        />
       </div>
 
       {/* Sticky Toolbar with loading indicator */}
@@ -275,42 +268,14 @@ export default function Documents({ className = '' }: DocumentsProps) {
           onClearSelection={() => setSelectedItems([])}
           onSelectAll={() => setSelectedItems(documents.map(d => d.id))}
           isUploading={isUploading}
-          isLoading={isSearching || isNavigating} // Show loading in toolbar instead
+          isLoading={isSearching || isNavigating}
         />
       </div>
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-4">
-          {/* Quick Back Button */}
-          {currentPath && (
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => {
-                  const pathParts = currentPath.split('/').filter(Boolean);
-                  const parentPath = pathParts.length > 1 
-                    ? pathParts.slice(0, -1).join('/') + '/'
-                    : '';
-                  handleNavigate(parentPath);
-                }}
-                disabled={isNavigating}
-                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                {isNavigating ? 'Loading...' : `Back to ${currentPath.split('/').filter(Boolean).length > 1 
-                  ? currentPath.split('/').filter(Boolean).slice(-2, -1)[0] 
-                  : 'Home'}`}
-              </button>
-              
-              <div className="text-sm text-gray-500">
-                {documents.length} item{documents.length !== 1 ? 's' : ''}
-              </div>
-            </div>
-          )}
-
-          {/* Optimized File Grid with loading overlay */}
+        <div className="p-6">
+          {/* FileGrid with integrated breadcrumbs and loading overlay */}
           <div className="relative">
             {(isSearching || isNavigating) && (
               <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10 flex items-center justify-center">

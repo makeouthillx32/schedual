@@ -43,7 +43,6 @@ export default function Folder({
   const [isHovered, setIsHovered] = useState(false);
 
   const fileCount = folder.fileCount ?? 0;
-  const paperLayers = Math.min(Math.max(fileCount, 0), 5);
   const isEmpty = fileCount === 0;
 
   const handleClick = (e: React.MouseEvent) => {
@@ -108,41 +107,25 @@ export default function Folder({
       onContextMenu={handleContextMenu}
     >
       <div className="folder-3d">
-        {/* Back panel */}
+        
+        {/* 1. FOLDER BACK - Uses CSS z-index: 0 */}
         <div className="folder-back"></div>
 
-        {/* ✨ PAPER LAYERS ✨ */}
-        {Array.from({ length: paperLayers }, (_, layerIndex) => (
-          <div
-            key={layerIndex}
-            className="folder-paper"
-            style={{
-              transform: `translateZ(${(layerIndex + 1) * 2}px) translateY(-${layerIndex}px)`,
-              opacity: 0.9 - layerIndex * 0.1,
-              zIndex: layerIndex + 1
-            }}
-          ></div>
-        ))}
+        {/* 2. PAPER LAYERS - Uses CSS z-index: 1-5 */}
+        <div className="folder-paper paper-layer-1"></div>
+        <div className="folder-paper paper-layer-2"></div>
+        <div className="folder-paper paper-layer-3"></div>
+        <div className="folder-paper paper-layer-4"></div>
+        <div className="folder-paper paper-layer-5"></div>
 
-        {/* Folder Cover & Tab */}
-        <div
-          className="folder-cover"
-          style={{
-            transform: `translateZ(${paperLayers * 2 + 5}px)`,
-            zIndex: paperLayers + 10
-          }}
-        >
+        {/* 3. FOLDER COVER - Uses CSS z-index: 10 */}
+        <div className="folder-cover">
+          {/* 4. FOLDER TAB - Child of cover, uses relative positioning */}
           <div className="folder-tab"></div>
         </div>
 
-        {/* Overlay Content */}
-        <div
-          className="folder-content"
-          style={{
-            transform: `translateZ(${paperLayers * 2 + 10}px)`,
-            zIndex: paperLayers + 20
-          }}
-        >
+        {/* 5. FOLDER CONTENT - Uses CSS z-index: 100 */}
+        <div className="folder-content">
           <div className="folder-info">
             <h3 className="folder-name">{folder.name}</h3>
             <p className="folder-count">

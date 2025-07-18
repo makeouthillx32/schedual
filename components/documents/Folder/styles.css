@@ -1,4 +1,4 @@
-/* components/documents/Folder/styles.css - DEBUG VERSION */
+/* components/documents/Folder/styles.css - FIXED VERSION */
 
 .folder-container {
   position: relative;
@@ -34,29 +34,26 @@
   transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
 }
 
-/* ===== DEBUG: CONTRASTING COLORS ===== */
+/* ===== FIXED LAYERING WITH DEBUG COLORS ===== */
 
-/* Folder Back - BRIGHT RED for debugging */
+/* 1. FOLDER BACK - FURTHEST BACK (z-index: 0) */
 .folder-back {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: calc(var(--radius) * 1.5);
-  background: #ff0000 !important; /* BRIGHT RED */
+  background: #ff0000 !important; /* 🔴 RED - FURTHEST BACK */
   box-shadow: 
     inset 3px -4px 12px -4px rgba(0,0,0,0.4),
     0 10px 20px rgba(0,0,0,0.25);
-  transform: translateZ(-20px); /* FURTHEST BACK */
-  z-index: 1;
+  transform: translateZ(-30px); /* FURTHEST BACK */
+  z-index: 0;
+  border: 3px solid #000; /* BLACK BORDER for visibility */
 }
 
-/* Papers - Different colors to see layering, positioned to peek out */
+/* 2. PAPER LAYERS - MIDDLE (z-index: 1-5) */
 .folder-paper {
   position: absolute;
-  width: 90%;
-  height: 90%;
-  left: 5%;
-  top: 5%; /* MOVED UP to peek over folder */
   border-radius: calc(var(--radius) * 0.5);
   border: 2px solid #000; /* BLACK BORDER for visibility */
   transform-style: preserve-3d;
@@ -64,89 +61,94 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Layer 1 - BRIGHT GREEN */
-.folder-paper:nth-child(2) {
-  background: #00ff00 !important; /* BRIGHT GREEN */
-  transform: translateZ(-15px) translateY(-2px);
+/* Paper Layer 1 - GREEN, positioned to peek out */
+.folder-paper.paper-layer-1 {
+  width: 95%;
+  height: 90%;
+  left: 2.5%;
+  top: 0%; /* PEEK OUT at top */
+  background: #00ff00 !important; /* 🟢 GREEN */
+  transform: translateZ(-20px);
+  z-index: 1;
+}
+
+/* Paper Layer 2 - BLUE */
+.folder-paper.paper-layer-2 {
+  width: 93%;
+  height: 88%;
+  left: 3.5%;
+  top: 2%;
+  background: #0000ff !important; /* 🔵 BLUE */
+  transform: translateZ(-15px);
   z-index: 2;
 }
 
-/* Layer 2 - BRIGHT BLUE */
-.folder-paper:nth-child(3) {
-  background: #0000ff !important; /* BRIGHT BLUE */
-  width: 88%;
-  height: 88%;
-  left: 6%;
-  top: 6%;
-  transform: translateZ(-10px) translateY(-4px);
+/* Paper Layer 3 - YELLOW */
+.folder-paper.paper-layer-3 {
+  width: 91%;
+  height: 86%;
+  left: 4.5%;
+  top: 4%;
+  background: #ffff00 !important; /* 🟡 YELLOW */
+  transform: translateZ(-10px);
   z-index: 3;
 }
 
-/* Layer 3 - BRIGHT YELLOW */
-.folder-paper:nth-child(4) {
-  background: #ffff00 !important; /* BRIGHT YELLOW */
-  width: 86%;
-  height: 86%;
-  left: 7%;
-  top: 7%;
-  transform: translateZ(-5px) translateY(-6px);
+/* Paper Layer 4 - PURPLE */
+.folder-paper.paper-layer-4 {
+  width: 89%;
+  height: 84%;
+  left: 5.5%;
+  top: 6%;
+  background: #ff00ff !important; /* 🟣 PURPLE */
+  transform: translateZ(-5px);
   z-index: 4;
 }
 
-/* Layer 4 - BRIGHT PURPLE */
-.folder-paper:nth-child(5) {
-  background: #ff00ff !important; /* BRIGHT PURPLE */
-  width: 84%;
-  height: 84%;
-  left: 8%;
+/* Paper Layer 5 - ORANGE */
+.folder-paper.paper-layer-5 {
+  width: 87%;
+  height: 82%;
+  left: 6.5%;
   top: 8%;
-  transform: translateZ(0px) translateY(-8px);
+  background: #ffa500 !important; /* 🟠 ORANGE */
+  transform: translateZ(0px);
   z-index: 5;
 }
 
-/* Layer 5 - BRIGHT ORANGE */
-.folder-paper:nth-child(6) {
-  background: #ffa500 !important; /* BRIGHT ORANGE */
-  width: 82%;
-  height: 82%;
-  left: 9%;
-  top: 9%;
-  transform: translateZ(5px) translateY(-10px);
-  z-index: 6;
-}
-
-/* Folder Cover - BRIGHT CYAN, positioned BEHIND papers */
+/* 3. FOLDER COVER - FRONT BUT BEHIND CONTENT (z-index: 10) */
 .folder-cover {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
-  background: #00ffff !important; /* BRIGHT CYAN */
+  background: #00ffff !important; /* 🩵 CYAN */
   box-shadow: 
     0 6px 12px rgba(0,0,0,0.25),
     0 2px 6px rgba(0,0,0,0.15);
   image-rendering: crisp-edges;
-  transform: translateZ(10px); /* BEHIND the papers */
-  z-index: 7;
+  transform: translateZ(10px); /* IN FRONT of papers */
+  z-index: 10;
+  border: 3px solid #000; /* BLACK BORDER for visibility */
 }
 
-/* Folder Tab - BRIGHT WHITE, should be ON TOP of cover */
+/* 4. FOLDER TAB - INSIDE COVER (relative positioning) */
 .folder-tab {
   position: absolute;
   top: -8px;
   left: 20px;
   width: 60px;
   height: 20px;
-  background: #ffffff !important; /* BRIGHT WHITE */
+  background: #ffffff !important; /* ⚪ WHITE */
   border: 2px solid #000; /* BLACK BORDER */
   border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
   box-shadow: 0 -3px 6px rgba(0,0,0,0.15);
   image-rendering: crisp-edges;
-  transform: translateZ(15px); /* ON TOP of cover */
-  z-index: 8;
+  /* NO translateZ - inherits from parent cover */
+  z-index: 1; /* Relative to cover */
 }
 
-/* Folder Content - SEMI-TRANSPARENT BLACK for visibility */
+/* 5. FOLDER CONTENT - ALWAYS ON TOP (z-index: 100) */
 .folder-content {
   position: absolute;
   width: 100%;
@@ -162,13 +164,15 @@
   background: rgba(0,0,0,0.1); /* SEMI-TRANSPARENT for debugging */
   transform: translateZ(20px); /* ALWAYS ON TOP */
   z-index: 100;
+  border: 2px dashed #000; /* DASHED BORDER for debugging */
 }
 
 .folder-info {
   pointer-events: auto;
-  background: rgba(255,255,255,0.8); /* WHITE BACKGROUND for text visibility */
-  padding: 4px;
+  background: rgba(255,255,255,0.9); /* WHITE BACKGROUND for text visibility */
+  padding: 8px;
   border-radius: 4px;
+  border: 2px solid #000;
 }
 
 .folder-name {
@@ -229,7 +233,7 @@
   background: #fff3e0 !important;
 }
 
-/* Override chart colors for debugging */
+/* Override chart colors for debugging - keep debug colors */
 .folder-container.chart-1 .folder-back,
 .folder-container.chart-2 .folder-back,
 .folder-container.chart-3 .folder-back,
@@ -254,7 +258,7 @@
   background: #ffffff !important; /* Keep white for debugging */
 }
 
-/* Empty/Selected states - keep debug colors */
+/* Empty/Selected states - keep debug colors for now */
 .folder-container.empty .folder-cover,
 .folder-container.selected .folder-cover {
   background: #00ffff !important; /* Keep cyan */

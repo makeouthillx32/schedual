@@ -15,12 +15,12 @@ interface FolderProps {
     created_at: string;
     updated_at: string;
     is_favorite: boolean;
-    fileCount?: number; // Add this to track files in folder
+    fileCount?: number; // number of files in the folder
   };
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
-  index: number;           // ← added index here
+  index: number;                        // ← newly added
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -32,7 +32,7 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
-  index,                  // ← destructure index here
+  index,                               // ← destructured here
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -40,12 +40,10 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Calculate paper layers based on file count
   const fileCount = folder.fileCount || 0;
-  const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
+  const paperLayers = Math.min(Math.max(fileCount, 0), 5);
   const isEmpty = fileCount === 0;
 
-  // Handle click
   const handleClick = (e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
@@ -54,17 +52,16 @@ export default function Folder({
     }
   };
 
-  // Handle context menu
   const handleContextMenu = (e: React.MouseEvent) => {
     onContextMenu(e, folder.id);
   };
 
-  // Handle favorite toggle
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(folder.path, folder.name);
   };
 
+  // List view
   if (viewMode === 'list') {
     return (
       <div
@@ -91,6 +88,7 @@ export default function Folder({
     );
   }
 
+  // Grid / 3D folder view
   return (
     <div
       className={`folder-container chart-${index % 5 + 1} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
@@ -99,12 +97,9 @@ export default function Folder({
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     >
-      {/* 3D Folder Structure */}
       <div className="folder-3d">
-        {/* Back of folder */}
-        <div className="folder-back"></div>
+        <div className="folder-back" />
 
-        {/* Dynamic Paper Layers */}
         {Array.from({ length: paperLayers }, (_, layerIndex) => (
           <div
             key={layerIndex}
@@ -117,7 +112,6 @@ export default function Folder({
           />
         ))}
 
-        {/* Folder Cover */}
         <div
           className="folder-cover"
           style={{
@@ -125,11 +119,9 @@ export default function Folder({
             zIndex: paperLayers + 10
           }}
         >
-          {/* Folder Tab */}
-          <div className="folder-tab"></div>
+          <div className="folder-tab" />
         </div>
 
-        {/* Folder Content Overlay */}
         <div
           className="folder-content"
           style={{
@@ -144,7 +136,6 @@ export default function Folder({
             </p>
           </div>
 
-          {/* Action Buttons */}
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}

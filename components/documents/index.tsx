@@ -229,8 +229,8 @@ export default function Documents({ className = '' }: DocumentsProps) {
 
   return (
     <main className={`flex-1 flex flex-col overflow-hidden ${className}`}>
-      {/* Sticky Toolbar with loading indicator */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      {/* Sticky Toolbar - No Extra Container */}
+      <div className="sticky top-0 z-10 border-b border-gray-200 dark:border-gray-700">
         <Toolbar
           searchQuery={searchQuery}
           onSearchChange={handleSearch}

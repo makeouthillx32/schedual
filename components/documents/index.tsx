@@ -229,21 +229,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
 
   return (
     <main className={`flex-1 flex flex-col overflow-hidden ${className}`}>
-      {/* Fixed Header Area - Non-scrollable */}
-      <div className="flex-shrink-0 space-y-6 p-6 border-b border-gray-200 dark:border-gray-700">
-        {/* Favorites Bar */}
-        <FavoritesBar
-          favorites={favoriteItems}
-          currentPath={currentPath}
-          onNavigate={handleNavigate}
-          onAddFavorite={(path, name) => addFavorite(path, name)}
-          onRemoveFavorite={(favoriteId) => {
-            const favorite = favorites.find(f => f.id === favoriteId);
-            if (favorite) removeFavorite(favorite.folder_path);
-          }}
-        />
-      </div>
-
       {/* Sticky Toolbar with loading indicator */}
       <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <Toolbar
@@ -296,6 +281,20 @@ export default function Documents({ className = '' }: DocumentsProps) {
             />
           </div>
         </div>
+      </div>
+
+      {/* Favorites Bar - Fixed at Bottom */}
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-6">
+        <FavoritesBar
+          favorites={favoriteItems}
+          currentPath={currentPath}
+          onNavigate={handleNavigate}
+          onAddFavorite={(path, name) => addFavorite(path, name)}
+          onRemoveFavorite={(favoriteId) => {
+            const favorite = favorites.find(f => f.id === favoriteId);
+            if (favorite) removeFavorite(favorite.folder_path);
+          }}
+        />
       </div>
 
       {/* Context Menu */}

@@ -1,4 +1,3 @@
-// components/documents/FileGrid/index.tsx
 'use client';
 
 import React from 'react';
@@ -53,7 +52,6 @@ function FileGrid({
   className = ''
 }: FileGridProps) {
   
-  // Empty state component - memoized to prevent re-renders
   const EmptyState = React.memo(() => (
     <div className="col-span-full text-center py-12">
       <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
@@ -68,7 +66,6 @@ function FileGrid({
     </div>
   ));
 
-  // Memoized grid container classes to prevent recalculation
   const gridClasses = React.useMemo(() => {
     return `documents-content ${
       viewMode === 'grid' 
@@ -120,7 +117,7 @@ function FileGrid({
         </div>
       ) : (
         <div className={gridClasses}>
-          {documents.map((doc) => (
+          {documents.map((doc, index) => (
             doc.type === 'folder' ? (
               <Folder
                 key={doc.id}
@@ -128,6 +125,7 @@ function FileGrid({
                 viewMode={viewMode}
                 isSelected={selectedItems.includes(doc.id)}
                 isFavorite={doc.is_favorite}
+                index={index}                           // ← new prop
                 onNavigate={onNavigate}
                 onToggleFavorite={(path, name) => onAddFavorite(path, name)}
                 onContextMenu={onContextMenu}
@@ -154,10 +152,7 @@ function FileGrid({
   );
 }
 
-// Wrap in React.memo to prevent unnecessary re-renders
-// Only re-renders when props actually change
 export default React.memo(FileGrid, (prevProps, nextProps) => {
-  // Custom comparison for better performance
   return (
     prevProps.documents === nextProps.documents &&
     prevProps.viewMode === nextProps.viewMode &&

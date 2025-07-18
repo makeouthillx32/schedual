@@ -1,4 +1,4 @@
-// components/documents/Folder/index.tsx
+// components/documents/Folder/index.tsx - FIXED DOM ORDER
 'use client';
 
 import React, { useState } from 'react';
@@ -77,47 +77,19 @@ export default function Folder({
       };
     }
 
-    // Color schemes based on index for variety
-    const schemes = [
-      {
-        back: 'bg-red-500 border-red-600',
-        papers: [
-          'bg-green-400 border-green-500',
-          'bg-blue-400 border-blue-500',
-          'bg-yellow-400 border-yellow-500',
-          'bg-purple-400 border-purple-500',
-          'bg-orange-400 border-orange-500'
-        ],
-        cover: 'bg-cyan-400 border-cyan-500',
-        tab: 'bg-white border-gray-800'
-      },
-      {
-        back: 'bg-indigo-500 border-indigo-600',
-        papers: [
-          'bg-pink-400 border-pink-500',
-          'bg-teal-400 border-teal-500',
-          'bg-lime-400 border-lime-500',
-          'bg-rose-400 border-rose-500',
-          'bg-amber-400 border-amber-500'
-        ],
-        cover: 'bg-emerald-400 border-emerald-500',
-        tab: 'bg-white border-gray-800'
-      },
-      {
-        back: 'bg-violet-500 border-violet-600',
-        papers: [
-          'bg-sky-400 border-sky-500',
-          'bg-fuchsia-400 border-fuchsia-500',
-          'bg-emerald-400 border-emerald-500',
-          'bg-red-400 border-red-500',
-          'bg-blue-400 border-blue-500'
-        ],
-        cover: 'bg-yellow-400 border-yellow-500',
-        tab: 'bg-white border-gray-800'
-      }
-    ];
-
-    return schemes[index % schemes.length];
+    // Debug colors - keep them obvious
+    return {
+      back: 'bg-red-500 border-red-600',
+      papers: [
+        'bg-green-400 border-green-500',
+        'bg-blue-400 border-blue-500',
+        'bg-yellow-400 border-yellow-500',
+        'bg-purple-400 border-purple-500',
+        'bg-orange-400 border-orange-500'
+      ],
+      cover: 'bg-cyan-400 border-cyan-500',
+      tab: 'bg-white border-gray-800'
+    };
   };
 
   const colors = getColorScheme();
@@ -157,7 +129,7 @@ export default function Folder({
     );
   }
 
-  // 3D Grid view
+  // 3D Grid view - CRITICAL: CORRECT DOM ORDER
   return (
     <div
       className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
@@ -179,11 +151,11 @@ export default function Folder({
           ></div>
         ))}
 
-        {/* 3. FOLDER COVER - Front but behind content */}
-        <div className={`folder-cover ${colors.cover} border-2`}>
-          {/* 4. FOLDER TAB - Inside cover */}
-          <div className={`folder-tab ${colors.tab} border-2`}></div>
-        </div>
+        {/* 3. FOLDER TAB - CRITICAL: BEFORE COVER IN DOM ORDER */}
+        <div className={`folder-tab ${colors.tab} border-2`}></div>
+
+        {/* 4. FOLDER COVER - After tab, so it renders in front */}
+        <div className={`folder-cover ${colors.cover} border-2`}></div>
 
         {/* 5. FOLDER CONTENT - Always on top */}
         <div className="folder-content bg-black/10 border-2 border-dashed border-black">

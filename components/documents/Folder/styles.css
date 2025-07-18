@@ -1,341 +1,343 @@
-/* components/documents/Folder/styles.css - FIXED VERSION */
+/* components/documents/Folder/styles.css - FIXED VERSION WITH @layer */
 
-.folder-container {
-  position: relative;
-  perspective: 2500px;
-  margin: 20px auto;
-  width: 200px;
-  height: 160px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
-}
-
-.folder-container:hover {
-  transform: translateY(-5px) translateZ(0);
-}
-
-.folder-container.selected {
-  transform: translateY(-5px) scale(1.05) translateZ(0);
-}
-
-.folder-3d {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease;
-  transform: translateZ(0);
-}
-
-.folder-container:hover .folder-3d {
-  transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
-}
-
-/* ===== FIXED LAYERING WITH DEBUG COLORS ===== */
-
-/* 1. FOLDER BACK - FURTHEST BACK (z-index: 0) */
-.folder-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: calc(var(--radius) * 1.5);
-  background: #ff0000 !important; /* 🔴 RED - FURTHEST BACK */
-  box-shadow: 
-    inset 3px -4px 12px -4px rgba(0,0,0,0.4),
-    0 10px 20px rgba(0,0,0,0.25);
-  transform: translateZ(-30px); /* FURTHEST BACK */
-  z-index: 0;
-  border: 3px solid #000; /* BLACK BORDER for visibility */
-}
-
-/* 2. PAPER LAYERS - MIDDLE (z-index: 1-5) */
-.folder-paper {
-  position: absolute;
-  border-radius: calc(var(--radius) * 0.5);
-  border: 2px solid #000; /* BLACK BORDER for visibility */
-  transform-style: preserve-3d;
-  image-rendering: crisp-edges;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-/* Paper Layer 1 - GREEN, positioned to peek out */
-.folder-paper.paper-layer-1 {
-  width: 95%;
-  height: 90%;
-  left: 2.5%;
-  top: 0%; /* PEEK OUT at top */
-  background: #00ff00 !important; /* 🟢 GREEN */
-  transform: translateZ(-20px);
-  z-index: 1;
-}
-
-/* Paper Layer 2 - BLUE */
-.folder-paper.paper-layer-2 {
-  width: 93%;
-  height: 88%;
-  left: 3.5%;
-  top: 2%;
-  background: #0000ff !important; /* 🔵 BLUE */
-  transform: translateZ(-15px);
-  z-index: 2;
-}
-
-/* Paper Layer 3 - YELLOW */
-.folder-paper.paper-layer-3 {
-  width: 91%;
-  height: 86%;
-  left: 4.5%;
-  top: 4%;
-  background: #ffff00 !important; /* 🟡 YELLOW */
-  transform: translateZ(-10px);
-  z-index: 3;
-}
-
-/* Paper Layer 4 - PURPLE */
-.folder-paper.paper-layer-4 {
-  width: 89%;
-  height: 84%;
-  left: 5.5%;
-  top: 6%;
-  background: #ff00ff !important; /* 🟣 PURPLE */
-  transform: translateZ(-5px);
-  z-index: 4;
-}
-
-/* Paper Layer 5 - ORANGE */
-.folder-paper.paper-layer-5 {
-  width: 87%;
-  height: 82%;
-  left: 6.5%;
-  top: 8%;
-  background: #ffa500 !important; /* 🟠 ORANGE */
-  transform: translateZ(0px);
-  z-index: 5;
-}
-
-/* 3. FOLDER COVER - FRONT BUT BEHIND CONTENT (z-index: 10) */
-.folder-cover {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
-  background: #00ffff !important; /* 🩵 CYAN */
-  box-shadow: 
-    0 6px 12px rgba(0,0,0,0.25),
-    0 2px 6px rgba(0,0,0,0.15);
-  image-rendering: crisp-edges;
-  transform: translateZ(10px); /* IN FRONT of papers */
-  z-index: 10;
-  border: 3px solid #000; /* BLACK BORDER for visibility */
-}
-
-/* 4. FOLDER TAB - INSIDE COVER (relative positioning) */
-.folder-tab {
-  position: absolute;
-  top: -8px;
-  left: 20px;
-  width: 60px;
-  height: 20px;
-  background: #ffffff !important; /* ⚪ WHITE */
-  border: 2px solid #000; /* BLACK BORDER */
-  border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
-  box-shadow: 0 -3px 6px rgba(0,0,0,0.15);
-  image-rendering: crisp-edges;
-  /* NO translateZ - inherits from parent cover */
-  z-index: 1; /* Relative to cover */
-}
-
-/* 5. FOLDER CONTENT - ALWAYS ON TOP (z-index: 100) */
-.folder-content {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 16px;
-  pointer-events: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: rgba(0,0,0,0.1); /* SEMI-TRANSPARENT for debugging */
-  transform: translateZ(20px); /* ALWAYS ON TOP */
-  z-index: 100;
-  border: 2px dashed #000; /* DASHED BORDER for debugging */
-}
-
-.folder-info {
-  pointer-events: auto;
-  background: rgba(255,255,255,0.9); /* WHITE BACKGROUND for text visibility */
-  padding: 8px;
-  border-radius: 4px;
-  border: 2px solid #000;
-}
-
-.folder-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #000 !important; /* BLACK TEXT */
-  margin: 0 0 4px 0;
-  line-height: 1.2;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.folder-count {
-  font-size: 12px;
-  color: #333 !important; /* DARK GRAY TEXT */
-  margin: 0;
-}
-
-/* Action Buttons */
-.folder-actions {
-  display: flex;
-  gap: 8px;
-  align-self: flex-end;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: auto;
-}
-
-.folder-actions.visible {
-  opacity: 1;
-}
-
-.action-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius);
-  border: 2px solid #000; /* BLACK BORDER */
-  background: #ffffff !important; /* WHITE BACKGROUND */
-  color: #000 !important; /* BLACK ICONS */
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-}
-
-.action-btn:hover {
-  background: #f0f0f0 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
-
-.action-btn.favorite.active {
-  color: #ff6600 !important; /* ORANGE for active favorite */
-  background: #fff3e0 !important;
-}
-
-/* Override chart colors for debugging - keep debug colors */
-.folder-container.chart-1 .folder-back,
-.folder-container.chart-2 .folder-back,
-.folder-container.chart-3 .folder-back,
-.folder-container.chart-4 .folder-back,
-.folder-container.chart-5 .folder-back {
-  background: #ff0000 !important; /* Keep red for debugging */
-}
-
-.folder-container.chart-1 .folder-cover,
-.folder-container.chart-2 .folder-cover,
-.folder-container.chart-3 .folder-cover,
-.folder-container.chart-4 .folder-cover,
-.folder-container.chart-5 .folder-cover {
-  background: #00ffff !important; /* Keep cyan for debugging */
-}
-
-.folder-container.chart-1 .folder-tab,
-.folder-container.chart-2 .folder-tab,
-.folder-container.chart-3 .folder-tab,
-.folder-container.chart-4 .folder-tab,
-.folder-container.chart-5 .folder-tab {
-  background: #ffffff !important; /* Keep white for debugging */
-}
-
-/* Empty/Selected states - keep debug colors for now */
-.folder-container.empty .folder-cover,
-.folder-container.selected .folder-cover {
-  background: #00ffff !important; /* Keep cyan */
-}
-
-.folder-container.empty .folder-tab,
-.folder-container.selected .folder-tab {
-  background: #ffffff !important; /* Keep white */
-}
-
-.folder-container.empty .folder-back,
-.folder-container.selected .folder-back {
-  background: #ff0000 !important; /* Keep red */
-}
-
-/* List View Styling */
-.folder-list-item {
-  padding: 12px;
-  border-radius: var(--radius);
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.folder-list-item:hover {
-  background: hsl(var(--accent));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px hsl(var(--foreground) / 0.1);
-}
-
-.folder-icon-small {
-  color: hsl(var(--warning));
-  flex-shrink: 0;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
+@layer components {
   .folder-container {
-    width: 150px;
-    height: 120px;
+    position: relative;
+    perspective: 2500px;
+    margin: 20px auto;
+    width: 200px;
+    height: 160px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
   }
-  
-  .folder-name {
-    font-size: 12px;
-  }
-  
-  .folder-count {
-    font-size: 10px;
-  }
-  
-  .action-btn {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .folder-content {
-    padding: 12px;
-  }
-}
 
-@media (max-width: 480px) {
-  .folder-container {
-    width: 130px;
-    height: 100px;
+  .folder-container:hover {
+    transform: translateY(-5px) translateZ(0);
   }
-  
+
+  .folder-container.selected {
+    transform: translateY(-5px) scale(1.05) translateZ(0);
+  }
+
+  .folder-3d {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease;
+    transform: translateZ(0);
+  }
+
+  .folder-container:hover .folder-3d {
+    transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
+  }
+
+  /* ===== FIXED LAYERING WITH DEBUG COLORS ===== */
+
+  /* 1. FOLDER BACK - FURTHEST BACK (z-index: 0) */
+  .folder-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: calc(var(--radius) * 1.5);
+    background: #ff0000 !important; /* 🔴 RED - FURTHEST BACK */
+    box-shadow: 
+      inset 3px -4px 12px -4px rgba(0,0,0,0.4),
+      0 10px 20px rgba(0,0,0,0.25);
+    transform: translateZ(-30px); /* FURTHEST BACK */
+    z-index: 0;
+    border: 3px solid #000; /* BLACK BORDER for visibility */
+  }
+
+  /* 2. PAPER LAYERS - MIDDLE (z-index: 1-5) */
+  .folder-paper {
+    position: absolute;
+    border-radius: calc(var(--radius) * 0.5);
+    border: 2px solid #000; /* BLACK BORDER for visibility */
+    transform-style: preserve-3d;
+    image-rendering: crisp-edges;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  /* Paper Layer 1 - GREEN, positioned to peek out */
+  .folder-paper.paper-layer-1 {
+    width: 95%;
+    height: 90%;
+    left: 2.5%;
+    top: 0%; /* PEEK OUT at top */
+    background: #00ff00 !important; /* 🟢 GREEN */
+    transform: translateZ(-20px);
+    z-index: 1;
+  }
+
+  /* Paper Layer 2 - BLUE */
+  .folder-paper.paper-layer-2 {
+    width: 93%;
+    height: 88%;
+    left: 3.5%;
+    top: 2%;
+    background: #0000ff !important; /* 🔵 BLUE */
+    transform: translateZ(-15px);
+    z-index: 2;
+  }
+
+  /* Paper Layer 3 - YELLOW */
+  .folder-paper.paper-layer-3 {
+    width: 91%;
+    height: 86%;
+    left: 4.5%;
+    top: 4%;
+    background: #ffff00 !important; /* 🟡 YELLOW */
+    transform: translateZ(-10px);
+    z-index: 3;
+  }
+
+  /* Paper Layer 4 - PURPLE */
+  .folder-paper.paper-layer-4 {
+    width: 89%;
+    height: 84%;
+    left: 5.5%;
+    top: 6%;
+    background: #ff00ff !important; /* 🟣 PURPLE */
+    transform: translateZ(-5px);
+    z-index: 4;
+  }
+
+  /* Paper Layer 5 - ORANGE */
+  .folder-paper.paper-layer-5 {
+    width: 87%;
+    height: 82%;
+    left: 6.5%;
+    top: 8%;
+    background: #ffa500 !important; /* 🟠 ORANGE */
+    transform: translateZ(0px);
+    z-index: 5;
+  }
+
+  /* 3. FOLDER COVER - FRONT BUT BEHIND CONTENT (z-index: 10) */
+  .folder-cover {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
+    background: #00ffff !important; /* 🩵 CYAN */
+    box-shadow: 
+      0 6px 12px rgba(0,0,0,0.25),
+      0 2px 6px rgba(0,0,0,0.15);
+    image-rendering: crisp-edges;
+    transform: translateZ(10px); /* IN FRONT of papers */
+    z-index: 10;
+    border: 3px solid #000; /* BLACK BORDER for visibility */
+  }
+
+  /* 4. FOLDER TAB - INSIDE COVER (relative positioning) */
+  .folder-tab {
+    position: absolute;
+    top: -8px;
+    left: 20px;
+    width: 60px;
+    height: 20px;
+    background: #ffffff !important; /* ⚪ WHITE */
+    border: 2px solid #000; /* BLACK BORDER */
+    border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
+    box-shadow: 0 -3px 6px rgba(0,0,0,0.15);
+    image-rendering: crisp-edges;
+    /* NO translateZ - inherits from parent cover */
+    z-index: 1; /* Relative to cover */
+  }
+
+  /* 5. FOLDER CONTENT - ALWAYS ON TOP (z-index: 100) */
   .folder-content {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    pointer-events: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: rgba(0,0,0,0.1); /* SEMI-TRANSPARENT for debugging */
+    transform: translateZ(20px); /* ALWAYS ON TOP */
+    z-index: 100;
+    border: 2px dashed #000; /* DASHED BORDER for debugging */
+  }
+
+  .folder-info {
+    pointer-events: auto;
+    background: rgba(255,255,255,0.9); /* WHITE BACKGROUND for text visibility */
     padding: 8px;
+    border-radius: 4px;
+    border: 2px solid #000;
   }
-  
+
   .folder-name {
-    font-size: 11px;
-    max-width: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000 !important; /* BLACK TEXT */
+    margin: 0 0 4px 0;
+    line-height: 1.2;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  
+
   .folder-count {
-    font-size: 9px;
+    font-size: 12px;
+    color: #333 !important; /* DARK GRAY TEXT */
+    margin: 0;
+  }
+
+  /* Action Buttons */
+  .folder-actions {
+    display: flex;
+    gap: 8px;
+    align-self: flex-end;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+  }
+
+  .folder-actions.visible {
+    opacity: 1;
+  }
+
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    border: 2px solid #000; /* BLACK BORDER */
+    background: #ffffff !important; /* WHITE BACKGROUND */
+    color: #000 !important; /* BLACK ICONS */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  }
+
+  .action-btn:hover {
+    background: #f0f0f0 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  }
+
+  .action-btn.favorite.active {
+    color: #ff6600 !important; /* ORANGE for active favorite */
+    background: #fff3e0 !important;
+  }
+
+  /* Override chart colors for debugging - keep debug colors */
+  .folder-container.chart-1 .folder-back,
+  .folder-container.chart-2 .folder-back,
+  .folder-container.chart-3 .folder-back,
+  .folder-container.chart-4 .folder-back,
+  .folder-container.chart-5 .folder-back {
+    background: #ff0000 !important; /* Keep red for debugging */
+  }
+
+  .folder-container.chart-1 .folder-cover,
+  .folder-container.chart-2 .folder-cover,
+  .folder-container.chart-3 .folder-cover,
+  .folder-container.chart-4 .folder-cover,
+  .folder-container.chart-5 .folder-cover {
+    background: #00ffff !important; /* Keep cyan for debugging */
+  }
+
+  .folder-container.chart-1 .folder-tab,
+  .folder-container.chart-2 .folder-tab,
+  .folder-container.chart-3 .folder-tab,
+  .folder-container.chart-4 .folder-tab,
+  .folder-container.chart-5 .folder-tab {
+    background: #ffffff !important; /* Keep white for debugging */
+  }
+
+  /* Empty/Selected states - keep debug colors for now */
+  .folder-container.empty .folder-cover,
+  .folder-container.selected .folder-cover {
+    background: #00ffff !important; /* Keep cyan */
+  }
+
+  .folder-container.empty .folder-tab,
+  .folder-container.selected .folder-tab {
+    background: #ffffff !important; /* Keep white */
+  }
+
+  .folder-container.empty .folder-back,
+  .folder-container.selected .folder-back {
+    background: #ff0000 !important; /* Keep red */
+  }
+
+  /* List View Styling */
+  .folder-list-item {
+    padding: 12px;
+    border-radius: var(--radius);
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .folder-list-item:hover {
+    background: hsl(var(--accent));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px hsl(var(--foreground) / 0.1);
+  }
+
+  .folder-icon-small {
+    color: hsl(var(--warning));
+    flex-shrink: 0;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .folder-container {
+      width: 150px;
+      height: 120px;
+    }
+    
+    .folder-name {
+      font-size: 12px;
+    }
+    
+    .folder-count {
+      font-size: 10px;
+    }
+    
+    .action-btn {
+      width: 24px;
+      height: 24px;
+    }
+    
+    .folder-content {
+      padding: 12px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .folder-container {
+      width: 130px;
+      height: 100px;
+    }
+    
+    .folder-content {
+      padding: 8px;
+    }
+    
+    .folder-name {
+      font-size: 11px;
+      max-width: 100px;
+    }
+    
+    .folder-count {
+      font-size: 9px;
+    }
   }
 }

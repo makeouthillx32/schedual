@@ -7,8 +7,6 @@
 @import "@/style/switch-to-dark-mode.css";
 @import "@/style/TSC.css";
 @import "@/style/home.css";
-@import "@/components/documents/Folder/styles.css";
-
 @layer base {
   /* ——— App theme ——— */
   :root {

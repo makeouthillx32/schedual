@@ -169,6 +169,7 @@
 }
 
 /* Dynamic Paper Layers - Sharper and More Defined */
+/* Paper layers — lined paper effect */
 .folder-paper {
   position: absolute;
   width: 90%;
@@ -176,25 +177,25 @@
   left: 5%;
   top: 10%;
   background: hsl(var(--card));
-  border-radius: calc(var(--radius) * 0.75);
-  box-shadow: 
-    0 3px 6px hsl(var(--foreground) / 0.15),
-    0 1px 3px hsl(var(--foreground) / 0.1),
-    inset 0 1px 0 hsl(var(--background) / 0.5);
-  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) * 0.5);
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.1),
+    inset 0 1px 0 hsl(var(--background) / 0.3);
+  /* subtle ruled lines */
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 14px,
+      hsl(var(--border) / 0.1) 15px
+    );
+  background-size: 100% 15px;
+  /* ensure 3D layering */
   transform-style: preserve-3d;
-  /* Sharper rendering */
   image-rendering: crisp-edges;
-  /* Paper texture effect */
-  background-image: 
-    linear-gradient(45deg, hsl(var(--muted) / 0.05) 25%, transparent 25%),
-    linear-gradient(-45deg, hsl(var(--muted) / 0.05) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, hsl(var(--muted) / 0.05) 75%),
-    linear-gradient(-45deg, transparent 75%, hsl(var(--muted) / 0.05) 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 
+/* …responsive media queries as before… */
 /* Folder Cover - Enhanced Definition */
 .folder-cover {
   position: absolute;

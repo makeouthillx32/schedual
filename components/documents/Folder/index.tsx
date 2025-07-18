@@ -15,12 +15,11 @@ interface FolderProps {
     created_at: string;
     updated_at: string;
     is_favorite: boolean;
-    fileCount?: number; // number of files in the folder
+    fileCount?: number; // Add this to track files in folder
   };
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
-  index: number;                        // ← newly added
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -32,7 +31,6 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
-  index,                               // ← destructured here
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -40,10 +38,12 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Calculate paper layers based on file count
   const fileCount = folder.fileCount || 0;
-  const paperLayers = Math.min(Math.max(fileCount, 0), 5);
+  const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
   const isEmpty = fileCount === 0;
 
+  // Handle click
   const handleClick = (e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
@@ -52,19 +52,20 @@ export default function Folder({
     }
   };
 
+  // Handle context menu
   const handleContextMenu = (e: React.MouseEvent) => {
     onContextMenu(e, folder.id);
   };
 
+  // Handle favorite toggle
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(folder.path, folder.name);
   };
 
-  // List view
   if (viewMode === 'list') {
     return (
-      <div
+      <div 
         className="folder-list-item"
         onClick={handleClick}
         onContextMenu={handleContextMenu}
@@ -88,41 +89,46 @@ export default function Folder({
     );
   }
 
-  // Grid / 3D folder view
   return (
-    <div
-      className={`folder-container chart-${index % 5 + 1} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+    <div 
+      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     >
+      {/* 3D Folder Structure */}
       <div className="folder-3d">
-        <div className="folder-back" />
-
-        {Array.from({ length: paperLayers }, (_, layerIndex) => (
-          <div
-            key={layerIndex}
+        {/* Back of folder */}
+        <div className="folder-back"></div>
+        
+        {/* Dynamic Paper Layers */}
+        {Array.from({ length: paperLayers }, (_, index) => (
+          <div 
+            key={index}
             className="folder-paper"
             style={{
-              transform: `translateZ(${(layerIndex + 1) * 2}px) translateY(-${layerIndex}px)`,
-              opacity: 0.9 - layerIndex * 0.1,
-              zIndex: layerIndex + 1
+              transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
+              opacity: 0.9 - (index * 0.1),
+              zIndex: index + 1
             }}
           />
         ))}
-
-        <div
+        
+        {/* Folder Cover */}
+        <div 
           className="folder-cover"
           style={{
             transform: `translateZ(${paperLayers * 2 + 5}px)`,
             zIndex: paperLayers + 10
           }}
         >
-          <div className="folder-tab" />
+          {/* Folder Tab */}
+          <div className="folder-tab"></div>
         </div>
-
-        <div
+        
+        {/* Folder Content Overlay */}
+        <div 
           className="folder-content"
           style={{
             transform: `translateZ(${paperLayers * 2 + 10}px)`,
@@ -135,7 +141,8 @@ export default function Folder({
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
-
+          
+          {/* Action Buttons */}
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}

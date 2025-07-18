@@ -1,7 +1,7 @@
-// components/documents/index.tsx - REFACTORED VERSION
+// components/documents/index.tsx - OPTIMIZED VERSION
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { 
   useDocuments, 
   useFileUpload, 
@@ -19,6 +19,15 @@ import FileGrid from './FileGrid';
 interface DocumentsProps {
   className?: string;
 }
+
+// Debounce utility function
+const debounce = (fn: Function, delay: number = 300) => {
+  let timer: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
 
 export default function Documents({ className = '' }: DocumentsProps) {
   // Basic state
@@ -50,16 +59,25 @@ export default function Documents({ className = '' }: DocumentsProps) {
   const { uploadFiles, isUploading, uploads } = useFileUpload();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFolderFavorites();
 
-  // Handlers
-  const handleSearch = useCallback(async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      await searchDocuments(query, currentPath);
-    } else {
-      await fetchDocuments();
-    }
-  }, [searchDocuments, fetchDocuments, currentPath]);
+  // Debounced search handler to prevent excessive re-renders
+  const debouncedSearch = useCallback(
+    debounce(async (query: string, path: string) => {
+      if (query.trim()) {
+        await searchDocuments(query, path);
+      } else {
+        await fetchDocuments();
+      }
+    }, 300),
+    [searchDocuments, fetchDocuments]
+  );
 
+  // Optimized search handler
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    debouncedSearch(query, currentPath);
+  }, [debouncedSearch, currentPath]);
+
+  // Memoized handlers to prevent child re-renders
   const handleFileUpload = useCallback(async (files: File[]) => {
     try {
       await uploadFiles(files, currentPath);
@@ -124,18 +142,35 @@ export default function Documents({ className = '' }: DocumentsProps) {
     }
   }, []);
 
-  // Convert favorites for FavoritesBar
-  const favoriteItems = favorites.map(fav => ({
-    id: fav.id,
-    name: fav.folder_name,
-    path: fav.folder_path,
-    type: 'folder' as const,
-    isPinned: false,
-    created_at: fav.created_at
-  }));
+  // Memoized handlers for FileGrid to prevent unnecessary re-renders
+  const fileGridHandlers = useMemo(() => ({
+    onPreview: (id: string) => setPreviewDocument(id),
+    onDownload: (id: string) => handleDocumentAction('download', id),
+    onToggleFavorite: (id: string) => handleDocumentAction('favorite', id),
+    onNavigate: navigateToFolder,
+    onAddFavorite: addFavorite,
+    onContextMenu: handleContextMenu,
+    onSelect: handleSelect
+  }), [handleDocumentAction, navigateToFolder, addFavorite, handleContextMenu, handleSelect]);
 
-  // Get preview document
-  const previewDoc = previewDocument ? documents.find(d => d.id === previewDocument) : undefined;
+  // Convert favorites for FavoritesBar - memoized to prevent recalculation
+  const favoriteItems = useMemo(() => 
+    favorites.map(fav => ({
+      id: fav.id,
+      name: fav.folder_name,
+      path: fav.folder_path,
+      type: 'folder' as const,
+      isPinned: false,
+      created_at: fav.created_at
+    })),
+    [favorites]
+  );
+
+  // Get preview document - memoized
+  const previewDoc = useMemo(() => 
+    previewDocument ? documents.find(d => d.id === previewDocument) : undefined,
+    [previewDocument, documents]
+  );
 
   // Close context menu on outside click
   useEffect(() => {
@@ -167,95 +202,96 @@ export default function Documents({ className = '' }: DocumentsProps) {
   }
 
   return (
-    <div className={`documents-container space-y-6 ${className}`}>
-      {/* Favorites Bar */}
-      <FavoritesBar
-        favorites={favoriteItems}
-        currentPath={currentPath}
-        onNavigate={navigateToFolder}
-        onAddFavorite={(path, name) => addFavorite(path, name)}
-        onRemoveFavorite={(favoriteId) => {
-          const favorite = favorites.find(f => f.id === favoriteId);
-          if (favorite) removeFavorite(favorite.folder_path);
-        }}
-      />
-
-      {/* Toolbar */}
-      <Toolbar
-        searchQuery={searchQuery}
-        onSearchChange={handleSearch}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onUpload={() => setShowUploadZone(true)}
-        onCreateFolder={async () => {
-          const name = prompt('Enter folder name:');
-          if (name) {
-            await createFolder(name, currentPath);
-          }
-        }}
-        onRefresh={fetchDocuments}
-        sortBy="name"
-        sortOrder="asc"
-        onSortChange={() => {}}
-        showFavoritesOnly={false}
-        onToggleFavorites={() => {}}
-        selectedCount={selectedItems.length}
-        onClearSelection={() => setSelectedItems([])}
-        onSelectAll={() => setSelectedItems(documents.map(d => d.id))}
-        isUploading={isUploading}
-        isLoading={loading}
-      />
-
-      {/* Breadcrumb Navigation */}
-      <Breadcrumb
-        currentPath={currentPath}
-        onNavigate={navigateToFolder}
-      />
-
-      {/* Documents Content Area */}
-      <div className="space-y-4">
-        {/* Quick Back Button */}
-        {currentPath && (
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => {
-                const pathParts = currentPath.split('/').filter(Boolean);
-                const parentPath = pathParts.length > 1 
-                  ? pathParts.slice(0, -1).join('/') + '/'
-                  : '';
-                navigateToFolder(parentPath);
-              }}
-              className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to {currentPath.split('/').filter(Boolean).length > 1 
-                ? currentPath.split('/').filter(Boolean).slice(-2, -1)[0] 
-                : 'Home'}
-            </button>
-            
-            <div className="text-sm text-gray-500">
-              {documents.length} item{documents.length !== 1 ? 's' : ''}
-            </div>
-          </div>
-        )}
-
-        {/* File Grid - Isolated Rendering Component */}
-        <FileGrid
-          documents={documents}
-          viewMode={viewMode}
-          selectedItems={selectedItems}
-          searchQuery={searchQuery}
+    <main className={`flex-1 flex flex-col overflow-hidden ${className}`}>
+      {/* Fixed Header Area - Non-scrollable */}
+      <div className="flex-shrink-0 space-y-6 p-6 border-b border-gray-200 dark:border-gray-700">
+        {/* Favorites Bar */}
+        <FavoritesBar
+          favorites={favoriteItems}
           currentPath={currentPath}
-          onPreview={(id) => setPreviewDocument(id)}
-          onDownload={(id) => handleDocumentAction('download', id)}
-          onToggleFavorite={(id) => handleDocumentAction('favorite', id)}
           onNavigate={navigateToFolder}
-          onAddFavorite={addFavorite}
-          onContextMenu={handleContextMenu}
-          onSelect={handleSelect}
+          onAddFavorite={(path, name) => addFavorite(path, name)}
+          onRemoveFavorite={(favoriteId) => {
+            const favorite = favorites.find(f => f.id === favoriteId);
+            if (favorite) removeFavorite(favorite.folder_path);
+          }}
         />
+
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb
+          currentPath={currentPath}
+          onNavigate={navigateToFolder}
+        />
+      </div>
+
+      {/* Sticky Toolbar */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        <Toolbar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearch}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onUpload={() => setShowUploadZone(true)}
+          onCreateFolder={async () => {
+            const name = prompt('Enter folder name:');
+            if (name) {
+              await createFolder(name, currentPath);
+            }
+          }}
+          onRefresh={fetchDocuments}
+          sortBy="name"
+          sortOrder="asc"
+          onSortChange={() => {}}
+          showFavoritesOnly={false}
+          onToggleFavorites={() => {}}
+          selectedCount={selectedItems.length}
+          onClearSelection={() => setSelectedItems([])}
+          onSelectAll={() => setSelectedItems(documents.map(d => d.id))}
+          isUploading={isUploading}
+          isLoading={loading}
+        />
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 space-y-4">
+          {/* Quick Back Button */}
+          {currentPath && (
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  const pathParts = currentPath.split('/').filter(Boolean);
+                  const parentPath = pathParts.length > 1 
+                    ? pathParts.slice(0, -1).join('/') + '/'
+                    : '';
+                  navigateToFolder(parentPath);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to {currentPath.split('/').filter(Boolean).length > 1 
+                  ? currentPath.split('/').filter(Boolean).slice(-2, -1)[0] 
+                  : 'Home'}
+              </button>
+              
+              <div className="text-sm text-gray-500">
+                {documents.length} item{documents.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          )}
+
+          {/* Optimized File Grid - Only this re-renders when documents change */}
+          <FileGrid
+            documents={documents}
+            viewMode={viewMode}
+            selectedItems={selectedItems}
+            searchQuery={searchQuery}
+            currentPath={currentPath}
+            {...fileGridHandlers}
+          />
+        </div>
       </div>
 
       {/* Context Menu */}
@@ -283,11 +319,11 @@ export default function Documents({ className = '' }: DocumentsProps) {
         />
       )}
 
-      {/* Simple upload zone */}
+      {/* Upload Zone */}
       {showUploadZone && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-medium mb-4">Upload Files</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">Upload Files</h3>
             <input
               type="file"
               multiple
@@ -298,12 +334,12 @@ export default function Documents({ className = '' }: DocumentsProps) {
                   setShowUploadZone(false);
                 }
               }}
-              className="block w-full border border-gray-300 rounded-lg p-2"
+              className="block w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setShowUploadZone(false)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -311,6 +347,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

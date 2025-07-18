@@ -1,4 +1,4 @@
-// components/documents/index.tsx - CLEAN VERSION
+// components/documents/index.tsx - REFACTORED VERSION
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -9,21 +9,12 @@ import {
 } from '@/hooks/useDocuments';
 
 // Import individual components
-import Folder from './Folder';
-import File from './File';
 import Toolbar from './Toolbar';
 import ContextMenu from './ContextMenu';
 import Preview from './Preview';
 import FavoritesBar from './FavoritesBar';
 import Breadcrumb from './Breadcrumb';
-
-// Only use Lucide icons - no custom icon conflicts
-import { 
-  Folder as FolderLucide,
-  File as FileLucide,
-  Upload,
-  MoreVertical
-} from 'lucide-react';
+import FileGrid from './FileGrid';
 
 interface DocumentsProps {
   className?: string;
@@ -121,6 +112,18 @@ export default function Documents({ className = '' }: DocumentsProps) {
     });
   }, []);
 
+  const handleSelect = useCallback((id: string, isMulti: boolean) => {
+    if (isMulti) {
+      setSelectedItems(prev => 
+        prev.includes(id) 
+          ? prev.filter(item => item !== id)
+          : [...prev, id]
+      );
+    } else {
+      setSelectedItems([id]);
+    }
+  }, []);
+
   // Convert favorites for FavoritesBar
   const favoriteItems = favorites.map(fav => ({
     id: fav.id,
@@ -141,6 +144,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Loading state
   if (loading) {
     return (
       <div className="p-8">
@@ -150,6 +154,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="p-8">
@@ -207,7 +212,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
         onNavigate={navigateToFolder}
       />
 
-      {/* Documents Grid/List */}
+      {/* Documents Content Area */}
       <div className="space-y-4">
         {/* Quick Back Button */}
         {currentPath && (
@@ -236,74 +241,21 @@ export default function Documents({ className = '' }: DocumentsProps) {
           </div>
         )}
 
-        <div className={`documents-content ${
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
-            : 'space-y-2'
-        }`}>
-          {documents.length === 0 ? (
-            <div className="col-span-full text-center py-12">
-              <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-              <p className="text-gray-500">
-                {searchQuery ? 'No documents found' : 'This folder is empty'}
-              </p>
-              {!currentPath && (
-                <p className="text-gray-400 mt-2">
-                  Click "Upload" to add files or "New Folder" to create folders
-                </p>
-              )}
-            </div>
-          ) : (
-            documents.map((doc) => (
-              doc.type === 'folder' ? (
-                <Folder
-                  key={doc.id}
-                  folder={doc}
-                  viewMode={viewMode}
-                  isSelected={selectedItems.includes(doc.id)}
-                  isFavorite={doc.is_favorite}
-                  onNavigate={navigateToFolder}
-                  onToggleFavorite={(path, name) => addFavorite(path, name)}
-                  onContextMenu={handleContextMenu}
-                  onSelect={(id, isMulti) => {
-                    if (isMulti) {
-                      setSelectedItems(prev => 
-                        prev.includes(id) 
-                          ? prev.filter(item => item !== id)
-                          : [...prev, id]
-                      );
-                    } else {
-                      setSelectedItems([id]);
-                    }
-                  }}
-                />
-              ) : (
-                <File
-                  key={doc.id}
-                  file={doc}
-                  viewMode={viewMode}
-                  isSelected={selectedItems.includes(doc.id)}
-                  isFavorite={doc.is_favorite}
-                  onPreview={() => setPreviewDocument(doc.id)}
-                  onDownload={() => handleDocumentAction('download', doc.id)}
-                  onToggleFavorite={() => handleDocumentAction('favorite', doc.id)}
-                  onContextMenu={handleContextMenu}
-                  onSelect={(id, isMulti) => {
-                    if (isMulti) {
-                      setSelectedItems(prev => 
-                        prev.includes(id) 
-                          ? prev.filter(item => item !== id)
-                          : [...prev, id]
-                      );
-                    } else {
-                      setSelectedItems([id]);
-                    }
-                  }}
-                />
-              )
-            ))
-          )}
-        </div>
+        {/* File Grid - Isolated Rendering Component */}
+        <FileGrid
+          documents={documents}
+          viewMode={viewMode}
+          selectedItems={selectedItems}
+          searchQuery={searchQuery}
+          currentPath={currentPath}
+          onPreview={(id) => setPreviewDocument(id)}
+          onDownload={(id) => handleDocumentAction('download', id)}
+          onToggleFavorite={(id) => handleDocumentAction('favorite', id)}
+          onNavigate={navigateToFolder}
+          onAddFavorite={addFavorite}
+          onContextMenu={handleContextMenu}
+          onSelect={handleSelect}
+        />
       </div>
 
       {/* Context Menu */}
@@ -331,7 +283,7 @@ export default function Documents({ className = '' }: DocumentsProps) {
         />
       )}
 
-      {/* Simple upload zone instead of complex UploadZone component */}
+      {/* Simple upload zone */}
       {showUploadZone && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">

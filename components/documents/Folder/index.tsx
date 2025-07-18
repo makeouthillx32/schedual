@@ -20,6 +20,7 @@ interface FolderProps {
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
+  index: number;           // ← added index here
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -31,6 +32,7 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
+  index,                  // ← destructure index here
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -65,7 +67,7 @@ export default function Folder({
 
   if (viewMode === 'list') {
     return (
-      <div 
+      <div
         className="folder-list-item"
         onClick={handleClick}
         onContextMenu={handleContextMenu}
@@ -90,8 +92,8 @@ export default function Folder({
   }
 
   return (
-    <div 
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+    <div
+      className={`folder-container chart-${index % 5 + 1} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
@@ -101,22 +103,22 @@ export default function Folder({
       <div className="folder-3d">
         {/* Back of folder */}
         <div className="folder-back"></div>
-        
+
         {/* Dynamic Paper Layers */}
-        {Array.from({ length: paperLayers }, (_, index) => (
-          <div 
-            key={index}
+        {Array.from({ length: paperLayers }, (_, layerIndex) => (
+          <div
+            key={layerIndex}
             className="folder-paper"
             style={{
-              transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
-              opacity: 0.9 - (index * 0.1),
-              zIndex: index + 1
+              transform: `translateZ(${(layerIndex + 1) * 2}px) translateY(-${layerIndex}px)`,
+              opacity: 0.9 - layerIndex * 0.1,
+              zIndex: layerIndex + 1
             }}
           />
         ))}
-        
+
         {/* Folder Cover */}
-        <div 
+        <div
           className="folder-cover"
           style={{
             transform: `translateZ(${paperLayers * 2 + 5}px)`,
@@ -126,9 +128,9 @@ export default function Folder({
           {/* Folder Tab */}
           <div className="folder-tab"></div>
         </div>
-        
+
         {/* Folder Content Overlay */}
-        <div 
+        <div
           className="folder-content"
           style={{
             transform: `translateZ(${paperLayers * 2 + 10}px)`,
@@ -141,7 +143,7 @@ export default function Folder({
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
-          
+
           {/* Action Buttons */}
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button

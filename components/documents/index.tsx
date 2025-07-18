@@ -200,69 +200,146 @@ export default function Documents({ className = '' }: DocumentsProps) {
         isLoading={loading}
       />
 
-      {/* Documents Grid/List */}
-      <div className={`documents-content ${
-        viewMode === 'grid' 
-          ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
-          : 'space-y-2'
-      }`}>
-        {documents.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-            <p className="text-gray-500">
-              {searchQuery ? 'No documents found' : 'This folder is empty'}
-            </p>
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <button
+          onClick={() => navigateToFolder('')}
+          className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a1 1 0 00-1-1H6a1 1 0 01-1-1V7a1 1 0 011-1h7l2 2h3a1 1 0 011 1z" />
+          </svg>
+          Home
+        </button>
+        
+        {currentPath && currentPath.split('/').filter(Boolean).map((folder, index, array) => {
+          const pathUpToHere = array.slice(0, index + 1).join('/') + '/';
+          return (
+            <React.Fragment key={pathUpToHere}>
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <button
+                onClick={() => navigateToFolder(pathUpToHere)}
+                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                {folder}
+              </button>
+            </React.Fragment>
+          );
+        })}
+        
+        {/* Current Folder Indicator */}
+        {currentPath && (
+          <div className="ml-auto flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="font-medium">
+              You are in: {currentPath.split('/').filter(Boolean).pop() || 'Root'}
+            </span>
           </div>
-        ) : (
-          documents.map((doc) => (
-            doc.type === 'folder' ? (
-              <Folder
-                key={doc.id}
-                folder={doc}
-                viewMode={viewMode}
-                isSelected={selectedItems.includes(doc.id)}
-                isFavorite={doc.is_favorite}
-                onNavigate={navigateToFolder}
-                onToggleFavorite={(path, name) => addFavorite(path, name)}
-                onContextMenu={handleContextMenu}
-                onSelect={(id, isMulti) => {
-                  if (isMulti) {
-                    setSelectedItems(prev => 
-                      prev.includes(id) 
-                        ? prev.filter(item => item !== id)
-                        : [...prev, id]
-                    );
-                  } else {
-                    setSelectedItems([id]);
-                  }
-                }}
-              />
-            ) : (
-              <File
-                key={doc.id}
-                file={doc}
-                viewMode={viewMode}
-                isSelected={selectedItems.includes(doc.id)}
-                isFavorite={doc.is_favorite}
-                onPreview={() => setPreviewDocument(doc.id)}
-                onDownload={() => handleDocumentAction('download', doc.id)}
-                onToggleFavorite={() => handleDocumentAction('favorite', doc.id)}
-                onContextMenu={handleContextMenu}
-                onSelect={(id, isMulti) => {
-                  if (isMulti) {
-                    setSelectedItems(prev => 
-                      prev.includes(id) 
-                        ? prev.filter(item => item !== id)
-                        : [...prev, id]
-                    );
-                  } else {
-                    setSelectedItems([id]);
-                  }
-                }}
-              />
-            )
-          ))
         )}
+      </div>
+
+      {/* Documents Grid/List */}
+      <div className="space-y-4">
+        {/* Quick Back Button */}
+        {currentPath && (
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => {
+                const pathParts = currentPath.split('/').filter(Boolean);
+                const parentPath = pathParts.length > 1 
+                  ? pathParts.slice(0, -1).join('/') + '/'
+                  : '';
+                navigateToFolder(parentPath);
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to {currentPath.split('/').filter(Boolean).length > 1 
+                ? currentPath.split('/').filter(Boolean).slice(-2, -1)[0] 
+                : 'Home'}
+            </button>
+            
+            <div className="text-sm text-gray-500">
+              {documents.length} item{documents.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        )}
+
+        <div className={`documents-content ${
+          viewMode === 'grid' 
+            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
+            : 'space-y-2'
+        }`}>
+          {documents.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
+              <p className="text-gray-500">
+                {searchQuery ? 'No documents found' : 'This folder is empty'}
+              </p>
+              {!currentPath && (
+                <p className="text-gray-400 mt-2">
+                  Click "Upload" to add files or "New Folder" to create folders
+                </p>
+              )}
+            </div>
+          ) : (
+            documents.map((doc) => (
+              doc.type === 'folder' ? (
+                <Folder
+                  key={doc.id}
+                  folder={doc}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  onNavigate={navigateToFolder}
+                  onToggleFavorite={(path, name) => addFavorite(path, name)}
+                  onContextMenu={handleContextMenu}
+                  onSelect={(id, isMulti) => {
+                    if (isMulti) {
+                      setSelectedItems(prev => 
+                        prev.includes(id) 
+                          ? prev.filter(item => item !== id)
+                          : [...prev, id]
+                      );
+                    } else {
+                      setSelectedItems([id]);
+                    }
+                  }}
+                />
+              ) : (
+                <File
+                  key={doc.id}
+                  file={doc}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  onPreview={() => setPreviewDocument(doc.id)}
+                  onDownload={() => handleDocumentAction('download', doc.id)}
+                  onToggleFavorite={() => handleDocumentAction('favorite', doc.id)}
+                  onContextMenu={handleContextMenu}
+                  onSelect={(id, isMulti) => {
+                    if (isMulti) {
+                      setSelectedItems(prev => 
+                        prev.includes(id) 
+                          ? prev.filter(item => item !== id)
+                          : [...prev, id]
+                      );
+                    } else {
+                      setSelectedItems([id]);
+                    }
+                  }}
+                />
+              )
+            ))
+          )}
+        </div>
       </div>
 
       {/* Context Menu */}

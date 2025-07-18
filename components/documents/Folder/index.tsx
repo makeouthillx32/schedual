@@ -1,263 +1,406 @@
-// components/Docustore/Folder/index.tsx
+// components/documents/Folder/index.tsx
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { FolderIcon, StarIcon, MoreVerticalIcon, ChevronRightIcon } from './icons';
-import { DocumentItem } from '@/hooks/useDocuments';
+import React, { useState } from 'react';
+import { Star, MoreVertical } from 'lucide-react';
 
 interface FolderProps {
-  folder: DocumentItem;
-  viewMode?: 'grid' | 'list';
-  isSelected?: boolean;
-  isFavorite?: boolean;
-  onNavigate?: (path: string) => void;
-  onToggleFavorite?: (folderPath: string, folderName: string) => void;
-  onContextMenu?: (e: React.MouseEvent, folderId: string) => void;
-  onSelect?: (folderId: string, isMultiSelect?: boolean) => void;
-  className?: string;
+  folder: {
+    id: string;
+    name: string;
+    path: string;
+    type: 'folder';
+    size_bytes?: number;
+    created_at: string;
+    updated_at: string;
+    is_favorite: boolean;
+    fileCount?: number; // Add this to track files in folder
+  };
+  viewMode: 'grid' | 'list';
+  isSelected: boolean;
+  isFavorite: boolean;
+  onNavigate: (path: string) => void;
+  onToggleFavorite: (path: string, name: string) => void;
+  onContextMenu: (e: React.MouseEvent, id: string) => void;
+  onSelect: (id: string, isMulti: boolean) => void;
 }
 
 export default function Folder({
   folder,
-  viewMode = 'grid',
-  isSelected = false,
-  isFavorite = false,
+  viewMode,
+  isSelected,
+  isFavorite,
   onNavigate,
   onToggleFavorite,
   onContextMenu,
-  onSelect,
-  className = ''
+  onSelect
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Handle folder click for navigation
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    // Don't navigate if clicking on action buttons
-    if ((e.target as HTMLElement).closest('.folder-actions')) {
-      return;
-    }
+  // Calculate paper layers based on file count
+  const fileCount = folder.fileCount || 0;
+  const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
 
-    onNavigate?.(folder.path);
-  }, [folder.path, onNavigate]);
-
-  // Handle context menu
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onContextMenu?.(e, folder.id);
-  }, [folder.id, onContextMenu]);
-
-  // Handle selection
-  const handleSelect = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const isMultiSelect = e.ctrlKey || e.metaKey;
-    onSelect?.(folder.id, isMultiSelect);
-  }, [folder.id, onSelect]);
-
-  // Handle favorite toggle
-  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleFavorite?.(folder.path, folder.name);
-  }, [folder.path, folder.name, onToggleFavorite]);
-
-  // Format date
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
+  // Handle click
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      onSelect(folder.id, true);
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      onNavigate(folder.path);
     }
   };
 
-  // Grid view rendering
-  if (viewMode === 'grid') {
+  // Handle context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    onContextMenu(e, folder.id);
+  };
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleFavorite(folder.path, folder.name);
+  };
+
+  if (viewMode === 'list') {
     return (
-      <div
-        className={`folder-grid group relative cursor-pointer transition-all duration-200 ${
-          isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-        } ${className}`}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Grid Card */}
-        <div className="flex flex-col items-center rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm transition-all hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600">
-          
-          {/* Folder Icon with Favorite Indicator */}
-          <div className="relative mb-3">
-            <FolderIcon 
-              className={`h-12 w-12 ${isFavorite ? 'text-yellow-500' : 'text-blue-500'}`}
-              isFavorite={isFavorite}
-            />
-            {isFavorite && (
-              <StarIcon className="absolute -right-1 -top-1 h-4 w-4 fill-yellow-400 text-yellow-400" />
-            )}
+      <div className="folder-list-item p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="folder-icon-small">
+            <FolderIcon />
           </div>
-
-          {/* Folder Name */}
-          <h3 
-            className="mb-2 w-full truncate text-sm font-medium text-gray-900 dark:text-white" 
-            title={folder.name}
+          <div className="flex-1">
+            <h3 className="font-medium text-gray-900 dark:text-white">{folder.name}</h3>
+            <p className="text-sm text-gray-500">{fileCount} items</p>
+          </div>
+          <button
+            onClick={handleFavoriteToggle}
+            className={`p-1 rounded ${isFavorite ? 'text-yellow-500' : 'text-gray-400'}`}
           >
-            {folder.name}
-          </h3>
-
-          {/* Metadata */}
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            <div>{formatDate(folder.created_at)}</div>
-            {folder.uploader_name && (
-              <div className="mt-1">by {folder.uploader_name}</div>
-            )}
-          </div>
-
-          {/* Tags */}
-          {folder.tags && folder.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap justify-center gap-1">
-              {folder.tags.slice(0, 2).map((tag, index) => (
-                <span
-                  key={index}
-                  className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-                >
-                  {tag}
-                </span>
-              ))}
-              {folder.tags.length > 2 && (
-                <span className="text-xs text-gray-400">+{folder.tags.length - 2}</span>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons (Show on Hover) */}
-          <div className={`folder-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
-            isHovered || isSelected ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <button
-              onClick={handleToggleFavorite}
-              className="rounded-full bg-white p-1 shadow-md transition-colors hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600"
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <StarIcon 
-                className={`h-3 w-3 ${
-                  isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'
-                }`}
-              />
-            </button>
-            
-            <button
-              onClick={handleContextMenu}
-              className="rounded-full bg-white p-1 shadow-md transition-colors hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600"
-              title="More options"
-            >
-              <MoreVerticalIcon className="h-3 w-3 text-gray-400" />
-            </button>
-          </div>
-
-          {/* Selection Checkbox */}
-          {(isHovered || isSelected) && (
-            <div className="absolute left-2 top-2">
-              <button
-                onClick={handleSelect}
-                className="rounded border-2 border-gray-300 bg-white p-0.5 transition-colors hover:border-blue-500 dark:border-gray-600 dark:bg-gray-700"
-              >
-                <div className={`h-3 w-3 rounded ${
-                  isSelected ? 'bg-blue-500' : 'bg-transparent'
-                }`} />
-              </button>
-            </div>
-          )}
+            <Star className="w-4 h-4" />
+          </button>
         </div>
       </div>
     );
   }
 
-  // List view rendering
   return (
-    <div
-      className={`folder-list group flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 ${
-        isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-      } ${className}`}
-      onClick={handleClick}
-      onContextMenu={handleContextMenu}
+    <div 
+      className={`folder-container ${isSelected ? 'selected' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
     >
-      {/* Selection Checkbox */}
-      {(isHovered || isSelected) && (
-        <button
-          onClick={handleSelect}
-          className="rounded border-2 border-gray-300 bg-white p-0.5 transition-colors hover:border-blue-500 dark:border-gray-600 dark:bg-gray-700"
-        >
-          <div className={`h-3 w-3 rounded ${
-            isSelected ? 'bg-blue-500' : 'bg-transparent'
-          }`} />
-        </button>
-      )}
-
-      {/* Folder Icon */}
-      <div className="flex-shrink-0">
-        <FolderIcon 
-          className={`h-6 w-6 ${isFavorite ? 'text-yellow-500' : 'text-blue-500'}`}
-          isFavorite={isFavorite}
-        />
-      </div>
-
-      {/* Folder Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium text-gray-900 dark:text-white">
-            {folder.name}
-          </h3>
-          {isFavorite && (
-            <StarIcon className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-          )}
-        </div>
+      {/* 3D Folder Structure */}
+      <div className="folder-3d">
+        {/* Back of folder */}
+        <div className="folder-back"></div>
         
-        <div className="mt-1 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>{formatDate(folder.created_at)}</span>
-          {folder.uploader_name && (
-            <span>by {folder.uploader_name}</span>
-          )}
-          {folder.tags && folder.tags.length > 0 && (
-            <span>{folder.tags.length} tag{folder.tags.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Navigate Icon */}
-      <div className="flex-shrink-0">
-        <ChevronRightIcon className="h-5 w-5 text-gray-400" />
-      </div>
-
-      {/* Action Buttons */}
-      <div className={`folder-actions flex gap-1 transition-opacity ${
-        isHovered || isSelected ? 'opacity-100' : 'opacity-0'
-      }`}>
-        <button
-          onClick={handleToggleFavorite}
-          className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
-          title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <StarIcon 
-            className={`h-4 w-4 ${
-              isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'
-            }`}
+        {/* Dynamic Paper Layers */}
+        {Array.from({ length: paperLayers }, (_, index) => (
+          <div 
+            key={index}
+            className="folder-paper"
+            style={{
+              transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
+              opacity: 0.9 - (index * 0.1)
+            }}
           />
-        </button>
+        ))}
         
-        <button
-          onClick={handleContextMenu}
-          className="rounded p-1 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
-          title="More options"
-        >
-          <MoreVerticalIcon className="h-4 w-4 text-gray-400" />
-        </button>
+        {/* Folder Cover */}
+        <div className="folder-cover">
+          {/* Folder Tab */}
+          <div className="folder-tab"></div>
+        </div>
+        
+        {/* Folder Content Overlay */}
+        <div className="folder-content">
+          <div className="folder-info">
+            <h3 className="folder-name">{folder.name}</h3>
+            <p className="folder-count">{fileCount} items</p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
+            <button
+              onClick={handleFavoriteToggle}
+              className={`action-btn favorite ${isFavorite ? 'active' : ''}`}
+              title="Toggle favorite"
+            >
+              <Star className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onContextMenu(e, folder.id);
+              }}
+              className="action-btn more"
+              title="More options"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
+      
+      <style jsx>{`
+        .folder-container {
+          position: relative;
+          perspective: 2500px;
+          margin: 20px auto;
+          width: 200px;
+          height: 160px;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+        
+        .folder-container:hover {
+          transform: translateY(-5px);
+        }
+        
+        .folder-container.selected {
+          transform: translateY(-5px) scale(1.05);
+        }
+        
+        .folder-3d {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 0.3s ease;
+        }
+        
+        .folder-container:hover .folder-3d {
+          transform: rotateX(5deg) rotateY(-5deg);
+        }
+        
+        /* Folder Back */
+        .folder-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: calc(var(--radius) * 1.5);
+          background: linear-gradient(135deg, 
+            hsl(var(--warning)) 0%, 
+            hsl(var(--warning) / 0.8) 50%, 
+            hsl(var(--warning) / 0.6) 100%
+          );
+          box-shadow: 
+            inset 2px -3px 8px -3px hsl(var(--foreground) / 0.3),
+            0 8px 16px hsl(var(--foreground) / 0.2);
+          transform: translateZ(-10px);
+        }
+        
+        /* Dynamic Paper Layers */
+        .folder-paper {
+          position: absolute;
+          width: 90%;
+          height: 85%;
+          left: 5%;
+          top: 10%;
+          background: hsl(var(--card));
+          border-radius: var(--radius);
+          box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+          border: 1px solid hsl(var(--border));
+          transform-style: preserve-3d;
+        }
+        
+        /* Folder Cover */
+        .folder-cover {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: calc(var(--radius) * 1.5) var(--radius) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
+          background: linear-gradient(135deg, 
+            hsl(var(--warning) / 0.9) 0%, 
+            hsl(var(--warning)) 50%, 
+            hsl(var(--warning) / 0.8) 100%
+          );
+          box-shadow: 
+            0 4px 8px hsl(var(--foreground) / 0.2),
+            inset 0 2px 4px hsl(var(--background) / 0.3);
+          transform: translateZ(${paperLayers * 2 + 5}px);
+        }
+        
+        /* Folder Tab */
+        .folder-tab {
+          position: absolute;
+          top: -8px;
+          left: 20px;
+          width: 60px;
+          height: 20px;
+          background: linear-gradient(135deg, 
+            hsl(var(--warning) / 0.9) 0%, 
+            hsl(var(--warning)) 100%
+          );
+          border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
+          box-shadow: 
+            0 -2px 4px hsl(var(--foreground) / 0.1),
+            inset 0 1px 2px hsl(var(--background) / 0.3);
+        }
+        
+        /* Folder Content Overlay */
+        .folder-content {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 16px;
+          transform: translateZ(${paperLayers * 2 + 10}px);
+          pointer-events: none;
+        }
+        
+        .folder-info {
+          pointer-events: auto;
+        }
+        
+        .folder-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: hsl(var(--foreground));
+          margin: 0 0 4px 0;
+          text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+          line-height: 1.2;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .folder-count {
+          font-size: 12px;
+          color: hsl(var(--muted-foreground));
+          margin: 0;
+          text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+        }
+        
+        /* Action Buttons */
+        .folder-actions {
+          display: flex;
+          gap: 8px;
+          align-self: flex-end;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          pointer-events: auto;
+        }
+        
+        .folder-actions.visible {
+          opacity: 1;
+        }
+        
+        .action-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: var(--radius);
+          border: none;
+          background: hsl(var(--card) / 0.9);
+          color: hsl(var(--muted-foreground));
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+          border: 1px solid hsl(var(--border));
+        }
+        
+        .action-btn:hover {
+          background: hsl(var(--card));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px hsl(var(--foreground) / 0.15);
+          color: hsl(var(--foreground));
+        }
+        
+        .action-btn.favorite.active {
+          color: hsl(var(--warning));
+          background: hsl(var(--warning) / 0.1);
+        }
+        
+        .action-btn.favorite.active:hover {
+          background: hsl(var(--warning) / 0.2);
+        }
+        
+        /* Empty Folder State */
+        .folder-container.empty .folder-cover {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted)) 0%, 
+            hsl(var(--muted) / 0.8) 50%, 
+            hsl(var(--muted) / 0.6) 100%
+          );
+        }
+        
+        .folder-container.empty .folder-tab {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted)) 0%, 
+            hsl(var(--muted) / 0.8) 100%
+          );
+        }
+        
+        .folder-container.empty .folder-back {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted) / 0.8) 0%, 
+            hsl(var(--muted) / 0.6) 50%, 
+            hsl(var(--muted) / 0.4) 100%
+          );
+        }
+        
+        /* Selected State */
+        .folder-container.selected .folder-cover {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary)) 0%, 
+            hsl(var(--primary) / 0.8) 50%, 
+            hsl(var(--primary) / 0.6) 100%
+          );
+        }
+        
+        .folder-container.selected .folder-tab {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary)) 0%, 
+            hsl(var(--primary) / 0.8) 100%
+          );
+        }
+        
+        .folder-container.selected .folder-back {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary) / 0.8) 0%, 
+            hsl(var(--primary) / 0.6) 50%, 
+            hsl(var(--primary) / 0.4) 100%
+          );
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .folder-container {
+            width: 150px;
+            height: 120px;
+          }
+          
+          .folder-name {
+            font-size: 12px;
+          }
+          
+          .folder-count {
+            font-size: 10px;
+          }
+          
+          .action-btn {
+            width: 24px;
+            height: 24px;
+          }
+        }
+      `}</style>
     </div>
+  );
+}
+
+// Simple fallback icon component
+function FolderIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    </svg>
   );
 }

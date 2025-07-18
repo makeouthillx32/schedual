@@ -8,7 +8,7 @@ import {
   StarFilledIcon,
   MoreVerticalIcon
 } from './icons';
-import './styles.css';
+import './styles.scss';
 
 interface FolderProps {
   folder: {
@@ -17,7 +17,7 @@ interface FolderProps {
     path: string;
     type: 'folder';
     is_favorite: boolean;
-    fileCount?: number;    // number of files, from your API
+    fileCount?: number;
   };
   viewMode: 'grid' | 'list';
   isSelected: boolean;
@@ -62,20 +62,82 @@ export default function Folder({
     onToggleFavorite(folder.path, folder.name);
   };
 
-  // —— List view —— 
+  // Color schemes for different folder states
+  const getColorScheme = () => {
+    if (isEmpty) {
+      return {
+        back: 'bg-gray-300 border-gray-400',
+        papers: [
+          'bg-gray-200 border-gray-300',
+          'bg-gray-100 border-gray-200', 
+          'bg-gray-50 border-gray-100'
+        ],
+        cover: 'bg-blue-200 border-blue-300',
+        tab: 'bg-white border-gray-400'
+      };
+    }
+
+    // Color schemes based on index for variety
+    const schemes = [
+      {
+        back: 'bg-red-500 border-red-600',
+        papers: [
+          'bg-green-400 border-green-500',
+          'bg-blue-400 border-blue-500',
+          'bg-yellow-400 border-yellow-500',
+          'bg-purple-400 border-purple-500',
+          'bg-orange-400 border-orange-500'
+        ],
+        cover: 'bg-cyan-400 border-cyan-500',
+        tab: 'bg-white border-gray-800'
+      },
+      {
+        back: 'bg-indigo-500 border-indigo-600',
+        papers: [
+          'bg-pink-400 border-pink-500',
+          'bg-teal-400 border-teal-500',
+          'bg-lime-400 border-lime-500',
+          'bg-rose-400 border-rose-500',
+          'bg-amber-400 border-amber-500'
+        ],
+        cover: 'bg-emerald-400 border-emerald-500',
+        tab: 'bg-white border-gray-800'
+      },
+      {
+        back: 'bg-violet-500 border-violet-600',
+        papers: [
+          'bg-sky-400 border-sky-500',
+          'bg-fuchsia-400 border-fuchsia-500',
+          'bg-emerald-400 border-emerald-500',
+          'bg-red-400 border-red-500',
+          'bg-blue-400 border-blue-500'
+        ],
+        cover: 'bg-yellow-400 border-yellow-500',
+        tab: 'bg-white border-gray-800'
+      }
+    ];
+
+    return schemes[index % schemes.length];
+  };
+
+  const colors = getColorScheme();
+
+  // List view
   if (viewMode === 'list') {
     return (
       <div
-        className="folder-list-item"
+        className={`folder-list-item bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer ${
+          isSelected ? 'ring-2 ring-blue-500' : ''
+        }`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
         <div className="flex items-center gap-3">
-          <div className="folder-icon-small">
+          <div className="text-blue-500">
             <FolderIcon />
           </div>
           <div className="flex-1">
-            <h3 className="font-medium text-gray-900 dark:text-white">
+            <h3 className="font-medium text-gray-900">
               {folder.name}
             </h3>
             <p className="text-sm text-gray-500">
@@ -84,8 +146,8 @@ export default function Folder({
           </div>
           <button
             onClick={handleFavoriteToggle}
-            className={`p-1 rounded ${
-              isFavorite ? 'text-yellow-500' : 'text-gray-400'
+            className={`p-1 rounded transition-colors ${
+              isFavorite ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
             {isFavorite ? <StarFilledIcon /> : <StarIcon />}
@@ -95,12 +157,10 @@ export default function Folder({
     );
   }
 
-  // —— Grid / 3D view —— 
+  // 3D Grid view
   return (
     <div
-      className={`folder-container chart-${index % 5 + 1} ${
-        isSelected ? 'selected' : ''
-      } ${isEmpty ? 'empty' : ''}`}
+      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
@@ -108,36 +168,41 @@ export default function Folder({
     >
       <div className="folder-3d">
         
-        {/* 1. FOLDER BACK - Uses CSS z-index: 0 */}
-        <div className="folder-back"></div>
+        {/* 1. FOLDER BACK - Furthest back layer */}
+        <div className={`folder-back ${colors.back} border-2`}></div>
 
-        {/* 2. PAPER LAYERS - Uses CSS z-index: 1-5 */}
-        <div className="folder-paper paper-layer-1"></div>
-        <div className="folder-paper paper-layer-2"></div>
-        <div className="folder-paper paper-layer-3"></div>
-        <div className="folder-paper paper-layer-4"></div>
-        <div className="folder-paper paper-layer-5"></div>
+        {/* 2. PAPER LAYERS - Middle layers */}
+        {colors.papers.slice(0, Math.min(fileCount, 5)).map((paperColor, layerIndex) => (
+          <div
+            key={layerIndex}
+            className={`folder-paper paper-layer-${layerIndex + 1} ${paperColor} border-2`}
+          ></div>
+        ))}
 
-        {/* 3. FOLDER COVER - Uses CSS z-index: 10 */}
-        <div className="folder-cover">
-          {/* 4. FOLDER TAB - Child of cover, uses relative positioning */}
-          <div className="folder-tab"></div>
+        {/* 3. FOLDER COVER - Front but behind content */}
+        <div className={`folder-cover ${colors.cover} border-2`}>
+          {/* 4. FOLDER TAB - Inside cover */}
+          <div className={`folder-tab ${colors.tab} border-2`}></div>
         </div>
 
-        {/* 5. FOLDER CONTENT - Uses CSS z-index: 100 */}
-        <div className="folder-content">
-          <div className="folder-info">
-            <h3 className="folder-name">{folder.name}</h3>
-            <p className="folder-count">
+        {/* 5. FOLDER CONTENT - Always on top */}
+        <div className="folder-content bg-black/10 border-2 border-dashed border-black">
+          <div className="folder-info bg-white/90 border-2 border-black rounded p-2">
+            <h3 className="folder-name text-black font-semibold text-sm leading-tight">
+              {folder.name}
+            </h3>
+            <p className="folder-count text-gray-700 text-xs">
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
 
-          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
+          <div className={`folder-actions flex gap-2 transition-opacity ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}>
             <button
               onClick={handleFavoriteToggle}
-              className={`action-btn favorite ${
-                isFavorite ? 'active' : ''
+              className={`action-btn bg-white border-2 border-black rounded w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
+                isFavorite ? 'text-orange-600 bg-orange-50' : 'text-black'
               }`}
               title="Toggle favorite"
             >
@@ -148,7 +213,7 @@ export default function Folder({
                 e.stopPropagation();
                 onContextMenu(e, folder.id);
               }}
-              className="action-btn more"
+              className="action-btn bg-white border-2 border-black rounded w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-all hover:-translate-y-0.5 hover:shadow-lg text-black"
               title="More options"
             >
               <MoreVerticalIcon />

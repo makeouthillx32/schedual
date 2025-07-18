@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { FolderIcon, StarIcon, StarFilledIcon, MoreVerticalIcon } from './icons';
-
+import './styles.css';
 
 interface FolderProps {
   folder: {

@@ -1,4 +1,4 @@
-// components/documents/Folder/index.tsx - FIXED DOM ORDER
+// components/documents/Folder/index.tsx - PURE TAILWIND VERSION
 'use client';
 
 import React, { useState } from 'react';
@@ -8,7 +8,6 @@ import {
   StarFilledIcon,
   MoreVerticalIcon
 } from './icons';
-import './styles.scss';
 
 interface FolderProps {
   folder: {
@@ -98,7 +97,7 @@ export default function Folder({
   if (viewMode === 'list') {
     return (
       <div
-        className={`folder-list-item bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer ${
+        className={`bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 hover:shadow-md transition-all cursor-pointer ${
           isSelected ? 'ring-2 ring-blue-500' : ''
         }`}
         onClick={handleClick}
@@ -129,63 +128,154 @@ export default function Folder({
     );
   }
 
-  // 3D Grid view - CRITICAL: CORRECT DOM ORDER
+  // 3D Grid view - ALL TAILWIND POSITIONING
   return (
     <div
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+      className={`
+        relative w-48 h-40 mx-auto my-5 cursor-pointer
+        transition-transform duration-200 ease-out
+        hover:-translate-y-1 hover:scale-105
+        ${isSelected ? '-translate-y-1 scale-105' : ''}
+        ${isEmpty ? 'opacity-75' : ''}
+      `}
+      style={{ 
+        perspective: '2500px',
+        transformStyle: 'preserve-3d'
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
     >
-      <div className="folder-3d">
+      
+      {/* 3D Container with hover tilt */}
+      <div 
+        className={`
+          relative w-full h-full transition-transform duration-300 ease-out
+          ${isHovered ? 'rotate-x-1 -rotate-y-1' : ''}
+        `}
+        style={{ 
+          transformStyle: 'preserve-3d'
+        }}
+      >
         
-        {/* 1. FOLDER BACK - Furthest back layer */}
-        <div className={`folder-back ${colors.back} border-2`}></div>
+        {/* 1. FOLDER BACK - Furthest back */}
+        <div 
+          className={`
+            absolute inset-0 rounded-xl border-2 ${colors.back}
+            shadow-inner shadow-lg
+          `}
+          style={{ 
+            transform: 'translateZ(-30px)',
+            zIndex: 0,
+            boxShadow: 'inset 3px -4px 12px -4px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.25)'
+          }}
+        />
 
-        {/* 2. PAPER LAYERS - Middle layers */}
-        {colors.papers.slice(0, Math.min(fileCount, 5)).map((paperColor, layerIndex) => (
-          <div
-            key={layerIndex}
-            className={`folder-paper paper-layer-${layerIndex + 1} ${paperColor} border-2`}
-          ></div>
-        ))}
+        {/* 2. PAPER LAYERS - Peek out at top/sides */}
+        {colors.papers.slice(0, Math.min(fileCount, 5)).map((paperColor, layerIndex) => {
+          const layer = layerIndex + 1;
+          return (
+            <div
+              key={layerIndex}
+              className={`
+                absolute rounded border-2 ${paperColor}
+                shadow-md
+              `}
+              style={{
+                width: `${94 - layer * 2}%`,
+                height: `${88 - layer * 2}%`,
+                left: `${3 + layer}%`,
+                top: `${-2 + layer * 2}%`, // Peek out at top
+                transform: `translateZ(${-25 + layer * 5}px)`,
+                zIndex: layer,
+              }}
+            />
+          );
+        })}
 
-        {/* 3. FOLDER TAB - CRITICAL: BEFORE COVER IN DOM ORDER */}
-        <div className={`folder-tab ${colors.tab} border-2`}></div>
+        {/* 3. FOLDER TAB - Behind cover */}
+        <div 
+          className={`
+            absolute w-16 h-5 rounded-t-xl border-2 ${colors.tab}
+            shadow-md
+          `}
+          style={{ 
+            top: '-8px',
+            left: '20px',
+            transform: 'translateZ(5px)',
+            zIndex: 8,
+            boxShadow: '0 -3px 6px rgba(0,0,0,0.15)'
+          }}
+        />
 
-        {/* 4. FOLDER COVER - After tab, so it renders in front */}
-        <div className={`folder-cover ${colors.cover} border-2`}></div>
+        {/* 4. FOLDER COVER - In front of tab */}
+        <div 
+          className={`
+            absolute inset-0 border-2 ${colors.cover}
+            shadow-lg
+          `}
+          style={{ 
+            borderRadius: '12px 6px 12px 12px',
+            transform: 'translateZ(10px)',
+            zIndex: 10,
+            boxShadow: '0 6px 12px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15)'
+          }}
+        />
 
         {/* 5. FOLDER CONTENT - Always on top */}
-        <div className="folder-content bg-black/10 border-2 border-dashed border-black">
-          <div className="folder-info bg-white/90 border-2 border-black rounded p-2">
-            <h3 className="folder-name text-black font-semibold text-sm leading-tight">
+        <div 
+          className={`
+            absolute inset-0 flex flex-col justify-between p-4
+            pointer-events-none
+            bg-black/10 border-2 border-dashed border-black
+          `}
+          style={{ 
+            transform: 'translateZ(20px)',
+            zIndex: 100
+          }}
+        >
+          
+          {/* Folder Info */}
+          <div className="bg-white/90 border-2 border-black rounded p-2 pointer-events-auto">
+            <h3 className="text-black font-semibold text-sm leading-tight truncate">
               {folder.name}
             </h3>
-            <p className="folder-count text-gray-700 text-xs">
+            <p className="text-gray-700 text-xs">
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
 
-          <div className={`folder-actions flex gap-2 transition-opacity ${
-            isHovered ? 'opacity-100' : 'opacity-0'
-          }`}>
+          {/* Action Buttons */}
+          <div className={`
+            flex gap-2 self-end transition-opacity duration-200
+            ${isHovered ? 'opacity-100' : 'opacity-0'}
+          `}>
             <button
               onClick={handleFavoriteToggle}
-              className={`action-btn bg-white border-2 border-black rounded w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-all hover:-translate-y-0.5 hover:shadow-lg ${
-                isFavorite ? 'text-orange-600 bg-orange-50' : 'text-black'
-              }`}
+              className={`
+                w-7 h-7 rounded border-2 border-black bg-white
+                flex items-center justify-center
+                hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
+                transition-all duration-200 pointer-events-auto
+                ${isFavorite ? 'text-orange-600 bg-orange-50' : 'text-black'}
+              `}
               title="Toggle favorite"
             >
               {isFavorite ? <StarFilledIcon /> : <StarIcon />}
             </button>
+            
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onContextMenu(e, folder.id);
               }}
-              className="action-btn bg-white border-2 border-black rounded w-7 h-7 flex items-center justify-center hover:bg-gray-100 transition-all hover:-translate-y-0.5 hover:shadow-lg text-black"
+              className="
+                w-7 h-7 rounded border-2 border-black bg-white text-black
+                flex items-center justify-center
+                hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
+                transition-all duration-200 pointer-events-auto
+              "
               title="More options"
             >
               <MoreVerticalIcon />

@@ -165,36 +165,36 @@ export default function Folder({
 
         {/* 4. FOLDER COVER - Renders fourth (front cover, above papers) */}
         <div className="folder-cover" />
+      </div>
 
-        {/* 5. CONTENT - Renders last (topmost layer, directly on cover) */}
-        <div className="folder-content-overlay">
-          {/* Folder title and count - NO background box */}
-          <div className="folder-info">
-            <h3 className="folder-title" title={folder.name}>
-              {folder.name}
-            </h3>
-            <p className="folder-item-count">
-              {isEmpty ? 'Empty' : `${fileCount} ${fileCount === 1 ? 'item' : 'items'}`}
-            </p>
-          </div>
+      {/* 5. CONTENT - Renders OUTSIDE scene, so it's always on top */}
+      <div className="folder-content-overlay">
+        {/* Folder title and count - NO background box */}
+        <div className="folder-info">
+          <h3 className="folder-title" title={folder.name}>
+            {folder.name}
+          </h3>
+          <p className="folder-item-count">
+            {isEmpty ? 'Empty' : `${fileCount} ${fileCount === 1 ? 'item' : 'items'}`}
+          </p>
+        </div>
 
-          {/* Action buttons on hover */}
-          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
-            <button
-              onClick={handleFavoriteToggle}
-              className={`action-button favorite-btn ${isFavorite ? 'active' : ''}`}
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-            </button>
-            <button
-              onClick={handleMoreClick}
-              className="action-button menu-btn"
-              title="More options"
-            >
-              <MoreVerticalIcon />
-            </button>
-          </div>
+        {/* Action buttons on hover */}
+        <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
+          <button
+            onClick={handleFavoriteToggle}
+            className={`action-button favorite-btn ${isFavorite ? 'active' : ''}`}
+            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+          </button>
+          <button
+            onClick={handleMoreClick}
+            className="action-button menu-btn"
+            title="More options"
+          >
+            <MoreVerticalIcon />
+          </button>
         </div>
       </div>
 

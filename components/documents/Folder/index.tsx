@@ -20,6 +20,7 @@ interface FolderProps {
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
+  chartColorClass: string; // Add chart color class prop
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -31,6 +32,7 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
+  chartColorClass,
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -66,12 +68,12 @@ export default function Folder({
   if (viewMode === 'list') {
     return (
       <div 
-        className={`folder-list-item ${isSelected ? 'selected' : ''}`}
+        className={`folder-list-item ${isSelected ? 'selected' : ''} bg-card border-border hover:bg-accent`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
         <div className="flex items-center gap-3 w-full">
-          <div className="folder-icon-small">
+          <div className="folder-icon-small bg-muted border-border">
             <FolderIcon />
           </div>
           <div className="flex-1 min-w-0">
@@ -82,7 +84,7 @@ export default function Folder({
             onClick={handleFavoriteToggle}
             className={`p-1 rounded transition-colors ${
               isFavorite 
-                ? 'text-[hsl(var(--chart-3))]' 
+                ? 'text-yellow-500' 
                 : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Toggle favorite"
@@ -96,7 +98,7 @@ export default function Folder({
 
   return (
     <div 
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+      className={`folder-container ${chartColorClass} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
@@ -111,7 +113,7 @@ export default function Folder({
         {Array.from({ length: paperLayers }, (_, index) => (
           <div 
             key={index}
-            className="folder-paper"
+            className="folder-paper bg-card border-border"
             style={{
               transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
               opacity: 0.9 - (index * 0.1),
@@ -141,8 +143,8 @@ export default function Folder({
           }}
         >
           <div className="folder-info">
-            <h3 className="folder-name">{folder.name}</h3>
-            <p className="folder-count">
+            <h3 className="folder-name text-foreground">{folder.name}</h3>
+            <p className="folder-count text-muted-foreground">
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
@@ -151,7 +153,7 @@ export default function Folder({
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}
-              className={`action-btn favorite ${isFavorite ? 'active' : ''}`}
+              className={`action-btn favorite bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground ${isFavorite ? 'active text-yellow-500 bg-yellow-50 border-yellow-200' : ''}`}
               title="Toggle favorite"
             >
               {isFavorite ? <StarFilledIcon /> : <StarIcon />}
@@ -161,7 +163,7 @@ export default function Folder({
                 e.stopPropagation();
                 onContextMenu(e, folder.id);
               }}
-              className="action-btn more"
+              className="action-btn more bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               title="More options"
             >
               <MoreVerticalIcon />

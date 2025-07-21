@@ -66,21 +66,26 @@ export default function Folder({
   if (viewMode === 'list') {
     return (
       <div 
-        className="folder-list-item"
+        className={`folder-list-item ${isSelected ? 'selected' : ''}`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full">
           <div className="folder-icon-small">
             <FolderIcon />
           </div>
-          <div className="flex-1">
-            <h3 className="font-medium text-gray-900 dark:text-white">{folder.name}</h3>
-            <p className="text-sm text-gray-500">{fileCount} items</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-foreground truncate">{folder.name}</h3>
+            <p className="text-sm text-muted-foreground">{fileCount} items</p>
           </div>
           <button
             onClick={handleFavoriteToggle}
-            className={`p-1 rounded ${isFavorite ? 'text-yellow-500' : 'text-gray-400'}`}
+            className={`p-1 rounded transition-colors ${
+              isFavorite 
+                ? 'text-[hsl(var(--chart-3))]' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Toggle favorite"
           >
             {isFavorite ? <StarFilledIcon /> : <StarIcon />}
           </button>

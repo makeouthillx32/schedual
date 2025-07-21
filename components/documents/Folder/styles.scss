@@ -1,4 +1,4 @@
-/* components/documents/Folder/styles.css */
+/* components/documents/Folder/styles.scss */
 
 .folder-container {
   position: relative;
@@ -36,122 +36,6 @@
   transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
 }
 
-/* Dynamic Folder Colors Based on Chart Variables */
-.folder-container.chart-1 .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-1)) 0%, 
-    hsl(var(--chart-1) / 0.8) 50%, 
-    hsl(var(--chart-1) / 0.6) 100%
-  );
-}
-
-.folder-container.chart-1 .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-1) / 0.9) 0%, 
-    hsl(var(--chart-1)) 50%, 
-    hsl(var(--chart-1) / 0.8) 100%
-  );
-}
-
-.folder-container.chart-1 .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-1) / 0.9) 0%, 
-    hsl(var(--chart-1)) 100%
-  );
-}
-
-.folder-container.chart-2 .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-2)) 0%, 
-    hsl(var(--chart-2) / 0.8) 50%, 
-    hsl(var(--chart-2) / 0.6) 100%
-  );
-}
-
-.folder-container.chart-2 .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-2) / 0.9) 0%, 
-    hsl(var(--chart-2)) 50%, 
-    hsl(var(--chart-2) / 0.8) 100%
-  );
-}
-
-.folder-container.chart-2 .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-2) / 0.9) 0%, 
-    hsl(var(--chart-2)) 100%
-  );
-}
-
-.folder-container.chart-3 .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-3)) 0%, 
-    hsl(var(--chart-3) / 0.8) 50%, 
-    hsl(var(--chart-3) / 0.6) 100%
-  );
-}
-
-.folder-container.chart-3 .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-3) / 0.9) 0%, 
-    hsl(var(--chart-3)) 50%, 
-    hsl(var(--chart-3) / 0.8) 100%
-  );
-}
-
-.folder-container.chart-3 .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-3) / 0.9) 0%, 
-    hsl(var(--chart-3)) 100%
-  );
-}
-
-.folder-container.chart-4 .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-4)) 0%, 
-    hsl(var(--chart-4) / 0.8) 50%, 
-    hsl(var(--chart-4) / 0.6) 100%
-  );
-}
-
-.folder-container.chart-4 .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-4) / 0.9) 0%, 
-    hsl(var(--chart-4)) 50%, 
-    hsl(var(--chart-4) / 0.8) 100%
-  );
-}
-
-.folder-container.chart-4 .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-4) / 0.9) 0%, 
-    hsl(var(--chart-4)) 100%
-  );
-}
-
-.folder-container.chart-5 .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-5)) 0%, 
-    hsl(var(--chart-5) / 0.8) 50%, 
-    hsl(var(--chart-5) / 0.6) 100%
-  );
-}
-
-.folder-container.chart-5 .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-5) / 0.9) 0%, 
-    hsl(var(--chart-5)) 50%, 
-    hsl(var(--chart-5) / 0.8) 100%
-  );
-}
-
-.folder-container.chart-5 .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--chart-5) / 0.9) 0%, 
-    hsl(var(--chart-5)) 100%
-  );
-}
-
 /* Folder Back - Sharper Definition */
 .folder-back {
   position: absolute;
@@ -159,9 +43,9 @@
   height: 100%;
   border-radius: calc(var(--radius) * 1.5);
   box-shadow: 
-    inset 3px -4px 12px -4px hsl(var(--foreground) / 0.4),
-    0 10px 20px hsl(var(--foreground) / 0.25),
-    0 4px 8px hsl(var(--foreground) / 0.15);
+    inset 3px -4px 12px -4px rgba(0, 0, 0, 0.4),
+    0 10px 20px rgba(0, 0, 0, 0.25),
+    0 4px 8px rgba(0, 0, 0, 0.15);
   transform: translateZ(-10px);
   /* Sharper edges */
   image-rendering: crisp-edges;
@@ -175,17 +59,16 @@
   height: 80%;
   left: 7.5%;
   top: 15%;
-  background: hsl(var(--card));
   border-radius: calc(var(--radius) * 0.5);
-  border: 1px solid hsl(var(--border));
+  border: 1px solid rgba(0, 0, 0, 0.1);
   transform-style: preserve-3d;
   image-rendering: crisp-edges;
   
   /* Enhanced shadows for visibility */
   box-shadow:
-    0 2px 4px hsl(var(--foreground) / 0.2),
-    0 1px 2px hsl(var(--foreground) / 0.15),
-    inset 0 1px 0 hsl(var(--background) / 0.5);
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
   
   /* Subtle paper texture with ruled lines */
   background-image:
@@ -194,8 +77,8 @@
       to bottom,
       transparent 0px,
       transparent 14px,
-      hsl(var(--border) / 0.2) 14px,
-      hsl(var(--border) / 0.2) 15px,
+      rgba(0, 0, 0, 0.1) 14px,
+      rgba(0, 0, 0, 0.1) 15px,
       transparent 15px
     ),
     /* Left margin line */
@@ -203,8 +86,8 @@
       to right,
       transparent 0px,
       transparent 25px,
-      hsl(var(--destructive) / 0.3) 25px,
-      hsl(var(--destructive) / 0.3) 26px,
+      rgba(220, 38, 127, 0.3) 25px,
+      rgba(220, 38, 127, 0.3) 26px,
       transparent 26px
     );
   background-size: 100% 15px, 100% 100%;
@@ -257,10 +140,10 @@
   height: 100%;
   border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
   box-shadow: 
-    0 6px 12px hsl(var(--foreground) / 0.25),
-    0 2px 6px hsl(var(--foreground) / 0.15),
-    inset 0 2px 4px hsl(var(--background) / 0.4),
-    inset 0 -1px 2px hsl(var(--foreground) / 0.1);
+    0 6px 12px rgba(0, 0, 0, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
   /* Sharper rendering */
   image-rendering: crisp-edges;
   /* Subtle gradient overlay for depth */
@@ -278,9 +161,9 @@
   bottom: 0;
   border-radius: inherit;
   background: linear-gradient(135deg, 
-    hsl(var(--background) / 0.2) 0%, 
+    rgba(255, 255, 255, 0.2) 0%, 
     transparent 30%, 
-    hsl(var(--foreground) / 0.1) 100%
+    rgba(0, 0, 0, 0.1) 100%
   );
   pointer-events: none;
 }
@@ -294,9 +177,9 @@
   height: 20px;
   border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
   box-shadow: 
-    0 -3px 6px hsl(var(--foreground) / 0.15),
-    inset 0 1px 2px hsl(var(--background) / 0.4),
-    inset 0 -1px 1px hsl(var(--foreground) / 0.1);
+    0 -3px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
   /* Sharper rendering */
   image-rendering: crisp-edges;
   z-index: 55;
@@ -327,11 +210,10 @@
 .folder-name {
   font-size: 14px;
   font-weight: 600;
-  color: hsl(var(--foreground));
   margin: 0 0 4px 0;
   text-shadow: 
-    0 1px 2px hsl(var(--background) / 0.9),
-    0 0 1px hsl(var(--background) / 0.8);
+    0 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 1px rgba(255, 255, 255, 0.8);
   line-height: 1.2;
   max-width: 120px;
   overflow: hidden;
@@ -343,11 +225,10 @@
 
 .folder-count {
   font-size: 12px;
-  color: hsl(var(--muted-foreground));
   margin: 0;
   text-shadow: 
-    0 1px 2px hsl(var(--background) / 0.9),
-    0 0 1px hsl(var(--background) / 0.8);
+    0 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 1px rgba(255, 255, 255, 0.8);
   /* Sharper text */
   font-feature-settings: "liga" 1, "kern" 1;
 }
@@ -371,107 +252,43 @@
   height: 28px;
   border-radius: var(--radius);
   border: none;
-  background: hsl(var(--card) / 0.95);
-  color: hsl(var(--muted-foreground));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   box-shadow: 
-    0 3px 6px hsl(var(--foreground) / 0.15),
-    0 1px 3px hsl(var(--foreground) / 0.1),
-    inset 0 1px 0 hsl(var(--background) / 0.5);
-  border: 1px solid hsl(var(--border));
+    0 3px 6px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   /* Sharper rendering */
   image-rendering: crisp-edges;
 }
 
 .action-btn:hover {
-  background: hsl(var(--card));
   transform: translateY(-1px);
   box-shadow: 
-    0 6px 12px hsl(var(--foreground) / 0.2),
-    0 2px 6px hsl(var(--foreground) / 0.15),
-    inset 0 1px 0 hsl(var(--background) / 0.5);
-  color: hsl(var(--foreground));
-}
-
-.action-btn.favorite.active {
-  color: hsl(var(--warning));
-  background: hsl(var(--warning) / 0.15);
-}
-
-.action-btn.favorite.active:hover {
-  background: hsl(var(--warning) / 0.25);
-}
-
-/* Empty Folder State */
-.folder-container.empty .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--muted)) 0%, 
-    hsl(var(--muted) / 0.8) 50%, 
-    hsl(var(--muted) / 0.6) 100%
-  );
-}
-
-.folder-container.empty .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--muted)) 0%, 
-    hsl(var(--muted) / 0.8) 100%
-  );
-}
-
-.folder-container.empty .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--muted) / 0.8) 0%, 
-    hsl(var(--muted) / 0.6) 50%, 
-    hsl(var(--muted) / 0.4) 100%
-  );
-}
-
-/* Selected State */
-.folder-container.selected .folder-cover {
-  background: linear-gradient(135deg, 
-    hsl(var(--primary)) 0%, 
-    hsl(var(--primary) / 0.8) 50%, 
-    hsl(var(--primary) / 0.6) 100%
-  );
-}
-
-.folder-container.selected .folder-tab {
-  background: linear-gradient(135deg, 
-    hsl(var(--primary)) 0%, 
-    hsl(var(--primary) / 0.8) 100%
-  );
-}
-
-.folder-container.selected .folder-back {
-  background: linear-gradient(135deg, 
-    hsl(var(--primary) / 0.8) 0%, 
-    hsl(var(--primary) / 0.6) 50%, 
-    hsl(var(--primary) / 0.4) 100%
-  );
+    0 6px 12px rgba(0, 0, 0, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* List View Styling */
 .folder-list-item {
   padding: 12px;
   border-radius: var(--radius);
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  border: 1px solid rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .folder-list-item:hover {
-  background: hsl(var(--accent));
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px hsl(var(--foreground) / 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .folder-icon-small {
-  color: hsl(var(--warning));
   flex-shrink: 0;
 }
 

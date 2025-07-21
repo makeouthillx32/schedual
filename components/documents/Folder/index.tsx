@@ -135,7 +135,7 @@ export default function Folder({
     );
   }
 
-  // Grid view with CORRECTED DOM structure
+  // Grid view with CORRECT DOM order
   return (
     <div
       className={`folder-3d ${chartClass} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''} ${themeReady ? 'ready' : 'loading'}`}
@@ -154,7 +154,7 @@ export default function Folder({
                   isHovered ? 'translateY(-5px) scale(1.02)' : 'none'
       }}
     >
-      {/* 1. BACK PANEL - Renders first (behind everything) */}
+      {/* 1. BACK PANEL - First layer (bottom) */}
       <div 
         className="folder-back"
         style={{
@@ -177,7 +177,55 @@ export default function Folder({
         }}
       ></div>
       
-      {/* 2. FRONT COVER WITH TAB - Renders second */}
+      {/* 2. TAB - Second layer */}
+      <div 
+        className="folder-tab"
+        style={{
+          position: 'absolute',
+          width: '60px',
+          height: '20px',
+          top: '-10px',
+          left: '20px',
+          borderRadius: '8px 8px 0 0',
+          background: `hsl(var(--${chartClass}) / 0.95)`,
+          border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
+          borderBottom: 'none',
+          boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.1)`,
+          ...(isSelected && {
+            background: 'hsl(var(--primary) / 0.95)',
+            borderColor: 'hsl(var(--primary) / 0.7)',
+            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.15)`
+          }),
+          ...(isEmpty && {
+            background: 'hsl(var(--muted) / 0.8)',
+            borderColor: 'hsl(var(--muted) / 0.6)',
+            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.05)`
+          })
+        }}
+      ></div>
+      
+      {/* 3. PAPER SHEETS - Third layer (INSIDE folder, not on top) */}
+      {Array.from({ length: paperLayers }, (_, i) => (
+        <div 
+          key={i} 
+          className="paper" 
+          style={{
+            position: 'absolute',
+            width: '75%',
+            height: '60%',
+            left: `${12.5 + i * 1}%`,
+            top: `${30 + i * 1}%`,
+            background: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border) / 0.3)',
+            borderRadius: '4px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+            opacity: isEmpty ? 0.3 : (0.8 - i * 0.1),
+            zIndex: 3 + i
+          }}
+        ></div>
+      ))}
+      
+      {/* 4. FRONT COVER - Fourth layer (covers the papers) */}
       <div 
         className="folder-front"
         style={{
@@ -190,6 +238,7 @@ export default function Folder({
           background: `linear-gradient(145deg, hsl(var(--${chartClass})) 0%, hsl(var(--${chartClass}) / 0.9) 100%)`,
           border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
           boxShadow: `var(--shadow), inset 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.1)`,
+          zIndex: 10,
           ...(isSelected && {
             background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%)',
             borderColor: 'hsl(var(--primary) / 0.7)',
@@ -201,58 +250,9 @@ export default function Folder({
             boxShadow: `var(--shadow), inset 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.05)`
           })
         }}
-      >
-        {/* TAB - Part of front cover, not separate element */}
-        <div 
-          className="folder-tab"
-          style={{
-            position: 'absolute',
-            width: '60px',
-            height: '20px',
-            top: '-10px',
-            left: '20px',
-            borderRadius: '8px 8px 0 0',
-            background: `hsl(var(--${chartClass}) / 0.95)`,
-            border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
-            borderBottom: 'none',
-            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.1)`,
-            ...(isSelected && {
-              background: 'hsl(var(--primary) / 0.95)',
-              borderColor: 'hsl(var(--primary) / 0.7)',
-              boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.15)`
-            }),
-            ...(isEmpty && {
-              background: 'hsl(var(--muted) / 0.8)',
-              borderColor: 'hsl(var(--muted) / 0.6)',
-              boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.05)`
-            })
-          }}
-        ></div>
-      </div>
+      ></div>
       
-      {/* 3. PAPER SHEETS - Render third (ON TOP, visible) */}
-      {Array.from({ length: paperLayers }, (_, i) => (
-        <div 
-          key={i} 
-          className="paper" 
-          style={{
-            position: 'absolute',
-            width: '85%',
-            height: '70%',
-            left: '7.5%',
-            top: `${20 - i * 2}%`, // Spread papers out visibly
-            background: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border) / 0.3)',
-            borderRadius: '6px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            transform: `translateY(-${i * 3}px) translateX(${i * 2}px)`, // Visible stacking
-            opacity: isEmpty ? 0.3 : (1 - i * 0.1),
-            zIndex: 10 + i
-          }}
-        ></div>
-      ))}
-      
-      {/* 4. TEXT CONTENT - Renders fourth (on top of papers) */}
+      {/* 5. TEXT CONTENT - Fifth layer (on top of front cover) */}
       <div 
         className="folder-text"
         style={{
@@ -260,7 +260,7 @@ export default function Folder({
           top: '20px',
           left: '20px',
           right: '20px',
-          zIndex: 50,
+          zIndex: 20,
           pointerEvents: 'none'
         }}
       >
@@ -294,7 +294,7 @@ export default function Folder({
         </p>
       </div>
       
-      {/* 5. ACTION BUTTONS - Render last (topmost), show on click or hover */}
+      {/* 6. ACTION BUTTONS - Top layer */}
       <div 
         className={`folder-actions ${(isHovered || isClicked) ? 'show' : ''}`}
         style={{
@@ -306,7 +306,7 @@ export default function Folder({
           opacity: (isHovered || isClicked) ? 1 : 0,
           transform: (isHovered || isClicked) ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.9)',
           transition: 'all 0.3s ease',
-          zIndex: 100,
+          zIndex: 30,
           pointerEvents: 'auto'
         }}
       >

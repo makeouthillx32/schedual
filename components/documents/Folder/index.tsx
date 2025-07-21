@@ -7,6 +7,7 @@ import {
   StarFilledIcon,
   MoreVerticalIcon
 } from './icons';
+import './styles.scss';
 
 interface FolderProps {
   folder: {
@@ -132,7 +133,7 @@ export default function Folder({
         }}
       />
 
-      {/* 2. PAPER LAYERS - Visible, peeking out from different edges */}
+      {/* 2. PAPER LAYERS - Peeking out 3px ABOVE folder top edge */}
       {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => {
         const chartVar = `--chart-${i + 1}`;
         return (
@@ -142,23 +143,23 @@ export default function Folder({
             style={{
               backgroundColor: `hsl(var(${chartVar}))`,
               borderColor: `hsl(var(${chartVar}) / 0.8)`,
-              width: `${92 - i * 2}%`,
-              height: `${88 - i * 2}%`,
-              // Make papers peek out at TOP and RIGHT
-              top: `${-4 + i * 1}px`,
-              right: `${-4 + i * 1}px`,
+              width: `${94 - i * 2}%`,
+              height: `${90 - i * 2}%`,
+              // Peek out 3px ABOVE where folder begins, plus stagger
+              top: `${-3 - i * 2}px`,
+              left: `${2 + i * 2}%`,
               zIndex: 1 + i,
             }}
           />
         );
       })}
 
-      {/* 3. FOLDER TAB - Properly colored, behind cover */}
+      {/* 3. FOLDER TAB - FORCE white color, behind cover */}
       <div 
         className="absolute rounded-t-xl border-2 border-b-0"
         style={{
-          backgroundColor: 'hsl(var(--card))',
-          borderColor: 'hsl(var(--border))',
+          backgroundColor: '#ffffff', // Force white - ignore theme for now
+          borderColor: '#cccccc',     // Force light gray border
           width: '64px',
           height: '24px',
           top: '-12px',

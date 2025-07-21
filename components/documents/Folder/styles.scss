@@ -1,4 +1,4 @@
-/* components/documents/Folder/styles.scss */
+/* components/documents/Folder/styles.scss - FIXED VERSION */
 
 .folder-container {
   position: relative;
@@ -36,12 +36,15 @@
   transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
 }
 
-/* Folder Back - Sharper Definition */
+/* FIXED: Folder Back - Now uses CSS variables properly */
 .folder-back {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius) * 1.5);
+  border-radius: calc(var(--radius, 0.5rem) * 1.5);
+  /* FIXED: Use theme variables instead of hardcoded colors */
+  background-color: hsl(var(--destructive));
+  border: 2px solid hsl(var(--destructive) / 0.8);
   box-shadow: 
     inset 3px -4px 12px -4px rgba(0, 0, 0, 0.4),
     0 10px 20px rgba(0, 0, 0, 0.25),
@@ -52,97 +55,55 @@
   image-rendering: -webkit-optimize-contrast;
 }
 
-/* FIXED: Dynamic Paper Layers - Now Visible! */
-.folder-paper {
+/* FIXED: Paper Layers - Dynamic colors using CSS variables */
+.paper-layer {
   position: absolute;
-  width: 85%;
-  height: 80%;
-  left: 7.5%;
-  top: 15%;
-  border-radius: calc(var(--radius) * 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  transform-style: preserve-3d;
+  border-radius: calc(var(--radius, 0.5rem));
+  border: 2px solid;
+  /* Colors will be set via inline styles using chart variables */
+  /* No hardcoded colors here anymore */
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   image-rendering: crisp-edges;
-  
-  /* Enhanced shadows for visibility */
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  
-  /* Subtle paper texture with ruled lines */
-  background-image:
-    /* Ruled lines */
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 14px,
-      rgba(0, 0, 0, 0.1) 14px,
-      rgba(0, 0, 0, 0.1) 15px,
-      transparent 15px
-    ),
-    /* Left margin line */
-    linear-gradient(
-      to right,
-      transparent 0px,
-      transparent 25px,
-      rgba(220, 38, 127, 0.3) 25px,
-      rgba(220, 38, 127, 0.3) 26px,
-      transparent 26px
-    );
-  background-size: 100% 15px, 100% 100%;
-  background-position: 0 0, 0 0;
-  
-  /* Ensure papers show above folder back */
-  z-index: 10;
 }
 
-/* Make each paper layer slightly smaller and more offset */
-.folder-paper:nth-child(2) {
-  width: 85%;
-  height: 80%;
-  left: 7.5%;
-  top: 15%;
+/* FIXED: Folder Tab - Uses theme variables */
+.folder-tab {
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  width: 60px;
+  height: 20px;
+  border-radius: calc(var(--radius, 0.5rem) * 1.5) calc(var(--radius, 0.5rem) * 1.5) 0 0;
+  /* FIXED: Use theme variables */
+  background-color: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  border-bottom: none;
+  box-shadow: 
+    0 -3px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+  /* Sharper rendering */
+  image-rendering: crisp-edges;
+  z-index: 55;
 }
 
-.folder-paper:nth-child(3) {
-  width: 83%;
-  height: 78%;
-  left: 8.5%;
-  top: 16%;
-}
-
-.folder-paper:nth-child(4) {
-  width: 81%;
-  height: 76%;
-  left: 9.5%;
-  top: 17%;
-}
-
-.folder-paper:nth-child(5) {
-  width: 79%;
-  height: 74%;
-  left: 10.5%;
-  top: 18%;
-}
-
-.folder-paper:nth-child(6) {
-  width: 77%;
-  height: 72%;
-  left: 11.5%;
-  top: 19%;
-}
-
-/* Folder Cover - Enhanced Definition */
+/* FIXED: Folder Cover - Uses theme variables */
 .folder-cover {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 0.75) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
+  top: 0px;
+  left: 0px;
+  border-radius: 12px 6px 12px 12px;
+  /* FIXED: Use theme variables instead of hardcoded colors */
+  background-color: hsl(var(--accent));
+  border: 2px solid hsl(var(--accent) / 0.8);
   box-shadow: 
-    0 6px 12px rgba(0, 0, 0, 0.25),
-    0 2px 6px rgba(0, 0, 0, 0.15),
-    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    0 6px 12px rgba(0, 0, 0, 0.2),
+    0 3px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 4px rgba(255, 255, 255, 0.4),
     inset 0 -1px 2px rgba(0, 0, 0, 0.1);
   /* Sharper rendering */
   image-rendering: crisp-edges;
@@ -168,23 +129,6 @@
   pointer-events: none;
 }
 
-/* Folder Tab - Sharper and More Defined */
-.folder-tab {
-  position: absolute;
-  top: -8px;
-  left: 20px;
-  width: 60px;
-  height: 20px;
-  border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
-  box-shadow: 
-    0 -3px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
-  /* Sharper rendering */
-  image-rendering: crisp-edges;
-  z-index: 55;
-}
-
 /* Folder Content Overlay */
 .folder-content {
   position: absolute;
@@ -205,15 +149,19 @@
 
 .folder-info {
   pointer-events: auto;
+  /* FIXED: Use theme variables for background */
+  background-color: hsl(var(--card) / 0.95);
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius, 0.5rem));
+  padding: 8px;
 }
 
 .folder-name {
   font-size: 14px;
   font-weight: 600;
   margin: 0 0 4px 0;
-  text-shadow: 
-    0 1px 2px rgba(255, 255, 255, 0.9),
-    0 0 1px rgba(255, 255, 255, 0.8);
+  /* FIXED: Use theme variables for text color */
+  color: hsl(var(--card-foreground));
   line-height: 1.2;
   max-width: 120px;
   overflow: hidden;
@@ -226,9 +174,8 @@
 .folder-count {
   font-size: 12px;
   margin: 0;
-  text-shadow: 
-    0 1px 2px rgba(255, 255, 255, 0.9),
-    0 0 1px rgba(255, 255, 255, 0.8);
+  /* FIXED: Use theme variables for text color */
+  color: hsl(var(--muted-foreground));
   /* Sharper text */
   font-feature-settings: "liga" 1, "kern" 1;
 }
@@ -250,24 +197,27 @@
 .action-btn {
   width: 28px;
   height: 28px;
-  border-radius: var(--radius);
-  border: none;
+  border-radius: var(--radius, 0.5rem);
+  border: 1px solid hsl(var(--border));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  /* FIXED: Use theme variables for button colors */
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   box-shadow: 
     0 3px 6px rgba(0, 0, 0, 0.15),
     0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.1);
   /* Sharper rendering */
   image-rendering: crisp-edges;
 }
 
 .action-btn:hover {
   transform: translateY(-1px);
+  background-color: hsl(var(--accent));
   box-shadow: 
     0 6px 12px rgba(0, 0, 0, 0.2),
     0 2px 6px rgba(0, 0, 0, 0.15),
@@ -277,19 +227,22 @@
 /* List View Styling */
 .folder-list-item {
   padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius, 0.5rem);
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .folder-list-item:hover {
   transform: translateY(-1px);
+  background-color: hsl(var(--accent));
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .folder-icon-small {
   flex-shrink: 0;
+  background-color: hsl(var(--primary));
 }
 
 /* Responsive Design */

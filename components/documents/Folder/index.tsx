@@ -1,9 +1,12 @@
-// components/documents/Folder/index.tsx
+// components/documents/Folder/index.tsx - PROPERLY ALIGNED VERSION
 'use client';
 
 import React, { useState } from 'react';
-import { FolderIcon, StarIcon, StarFilledIcon, MoreVerticalIcon } from './icons';
-import './styles.scss';
+import {
+  StarIcon,
+  StarFilledIcon,
+  MoreVerticalIcon
+} from './icons';
 
 interface FolderProps {
   folder: {
@@ -11,16 +14,13 @@ interface FolderProps {
     name: string;
     path: string;
     type: 'folder';
-    size_bytes?: number;
-    created_at: string;
-    updated_at: string;
     is_favorite: boolean;
-    fileCount?: number; // Add this to track files in folder
+    fileCount?: number;
   };
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
-  chartColorClass: string; // Add chart color class prop
+  index?: number;
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -32,7 +32,7 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
-  chartColorClass,
+  index = 0,
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -40,65 +40,15 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Get color classes based on chart color
-  const getColorClasses = (chartColor: string) => {
-    const colorMap: Record<string, { back: string; cover: string; tab: string }> = {
-      'chart-1': {
-        back: 'bg-gradient-to-br from-blue-500/90 via-blue-500/70 to-blue-500/50',
-        cover: 'bg-gradient-to-br from-blue-400/90 via-blue-500/90 to-blue-500/70',
-        tab: 'bg-gradient-to-br from-blue-400/90 to-blue-500'
-      },
-      'chart-2': {
-        back: 'bg-gradient-to-br from-green-500/90 via-green-500/70 to-green-500/50',
-        cover: 'bg-gradient-to-br from-green-400/90 via-green-500/90 to-green-500/70',
-        tab: 'bg-gradient-to-br from-green-400/90 to-green-500'
-      },
-      'chart-3': {
-        back: 'bg-gradient-to-br from-yellow-500/90 via-yellow-500/70 to-yellow-500/50',
-        cover: 'bg-gradient-to-br from-yellow-400/90 via-yellow-500/90 to-yellow-500/70',
-        tab: 'bg-gradient-to-br from-yellow-400/90 to-yellow-500'
-      },
-      'chart-4': {
-        back: 'bg-gradient-to-br from-purple-500/90 via-purple-500/70 to-purple-500/50',
-        cover: 'bg-gradient-to-br from-purple-400/90 via-purple-500/90 to-purple-500/70',
-        tab: 'bg-gradient-to-br from-purple-400/90 to-purple-500'
-      },
-      'chart-5': {
-        back: 'bg-gradient-to-br from-red-500/90 via-red-500/70 to-red-500/50',
-        cover: 'bg-gradient-to-br from-red-400/90 via-red-500/90 to-red-500/70',
-        tab: 'bg-gradient-to-br from-red-400/90 to-red-500'
-      }
-    };
-
-    // Default colors for selected/empty states
-    if (isSelected) {
-      return {
-        back: 'bg-gradient-to-br from-primary/90 via-primary/70 to-primary/50',
-        cover: 'bg-gradient-to-br from-primary/90 via-primary to-primary/70',
-        tab: 'bg-gradient-to-br from-primary/90 to-primary'
-      };
-    }
-
-    if (isEmpty) {
-      return {
-        back: 'bg-gradient-to-br from-muted/80 via-muted/60 to-muted/40',
-        cover: 'bg-gradient-to-br from-muted/90 via-muted/80 to-muted/60',
-        tab: 'bg-gradient-to-br from-muted/90 to-muted/80'
-      };
-    }
-
-    return colorMap[chartColor] || colorMap['chart-1'];
-  };
-
-  const colorClasses = getColorClasses(chartColorClass);
-
-  // Calculate paper layers based on file count
-  const fileCount = folder.fileCount || 0;
-  const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
+  const fileCount = folder.fileCount ?? 3; // Force show papers for testing
   const isEmpty = fileCount === 0;
 
-  // Handle click
   const handleClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on action buttons
+    if ((e.target as HTMLElement).closest('.folder-actions')) {
+      return;
+    }
+
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
     } else {
@@ -106,121 +56,185 @@ export default function Folder({
     }
   };
 
-  // Handle context menu
-  const handleContextMenu = (e: React.MouseEvent) => {
-    onContextMenu(e, folder.id);
-  };
-
-  // Handle favorite toggle
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(folder.path, folder.name);
   };
 
+  const handleContextMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onContextMenu(e, folder.id);
+  };
+
+  // List view
   if (viewMode === 'list') {
     return (
-      <div 
-        className={`folder-list-item ${isSelected ? 'selected' : ''} bg-card border-border hover:bg-accent`}
+      <div
+        className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md"
+        style={{
+          backgroundColor: 'hsl(var(--card))',
+          borderColor: 'hsl(var(--border))',
+        }}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
+        onContextMenu={(e) => onContextMenu(e, folder.id)}
       >
-        <div className="flex items-center gap-3 w-full">
-          <div className="folder-icon-small bg-muted border-border">
-            <FolderIcon />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-foreground truncate">{folder.name}</h3>
-            <p className="text-sm text-muted-foreground">{fileCount} items</p>
-          </div>
-          <button
-            onClick={handleFavoriteToggle}
-            className={`p-1 rounded transition-colors ${
-              isFavorite 
-                ? 'text-yellow-500' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-            title="Toggle favorite"
-          >
-            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-          </button>
+        <div 
+          className="w-6 h-6 rounded"
+          style={{ backgroundColor: 'hsl(var(--primary))' }}
+        />
+        <div className="flex-1">
+          <h3 className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
+            {folder.name}
+          </h3>
+          <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {fileCount} {fileCount === 1 ? 'item' : 'items'}
+          </p>
         </div>
+        <button
+          onClick={handleFavoriteToggle}
+          className="p-1 rounded transition-colors"
+          style={{ 
+            color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))' 
+          }}
+        >
+          {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+        </button>
       </div>
     );
   }
 
+  // 3D Grid view - FIXED ALIGNMENT AND VISIBLE PAPERS
   return (
-    <div 
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+    <div
+      className={`
+        relative w-48 h-32 mx-auto my-8 cursor-pointer
+        transition-transform duration-200 
+        ${isHovered ? 'hover:-translate-y-1' : ''}
+        ${isSelected ? '-translate-y-1 scale-105' : ''}
+      `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
+      onContextMenu={(e) => onContextMenu(e, folder.id)}
     >
-      {/* 3D Folder Structure */}
-      <div className="folder-3d">
-        {/* Back of folder */}
-        <div className={`folder-back ${colorClasses.back}`}></div>
-        
-        {/* Dynamic Paper Layers */}
-        {Array.from({ length: paperLayers }, (_, index) => (
-          <div 
-            key={index}
-            className="folder-paper bg-card border-border"
+      
+      {/* 1. FOLDER BACK - Same size as cover, offset behind */}
+      <div 
+        className="absolute rounded-xl border-2 shadow-lg"
+        style={{
+          backgroundColor: 'hsl(var(--destructive))',
+          borderColor: 'hsl(var(--destructive) / 0.8)',
+          width: '100%',
+          height: '100%',
+          top: '6px',
+          left: '6px',
+          zIndex: 0,
+        }}
+      />
+
+      {/* 2. PAPER LAYERS - Peeking out 3px ABOVE folder top edge */}
+      {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => {
+        const chartVar = `--chart-${i + 1}`;
+        return (
+          <div
+            key={i}
+            className="absolute rounded border-2"
             style={{
-              transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
-              opacity: 0.9 - (index * 0.1),
-              zIndex: index + 1
+              backgroundColor: `hsl(var(${chartVar}))`,
+              borderColor: `hsl(var(${chartVar}) / 0.8)`,
+              width: `${94 - i * 2}%`,
+              height: `${90 - i * 2}%`,
+              // Peek out 3px ABOVE where folder begins, plus stagger
+              top: `${-3 - i * 2}px`,
+              left: `${2 + i * 2}%`,
+              zIndex: 1 + i,
             }}
           />
-        ))}
+        );
+      })}
+
+      {/* 3. FOLDER TAB - FORCE white color, behind cover */}
+      <div 
+        className="absolute rounded-t-xl border-2 border-b-0"
+        style={{
+          backgroundColor: '#ffffff', // Force white - ignore theme for now
+          borderColor: '#cccccc',     // Force light gray border
+          width: '64px',
+          height: '24px',
+          top: '-12px',
+          left: '20px',
+          zIndex: 8,
+        }}
+      />
+
+      {/* 4. FOLDER COVER - Exact same size as back, no offset */}
+      <div 
+        className="absolute border-2 shadow-md"
+        style={{
+          backgroundColor: 'hsl(var(--accent))',
+          borderColor: 'hsl(var(--accent) / 0.8)',
+          width: '100%',
+          height: '100%',
+          top: '0px',
+          left: '0px',
+          borderRadius: '12px 6px 12px 12px',
+          zIndex: 10,
+        }}
+      />
+
+      {/* 5. FOLDER CONTENT - Always on top */}
+      <div 
+        className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none"
+        style={{ zIndex: 20 }}
+      >
         
-        {/* Folder Cover */}
+        {/* Folder Info */}
         <div 
-          className={`folder-cover ${colorClasses.cover}`}
+          className="rounded p-2 border pointer-events-auto"
           style={{
-            transform: `translateZ(${paperLayers * 2 + 5}px)`,
-            zIndex: paperLayers + 10
+            backgroundColor: 'hsl(var(--card) / 0.95)',
+            borderColor: 'hsl(var(--border))',
+            color: 'hsl(var(--card-foreground))',
           }}
         >
-          {/* Folder Tab */}
-          <div className={`folder-tab ${colorClasses.tab}`}></div>
+          <h3 className="font-semibold text-sm leading-tight truncate">
+            {folder.name}
+          </h3>
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            {fileCount} {fileCount === 1 ? 'item' : 'items'}
+          </p>
         </div>
-        
-        {/* Folder Content Overlay */}
-        <div 
-          className="folder-content"
-          style={{
-            transform: `translateZ(${paperLayers * 2 + 10}px)`,
-            zIndex: paperLayers + 20
-          }}
-        >
-          <div className="folder-info">
-            <h3 className="folder-name text-foreground">{folder.name}</h3>
-            <p className="folder-count text-muted-foreground">
-              {fileCount} {fileCount === 1 ? 'item' : 'items'}
-            </p>
-          </div>
+
+        {/* Action Buttons */}
+        <div className={`
+          flex gap-2 self-end transition-opacity duration-200 pointer-events-auto
+          ${isHovered ? 'opacity-100' : 'opacity-0'}
+        `}>
+          <button
+            onClick={handleFavoriteToggle}
+            className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"
+            style={{
+              backgroundColor: isFavorite ? 'hsl(var(--chart-3) / 0.1)' : 'hsl(var(--card))',
+              borderColor: 'hsl(var(--border))',
+              color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))',
+            }}
+            title="Toggle favorite"
+          >
+            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+          </button>
           
-          {/* Action Buttons */}
-          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
-            <button
-              onClick={handleFavoriteToggle}
-              className={`action-btn favorite bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground ${isFavorite ? 'active !text-yellow-500 !bg-yellow-50 !border-yellow-200' : ''}`}
-              title="Toggle favorite"
-            >
-              {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onContextMenu(e, folder.id);
-              }}
-              className="action-btn more bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="More options"
-            >
-              <MoreVerticalIcon />
-            </button>
-          </div>
+          <button
+            onClick={handleContextMenuClick}
+            className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"
+            style={{
+              backgroundColor: 'hsl(var(--card))',
+              borderColor: 'hsl(var(--border))',
+              color: 'hsl(var(--muted-foreground))',
+            }}
+            title="More options"
+          >
+            <MoreVerticalIcon />
+          </button>
         </div>
       </div>
     </div>

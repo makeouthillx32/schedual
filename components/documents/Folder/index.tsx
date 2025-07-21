@@ -1,11 +1,10 @@
-// components/documents/Folder/index.tsx - PROPERLY ALIGNED VERSION
 'use client';
 
 import React, { useState } from 'react';
 import {
   StarIcon,
   StarFilledIcon,
-  MoreVerticalIcon
+  MoreVerticalIcon,
 } from './icons';
 
 interface FolderProps {
@@ -36,24 +35,16 @@ export default function Folder({
   onNavigate,
   onToggleFavorite,
   onContextMenu,
-  onSelect
+  onSelect,
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
-
-  const fileCount = folder.fileCount ?? 3; // Force show papers for testing
+  const fileCount = folder.fileCount ?? 3;
   const isEmpty = fileCount === 0;
 
   const handleClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on action buttons
-    if ((e.target as HTMLElement).closest('.folder-actions')) {
-      return;
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      onSelect(folder.id, true);
-    } else {
-      onNavigate(folder.path);
-    }
+    if ((e.target as HTMLElement).closest('.folder-actions')) return;
+    if (e.ctrlKey || e.metaKey) onSelect(folder.id, true);
+    else onNavigate(folder.path);
   };
 
   const handleFavoriteToggle = (e: React.MouseEvent) => {
@@ -66,7 +57,6 @@ export default function Folder({
     onContextMenu(e, folder.id);
   };
 
-  // List view
   if (viewMode === 'list') {
     return (
       <div
@@ -78,7 +68,7 @@ export default function Folder({
         onClick={handleClick}
         onContextMenu={(e) => onContextMenu(e, folder.id)}
       >
-        <div 
+        <div
           className="w-6 h-6 rounded"
           style={{ backgroundColor: 'hsl(var(--primary))' }}
         />
@@ -93,8 +83,10 @@ export default function Folder({
         <button
           onClick={handleFavoriteToggle}
           className="p-1 rounded transition-colors"
-          style={{ 
-            color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))' 
+          style={{
+            color: isFavorite
+              ? 'hsl(var(--chart-3))'
+              : 'hsl(var(--muted-foreground))',
           }}
         >
           {isFavorite ? <StarFilledIcon /> : <StarIcon />}
@@ -103,23 +95,18 @@ export default function Folder({
     );
   }
 
-  // 3D Grid view - FIXED ALIGNMENT AND VISIBLE PAPERS
   return (
     <div
-      className={`
-        relative w-48 h-32 mx-auto my-8 cursor-pointer
-        transition-transform duration-200 
-        ${isHovered ? 'hover:-translate-y-1' : ''}
-        ${isSelected ? '-translate-y-1 scale-105' : ''}
-      `}
+      className={`relative w-48 h-32 mx-auto my-8 cursor-pointer transition-transform duration-200 ${
+        isHovered ? '-translate-y-1' : ''
+      } ${isSelected ? '-translate-y-1 scale-105' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       onContextMenu={(e) => onContextMenu(e, folder.id)}
     >
-      
-      {/* 1. FOLDER BACK - Same size as cover, offset behind */}
-      <div 
+      {/* Folder Back */}
+      <div
         className="absolute rounded-xl border-2 shadow-lg"
         style={{
           backgroundColor: 'hsl(var(--destructive))',
@@ -132,7 +119,7 @@ export default function Folder({
         }}
       />
 
-      {/* 2. PAPER LAYERS - Peeking out 3px ABOVE folder top edge */}
+      {/* Paper Layers */}
       {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => {
         const chartVar = `--chart-${i + 1}`;
         return (
@@ -144,7 +131,6 @@ export default function Folder({
               borderColor: `hsl(var(${chartVar}) / 0.8)`,
               width: `${94 - i * 2}%`,
               height: `${90 - i * 2}%`,
-              // Peek out 3px ABOVE where folder begins, plus stagger
               top: `${-3 - i * 2}px`,
               left: `${2 + i * 2}%`,
               zIndex: 1 + i,
@@ -153,12 +139,12 @@ export default function Folder({
         );
       })}
 
-      {/* 3. FOLDER TAB - FORCE white color, behind cover */}
-      <div 
+      {/* Folder Tab */}
+      <div
         className="absolute rounded-t-xl border-2 border-b-0"
         style={{
-          backgroundColor: '#ffffff', // Force white - ignore theme for now
-          borderColor: '#cccccc',     // Force light gray border
+          backgroundColor: 'hsl(var(--card))',
+          borderColor: 'hsl(var(--border))',
           width: '64px',
           height: '24px',
           top: '-12px',
@@ -167,8 +153,8 @@ export default function Folder({
         }}
       />
 
-      {/* 4. FOLDER COVER - Exact same size as back, no offset */}
-      <div 
+      {/* Folder Cover */}
+      <div
         className="absolute border-2 shadow-md"
         style={{
           backgroundColor: 'hsl(var(--accent))',
@@ -182,14 +168,12 @@ export default function Folder({
         }}
       />
 
-      {/* 5. FOLDER CONTENT - Always on top */}
-      <div 
+      {/* Folder Content */}
+      <div
         className="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none"
         style={{ zIndex: 20 }}
       >
-        
-        {/* Folder Info */}
-        <div 
+        <div
           className="rounded p-2 border pointer-events-auto"
           style={{
             backgroundColor: 'hsl(var(--card) / 0.95)',
@@ -200,29 +184,37 @@ export default function Folder({
           <h3 className="font-semibold text-sm leading-tight truncate">
             {folder.name}
           </h3>
-          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <p
+            className="text-xs"
+            style={{ color: 'hsl(var(--muted-foreground))' }}
+          >
             {fileCount} {fileCount === 1 ? 'item' : 'items'}
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className={`
-          flex gap-2 self-end transition-opacity duration-200 pointer-events-auto
-          ${isHovered ? 'opacity-100' : 'opacity-0'}
-        `}>
+        {/* Actions */}
+        <div
+          className={`flex gap-2 self-end transition-opacity duration-200 pointer-events-auto ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
           <button
             onClick={handleFavoriteToggle}
             className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"
             style={{
-              backgroundColor: isFavorite ? 'hsl(var(--chart-3) / 0.1)' : 'hsl(var(--card))',
+              backgroundColor: isFavorite
+                ? 'hsl(var(--chart-3) / 0.1)'
+                : 'hsl(var(--card))',
               borderColor: 'hsl(var(--border))',
-              color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))',
+              color: isFavorite
+                ? 'hsl(var(--chart-3))'
+                : 'hsl(var(--muted-foreground))',
             }}
             title="Toggle favorite"
           >
             {isFavorite ? <StarFilledIcon /> : <StarIcon />}
           </button>
-          
+
           <button
             onClick={handleContextMenuClick}
             className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"

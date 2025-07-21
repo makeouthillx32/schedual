@@ -40,6 +40,58 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Get color classes based on chart color
+  const getColorClasses = (chartColor: string) => {
+    const colorMap: Record<string, { back: string; cover: string; tab: string }> = {
+      'chart-1': {
+        back: 'bg-gradient-to-br from-blue-500/90 via-blue-500/70 to-blue-500/50',
+        cover: 'bg-gradient-to-br from-blue-400/90 via-blue-500/90 to-blue-500/70',
+        tab: 'bg-gradient-to-br from-blue-400/90 to-blue-500'
+      },
+      'chart-2': {
+        back: 'bg-gradient-to-br from-green-500/90 via-green-500/70 to-green-500/50',
+        cover: 'bg-gradient-to-br from-green-400/90 via-green-500/90 to-green-500/70',
+        tab: 'bg-gradient-to-br from-green-400/90 to-green-500'
+      },
+      'chart-3': {
+        back: 'bg-gradient-to-br from-yellow-500/90 via-yellow-500/70 to-yellow-500/50',
+        cover: 'bg-gradient-to-br from-yellow-400/90 via-yellow-500/90 to-yellow-500/70',
+        tab: 'bg-gradient-to-br from-yellow-400/90 to-yellow-500'
+      },
+      'chart-4': {
+        back: 'bg-gradient-to-br from-purple-500/90 via-purple-500/70 to-purple-500/50',
+        cover: 'bg-gradient-to-br from-purple-400/90 via-purple-500/90 to-purple-500/70',
+        tab: 'bg-gradient-to-br from-purple-400/90 to-purple-500'
+      },
+      'chart-5': {
+        back: 'bg-gradient-to-br from-red-500/90 via-red-500/70 to-red-500/50',
+        cover: 'bg-gradient-to-br from-red-400/90 via-red-500/90 to-red-500/70',
+        tab: 'bg-gradient-to-br from-red-400/90 to-red-500'
+      }
+    };
+
+    // Default colors for selected/empty states
+    if (isSelected) {
+      return {
+        back: 'bg-gradient-to-br from-primary/90 via-primary/70 to-primary/50',
+        cover: 'bg-gradient-to-br from-primary/90 via-primary to-primary/70',
+        tab: 'bg-gradient-to-br from-primary/90 to-primary'
+      };
+    }
+
+    if (isEmpty) {
+      return {
+        back: 'bg-gradient-to-br from-muted/80 via-muted/60 to-muted/40',
+        cover: 'bg-gradient-to-br from-muted/90 via-muted/80 to-muted/60',
+        tab: 'bg-gradient-to-br from-muted/90 to-muted/80'
+      };
+    }
+
+    return colorMap[chartColor] || colorMap['chart-1'];
+  };
+
+  const colorClasses = getColorClasses(chartColorClass);
+
   // Calculate paper layers based on file count
   const fileCount = folder.fileCount || 0;
   const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
@@ -98,7 +150,7 @@ export default function Folder({
 
   return (
     <div 
-      className={`folder-container ${chartColorClass} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
@@ -107,7 +159,7 @@ export default function Folder({
       {/* 3D Folder Structure */}
       <div className="folder-3d">
         {/* Back of folder */}
-        <div className="folder-back"></div>
+        <div className={`folder-back ${colorClasses.back}`}></div>
         
         {/* Dynamic Paper Layers */}
         {Array.from({ length: paperLayers }, (_, index) => (
@@ -124,14 +176,14 @@ export default function Folder({
         
         {/* Folder Cover */}
         <div 
-          className="folder-cover"
+          className={`folder-cover ${colorClasses.cover}`}
           style={{
             transform: `translateZ(${paperLayers * 2 + 5}px)`,
             zIndex: paperLayers + 10
           }}
         >
           {/* Folder Tab */}
-          <div className="folder-tab"></div>
+          <div className={`folder-tab ${colorClasses.tab}`}></div>
         </div>
         
         {/* Folder Content Overlay */}
@@ -153,7 +205,7 @@ export default function Folder({
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}
-              className={`action-btn favorite bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground ${isFavorite ? 'active text-yellow-500 bg-yellow-50 border-yellow-200' : ''}`}
+              className={`action-btn favorite bg-card border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground ${isFavorite ? 'active !text-yellow-500 !bg-yellow-50 !border-yellow-200' : ''}`}
               title="Toggle favorite"
             >
               {isFavorite ? <StarFilledIcon /> : <StarIcon />}

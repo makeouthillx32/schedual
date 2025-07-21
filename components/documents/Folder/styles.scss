@@ -1,4 +1,4 @@
-/* components/documents/Folder/styles.scss */
+/* components/documents/Folder/styles.scss - CLEAN VERSION */
 
 .folder-container-3d {
   position: relative;
@@ -23,14 +23,24 @@
       background: linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%) !important;
       border-color: hsl(var(--primary) / 0.8) !important;
     }
+    
+    .folder-tab {
+      background: linear-gradient(135deg, hsl(var(--primary) / 0.95) 0%, hsl(var(--primary) / 0.8) 100%) !important;
+    }
   }
   
   &.empty {
-    .folder-cover { background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.6) 100%) !important; }
+    .folder-cover { 
+      background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.6) 100%) !important; 
+    }
+    .folder-tab {
+      background: linear-gradient(135deg, hsl(var(--muted) / 0.9) 0%, hsl(var(--muted) / 0.7) 100%) !important;
+    }
     .paper-stack { opacity: 0.2; }
   }
 }
 
+// Dynamic chart colors for each folder
 @for $i from 1 through 5 {
   .folder-container-3d.chart-#{$i} {
     .folder-base {
@@ -44,6 +54,7 @@
     .folder-tab {
       background: linear-gradient(135deg, hsl(var(--chart-#{$i}) / 0.98) 0%, hsl(var(--chart-#{$i}) / 0.85) 100%);
       border: 2px solid hsl(var(--chart-#{$i}) / 0.6);
+      border-bottom: none;
     }
   }
 }
@@ -56,6 +67,7 @@
   transition: transform 0.4s ease;
 }
 
+// 1. Base panel (back layer)
 .folder-base {
   position: absolute;
   width: 100%;
@@ -65,6 +77,19 @@
   box-shadow: 0 8px 32px hsl(var(--foreground) / 0.2);
 }
 
+// 2. Folder tab (middle layer, behind cover)
+.folder-tab {
+  position: absolute;
+  width: 88px;
+  height: 28px;
+  top: -10px;
+  left: 28px;
+  border-radius: 14px 14px 0 0;
+  transform: translateZ(-5px);
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.15);
+}
+
+// 3. Paper stack (above tab, below cover)
 .paper-stack {
   position: absolute;
   width: 100%;
@@ -82,29 +107,32 @@
   border: 1px solid hsl(var(--border) / 0.3);
   border-radius: 10px;
   box-shadow: 0 1px 4px hsl(var(--foreground) / 0.1);
+  transform: translateZ(-8px);
+  
+  // Stack the papers with slight offsets
+  @for $i from 0 through 7 {
+    &[data-layer="#{$i}"] {
+      transform: translateZ(#{-8 + $i * 1}px) translateY(#{-$i * 0.5}px);
+      opacity: #{1 - $i * 0.1};
+    }
+  }
 }
 
-.folder-tab {
-  position: absolute;
-  width: 88px;
-  height: 28px;
-  top: -10px;
-  left: 28px;
-  border-radius: 14px 14px 0 0;
-  border-bottom: none;
-  z-index: 5;
-}
-
+// 4. Folder cover (front layer)
 .folder-cover {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: 18px 10px 18px 18px;
-  z-index: 10;
-  box-shadow: 0 15px 45px hsl(var(--foreground) / 0.18), 0 8px 20px hsl(var(--foreground) / 0.12);
+  transform: translateZ(0px);
+  box-shadow: 
+    0 15px 45px hsl(var(--foreground) / 0.18), 
+    0 8px 20px hsl(var(--foreground) / 0.12),
+    0 4px 8px hsl(var(--foreground) / 0.08);
 }
 
-.folder-content-3d {
+// 5. Content overlay (topmost layer, directly on cover)
+.folder-content-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -112,38 +140,38 @@
   justify-content: space-between;
   padding: 24px;
   pointer-events: none;
-  z-index: 20;
+  transform: translateZ(5px);
 }
 
-.folder-info-panel {
+// Folder info - NO background box, text directly on cover
+.folder-info {
   pointer-events: auto;
-  background: hsl(var(--card) / 0.96);
-  border: 1px solid hsl(var(--border) / 0.6);
-  border-radius: 14px;
-  padding: 16px 20px;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px hsl(var(--foreground) / 0.1);
+  // NO background, NO border, NO backdrop-filter
 }
 
 .folder-title {
   font-size: 16px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
+  font-weight: 700;
+  color: hsl(var(--background)); // White/light text on colored folder
   margin: 0 0 6px 0;
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-shadow: 0 2px 4px hsl(var(--foreground) / 0.3); // Shadow for readability
+  letter-spacing: -0.01em;
 }
 
 .folder-item-count {
   font-size: 13px;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--background) / 0.8); // Slightly transparent white/light text
   margin: 0;
   font-weight: 500;
+  text-shadow: 0 1px 3px hsl(var(--foreground) / 0.3); // Shadow for readability
 }
 
-.folder-action-panel {
+// Action buttons
+.folder-actions {
   display: flex;
   gap: 14px;
   align-self: flex-end;
@@ -162,20 +190,23 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid hsl(var(--border) / 0.6);
-  background: hsl(var(--card) / 0.95);
-  color: hsl(var(--muted-foreground));
+  border: 2px solid hsl(var(--background) / 0.3);
+  background: hsl(var(--background) / 0.2);
+  color: hsl(var(--background));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px hsl(var(--foreground) / 0.2);
   
   &:hover {
-    background: hsl(var(--accent));
-    color: hsl(var(--accent-foreground));
+    background: hsl(var(--background) / 0.9);
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--background) / 0.8);
     transform: translateY(-3px) scale(1.1);
+    box-shadow: 0 8px 20px hsl(var(--foreground) / 0.3);
   }
   
   svg {
@@ -186,10 +217,16 @@
 
 .favorite-btn.active {
   color: hsl(var(--warning));
-  background: hsl(var(--warning) / 0.15);
+  background: hsl(var(--warning) / 0.2);
   border-color: hsl(var(--warning) / 0.5);
+  
+  &:hover {
+    background: hsl(var(--warning) / 0.9);
+    color: hsl(var(--background));
+  }
 }
 
+// List view styles
 .folder-list-item {
   padding: 20px;
   border-radius: 16px;
@@ -208,11 +245,19 @@
     height: 100%;
     background: hsl(var(--chart-1));
     border-radius: 0 3px 3px 0;
+    transition: all 0.3s ease;
   }
   
   &:hover {
     background: hsl(var(--accent) / 0.5);
     transform: translateX(6px);
+    &::before { width: 8px; }
+  }
+  
+  &.selected {
+    background: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary) / 0.4);
+    &::before { background: hsl(var(--primary)); width: 8px; }
   }
   
   @for $i from 1 through 5 {
@@ -237,6 +282,8 @@
   justify-content: center;
   background: hsl(var(--warning) / 0.12);
   border-radius: 12px;
+  
+  svg { width: 22px; height: 22px; }
 }
 
 .folder-list-info {
@@ -248,6 +295,9 @@
   font-weight: 600;
   color: hsl(var(--foreground));
   margin: 0 0 6px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .folder-list-count {
@@ -274,16 +324,72 @@
     color: hsl(var(--warning));
     background: hsl(var(--warning) / 0.15);
   }
+  
+  svg { width: 20px; height: 20px; }
 }
 
+// Debug panel
+.debug-panel {
+  position: absolute;
+  top: -50px;
+  left: 0;
+  background: hsl(var(--foreground) / 0.9);
+  color: hsl(var(--background));
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: monospace;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+  
+  .folder-container-3d:hover & {
+    opacity: 1;
+  }
+  
+  div { margin: 2px 0; }
+}
+
+// Responsive design
 @media (max-width: 768px) {
   .folder-container-3d {
     width: 180px;
     height: 140px;
   }
   
+  .folder-content-overlay {
+    padding: 16px;
+  }
+  
+  .folder-title {
+    font-size: 14px;
+  }
+  
   .action-button {
     width: 36px;
     height: 36px;
+    svg { width: 18px; height: 18px; }
+  }
+}
+
+@media (max-width: 480px) {
+  .folder-container-3d {
+    width: 160px;
+    height: 120px;
+  }
+  
+  .folder-content-overlay {
+    padding: 12px;
+  }
+  
+  .folder-title {
+    font-size: 13px;
+    max-width: 100px;
+  }
+  
+  .action-button {
+    width: 32px;
+    height: 32px;
+    svg { width: 16px; height: 16px; }
   }
 }

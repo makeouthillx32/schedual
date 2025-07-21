@@ -1,4 +1,4 @@
-// components/documents/Folder/index.tsx
+// components/documents/Folder/index.tsx - FIXED VERSION
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -23,6 +23,7 @@ interface FolderProps {
   isSelected: boolean;
   isFavorite: boolean;
   index?: number;
+  chartColorClass?: string;  // ✅ ADD THIS - FileGrid passes this
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -35,6 +36,7 @@ export default function Folder({
   isSelected,
   isFavorite,
   index = 0,
+  chartColorClass,  // ✅ USE THIS instead of calculating
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -47,12 +49,17 @@ export default function Folder({
   const paperLayers = Math.min(Math.max(fileCount, 0), 5);
   const isEmpty = fileCount === 0;
 
+  // ✅ USE the chartColorClass passed from FileGrid, fallback to index calculation
+  const chartClass = chartColorClass || `chart-${(index % 5) + 1}`;
+
   // Ensure theme variables are loaded
   useEffect(() => {
     const checkThemeVars = () => {
       if (typeof window !== "undefined") {
         const style = getComputedStyle(document.documentElement);
-        const chartVar = style.getPropertyValue(`--chart-${(index % 5) + 1}`).trim();
+        // Extract chart number from chartClass (e.g., "chart-1" -> "1")
+        const chartNumber = chartClass.replace('chart-', '');
+        const chartVar = style.getPropertyValue(`--chart-${chartNumber}`).trim();
         const cardVar = style.getPropertyValue('--card').trim();
         
         if (chartVar && cardVar) {
@@ -65,7 +72,7 @@ export default function Folder({
     };
 
     checkThemeVars();
-  }, [index]);
+  }, [chartClass]);
 
   const handleClick = (e: React.MouseEvent) => {
     // Prevent action if clicking on buttons
@@ -92,9 +99,6 @@ export default function Folder({
     e.stopPropagation();
     onContextMenu(e, folder.id);
   };
-
-  // Get chart color class based on index
-  const chartClass = `chart-${(index % 5) + 1}`;
 
   // List view rendering
   if (viewMode === 'list') {
@@ -144,7 +148,7 @@ export default function Folder({
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       data-file-count={fileCount}
-      data-chart-index={index % 5 + 1}
+      data-chart-class={chartClass}
     >
       <div className="folder-3d">
         {/* Back panel */}
@@ -218,6 +222,7 @@ export default function Folder({
           <div>Chart: {chartClass}</div>
           <div>Files: {fileCount}</div>
           <div>Theme: {themeReady ? '✅' : '⏳'}</div>
+          <div>Index: {index}</div>
         </div>
       )}
     </div>

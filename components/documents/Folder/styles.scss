@@ -1,291 +1,289 @@
-/* components/documents/Folder/styles.scss - FIXED VERSION */
+/* components/documents/Folder/styles.scss */
 
-.folder-container {
+.folder-container-3d {
   position: relative;
-  perspective: 2500px;
-  margin: 20px auto;
-  width: 200px;
-  height: 160px;
+  width: 220px;
+  height: 180px;
+  margin: 32px auto;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  /* Improve sharpness */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-font-smoothing: antialiased;
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  &:hover {
+    transform: translateY(-12px) scale(1.03);
+    .folder-scene { transform: rotateX(2deg) rotateY(-2deg); }
+  }
+  
+  &.selected {
+    transform: translateY(-15px) scale(1.05);
+    filter: drop-shadow(0 20px 40px hsl(var(--primary) / 0.3));
+    
+    .folder-cover {
+      background: linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%) !important;
+      border-color: hsl(var(--primary) / 0.8) !important;
+    }
+  }
+  
+  &.empty {
+    .folder-cover { background: linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.6) 100%) !important; }
+    .paper-stack { opacity: 0.2; }
+  }
 }
 
-.folder-container:hover {
-  transform: translateY(-5px) translateZ(0);
+@for $i from 1 through 5 {
+  .folder-container-3d.chart-#{$i} {
+    .folder-base {
+      background: linear-gradient(145deg, hsl(var(--chart-#{$i}) / 0.9) 0%, hsl(var(--chart-#{$i}) / 0.45) 100%);
+      border: 2px solid hsl(var(--chart-#{$i}) / 0.4);
+    }
+    .folder-cover {
+      background: linear-gradient(145deg, hsl(var(--chart-#{$i})) 0%, hsl(var(--chart-#{$i}) / 0.88) 100%);
+      border: 2px solid hsl(var(--chart-#{$i}) / 0.7);
+    }
+    .folder-tab {
+      background: linear-gradient(135deg, hsl(var(--chart-#{$i}) / 0.98) 0%, hsl(var(--chart-#{$i}) / 0.85) 100%);
+      border: 2px solid hsl(var(--chart-#{$i}) / 0.6);
+    }
+  }
 }
 
-.folder-container.selected {
-  transform: translateY(-5px) scale(1.05) translateZ(0);
-}
-
-.folder-3d {
+.folder-scene {
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.3s ease;
-  /* Sharper rendering */
-  transform: translateZ(0);
+  transition: transform 0.4s ease;
 }
 
-.folder-container:hover .folder-3d {
-  transform: rotateX(5deg) rotateY(-5deg) translateZ(0);
-}
-
-/* FIXED: Folder Back - Now uses CSS variables properly */
-.folder-back {
+.folder-base {
   position: absolute;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--radius, 0.5rem) * 1.5);
-  /* FIXED: Use theme variables instead of hardcoded colors */
-  background-color: hsl(var(--destructive));
-  border: 2px solid hsl(var(--destructive) / 0.8);
-  box-shadow: 
-    inset 3px -4px 12px -4px rgba(0, 0, 0, 0.4),
-    0 10px 20px rgba(0, 0, 0, 0.25),
-    0 4px 8px rgba(0, 0, 0, 0.15);
-  transform: translateZ(-10px);
-  /* Sharper edges */
-  image-rendering: crisp-edges;
-  image-rendering: -webkit-optimize-contrast;
+  border-radius: 18px;
+  transform: translateZ(-20px) rotateX(-1deg);
+  box-shadow: 0 8px 32px hsl(var(--foreground) / 0.2);
 }
 
-/* FIXED: Paper Layers - Dynamic colors using CSS variables */
-.paper-layer {
+.paper-stack {
   position: absolute;
-  border-radius: calc(var(--radius, 0.5rem));
-  border: 2px solid;
-  /* Colors will be set via inline styles using chart variables */
-  /* No hardcoded colors here anymore */
-  box-shadow: 
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  image-rendering: crisp-edges;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
 }
 
-/* FIXED: Folder Tab - Uses theme variables */
+.paper-sheet {
+  position: absolute;
+  width: 88%;
+  height: 78%;
+  left: 6%;
+  top: 12%;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px hsl(var(--foreground) / 0.1);
+}
+
 .folder-tab {
   position: absolute;
-  top: -8px;
-  left: 20px;
-  width: 60px;
-  height: 20px;
-  border-radius: calc(var(--radius, 0.5rem) * 1.5) calc(var(--radius, 0.5rem) * 1.5) 0 0;
-  /* FIXED: Use theme variables */
-  background-color: hsl(var(--card));
-  border: 2px solid hsl(var(--border));
+  width: 88px;
+  height: 28px;
+  top: -10px;
+  left: 28px;
+  border-radius: 14px 14px 0 0;
   border-bottom: none;
-  box-shadow: 
-    0 -3px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
-  /* Sharper rendering */
-  image-rendering: crisp-edges;
-  z-index: 55;
+  z-index: 5;
 }
 
-/* FIXED: Folder Cover - Uses theme variables */
 .folder-cover {
   position: absolute;
   width: 100%;
   height: 100%;
-  top: 0px;
-  left: 0px;
-  border-radius: 12px 6px 12px 12px;
-  /* FIXED: Use theme variables instead of hardcoded colors */
-  background-color: hsl(var(--accent));
-  border: 2px solid hsl(var(--accent) / 0.8);
-  box-shadow: 
-    0 6px 12px rgba(0, 0, 0, 0.2),
-    0 3px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 4px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.1);
-  /* Sharper rendering */
-  image-rendering: crisp-edges;
-  /* Subtle gradient overlay for depth */
-  position: relative;
-  /* Ensure cover is above papers but below content */
-  z-index: 50;
+  border-radius: 18px 10px 18px 18px;
+  z-index: 10;
+  box-shadow: 0 15px 45px hsl(var(--foreground) / 0.18), 0 8px 20px hsl(var(--foreground) / 0.12);
 }
 
-.folder-cover::before {
-  content: '';
+.folder-content-3d {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.2) 0%, 
-    transparent 30%, 
-    rgba(0, 0, 0, 0.1) 100%
-  );
-  pointer-events: none;
-}
-
-/* Folder Content Overlay */
-.folder-content {
-  position: absolute;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px;
+  padding: 24px;
   pointer-events: none;
-  /* Sharper text rendering */
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Ensure content is always on top */
-  z-index: 100;
+  z-index: 20;
 }
 
-.folder-info {
+.folder-info-panel {
   pointer-events: auto;
-  /* FIXED: Use theme variables for background */
-  background-color: hsl(var(--card) / 0.95);
-  border: 1px solid hsl(var(--border));
-  border-radius: calc(var(--radius, 0.5rem));
-  padding: 8px;
+  background: hsl(var(--card) / 0.96);
+  border: 1px solid hsl(var(--border) / 0.6);
+  border-radius: 14px;
+  padding: 16px 20px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px hsl(var(--foreground) / 0.1);
 }
 
-.folder-name {
-  font-size: 14px;
+.folder-title {
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 4px 0;
-  /* FIXED: Use theme variables for text color */
-  color: hsl(var(--card-foreground));
-  line-height: 1.2;
-  max-width: 120px;
+  color: hsl(var(--foreground));
+  margin: 0 0 6px 0;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  /* Sharper text */
-  font-feature-settings: "liga" 1, "kern" 1;
 }
 
-.folder-count {
-  font-size: 12px;
-  margin: 0;
-  /* FIXED: Use theme variables for text color */
+.folder-item-count {
+  font-size: 13px;
   color: hsl(var(--muted-foreground));
-  /* Sharper text */
-  font-feature-settings: "liga" 1, "kern" 1;
+  margin: 0;
+  font-weight: 500;
 }
 
-/* Action Buttons - Enhanced Sharpness */
-.folder-actions {
+.folder-action-panel {
   display: flex;
-  gap: 8px;
+  gap: 14px;
   align-self: flex-end;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transform: translateY(12px) scale(0.8);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: auto;
+  
+  &.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.folder-actions.visible {
-  opacity: 1;
-}
-
-.action-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius, 0.5rem);
-  border: 1px solid hsl(var(--border));
+.action-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--border) / 0.6);
+  background: hsl(var(--card) / 0.95);
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  /* FIXED: Use theme variables for button colors */
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  box-shadow: 
-    0 3px 6px rgba(0, 0, 0, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  /* Sharper rendering */
-  image-rendering: crisp-edges;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(8px);
+  
+  &:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    transform: translateY(-3px) scale(1.1);
+  }
+  
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
-.action-btn:hover {
-  transform: translateY(-1px);
-  background-color: hsl(var(--accent));
-  box-shadow: 
-    0 6px 12px rgba(0, 0, 0, 0.2),
-    0 2px 6px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+.favorite-btn.active {
+  color: hsl(var(--warning));
+  background: hsl(var(--warning) / 0.15);
+  border-color: hsl(var(--warning) / 0.5);
 }
 
-/* List View Styling */
 .folder-list-item {
-  padding: 12px;
-  border-radius: var(--radius, 0.5rem);
-  border: 1px solid hsl(var(--border));
-  background-color: hsl(var(--card));
-  transition: all 0.2s ease;
+  padding: 20px;
+  border-radius: 16px;
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: hsl(var(--chart-1));
+    border-radius: 0 3px 3px 0;
+  }
+  
+  &:hover {
+    background: hsl(var(--accent) / 0.5);
+    transform: translateX(6px);
+  }
+  
+  @for $i from 1 through 5 {
+    &.chart-#{$i}::before {
+      background: hsl(var(--chart-#{$i}));
+    }
+  }
 }
 
-.folder-list-item:hover {
-  transform: translateY(-1px);
-  background-color: hsl(var(--accent));
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.folder-list-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-.folder-icon-small {
-  flex-shrink: 0;
-  background-color: hsl(var(--primary));
+.folder-list-icon {
+  color: hsl(var(--warning));
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--warning) / 0.12);
+  border-radius: 12px;
 }
 
-/* Responsive Design */
+.folder-list-info {
+  flex: 1;
+}
+
+.folder-list-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin: 0 0 6px 0;
+}
+
+.folder-list-count {
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.folder-list-favorite {
+  padding: 10px;
+  border: 2px solid hsl(var(--border));
+  background: hsl(var(--background) / 0.8);
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+  
+  &.active {
+    color: hsl(var(--warning));
+    background: hsl(var(--warning) / 0.15);
+  }
+}
+
 @media (max-width: 768px) {
-  .folder-container {
-    width: 150px;
-    height: 120px;
+  .folder-container-3d {
+    width: 180px;
+    height: 140px;
   }
   
-  .folder-name {
-    font-size: 12px;
-  }
-  
-  .folder-count {
-    font-size: 10px;
-  }
-  
-  .action-btn {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .folder-content {
-    padding: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .folder-container {
-    width: 130px;
-    height: 100px;
-  }
-  
-  .folder-content {
-    padding: 8px;
-  }
-  
-  .folder-name {
-    font-size: 11px;
-    max-width: 100px;
-  }
-  
-  .folder-count {
-    font-size: 9px;
+  .action-button {
+    width: 36px;
+    height: 36px;
   }
 }

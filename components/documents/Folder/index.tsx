@@ -1,4 +1,4 @@
-// components/documents/Folder/index.tsx - COMPLETELY REBUILT
+// components/documents/Folder/index.tsx - FIXED DOM STRUCTURE
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -43,29 +43,13 @@ export default function Folder({
   onSelect
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isInteracting, setIsInteracting] = useState(false);
   const [themeReady, setThemeReady] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const folderRef = useRef<HTMLDivElement>(null);
 
   const fileCount = folder.fileCount ?? 0;
-  const paperLayers = Math.min(Math.max(fileCount, 1), 8); // More realistic paper layers
+  const paperLayers = Math.min(Math.max(fileCount, 1), 8);
   const isEmpty = fileCount === 0;
   const chartClass = chartColorClass || `chart-${(index % 5) + 1}`;
-
-  // Advanced mouse tracking for 3D effects
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!folderRef.current) return;
-    
-    const rect = folderRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const mouseX = (e.clientX - centerX) / (rect.width / 2);
-    const mouseY = (e.clientY - centerY) / (rect.height / 2);
-    
-    setMousePosition({ x: mouseX, y: mouseY });
-  };
 
   // Theme variable detection
   useEffect(() => {
@@ -91,9 +75,6 @@ export default function Folder({
   const handleClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.folder-actions')) return;
     
-    setIsInteracting(true);
-    setTimeout(() => setIsInteracting(false), 300);
-    
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
     } else {
@@ -114,17 +95,6 @@ export default function Folder({
   const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onContextMenu(e, folder.id);
-  };
-
-  // Calculate 3D transforms
-  const getTransformStyle = (layer: number = 0) => {
-    if (!isHovered) return '';
-    
-    const baseRotateX = mousePosition.y * -8;
-    const baseRotateY = mousePosition.x * 8;
-    const translateZ = isInteracting ? -5 : layer * 1.5;
-    
-    return `perspective(1000px) rotateX(${baseRotateX}deg) rotateY(${baseRotateY}deg) translateZ(${translateZ}px)`;
   };
 
   // List view rendering
@@ -157,7 +127,7 @@ export default function Folder({
     );
   }
 
-  // Advanced 3D Grid view
+  // FIXED 3D Grid view with correct DOM layering
   return (
     <div
       ref={folderRef}
@@ -165,68 +135,41 @@ export default function Folder({
         isSelected ? 'selected' : ''
       } ${isEmpty ? 'empty' : ''} ${
         themeReady ? 'theme-ready' : 'theme-loading'
-      } ${isInteracting ? 'interacting' : ''}`}
+      }`}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setMousePosition({ x: 0, y: 0 });
-      }}
-      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       data-file-count={fileCount}
       data-chart-class={chartClass}
-      style={{ transform: getTransformStyle() }}
     >
-      {/* 3D Scene Container */}
+      {/* 3D Scene - DOM order controls visual layering */}
       <div className="folder-scene">
         
-        {/* Base/Back Panel */}
-        <div 
-          className="folder-base"
-          style={{ transform: 'translateZ(-15px) rotateX(-1deg)' }}
-        />
+        {/* 1. BASE/BACK PANEL - Renders first (behind everything) */}
+        <div className="folder-base" />
         
-        {/* Paper Stack - Multiple layers for depth */}
+        {/* 2. FOLDER TAB - Renders second (behind cover but above base) */}
+        <div className="folder-tab" />
+        
+        {/* 3. PAPER STACK - Renders third (multiple sheets, above tab) */}
         <div className="paper-stack">
           {Array.from({ length: paperLayers }, (_, layerIndex) => (
             <div
               key={`paper-${layerIndex}`}
               className="paper-sheet"
-              style={{
-                transform: `translateZ(${-12 + layerIndex * 1.5}px) translateY(${-layerIndex * 0.5}px) rotateX(${layerIndex * 0.5}deg)`,
-                opacity: Math.max(0.4, 1 - layerIndex * 0.08),
-              }}
               data-layer={layerIndex}
             />
           ))}
         </div>
 
-        {/* Folder Tab - BEHIND the cover */}
-        <div 
-          className="folder-tab"
-          style={{ 
-            transform: `translateZ(${paperLayers * 1.5 - 2}px) translateY(-2px)` 
-          }}
-        />
+        {/* 4. FOLDER COVER - Renders fourth (front cover, above papers) */}
+        <div className="folder-cover" />
 
-        {/* Folder Cover - ABOVE everything except content */}
-        <div 
-          className="folder-cover"
-          style={{ 
-            transform: `translateZ(${paperLayers * 1.5}px)` 
-          }}
-        />
-
-        {/* Content Overlay - TOPMOST layer */}
-        <div 
-          className="folder-content-3d"
-          style={{ 
-            transform: `translateZ(${paperLayers * 1.5 + 8}px)` 
-          }}
-        >
-          {/* Info Panel */}
-          <div className="folder-info-panel">
+        {/* 5. CONTENT - Renders last (topmost layer, directly on cover) */}
+        <div className="folder-content-overlay">
+          {/* Folder title and count - NO background box */}
+          <div className="folder-info">
             <h3 className="folder-title" title={folder.name}>
               {folder.name}
             </h3>
@@ -235,8 +178,8 @@ export default function Folder({
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className={`folder-action-panel ${isHovered ? 'visible' : ''}`}>
+          {/* Action buttons on hover */}
+          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}
               className={`action-button favorite-btn ${isFavorite ? 'active' : ''}`}
@@ -253,22 +196,15 @@ export default function Folder({
             </button>
           </div>
         </div>
-
-        {/* Lighting Effects */}
-        <div className="folder-lighting">
-          <div className="ambient-light" />
-          <div className="directional-light" />
-        </div>
       </div>
 
-      {/* Development Debug Panel */}
+      {/* Debug panel for development */}
       {process.env.NODE_ENV === 'development' && (
         <div className="debug-panel">
           <div>Chart: {chartClass}</div>
           <div>Files: {fileCount}</div>
           <div>Layers: {paperLayers}</div>
           <div>Theme: {themeReady ? '✅' : '⏳'}</div>
-          <div>Mouse: {Math.round(mousePosition.x * 100)}, {Math.round(mousePosition.y * 100)}</div>
         </div>
       )}
     </div>

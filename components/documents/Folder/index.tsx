@@ -219,7 +219,9 @@ export default function Folder({
             border: '1px solid hsl(var(--border) / 0.3)',
             borderRadius: '4px',
             boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-            opacity: isEmpty ? 0.3 : (0.8 - i * 0.1)
+            opacity: isEmpty ? 0.3 : (0.8 - i * 0.1),
+            transform: (isClicked || isHovered) ? `translateY(-${4 + i * 2}px) translateX(${i * 1}px) rotate(${i * 1}deg)` : 'none',
+            transition: 'all 0.3s ease'
           }}
         ></div>
       ))}

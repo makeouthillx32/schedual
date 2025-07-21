@@ -1,4 +1,4 @@
-// components/documents/Folder/index.tsx - SIMPLE VERSION THAT WORKS
+// components/documents/Folder/index.tsx - PROPERLY ALIGNED VERSION
 'use client';
 
 import React, { useState } from 'react';
@@ -103,7 +103,7 @@ export default function Folder({
     );
   }
 
-  // 3D Grid view - Simple stacked approach
+  // 3D Grid view - FIXED ALIGNMENT AND VISIBLE PAPERS
   return (
     <div
       className={`
@@ -118,59 +118,66 @@ export default function Folder({
       onContextMenu={(e) => onContextMenu(e, folder.id)}
     >
       
-      {/* 1. FOLDER BACK - Furthest back using destructive color */}
+      {/* 1. FOLDER BACK - Same size as cover, offset behind */}
       <div 
-        className="absolute inset-0 rounded-xl border-2 shadow-lg"
+        className="absolute rounded-xl border-2 shadow-lg"
         style={{
           backgroundColor: 'hsl(var(--destructive))',
-          borderColor: 'hsl(var(--destructive-foreground))',
-          transform: 'translateY(12px) translateX(3px)',
+          borderColor: 'hsl(var(--destructive) / 0.8)',
+          width: '100%',
+          height: '100%',
+          top: '6px',
+          left: '6px',
           zIndex: 0,
         }}
       />
 
-      {/* 2. PAPER LAYERS - Using chart colors, peek out at top and right */}
+      {/* 2. PAPER LAYERS - Visible, peeking out from different edges */}
       {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => {
         const chartVar = `--chart-${i + 1}`;
         return (
           <div
             key={i}
-            className="absolute rounded border shadow-sm"
+            className="absolute rounded border-2"
             style={{
               backgroundColor: `hsl(var(${chartVar}))`,
-              borderColor: `hsl(var(${chartVar}))`,
-              width: `${94 - i * 3}%`,
-              height: `${85 - i * 2}%`,
-              left: `${2 + i * 1}%`,
-              top: `${-2 + i * 2}%`, // Peek out at top
-              transform: `translateY(${8 - i * 1}px) translateX(${2 - i * 0.5}px)`,
+              borderColor: `hsl(var(${chartVar}) / 0.8)`,
+              width: `${92 - i * 2}%`,
+              height: `${88 - i * 2}%`,
+              // Make papers peek out at TOP and RIGHT
+              top: `${-4 + i * 1}px`,
+              right: `${-4 + i * 1}px`,
               zIndex: 1 + i,
             }}
           />
         );
       })}
 
-      {/* 3. FOLDER TAB - Behind cover using card color */}
+      {/* 3. FOLDER TAB - Properly colored, behind cover */}
       <div 
-        className="absolute w-16 h-6 rounded-t-lg border-2"
+        className="absolute rounded-t-xl border-2 border-b-0"
         style={{
           backgroundColor: 'hsl(var(--card))',
           borderColor: 'hsl(var(--border))',
-          top: '-6px',
-          left: '16px',
-          transform: 'translateY(0px)',
+          width: '64px',
+          height: '24px',
+          top: '-12px',
+          left: '20px',
           zIndex: 8,
         }}
       />
 
-      {/* 4. FOLDER COVER - In front of tab using accent color */}
+      {/* 4. FOLDER COVER - Exact same size as back, no offset */}
       <div 
-        className="absolute inset-0 border-2 shadow-md"
+        className="absolute border-2 shadow-md"
         style={{
           backgroundColor: 'hsl(var(--accent))',
-          borderColor: 'hsl(var(--accent-foreground))',
+          borderColor: 'hsl(var(--accent) / 0.8)',
+          width: '100%',
+          height: '100%',
+          top: '0px',
+          left: '0px',
           borderRadius: '12px 6px 12px 12px',
-          transform: 'translateY(0px)',
           zIndex: 10,
         }}
       />
@@ -183,7 +190,7 @@ export default function Folder({
         
         {/* Folder Info */}
         <div 
-          className="rounded p-2 border-2 pointer-events-auto"
+          className="rounded p-2 border pointer-events-auto"
           style={{
             backgroundColor: 'hsl(var(--card) / 0.95)',
             borderColor: 'hsl(var(--border))',
@@ -205,7 +212,7 @@ export default function Folder({
         `}>
           <button
             onClick={handleFavoriteToggle}
-            className="w-8 h-8 rounded border-2 flex items-center justify-center hover:scale-105 transition-all"
+            className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"
             style={{
               backgroundColor: isFavorite ? 'hsl(var(--chart-3) / 0.1)' : 'hsl(var(--card))',
               borderColor: 'hsl(var(--border))',
@@ -218,7 +225,7 @@ export default function Folder({
           
           <button
             onClick={handleContextMenuClick}
-            className="w-8 h-8 rounded border-2 flex items-center justify-center hover:scale-105 transition-all"
+            className="w-8 h-8 rounded border flex items-center justify-center hover:scale-105 transition-all"
             style={{
               backgroundColor: 'hsl(var(--card))',
               borderColor: 'hsl(var(--border))',

@@ -1,13 +1,8 @@
-// components/documents/Folder/index.tsx - PRECISE POSITIONING MAP
+// components/documents/Folder/index.tsx
 'use client';
 
 import React, { useState } from 'react';
-import {
-  StarIcon,
-  StarFilledIcon,
-  MoreVerticalIcon
-} from './icons';
-import './styles.scss';
+import { Star, MoreVertical } from 'lucide-react';
 
 interface FolderProps {
   folder: {
@@ -15,141 +10,26 @@ interface FolderProps {
     name: string;
     path: string;
     type: 'folder';
+    size_bytes?: number;
+    created_at: string;
+    updated_at: string;
     is_favorite: boolean;
-    fileCount?: number;
+    fileCount?: number; // Add this to track files in folder
   };
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
-  isOpen?: boolean; // NEW: Open state passed from parent
-  index?: number;
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
   onSelect: (id: string, isMulti: boolean) => void;
 }
 
-// PRECISE COORDINATE MAPPING
-const FOLDER_DIMENSIONS = {
-  // Container dimensions (200px x 160px from SCSS)
-  container: {
-    width: 200,
-    height: 160,
-    top: 0,
-    left: 0,
-    bottom: 160, // top + height
-    right: 200   // left + width
-  }
-};
-
-// Calculate exact positions for each layer
-const LAYER_POSITIONS = {
-  // 1. FOLDER BACK - translateZ(-30px), z-index: 0
-  back: {
-    width: 200,        // 100% of container
-    height: 160,       // 100% of container  
-    top: 6,           // Offset behind cover
-    left: 6,          // Offset behind cover
-    bottom: 166,      // top + height
-    right: 206,       // left + width
-    zIndex: 0
-  },
-  
-  // 2. PAPER LAYERS - Each layer precisely positioned
-  papers: [
-    // Paper Layer 1 - Green, peeks out at top
-    {
-      width: 188,       // 94% of 200px
-      height: 140.8,    // 88% of 160px
-      top: -3.2,        // -2% of 160px (PEEK OUT)
-      left: 6,          // 3% of 200px
-      bottom: 137.6,    // top + height
-      right: 194,       // left + width
-      zIndex: 1
-    },
-    // Paper Layer 2 - Blue
-    {
-      width: 184,       // 92% of 200px
-      height: 137.6,    // 86% of 160px
-      top: 0,           // 0% of 160px
-      left: 8,          // 4% of 200px
-      bottom: 137.6,    // top + height
-      right: 192,       // left + width
-      zIndex: 2
-    },
-    // Paper Layer 3 - Yellow
-    {
-      width: 180,       // 90% of 200px
-      height: 134.4,    // 84% of 160px
-      top: 3.2,         // 2% of 160px
-      left: 10,         // 5% of 200px
-      bottom: 137.6,    // top + height
-      right: 190,       // left + width
-      zIndex: 3
-    },
-    // Paper Layer 4 - Purple
-    {
-      width: 176,       // 88% of 200px
-      height: 131.2,    // 82% of 160px
-      top: 6.4,         // 4% of 160px
-      left: 12,         // 6% of 200px
-      bottom: 137.6,    // top + height
-      right: 188,       // left + width
-      zIndex: 4
-    },
-    // Paper Layer 5 - Orange
-    {
-      width: 172,       // 86% of 200px
-      height: 128,      // 80% of 160px
-      top: 9.6,         // 6% of 160px
-      left: 14,         // 7% of 200px
-      bottom: 137.6,    // top + height
-      right: 186,       // left + width
-      zIndex: 5
-    }
-  ],
-  
-  // 3. FOLDER TAB - Behind cover, precise position
-  tab: {
-    width: 60,         // Fixed width from SCSS
-    height: 20,        // Fixed height from SCSS
-    top: -8,           // Above folder edge
-    left: 20,          // Fixed left position
-    bottom: 12,        // top + height
-    right: 80,         // left + width
-    zIndex: 8
-  },
-  
-  // 4. FOLDER COVER - Main folder surface
-  cover: {
-    width: 200,        // 100% of container
-    height: 160,       // 100% of container
-    top: 0,            // Aligned with container
-    left: 0,           // Aligned with container
-    bottom: 160,       // top + height
-    right: 200,        // left + width
-    zIndex: 10
-  },
-  
-  // 5. FOLDER CONTENT - Always on top
-  content: {
-    width: 200,        // 100% of container
-    height: 160,       // 100% of container
-    top: 0,            // Full overlay
-    left: 0,           // Full overlay
-    bottom: 160,       // top + height
-    right: 200,        // left + width
-    zIndex: 100
-  }
-};
-
 export default function Folder({
   folder,
   viewMode,
   isSelected,
   isFavorite,
-  isOpen = false, // NEW: Default to false
-  index = 0,
   onNavigate,
   onToggleFavorite,
   onContextMenu,
@@ -157,14 +37,12 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const fileCount = folder.fileCount ?? 3;
-  const isEmpty = fileCount === 0;
+  // Calculate paper layers based on file count
+  const fileCount = folder.fileCount || 0;
+  const paperLayers = Math.min(Math.max(fileCount, 0), 5); // Max 5 papers, 0 if empty
 
+  // Handle click
   const handleClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.folder-actions')) {
-      return;
-    }
-
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
     } else {
@@ -172,215 +50,357 @@ export default function Folder({
     }
   };
 
+  // Handle context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    onContextMenu(e, folder.id);
+  };
+
+  // Handle favorite toggle
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(folder.path, folder.name);
   };
 
-  const handleContextMenuClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onContextMenu(e, folder.id);
-  };
-
-  // List view
   if (viewMode === 'list') {
     return (
-      <div
-        className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md"
-        style={{
-          backgroundColor: 'hsl(var(--card))',
-          borderColor: 'hsl(var(--border))',
-        }}
-        onClick={handleClick}
-        onContextMenu={(e) => onContextMenu(e, folder.id)}
-      >
-        <div 
-          className="w-6 h-6 rounded"
-          style={{ backgroundColor: 'hsl(var(--primary))' }}
-        />
-        <div className="flex-1">
-          <h3 className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-            {folder.name}
-          </h3>
-          <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            {fileCount} {fileCount === 1 ? 'item' : 'items'}
-          </p>
+      <div className="folder-list-item p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="folder-icon-small">
+            <FolderIcon />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-gray-900 dark:text-white">{folder.name}</h3>
+            <p className="text-sm text-gray-500">{fileCount} items</p>
+          </div>
+          <button
+            onClick={handleFavoriteToggle}
+            className={`p-1 rounded ${isFavorite ? 'text-yellow-500' : 'text-gray-400'}`}
+          >
+            <Star className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={handleFavoriteToggle}
-          className="p-1 rounded transition-colors"
-          style={{ 
-            color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))' 
-          }}
-        >
-          {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-        </button>
       </div>
     );
   }
 
-  // 3D Grid view - PRECISE POSITIONING using coordinate map
   return (
-    <div
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''} ${isOpen ? 'open' : ''}`}
+    <div 
+      className={`folder-container ${isSelected ? 'selected' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
-      onContextMenu={(e) => onContextMenu(e, folder.id)}
+      onContextMenu={handleContextMenu}
     >
+      {/* 3D Folder Structure */}
       <div className="folder-3d">
+        {/* Back of folder */}
+        <div className="folder-back"></div>
         
-        {/* 1. FOLDER BACK - Exact coordinates from map */}
-        <div 
-          className="folder-back"
-          style={{
-            backgroundColor: 'hsl(var(--destructive))',
-            borderColor: 'hsl(var(--destructive) / 0.8)',
-            position: 'absolute',
-            width: `${LAYER_POSITIONS.back.width}px`,
-            height: `${LAYER_POSITIONS.back.height}px`,
-            top: `${LAYER_POSITIONS.back.top}px`,
-            left: `${LAYER_POSITIONS.back.left}px`,
-            zIndex: LAYER_POSITIONS.back.zIndex,
-          }}
-        />
-
-        {/* 2. PAPER LAYERS - Exact coordinates for each layer */}
-        {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => {
-          const chartVar = `--chart-${i + 1}`;
-          const paperPos = LAYER_POSITIONS.papers[i];
-          return (
-            <div
-              key={i}
-              className={`folder-paper paper-layer-${i + 1}`}
-              style={{
-                backgroundColor: `hsl(var(${chartVar}))`,
-                borderColor: `hsl(var(${chartVar}) / 0.8)`,
-                position: 'absolute',
-                width: `${paperPos.width}px`,
-                height: `${paperPos.height}px`,
-                top: `${paperPos.top}px`,
-                left: `${paperPos.left}px`,
-                zIndex: paperPos.zIndex,
-              }}
-            />
-          );
-        })}
-
-        {/* 3. FOLDER TAB - Exact coordinates from map */}
-        <div 
-          className="folder-tab"
-          style={{
-            backgroundColor: 'hsl(var(--card))',
-            borderColor: 'hsl(var(--border))',
-            position: 'absolute',
-            width: `${LAYER_POSITIONS.tab.width}px`,
-            height: `${LAYER_POSITIONS.tab.height}px`,
-            top: `${LAYER_POSITIONS.tab.top}px`,
-            left: `${LAYER_POSITIONS.tab.left}px`,
-            zIndex: LAYER_POSITIONS.tab.zIndex,
-          }}
-        />
-
-        {/* 4. FOLDER COVER - Exact coordinates from map */}
-        <div 
-          className="folder-cover"
-          style={{
-            backgroundColor: 'hsl(var(--accent))',
-            borderColor: 'hsl(var(--accent) / 0.8)',
-            position: 'absolute',
-            width: `${LAYER_POSITIONS.cover.width}px`,
-            height: `${LAYER_POSITIONS.cover.height}px`,
-            top: `${LAYER_POSITIONS.cover.top}px`,
-            left: `${LAYER_POSITIONS.cover.left}px`,
-            zIndex: LAYER_POSITIONS.cover.zIndex,
-          }}
-        />
-
-        {/* 5. FOLDER CONTENT - Exact coordinates from map */}
-        <div 
-          className="folder-content"
-          style={{
-            position: 'absolute',
-            width: `${LAYER_POSITIONS.content.width}px`,
-            height: `${LAYER_POSITIONS.content.height}px`,
-            top: `${LAYER_POSITIONS.content.top}px`,
-            left: `${LAYER_POSITIONS.content.left}px`,
-            zIndex: LAYER_POSITIONS.content.zIndex,
-          }}
-        >
+        {/* Dynamic Paper Layers */}
+        {Array.from({ length: paperLayers }, (_, index) => (
           <div 
-            className="folder-info"
+            key={index}
+            className="folder-paper"
             style={{
-              backgroundColor: 'hsl(var(--card) / 0.95)',
-              borderColor: 'hsl(var(--border))',
-              color: 'hsl(var(--card-foreground))',
+              transform: `translateZ(${(index + 1) * 2}px) translateY(-${index * 1}px)`,
+              opacity: 0.9 - (index * 0.1)
             }}
-          >
-            <h3 className="folder-name">
-              {folder.name}
-            </h3>
-            <p className="folder-count" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              {fileCount} {fileCount === 1 ? 'item' : 'items'}
-            </p>
+          />
+        ))}
+        
+        {/* Folder Cover */}
+        <div className="folder-cover">
+          {/* Folder Tab */}
+          <div className="folder-tab"></div>
+        </div>
+        
+        {/* Folder Content Overlay */}
+        <div className="folder-content">
+          <div className="folder-info">
+            <h3 className="folder-name">{folder.name}</h3>
+            <p className="folder-count">{fileCount} items</p>
           </div>
-
+          
           {/* Action Buttons */}
           <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}
               className={`action-btn favorite ${isFavorite ? 'active' : ''}`}
-              style={{
-                backgroundColor: isFavorite ? 'hsl(var(--chart-3) / 0.1)' : 'hsl(var(--card))',
-                borderColor: 'hsl(var(--border))',
-                color: isFavorite ? 'hsl(var(--chart-3))' : 'hsl(var(--muted-foreground))',
-              }}
               title="Toggle favorite"
             >
-              {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+              <Star className="w-4 h-4" />
             </button>
-            
             <button
-              onClick={handleContextMenuClick}
-              className="action-btn"
-              style={{
-                backgroundColor: 'hsl(var(--card))',
-                borderColor: 'hsl(var(--border))',
-                color: 'hsl(var(--muted-foreground))',
+              onClick={(e) => {
+                e.stopPropagation();
+                onContextMenu(e, folder.id);
               }}
+              className="action-btn more"
               title="More options"
             >
-              <MoreVerticalIcon />
+              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
+      
+      <style jsx>{`
+        .folder-container {
+          position: relative;
+          perspective: 2500px;
+          margin: 20px auto;
+          width: 200px;
+          height: 160px;
+          cursor: pointer;
+          transition: transform 0.2s ease;
+        }
+        
+        .folder-container:hover {
+          transform: translateY(-5px);
+        }
+        
+        .folder-container.selected {
+          transform: translateY(-5px) scale(1.05);
+        }
+        
+        .folder-3d {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transform-style: preserve-3d;
+          transition: transform 0.3s ease;
+        }
+        
+        .folder-container:hover .folder-3d {
+          transform: rotateX(5deg) rotateY(-5deg);
+        }
+        
+        /* Folder Back */
+        .folder-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: calc(var(--radius) * 1.5);
+          background: linear-gradient(135deg, 
+            hsl(var(--warning)) 0%, 
+            hsl(var(--warning) / 0.8) 50%, 
+            hsl(var(--warning) / 0.6) 100%
+          );
+          box-shadow: 
+            inset 2px -3px 8px -3px hsl(var(--foreground) / 0.3),
+            0 8px 16px hsl(var(--foreground) / 0.2);
+          transform: translateZ(-10px);
+        }
+        
+        /* Dynamic Paper Layers */
+        .folder-paper {
+          position: absolute;
+          width: 90%;
+          height: 85%;
+          left: 5%;
+          top: 10%;
+          background: hsl(var(--card));
+          border-radius: var(--radius);
+          box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+          border: 1px solid hsl(var(--border));
+          transform-style: preserve-3d;
+        }
+        
+        /* Folder Cover */
+        .folder-cover {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: calc(var(--radius) * 1.5) var(--radius) calc(var(--radius) * 1.5) calc(var(--radius) * 1.5);
+          background: linear-gradient(135deg, 
+            hsl(var(--warning) / 0.9) 0%, 
+            hsl(var(--warning)) 50%, 
+            hsl(var(--warning) / 0.8) 100%
+          );
+          box-shadow: 
+            0 4px 8px hsl(var(--foreground) / 0.2),
+            inset 0 2px 4px hsl(var(--background) / 0.3);
+          transform: translateZ(${paperLayers * 2 + 5}px);
+        }
+        
+        /* Folder Tab */
+        .folder-tab {
+          position: absolute;
+          top: -8px;
+          left: 20px;
+          width: 60px;
+          height: 20px;
+          background: linear-gradient(135deg, 
+            hsl(var(--warning) / 0.9) 0%, 
+            hsl(var(--warning)) 100%
+          );
+          border-radius: calc(var(--radius) * 1.5) calc(var(--radius) * 1.5) 0 0;
+          box-shadow: 
+            0 -2px 4px hsl(var(--foreground) / 0.1),
+            inset 0 1px 2px hsl(var(--background) / 0.3);
+        }
+        
+        /* Folder Content Overlay */
+        .folder-content {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 16px;
+          transform: translateZ(${paperLayers * 2 + 10}px);
+          pointer-events: none;
+        }
+        
+        .folder-info {
+          pointer-events: auto;
+        }
+        
+        .folder-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: hsl(var(--foreground));
+          margin: 0 0 4px 0;
+          text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+          line-height: 1.2;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .folder-count {
+          font-size: 12px;
+          color: hsl(var(--muted-foreground));
+          margin: 0;
+          text-shadow: 0 1px 2px hsl(var(--background) / 0.8);
+        }
+        
+        /* Action Buttons */
+        .folder-actions {
+          display: flex;
+          gap: 8px;
+          align-self: flex-end;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          pointer-events: auto;
+        }
+        
+        .folder-actions.visible {
+          opacity: 1;
+        }
+        
+        .action-btn {
+          width: 28px;
+          height: 28px;
+          border-radius: var(--radius);
+          border: none;
+          background: hsl(var(--card) / 0.9);
+          color: hsl(var(--muted-foreground));
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px hsl(var(--foreground) / 0.1);
+          border: 1px solid hsl(var(--border));
+        }
+        
+        .action-btn:hover {
+          background: hsl(var(--card));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px hsl(var(--foreground) / 0.15);
+          color: hsl(var(--foreground));
+        }
+        
+        .action-btn.favorite.active {
+          color: hsl(var(--warning));
+          background: hsl(var(--warning) / 0.1);
+        }
+        
+        .action-btn.favorite.active:hover {
+          background: hsl(var(--warning) / 0.2);
+        }
+        
+        /* Empty Folder State */
+        .folder-container.empty .folder-cover {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted)) 0%, 
+            hsl(var(--muted) / 0.8) 50%, 
+            hsl(var(--muted) / 0.6) 100%
+          );
+        }
+        
+        .folder-container.empty .folder-tab {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted)) 0%, 
+            hsl(var(--muted) / 0.8) 100%
+          );
+        }
+        
+        .folder-container.empty .folder-back {
+          background: linear-gradient(135deg, 
+            hsl(var(--muted) / 0.8) 0%, 
+            hsl(var(--muted) / 0.6) 50%, 
+            hsl(var(--muted) / 0.4) 100%
+          );
+        }
+        
+        /* Selected State */
+        .folder-container.selected .folder-cover {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary)) 0%, 
+            hsl(var(--primary) / 0.8) 50%, 
+            hsl(var(--primary) / 0.6) 100%
+          );
+        }
+        
+        .folder-container.selected .folder-tab {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary)) 0%, 
+            hsl(var(--primary) / 0.8) 100%
+          );
+        }
+        
+        .folder-container.selected .folder-back {
+          background: linear-gradient(135deg, 
+            hsl(var(--primary) / 0.8) 0%, 
+            hsl(var(--primary) / 0.6) 50%, 
+            hsl(var(--primary) / 0.4) 100%
+          );
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .folder-container {
+            width: 150px;
+            height: 120px;
+          }
+          
+          .folder-name {
+            font-size: 12px;
+          }
+          
+          .folder-count {
+            font-size: 10px;
+          }
+          
+          .action-btn {
+            width: 24px;
+            height: 24px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* 
-PRECISE COORDINATE REFERENCE:
-
-FOLDER BACK:
-- Top: 6px, Bottom: 166px, Left: 6px, Right: 206px
-- Width: 200px, Height: 160px
-- Z-Index: 0 (furthest back)
-
-PAPER LAYER 1 (Green):
-- Top: -3.2px, Bottom: 137.6px, Left: 6px, Right: 194px
-- Width: 188px, Height: 140.8px
-- Z-Index: 1 (PEEKS OUT 3.2px ABOVE folder edge)
-
-FOLDER TAB:
-- Top: -8px, Bottom: 12px, Left: 20px, Right: 80px
-- Width: 60px, Height: 20px
-- Z-Index: 8 (behind cover)
-
-FOLDER COVER:
-- Top: 0px, Bottom: 160px, Left: 0px, Right: 200px
-- Width: 200px, Height: 160px
-- Z-Index: 10 (main surface)
-
-This gives you EXACT pixel coordinates for alignment!
-*/
+// Simple fallback icon component
+function FolderIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+    </svg>
+  );
+}

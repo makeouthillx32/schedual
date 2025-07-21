@@ -43,6 +43,7 @@ export default function Folder({
   onSelect
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isClicked, setIsClicked] = useState(false); // Track if folder was clicked once
   const [themeReady, setThemeReady] = useState(false);
 
   const fileCount = folder.fileCount ?? 0;
@@ -64,11 +65,30 @@ export default function Folder({
     checkTheme();
   }, [chartClass]);
 
-  // Event handlers
+  // Event handlers - FIXED DOUBLE CLICK BEHAVIOR
   const handleClick = (e: React.MouseEvent) => {
+    // If clicking on action buttons, don't do anything
     if ((e.target as HTMLElement).closest('.folder-actions')) return;
-    if (e.ctrlKey || e.metaKey) onSelect(folder.id, true);
-    else onNavigate(folder.path);
+    
+    if (e.ctrlKey || e.metaKey) {
+      onSelect(folder.id, true);
+      return;
+    }
+
+    // First click: show buttons
+    if (!isClicked) {
+      setIsClicked(true);
+      return;
+    }
+
+    // Second click: navigate to folder
+    onNavigate(folder.path);
+  };
+
+  // Hide buttons when mouse leaves
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsClicked(false); // Reset click state when mouse leaves
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -115,12 +135,12 @@ export default function Folder({
     );
   }
 
-  // Grid view with simple DOM structure
+  // Grid view with CORRECTED DOM structure
   return (
     <div
       className={`folder-3d ${chartClass} ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''} ${themeReady ? 'ready' : 'loading'}`}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       style={{
@@ -134,7 +154,7 @@ export default function Folder({
                   isHovered ? 'translateY(-5px) scale(1.02)' : 'none'
       }}
     >
-      {/* Back panel */}
+      {/* 1. BACK PANEL - Renders first (behind everything) */}
       <div 
         className="folder-back"
         style={{
@@ -157,55 +177,7 @@ export default function Folder({
         }}
       ></div>
       
-      {/* Paper sheets */}
-      {Array.from({ length: paperLayers }, (_, i) => (
-        <div 
-          key={i} 
-          className="paper" 
-          style={{
-            position: 'absolute',
-            width: '85%',
-            height: '70%',
-            left: '7.5%',
-            top: '20%',
-            background: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border) / 0.3)',
-            borderRadius: '6px',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-            transform: `translateY(-${(i + 1) * 2}px)`,
-            opacity: isEmpty ? 0.3 : 1
-          }}
-        ></div>
-      ))}
-      
-      {/* Tab */}
-      <div 
-        className="folder-tab"
-        style={{
-          position: 'absolute',
-          width: '60px',
-          height: '20px',
-          top: '-8px',
-          left: '20px',
-          borderRadius: '8px 8px 0 0',
-          background: `hsl(var(--${chartClass}) / 0.95)`,
-          border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
-          borderBottom: 'none',
-          boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.1)`,
-          ...(isSelected && {
-            background: 'hsl(var(--primary) / 0.95)',
-            borderColor: 'hsl(var(--primary) / 0.7)',
-            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.15)`
-          }),
-          ...(isEmpty && {
-            background: 'hsl(var(--muted) / 0.8)',
-            borderColor: 'hsl(var(--muted) / 0.6)',
-            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.05)`
-          })
-        }}
-      ></div>
-      
-      {/* Front cover */}
+      {/* 2. FRONT COVER WITH TAB - Renders second */}
       <div 
         className="folder-front"
         style={{
@@ -229,9 +201,58 @@ export default function Folder({
             boxShadow: `var(--shadow), inset 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.05)`
           })
         }}
-      ></div>
+      >
+        {/* TAB - Part of front cover, not separate element */}
+        <div 
+          className="folder-tab"
+          style={{
+            position: 'absolute',
+            width: '60px',
+            height: '20px',
+            top: '-10px',
+            left: '20px',
+            borderRadius: '8px 8px 0 0',
+            background: `hsl(var(--${chartClass}) / 0.95)`,
+            border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
+            borderBottom: 'none',
+            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.1)`,
+            ...(isSelected && {
+              background: 'hsl(var(--primary) / 0.95)',
+              borderColor: 'hsl(var(--primary) / 0.7)',
+              boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.15)`
+            }),
+            ...(isEmpty && {
+              background: 'hsl(var(--muted) / 0.8)',
+              borderColor: 'hsl(var(--muted) / 0.6)',
+              boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.05)`
+            })
+          }}
+        ></div>
+      </div>
       
-      {/* Text content - renders last so it's on top */}
+      {/* 3. PAPER SHEETS - Render third (ON TOP, visible) */}
+      {Array.from({ length: paperLayers }, (_, i) => (
+        <div 
+          key={i} 
+          className="paper" 
+          style={{
+            position: 'absolute',
+            width: '85%',
+            height: '70%',
+            left: '7.5%',
+            top: `${20 - i * 2}%`, // Spread papers out visibly
+            background: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border) / 0.3)',
+            borderRadius: '6px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            transform: `translateY(-${i * 3}px) translateX(${i * 2}px)`, // Visible stacking
+            opacity: isEmpty ? 0.3 : (1 - i * 0.1),
+            zIndex: 10 + i
+          }}
+        ></div>
+      ))}
+      
+      {/* 4. TEXT CONTENT - Renders fourth (on top of papers) */}
       <div 
         className="folder-text"
         style={{
@@ -239,7 +260,7 @@ export default function Folder({
           top: '20px',
           left: '20px',
           right: '20px',
-          zIndex: 100,
+          zIndex: 50,
           pointerEvents: 'none'
         }}
       >
@@ -273,19 +294,19 @@ export default function Folder({
         </p>
       </div>
       
-      {/* Action buttons - renders last so they're on top */}
+      {/* 5. ACTION BUTTONS - Render last (topmost), show on click or hover */}
       <div 
-        className={`folder-actions ${isHovered ? 'show' : ''}`}
+        className={`folder-actions ${(isHovered || isClicked) ? 'show' : ''}`}
         style={{
           position: 'absolute',
           bottom: '20px',
           right: '20px',
           display: 'flex',
           gap: '8px',
-          opacity: isHovered ? 1 : 0,
-          transform: isHovered ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.9)',
+          opacity: (isHovered || isClicked) ? 1 : 0,
+          transform: (isHovered || isClicked) ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.9)',
           transition: 'all 0.3s ease',
-          zIndex: 101,
+          zIndex: 100,
           pointerEvents: 'auto'
         }}
       >

@@ -18,6 +18,7 @@ interface DocumentItem {
   updated_at: string;
   is_favorite: boolean;
   mime_type?: string;
+  fileCount?: number; // Add this for folder content count
 }
 
 interface FileGridProps {
@@ -52,14 +53,20 @@ function FileGrid({
   className = ''
 }: FileGridProps) {
   
+  // Get chart color class based on index
+  const getChartColorClass = (index: number): string => {
+    const chartColors = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'];
+    return chartColors[index % chartColors.length];
+  };
+  
   const EmptyState = React.memo(() => (
     <div className="col-span-full text-center py-12">
-      <FolderLucide className="mx-auto w-12 h-12 text-gray-400 mb-4" />
-      <p className="text-gray-500">
+      <FolderLucide className="mx-auto w-12 h-12 text-muted-foreground mb-4" />
+      <p className="text-muted-foreground">
         {searchQuery ? 'No documents found' : 'This folder is empty'}
       </p>
       {!currentPath && (
-        <p className="text-gray-400 mt-2">
+        <p className="text-muted-foreground/70 mt-2">
           Click "Upload" to add files or "New Folder" to create folders
         </p>
       )}
@@ -94,7 +101,7 @@ function FileGrid({
                 : '';
               onNavigate(parentPath);
             }}
-            className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-primary hover:text-primary/80 hover:bg-accent rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -104,7 +111,7 @@ function FileGrid({
               : 'Home'}
           </button>
           
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {documents.length} item{documents.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -125,7 +132,7 @@ function FileGrid({
                 viewMode={viewMode}
                 isSelected={selectedItems.includes(doc.id)}
                 isFavorite={doc.is_favorite}
-                index={index}                           // ← new prop
+                chartColorClass={getChartColorClass(index)}  // Pass the chart color class
                 onNavigate={onNavigate}
                 onToggleFavorite={(path, name) => onAddFavorite(path, name)}
                 onContextMenu={onContextMenu}

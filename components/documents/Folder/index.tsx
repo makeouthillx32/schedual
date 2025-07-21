@@ -1,7 +1,7 @@
-// components/documents/Folder/index.tsx - FIXED VERSION
+// components/documents/Folder/index.tsx - COMPLETELY REBUILT
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FolderIcon,
   StarIcon,
@@ -23,7 +23,7 @@ interface FolderProps {
   isSelected: boolean;
   isFavorite: boolean;
   index?: number;
-  chartColorClass?: string;  // ✅ ADD THIS - FileGrid passes this
+  chartColorClass?: string;
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
   onContextMenu: (e: React.MouseEvent, id: string) => void;
@@ -36,28 +36,42 @@ export default function Folder({
   isSelected,
   isFavorite,
   index = 0,
-  chartColorClass,  // ✅ USE THIS instead of calculating
+  chartColorClass,
   onNavigate,
   onToggleFavorite,
   onContextMenu,
   onSelect
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
   const [themeReady, setThemeReady] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const folderRef = useRef<HTMLDivElement>(null);
 
   const fileCount = folder.fileCount ?? 0;
-  const paperLayers = Math.min(Math.max(fileCount, 0), 5);
+  const paperLayers = Math.min(Math.max(fileCount, 1), 8); // More realistic paper layers
   const isEmpty = fileCount === 0;
-
-  // ✅ USE the chartColorClass passed from FileGrid, fallback to index calculation
   const chartClass = chartColorClass || `chart-${(index % 5) + 1}`;
 
-  // Ensure theme variables are loaded
+  // Advanced mouse tracking for 3D effects
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!folderRef.current) return;
+    
+    const rect = folderRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const mouseX = (e.clientX - centerX) / (rect.width / 2);
+    const mouseY = (e.clientY - centerY) / (rect.height / 2);
+    
+    setMousePosition({ x: mouseX, y: mouseY });
+  };
+
+  // Theme variable detection
   useEffect(() => {
     const checkThemeVars = () => {
       if (typeof window !== "undefined") {
         const style = getComputedStyle(document.documentElement);
-        // Extract chart number from chartClass (e.g., "chart-1" -> "1")
         const chartNumber = chartClass.replace('chart-', '');
         const chartVar = style.getPropertyValue(`--chart-${chartNumber}`).trim();
         const cardVar = style.getPropertyValue('--card').trim();
@@ -65,8 +79,7 @@ export default function Folder({
         if (chartVar && cardVar) {
           setThemeReady(true);
         } else {
-          // Retry after a short delay if theme variables aren't ready
-          setTimeout(checkThemeVars, 100);
+          setTimeout(checkThemeVars, 50);
         }
       }
     };
@@ -74,9 +87,12 @@ export default function Folder({
     checkThemeVars();
   }, [chartClass]);
 
+  // Event handlers
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent action if clicking on buttons
     if ((e.target as HTMLElement).closest('.folder-actions')) return;
+    
+    setIsInteracting(true);
+    setTimeout(() => setIsInteracting(false), 300);
     
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
@@ -100,35 +116,39 @@ export default function Folder({
     onContextMenu(e, folder.id);
   };
 
+  // Calculate 3D transforms
+  const getTransformStyle = (layer: number = 0) => {
+    if (!isHovered) return '';
+    
+    const baseRotateX = mousePosition.y * -8;
+    const baseRotateY = mousePosition.x * 8;
+    const translateZ = isInteracting ? -5 : layer * 1.5;
+    
+    return `perspective(1000px) rotateX(${baseRotateX}deg) rotateY(${baseRotateY}deg) translateZ(${translateZ}px)`;
+  };
+
   // List view rendering
   if (viewMode === 'list') {
     return (
       <div
-        className="folder-list-item"
+        className={`folder-list-item ${chartClass} ${isSelected ? 'selected' : ''}`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        data-selected={isSelected}
+        data-theme-ready={themeReady}
       >
-        <div className="flex items-center gap-3">
-          <div className="folder-icon-small">
+        <div className="folder-list-content">
+          <div className="folder-list-icon">
             <FolderIcon />
           </div>
-          <div className="flex-1">
-            <h3 className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-              {folder.name}
-            </h3>
-            <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <div className="folder-list-info">
+            <h3 className="folder-list-name">{folder.name}</h3>
+            <p className="folder-list-count">
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
           <button
             onClick={handleFavoriteToggle}
-            className="p-1 rounded transition-colors hover:bg-accent"
-            style={{
-              color: isFavorite 
-                ? 'hsl(var(--warning))' 
-                : 'hsl(var(--muted-foreground))'
-            }}
+            className={`folder-list-favorite ${isFavorite ? 'active' : ''}`}
           >
             {isFavorite ? <StarFilledIcon /> : <StarIcon />}
           </button>
@@ -137,92 +157,118 @@ export default function Folder({
     );
   }
 
-  // Grid view rendering with 3D effect
+  // Advanced 3D Grid view
   return (
     <div
-      className={`folder-container ${chartClass} ${
+      ref={folderRef}
+      className={`folder-container-3d ${chartClass} ${
         isSelected ? 'selected' : ''
-      } ${isEmpty ? 'empty' : ''} ${themeReady ? 'theme-ready' : 'theme-loading'}`}
+      } ${isEmpty ? 'empty' : ''} ${
+        themeReady ? 'theme-ready' : 'theme-loading'
+      } ${isInteracting ? 'interacting' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setMousePosition({ x: 0, y: 0 });
+      }}
+      onMouseMove={handleMouseMove}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       data-file-count={fileCount}
       data-chart-class={chartClass}
+      style={{ transform: getTransformStyle() }}
     >
-      <div className="folder-3d">
-        {/* Back panel */}
-        <div className="folder-back" />
-
-        {/* Paper layers representing file count */}
-        {Array.from({ length: paperLayers }, (_, layerIndex) => (
-          <div
-            key={layerIndex}
-            className="folder-paper"
-            style={{
-              transform: `translateZ(${(layerIndex + 1) * 2}px) translateY(-${layerIndex}px)`,
-              opacity: Math.max(0.3, 0.9 - layerIndex * 0.15),
-              zIndex: layerIndex + 1
-            }}
-          />
-        ))}
-
-        {/* Folder cover with tab */}
-        <div
-          className="folder-cover"
-          style={{
-            transform: `translateZ(${paperLayers * 2 + 5}px)`,
-            zIndex: paperLayers + 10
-          }}
-        >
-          <div className="folder-tab" />
+      {/* 3D Scene Container */}
+      <div className="folder-scene">
+        
+        {/* Base/Back Panel */}
+        <div 
+          className="folder-base"
+          style={{ transform: 'translateZ(-15px) rotateX(-1deg)' }}
+        />
+        
+        {/* Paper Stack - Multiple layers for depth */}
+        <div className="paper-stack">
+          {Array.from({ length: paperLayers }, (_, layerIndex) => (
+            <div
+              key={`paper-${layerIndex}`}
+              className="paper-sheet"
+              style={{
+                transform: `translateZ(${-12 + layerIndex * 1.5}px) translateY(${-layerIndex * 0.5}px) rotateX(${layerIndex * 0.5}deg)`,
+                opacity: Math.max(0.4, 1 - layerIndex * 0.08),
+              }}
+              data-layer={layerIndex}
+            />
+          ))}
         </div>
 
-        {/* Content overlay */}
-        <div
-          className="folder-content"
-          style={{
-            transform: `translateZ(${paperLayers * 2 + 10}px)`,
-            zIndex: paperLayers + 20
+        {/* Folder Tab - BEHIND the cover */}
+        <div 
+          className="folder-tab"
+          style={{ 
+            transform: `translateZ(${paperLayers * 1.5 - 2}px) translateY(-2px)` 
+          }}
+        />
+
+        {/* Folder Cover - ABOVE everything except content */}
+        <div 
+          className="folder-cover"
+          style={{ 
+            transform: `translateZ(${paperLayers * 1.5}px)` 
+          }}
+        />
+
+        {/* Content Overlay - TOPMOST layer */}
+        <div 
+          className="folder-content-3d"
+          style={{ 
+            transform: `translateZ(${paperLayers * 1.5 + 8}px)` 
           }}
         >
-          <div className="folder-info">
-            <h3 className="folder-name" title={folder.name}>
+          {/* Info Panel */}
+          <div className="folder-info-panel">
+            <h3 className="folder-title" title={folder.name}>
               {folder.name}
             </h3>
-            <p className="folder-count">
-              {fileCount} {fileCount === 1 ? 'item' : 'items'}
+            <p className="folder-item-count">
+              {isEmpty ? 'Empty' : `${fileCount} ${fileCount === 1 ? 'item' : 'items'}`}
             </p>
           </div>
 
-          <div className={`folder-actions ${isHovered ? 'visible' : ''}`}>
+          {/* Action Buttons */}
+          <div className={`folder-action-panel ${isHovered ? 'visible' : ''}`}>
             <button
               onClick={handleFavoriteToggle}
-              className={`action-btn favorite ${isFavorite ? 'active' : ''}`}
+              className={`action-button favorite-btn ${isFavorite ? 'active' : ''}`}
               title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               {isFavorite ? <StarFilledIcon /> : <StarIcon />}
             </button>
             <button
               onClick={handleMoreClick}
-              className="action-btn more"
+              className="action-button menu-btn"
               title="More options"
-              aria-label="More options"
             >
               <MoreVerticalIcon />
             </button>
           </div>
         </div>
+
+        {/* Lighting Effects */}
+        <div className="folder-lighting">
+          <div className="ambient-light" />
+          <div className="directional-light" />
+        </div>
       </div>
 
-      {/* Debug info in development */}
+      {/* Development Debug Panel */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="absolute top-0 left-0 text-xs bg-black text-white p-1 opacity-0 hover:opacity-100 transition-opacity z-50">
+        <div className="debug-panel">
           <div>Chart: {chartClass}</div>
           <div>Files: {fileCount}</div>
+          <div>Layers: {paperLayers}</div>
           <div>Theme: {themeReady ? '✅' : '⏳'}</div>
-          <div>Index: {index}</div>
+          <div>Mouse: {Math.round(mousePosition.x * 100)}, {Math.round(mousePosition.y * 100)}</div>
         </div>
       )}
     </div>

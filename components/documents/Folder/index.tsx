@@ -21,6 +21,7 @@ interface FolderProps {
   viewMode: 'grid' | 'list';
   isSelected: boolean;
   isFavorite: boolean;
+  isOpen?: boolean; // NEW: Open state passed from parent
   index?: number;
   onNavigate: (path: string) => void;
   onToggleFavorite: (path: string, name: string) => void;
@@ -147,6 +148,7 @@ export default function Folder({
   viewMode,
   isSelected,
   isFavorite,
+  isOpen = false, // NEW: Default to false
   index = 0,
   onNavigate,
   onToggleFavorite,
@@ -220,7 +222,7 @@ export default function Folder({
   // 3D Grid view - PRECISE POSITIONING using coordinate map
   return (
     <div
-      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}`}
+      className={`folder-container ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''} ${isOpen ? 'open' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}

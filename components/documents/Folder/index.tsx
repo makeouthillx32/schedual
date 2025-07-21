@@ -1,9 +1,11 @@
-// components/documents/Folder/index.tsx - PURE TAILWIND VERSION
+// components/documents/Folder/index.tsx - REACT THREE FIBER VERSION
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Html, Plane } from '@react-three/drei';
+import { Mesh } from 'three';
 import {
-  FolderIcon,
   StarIcon,
   StarFilledIcon,
   MoreVerticalIcon
@@ -28,6 +30,140 @@ interface FolderProps {
   onSelect: (id: string, isMulti: boolean) => void;
 }
 
+// 3D Folder Scene Component
+function Folder3DScene({ 
+  folder, 
+  isHovered, 
+  isSelected, 
+  isFavorite,
+  onToggleFavorite,
+  onContextMenu 
+}: {
+  folder: FolderProps['folder'];
+  isHovered: boolean;
+  isSelected: boolean;
+  isFavorite: boolean;
+  onToggleFavorite: (e: React.MouseEvent) => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+}) {
+  const groupRef = useRef<any>();
+  const fileCount = folder.fileCount ?? 3;
+
+  // Paper colors
+  const paperColors = ['#4ade80', '#3b82f6', '#eab308', '#a855f7', '#f97316'];
+
+  return (
+    <group 
+      ref={groupRef}
+      rotation={isHovered ? [0.1, -0.1, 0] : [0, 0, 0]}
+      scale={isSelected ? 1.05 : 1}
+    >
+      {/* 1. FOLDER BACK - Red, furthest back */}
+      <Plane 
+        args={[4, 3]} 
+        position={[0, 0, -1.5]}
+      >
+        <meshBasicMaterial color="#ef4444" />
+      </Plane>
+
+      {/* 2. PAPER LAYERS - Colorful, peeking out */}
+      {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => (
+        <Plane
+          key={i}
+          args={[3.8 - i * 0.1, 2.8 - i * 0.1]}
+          position={[
+            0.05 + i * 0.05, // Slight offset right
+            0.1 + i * 0.05,  // Peek out at top
+            -1.0 + i * 0.2   // Layer depth
+          ]}
+        >
+          <meshBasicMaterial color={paperColors[i]} />
+        </Plane>
+      ))}
+
+      {/* 3. FOLDER TAB - White, behind cover */}
+      <Plane 
+        args={[1.2, 0.4]} 
+        position={[-0.8, 1.2, 0.8]}
+      >
+        <meshBasicMaterial color="#ffffff" />
+      </Plane>
+
+      {/* 4. FOLDER COVER - Cyan, in front of tab */}
+      <Plane 
+        args={[4, 3]} 
+        position={[0, 0, 1]}
+      >
+        <meshBasicMaterial color="#22d3ee" />
+      </Plane>
+
+      {/* 5. FOLDER CONTENT - HTML overlay on top */}
+      <Html
+        position={[0, 0, 1.1]}
+        center
+        distanceFactor={10}
+        style={{
+          width: '200px',
+          height: '150px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '16px',
+          pointerEvents: 'none'
+        }}
+      >
+        {/* Folder Info */}
+        <div 
+          className="bg-white/90 border-2 border-black rounded p-2"
+          style={{ pointerEvents: 'auto' }}
+        >
+          <h3 className="text-black font-semibold text-sm leading-tight truncate">
+            {folder.name}
+          </h3>
+          <p className="text-gray-700 text-xs">
+            {fileCount} {fileCount === 1 ? 'item' : 'items'}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div 
+          className={`flex gap-2 self-end transition-opacity duration-200 ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ pointerEvents: 'auto' }}
+        >
+          <button
+            onClick={onToggleFavorite}
+            className={`
+              w-7 h-7 rounded border-2 border-black bg-white
+              flex items-center justify-center
+              hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
+              transition-all duration-200
+              ${isFavorite ? 'text-orange-600 bg-orange-50' : 'text-black'}
+            `}
+            title="Toggle favorite"
+          >
+            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+          </button>
+          
+          <button
+            onClick={onContextMenu}
+            className="
+              w-7 h-7 rounded border-2 border-black bg-white text-black
+              flex items-center justify-center
+              hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
+              transition-all duration-200
+            "
+            title="More options"
+          >
+            <MoreVerticalIcon />
+          </button>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 export default function Folder({
   folder,
   viewMode,
@@ -41,10 +177,12 @@ export default function Folder({
 }: FolderProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const fileCount = folder.fileCount ?? 0;
-  const isEmpty = fileCount === 0;
-
   const handleClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
     } else {
@@ -52,48 +190,17 @@ export default function Folder({
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    onContextMenu(e, folder.id);
-  };
-
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite(folder.path, folder.name);
   };
 
-  // Color schemes for different folder states
-  const getColorScheme = () => {
-    if (isEmpty) {
-      return {
-        back: 'bg-gray-300 border-gray-400',
-        papers: [
-          'bg-gray-200 border-gray-300',
-          'bg-gray-100 border-gray-200', 
-          'bg-gray-50 border-gray-100'
-        ],
-        cover: 'bg-blue-200 border-blue-300',
-        tab: 'bg-white border-gray-400'
-      };
-    }
-
-    // Debug colors - keep them obvious
-    return {
-      back: 'bg-red-500 border-red-600',
-      papers: [
-        'bg-green-400 border-green-500',
-        'bg-blue-400 border-blue-500',
-        'bg-yellow-400 border-yellow-500',
-        'bg-purple-400 border-purple-500',
-        'bg-orange-400 border-orange-500'
-      ],
-      cover: 'bg-cyan-400 border-cyan-500',
-      tab: 'bg-white border-gray-800'
-    };
+  const handleContextMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onContextMenu(e, folder.id);
   };
 
-  const colors = getColorScheme();
-
-  // List view
+  // List view - keep as regular HTML
   if (viewMode === 'list') {
     return (
       <div
@@ -101,18 +208,19 @@ export default function Folder({
           isSelected ? 'ring-2 ring-blue-500' : ''
         }`}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
+        onContextMenu={(e) => onContextMenu(e, folder.id)}
       >
         <div className="flex items-center gap-3">
           <div className="text-blue-500">
-            <FolderIcon />
+            {/* You'll need to implement FolderIcon for list view */}
+            <div className="w-6 h-6 bg-blue-500 rounded"></div>
           </div>
           <div className="flex-1">
             <h3 className="font-medium text-gray-900">
               {folder.name}
             </h3>
             <p className="text-sm text-gray-500">
-              {fileCount} {fileCount === 1 ? 'item' : 'items'}
+              {folder.fileCount ?? 0} {(folder.fileCount ?? 0) === 1 ? 'item' : 'items'}
             </p>
           </div>
           <button
@@ -128,161 +236,37 @@ export default function Folder({
     );
   }
 
-  // 3D Grid view - ALL TAILWIND POSITIONING
+  // 3D Grid view with React Three Fiber
   return (
     <div
-      className={`
-        relative w-48 h-40 mx-auto my-5 cursor-pointer
-        transition-transform duration-200 ease-out
-        hover:-translate-y-1 hover:scale-105
-        ${isSelected ? '-translate-y-1 scale-105' : ''}
-        ${isEmpty ? 'opacity-75' : ''}
-      `}
-      style={{ 
-        perspective: '2500px',
-        transformStyle: 'preserve-3d'
-      }}
+      className="w-48 h-40 mx-auto my-5 cursor-pointer"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
+      onContextMenu={(e) => onContextMenu(e, folder.id)}
     >
-      
-      {/* 3D Container with hover tilt */}
-      <div 
-        className={`
-          relative w-full h-full transition-transform duration-300 ease-out
-          ${isHovered ? 'rotate-x-1 -rotate-y-1' : ''}
-        `}
+      <Canvas
+        camera={{ 
+          position: [0, 0, 5], 
+          fov: 50 
+        }}
         style={{ 
-          transformStyle: 'preserve-3d'
+          width: '100%', 
+          height: '100%' 
         }}
       >
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[2, 2, 2]} intensity={0.5} />
         
-        {/* 1. FOLDER BACK - Furthest back */}
-        <div 
-          className={`
-            absolute inset-0 rounded-xl border-2 ${colors.back}
-            shadow-inner shadow-lg
-          `}
-          style={{ 
-            transform: 'translateZ(-30px)',
-            zIndex: 0,
-            boxShadow: 'inset 3px -4px 12px -4px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.25)'
-          }}
+        <Folder3DScene
+          folder={folder}
+          isHovered={isHovered}
+          isSelected={isSelected}
+          isFavorite={isFavorite}
+          onToggleFavorite={handleFavoriteToggle}
+          onContextMenu={handleContextMenuClick}
         />
-
-        {/* 2. PAPER LAYERS - Peek out at top/sides */}
-        {colors.papers.slice(0, Math.min(fileCount, 5)).map((paperColor, layerIndex) => {
-          const layer = layerIndex + 1;
-          return (
-            <div
-              key={layerIndex}
-              className={`
-                absolute rounded border-2 ${paperColor}
-                shadow-md
-              `}
-              style={{
-                width: `${94 - layer * 2}%`,
-                height: `${88 - layer * 2}%`,
-                left: `${3 + layer}%`,
-                top: `${-2 + layer * 2}%`, // Peek out at top
-                transform: `translateZ(${-25 + layer * 5}px)`,
-                zIndex: layer,
-              }}
-            />
-          );
-        })}
-
-        {/* 3. FOLDER TAB - Behind cover */}
-        <div 
-          className={`
-            absolute w-16 h-5 rounded-t-xl border-2 ${colors.tab}
-            shadow-md
-          `}
-          style={{ 
-            top: '-8px',
-            left: '20px',
-            transform: 'translateZ(5px)',
-            zIndex: 8,
-            boxShadow: '0 -3px 6px rgba(0,0,0,0.15)'
-          }}
-        />
-
-        {/* 4. FOLDER COVER - In front of tab */}
-        <div 
-          className={`
-            absolute inset-0 border-2 ${colors.cover}
-            shadow-lg
-          `}
-          style={{ 
-            borderRadius: '12px 6px 12px 12px',
-            transform: 'translateZ(10px)',
-            zIndex: 10,
-            boxShadow: '0 6px 12px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15)'
-          }}
-        />
-
-        {/* 5. FOLDER CONTENT - Always on top */}
-        <div 
-          className={`
-            absolute inset-0 flex flex-col justify-between p-4
-            pointer-events-none
-            bg-black/10 border-2 border-dashed border-black
-          `}
-          style={{ 
-            transform: 'translateZ(20px)',
-            zIndex: 100
-          }}
-        >
-          
-          {/* Folder Info */}
-          <div className="bg-white/90 border-2 border-black rounded p-2 pointer-events-auto">
-            <h3 className="text-black font-semibold text-sm leading-tight truncate">
-              {folder.name}
-            </h3>
-            <p className="text-gray-700 text-xs">
-              {fileCount} {fileCount === 1 ? 'item' : 'items'}
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className={`
-            flex gap-2 self-end transition-opacity duration-200
-            ${isHovered ? 'opacity-100' : 'opacity-0'}
-          `}>
-            <button
-              onClick={handleFavoriteToggle}
-              className={`
-                w-7 h-7 rounded border-2 border-black bg-white
-                flex items-center justify-center
-                hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
-                transition-all duration-200 pointer-events-auto
-                ${isFavorite ? 'text-orange-600 bg-orange-50' : 'text-black'}
-              `}
-              title="Toggle favorite"
-            >
-              {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-            </button>
-            
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onContextMenu(e, folder.id);
-              }}
-              className="
-                w-7 h-7 rounded border-2 border-black bg-white text-black
-                flex items-center justify-center
-                hover:bg-gray-100 hover:-translate-y-0.5 hover:shadow-lg
-                transition-all duration-200 pointer-events-auto
-              "
-              title="More options"
-            >
-              <MoreVerticalIcon />
-            </button>
-          </div>
-        </div>
-      </div>
+      </Canvas>
     </div>
   );
 }

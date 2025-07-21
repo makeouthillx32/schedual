@@ -8,7 +8,7 @@ import {
   StarFilledIcon,
   MoreVerticalIcon
 } from './icons';
-import './styles.css';
+import './styles.scss';
 
 interface FolderProps {
   folder: {
@@ -47,31 +47,29 @@ export default function Folder({
   const paperLayers = Math.min(Math.max(fileCount, 0), 5);
   const isEmpty = fileCount === 0;
 
-  // Ensure theme variables are available
+  // Ensure theme variables are loaded
   useEffect(() => {
     const checkThemeVars = () => {
       if (typeof window !== "undefined") {
         const style = getComputedStyle(document.documentElement);
-        const hasChart1 = style.getPropertyValue('--chart-1').trim();
-        const hasCard = style.getPropertyValue('--card').trim();
+        const chartVar = style.getPropertyValue(`--chart-${(index % 5) + 1}`).trim();
+        const cardVar = style.getPropertyValue('--card').trim();
         
-        if (hasChart1 && hasCard) {
+        if (chartVar && cardVar) {
           setThemeReady(true);
         } else {
-          // Retry after a short delay if theme vars aren't ready
+          // Retry after a short delay if theme variables aren't ready
           setTimeout(checkThemeVars, 100);
         }
       }
     };
 
     checkThemeVars();
-  }, []);
+  }, [index]);
 
   const handleClick = (e: React.MouseEvent) => {
-    // Prevent action if clicking on action buttons
-    if ((e.target as HTMLElement).closest('.folder-actions')) {
-      return;
-    }
+    // Prevent action if clicking on buttons
+    if ((e.target as HTMLElement).closest('.folder-actions')) return;
     
     if (e.ctrlKey || e.metaKey) {
       onSelect(folder.id, true);
@@ -81,6 +79,7 @@ export default function Folder({
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
     onContextMenu(e, folder.id);
   };
 
@@ -94,7 +93,7 @@ export default function Folder({
     onContextMenu(e, folder.id);
   };
 
-  // Generate chart class - cycle through chart-1 to chart-5
+  // Get chart color class based on index
   const chartClass = `chart-${(index % 5) + 1}`;
 
   // List view rendering
@@ -104,37 +103,28 @@ export default function Folder({
         className="folder-list-item"
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        style={{
-          backgroundColor: isSelected ? 'hsl(var(--accent))' : undefined,
-        }}
+        data-selected={isSelected}
       >
         <div className="flex items-center gap-3">
           <div className="folder-icon-small">
             <FolderIcon />
           </div>
           <div className="flex-1">
-            <h3 
-              className="font-medium"
-              style={{ color: 'hsl(var(--foreground))' }}
-            >
+            <h3 className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
               {folder.name}
             </h3>
-            <p 
-              className="text-sm"
-              style={{ color: 'hsl(var(--muted-foreground))' }}
-            >
+            <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
           </div>
           <button
             onClick={handleFavoriteToggle}
-            className="p-1 rounded transition-colors"
+            className="p-1 rounded transition-colors hover:bg-accent"
             style={{
               color: isFavorite 
                 ? 'hsl(var(--warning))' 
                 : 'hsl(var(--muted-foreground))'
             }}
-            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             {isFavorite ? <StarFilledIcon /> : <StarIcon />}
           </button>
@@ -143,40 +133,37 @@ export default function Folder({
     );
   }
 
-  // Grid/3D view rendering
+  // Grid view rendering with 3D effect
   return (
     <div
       className={`folder-container ${chartClass} ${
         isSelected ? 'selected' : ''
-      } ${isEmpty ? 'empty' : ''} ${!themeReady ? 'theme-loading' : ''}`}
+      } ${isEmpty ? 'empty' : ''} ${themeReady ? 'theme-ready' : 'theme-loading'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
-      title={`${folder.name} (${fileCount} ${fileCount === 1 ? 'item' : 'items'})`}
+      data-file-count={fileCount}
+      data-chart-index={index % 5 + 1}
     >
       <div className="folder-3d">
         {/* Back panel */}
-        <div className="folder-back"></div>
+        <div className="folder-back" />
 
-        {/* Paper Layers - Only render if we have files and theme is ready */}
-        {themeReady && !isEmpty && Array.from({ length: paperLayers }, (_, layerIndex) => (
+        {/* Paper layers representing file count */}
+        {Array.from({ length: paperLayers }, (_, layerIndex) => (
           <div
-            key={`paper-${layerIndex}`}
+            key={layerIndex}
             className="folder-paper"
             style={{
               transform: `translateZ(${(layerIndex + 1) * 2}px) translateY(-${layerIndex}px)`,
               opacity: Math.max(0.3, 0.9 - layerIndex * 0.15),
-              zIndex: layerIndex + 1,
-              width: `${95 - layerIndex * 2}%`,
-              height: `${90 - layerIndex * 2}%`,
-              left: `${2.5 + layerIndex}%`,
-              top: `${8 + layerIndex * 2}%`,
+              zIndex: layerIndex + 1
             }}
           />
         ))}
 
-        {/* Folder Cover & Tab */}
+        {/* Folder cover with tab */}
         <div
           className="folder-cover"
           style={{
@@ -184,10 +171,10 @@ export default function Folder({
             zIndex: paperLayers + 10
           }}
         >
-          <div className="folder-tab"></div>
+          <div className="folder-tab" />
         </div>
 
-        {/* Overlay Content */}
+        {/* Content overlay */}
         <div
           className="folder-content"
           style={{
@@ -196,7 +183,9 @@ export default function Folder({
           }}
         >
           <div className="folder-info">
-            <h3 className="folder-name">{folder.name}</h3>
+            <h3 className="folder-name" title={folder.name}>
+              {folder.name}
+            </h3>
             <p className="folder-count">
               {fileCount} {fileCount === 1 ? 'item' : 'items'}
             </p>
@@ -223,10 +212,12 @@ export default function Folder({
         </div>
       </div>
 
-      {/* Theme loading indicator - only in development */}
-      {process.env.NODE_ENV === 'development' && !themeReady && (
-        <div className="absolute top-0 left-0 w-full h-full bg-muted/50 flex items-center justify-center text-xs">
-          Loading theme...
+      {/* Debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute top-0 left-0 text-xs bg-black text-white p-1 opacity-0 hover:opacity-100 transition-opacity z-50">
+          <div>Chart: {chartClass}</div>
+          <div>Files: {fileCount}</div>
+          <div>Theme: {themeReady ? '✅' : '⏳'}</div>
         </div>
       )}
     </div>

@@ -219,8 +219,7 @@ export default function Folder({
             border: '1px solid hsl(var(--border) / 0.3)',
             borderRadius: '4px',
             boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-            opacity: isEmpty ? 0.3 : (0.8 - i * 0.1),
-            zIndex: 3 + i
+            opacity: isEmpty ? 0.3 : (0.8 - i * 0.1)
           }}
         ></div>
       ))}
@@ -238,7 +237,6 @@ export default function Folder({
           background: `linear-gradient(145deg, hsl(var(--${chartClass})) 0%, hsl(var(--${chartClass}) / 0.9) 100%)`,
           border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
           boxShadow: `var(--shadow), inset 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.1)`,
-          zIndex: 10,
           ...(isSelected && {
             background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%)',
             borderColor: 'hsl(var(--primary) / 0.7)',
@@ -260,7 +258,6 @@ export default function Folder({
           top: '20px',
           left: '20px',
           right: '20px',
-          zIndex: 20,
           pointerEvents: 'none'
         }}
       >
@@ -306,7 +303,6 @@ export default function Folder({
           opacity: (isHovered || isClicked) ? 1 : 0,
           transform: (isHovered || isClicked) ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.9)',
           transition: 'all 0.3s ease',
-          zIndex: 30,
           pointerEvents: 'auto'
         }}
       >

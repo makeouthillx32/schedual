@@ -145,12 +145,14 @@ export default function Folder({
           left: '4px',
           borderRadius: '12px',
           background: `linear-gradient(145deg, hsl(var(--${chartClass}) / 0.8) 0%, hsl(var(--${chartClass}) / 0.5) 100%)`,
-          boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+          boxShadow: `var(--shadow), inset 0 3px 6px rgba(0, 0, 0, 0.2)`,
           ...(isSelected && {
-            background: 'linear-gradient(145deg, hsl(var(--primary) / 0.8) 0%, hsl(var(--primary) / 0.5) 100%)'
+            background: 'linear-gradient(145deg, hsl(var(--primary) / 0.8) 0%, hsl(var(--primary) / 0.5) 100%)',
+            boxShadow: `var(--shadow), inset 0 3px 6px rgba(0, 0, 0, 0.25)`
           }),
           ...(isEmpty && {
-            background: 'linear-gradient(145deg, hsl(var(--muted) / 0.8) 0%, hsl(var(--muted) / 0.5) 100%)'
+            background: 'linear-gradient(145deg, hsl(var(--muted) / 0.8) 0%, hsl(var(--muted) / 0.5) 100%)',
+            boxShadow: `var(--shadow), inset 0 3px 6px rgba(0, 0, 0, 0.15)`
           })
         }}
       ></div>
@@ -189,13 +191,16 @@ export default function Folder({
           background: `hsl(var(--${chartClass}) / 0.95)`,
           border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
           borderBottom: 'none',
+          boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.1)`,
           ...(isSelected && {
             background: 'hsl(var(--primary) / 0.95)',
-            borderColor: 'hsl(var(--primary) / 0.7)'
+            borderColor: 'hsl(var(--primary) / 0.7)',
+            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.15)`
           }),
           ...(isEmpty && {
             background: 'hsl(var(--muted) / 0.8)',
-            borderColor: 'hsl(var(--muted) / 0.6)'
+            borderColor: 'hsl(var(--muted) / 0.6)',
+            boxShadow: `var(--shadow), inset 0 1px 3px rgba(0, 0, 0, 0.05)`
           })
         }}
       ></div>
@@ -212,14 +217,16 @@ export default function Folder({
           borderRadius: '12px 6px 12px 12px',
           background: `linear-gradient(145deg, hsl(var(--${chartClass})) 0%, hsl(var(--${chartClass}) / 0.9) 100%)`,
           border: `2px solid hsl(var(--${chartClass}) / 0.7)`,
-          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.2)',
+          boxShadow: `var(--shadow), inset 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 -2px 4px rgba(0, 0, 0, 0.1)`,
           ...(isSelected && {
             background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%)',
-            borderColor: 'hsl(var(--primary) / 0.7)'
+            borderColor: 'hsl(var(--primary) / 0.7)',
+            boxShadow: `var(--shadow), inset 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.15)`
           }),
           ...(isEmpty && {
             background: 'linear-gradient(145deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.7) 100%)',
-            borderColor: 'hsl(var(--muted) / 0.6)'
+            borderColor: 'hsl(var(--muted) / 0.6)',
+            boxShadow: `var(--shadow), inset 0 2px 6px rgba(0, 0, 0, 0.1), inset 0 -2px 3px rgba(0, 0, 0, 0.05)`
           })
         }}
       ></div>

@@ -1,6 +1,4 @@
-// components/Docustore/Toolbar/index.tsx
 'use client';
-
 import React, { useState, useCallback } from 'react';
 import { 
   SearchIcon,
@@ -22,38 +20,24 @@ type SortOption = 'name' | 'date' | 'size' | 'type';
 type SortOrder = 'asc' | 'desc';
 
 interface ToolbarProps {
-  // Search
   searchQuery: string;
   onSearchChange: (query: string) => void;
   searchPlaceholder?: string;
-
-  // View controls
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
-
-  // Actions
   onUpload: () => void;
   onCreateFolder: () => void;
   onRefresh?: () => void;
-
-  // Sorting
   sortBy: SortOption;
   sortOrder: SortOrder;
   onSortChange: (sortBy: SortOption, order: SortOrder) => void;
-
-  // Filtering
   showFavoritesOnly: boolean;
   onToggleFavorites: () => void;
-  
-  // Selection
   selectedCount: number;
   onClearSelection?: () => void;
   onSelectAll?: () => void;
-
-  // Status
   isUploading?: boolean;
   isLoading?: boolean;
-  
   className?: string;
 }
 
@@ -83,7 +67,6 @@ export default function Toolbar({
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // Sort options
   const sortOptions = [
     { value: 'name' as SortOption, label: 'Name' },
     { value: 'date' as SortOption, label: 'Date Modified' },
@@ -91,43 +74,38 @@ export default function Toolbar({
     { value: 'type' as SortOption, label: 'Type' }
   ];
 
-  // Handle sort selection
   const handleSortSelect = useCallback((newSortBy: SortOption) => {
     const newOrder = sortBy === newSortBy && sortOrder === 'asc' ? 'desc' : 'asc';
     onSortChange(newSortBy, newOrder);
     setShowSortMenu(false);
   }, [sortBy, sortOrder, onSortChange]);
 
-  // Handle search input
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onSearchChange(e.target.value);
   }, [onSearchChange]);
 
-  // Clear search
   const clearSearch = useCallback(() => {
     onSearchChange('');
   }, [onSearchChange]);
 
   return (
-    <div className={`toolbar bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm ${className}`}>
+    <div className={`toolbar bg-background border border-border rounded-lg shadow-sm ${className}`}>
       
-      {/* Mobile Layout (< 640px) */}
       <div className="block sm:hidden">
-        {/* Mobile Top Row - Search */}
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 border-b border-border">
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 ×
               </button>
@@ -135,18 +113,16 @@ export default function Toolbar({
           </div>
         </div>
 
-        {/* Mobile Bottom Row - Horizontally Scrollable Actions */}
         <div className="p-3">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {/* Primary Action Buttons - Always Visible */}
             <button
               onClick={onUpload}
               disabled={isUploading}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
                 isUploading
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              } text-white`}
+                  ? 'bg-primary/60 cursor-not-allowed'
+                  : 'bg-primary hover:bg-primary/90'
+              } text-primary-foreground`}
               title="Upload files"
             >
               <UploadIcon className="h-4 w-4" />
@@ -155,21 +131,20 @@ export default function Toolbar({
 
             <button
               onClick={onCreateFolder}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
               title="New folder"
             >
               <FolderIcon className="h-4 w-4" />
               Folder
             </button>
 
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex-shrink-0">
+            <div className="flex items-center bg-muted rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => onViewModeChange('grid')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="Grid view"
               >
@@ -179,8 +154,8 @@ export default function Toolbar({
                 onClick={() => onViewModeChange('list')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="List view"
               >
@@ -188,24 +163,22 @@ export default function Toolbar({
               </button>
             </div>
 
-            {/* Favorites Button */}
             <button
               onClick={onToggleFavorites}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
                 showFavoritesOnly
-                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-muted'
               }`}
             >
               <StarIcon className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
               Favorites
             </button>
 
-            {/* Sort Button */}
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors whitespace-nowrap"
+                className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors whitespace-nowrap"
                 title="Sort options"
               >
                 <SortIcon className="h-4 w-4" />
@@ -213,7 +186,7 @@ export default function Toolbar({
               </button>
 
               {showSortMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg z-50">
                   <div className="p-2">
                     {sortOptions.map((option) => (
                       <button
@@ -221,8 +194,8 @@ export default function Toolbar({
                         onClick={() => handleSortSelect(option.value)}
                         className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
                           sortBy === option.value
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-popover-foreground hover:bg-muted'
                         }`}
                       >
                         <span>{option.label}</span>
@@ -238,30 +211,28 @@ export default function Toolbar({
               )}
             </div>
 
-            {/* Refresh Button */}
             {onRefresh && (
               <button
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
                 title="Refresh"
               >
                 <RefreshIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             )}
 
-            {/* More Menu */}
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="More options"
               >
                 <MoreIcon className="h-4 w-4" />
               </button>
 
               {showMoreMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg z-50">
                   <div className="p-2">
                     {onSelectAll && (
                       <button
@@ -269,7 +240,7 @@ export default function Toolbar({
                           onSelectAll();
                           setShowMoreMenu(false);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                       >
                         Select All
                       </button>
@@ -278,7 +249,7 @@ export default function Toolbar({
                       onClick={() => {
                         setShowMoreMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                     >
                       Export Selection
                     </button>
@@ -286,7 +257,7 @@ export default function Toolbar({
                       onClick={() => {
                         setShowMoreMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                     >
                       <ShareIcon className="h-4 w-4" />
                       Share Folder
@@ -299,40 +270,36 @@ export default function Toolbar({
         </div>
       </div>
 
-      {/* Desktop Layout (>= 640px) */}
       <div className="hidden sm:block">
-        {/* Main Toolbar Row */}
         <div className="flex items-center justify-between p-4">
           
-          {/* Left Section - Search */}
           <div className="flex items-center gap-4 flex-1 max-w-2xl">
             <div className="relative flex-1 max-w-md">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={clearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   ×
                 </button>
               )}
             </div>
 
-            {/* Quick Filters */}
             <div className="hidden sm:flex items-center gap-2">
               <button
                 onClick={onToggleFavorites}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   showFavoritesOnly
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
                 <StarIcon className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
@@ -341,17 +308,15 @@ export default function Toolbar({
             </div>
           </div>
 
-          {/* Right Section - Actions */}
           <div className="flex items-center gap-2">
             
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center bg-muted rounded-lg p-1">
               <button
                 onClick={() => onViewModeChange('grid')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="Grid view"
               >
@@ -361,8 +326,8 @@ export default function Toolbar({
                 onClick={() => onViewModeChange('list')}
                 className={`p-2 rounded-md transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
                 title="List view"
               >
@@ -370,11 +335,10 @@ export default function Toolbar({
               </button>
             </div>
 
-            {/* Sort Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="Sort options"
               >
                 <SortIcon className="h-4 w-4" />
@@ -382,7 +346,7 @@ export default function Toolbar({
               </button>
 
               {showSortMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg z-10">
                   <div className="p-2">
                     {sortOptions.map((option) => (
                       <button
@@ -390,8 +354,8 @@ export default function Toolbar({
                         onClick={() => handleSortSelect(option.value)}
                         className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
                           sortBy === option.value
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'bg-accent text-accent-foreground'
+                            : 'text-popover-foreground hover:bg-muted'
                         }`}
                       >
                         <span>{option.label}</span>
@@ -407,11 +371,10 @@ export default function Toolbar({
               )}
             </div>
 
-            {/* Filter Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="Filter options"
               >
                 <FilterIcon className="h-4 w-4" />
@@ -419,9 +382,9 @@ export default function Toolbar({
               </button>
 
               {showFilterMenu && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                <div className="absolute right-0 top-full mt-2 w-56 bg-popover border border-border rounded-lg shadow-lg z-10">
                   <div className="p-3">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Filter by</h4>
+                    <h4 className="text-sm font-medium text-popover-foreground mb-3">Filter by</h4>
                     
                     <div className="space-y-2">
                       <label className="flex items-center">
@@ -429,23 +392,23 @@ export default function Toolbar({
                           type="checkbox"
                           checked={showFavoritesOnly}
                           onChange={onToggleFavorites}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-border text-primary focus:ring-ring"
                         />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        <span className="ml-2 text-sm text-popover-foreground">
                           Favorites only
                         </span>
                       </label>
                       
-                      <div className="border-t border-gray-200 dark:border-gray-600 pt-2">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">File Types</p>
+                      <div className="border-t border-border pt-2">
+                        <p className="text-xs text-muted-foreground mb-2">File Types</p>
                         <div className="space-y-1">
                           {['Images', 'Documents', 'Videos', 'Archives'].map((type) => (
                             <label key={type} className="flex items-center">
                               <input
                                 type="checkbox"
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-border text-primary focus:ring-ring"
                               />
-                              <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                              <span className="ml-2 text-sm text-popover-foreground">
                                 {type}
                               </span>
                             </label>
@@ -458,30 +421,28 @@ export default function Toolbar({
               )}
             </div>
 
-            {/* Refresh Button */}
             {onRefresh && (
               <button
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                 title="Refresh"
               >
                 <RefreshIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
             )}
 
-            {/* More Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="More options"
               >
                 <MoreIcon className="h-4 w-4" />
               </button>
 
               {showMoreMenu && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-border rounded-lg shadow-lg z-10">
                   <div className="p-2">
                     {onSelectAll && (
                       <button
@@ -489,7 +450,7 @@ export default function Toolbar({
                           onSelectAll();
                           setShowMoreMenu(false);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                       >
                         Select All
                       </button>
@@ -498,7 +459,7 @@ export default function Toolbar({
                       onClick={() => {
                         setShowMoreMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                     >
                       Export Selection
                     </button>
@@ -506,7 +467,7 @@ export default function Toolbar({
                       onClick={() => {
                         setShowMoreMenu(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-popover-foreground hover:bg-muted rounded-md"
                     >
                       <ShareIcon className="h-4 w-4" />
                       Share Folder
@@ -516,11 +477,10 @@ export default function Toolbar({
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
               <button
                 onClick={onCreateFolder}
-                className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="New folder"
               >
                 <FolderIcon className="h-4 w-4" />
@@ -532,9 +492,9 @@ export default function Toolbar({
                 disabled={isUploading}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                   isUploading
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } text-white`}
+                    ? 'bg-primary/60 cursor-not-allowed'
+                    : 'bg-primary hover:bg-primary/90'
+                } text-primary-foreground`}
                 title="Upload files"
               >
                 <UploadIcon className="h-4 w-4" />
@@ -547,18 +507,17 @@ export default function Toolbar({
         </div>
       </div>
 
-      {/* Selection Bar (shown when items are selected) */}
       {selectedCount > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div className="border-t border-border px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-900 dark:text-white">
+              <span className="text-sm font-medium text-foreground">
                 {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
               </span>
               {onClearSelection && (
                 <button
                   onClick={onClearSelection}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-sm text-primary hover:underline"
                 >
                   Clear selection
                 </button>
@@ -566,15 +525,15 @@ export default function Toolbar({
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto">
-              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors whitespace-nowrap">
+              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted rounded transition-colors whitespace-nowrap">
                 <ShareIcon className="h-4 w-4" />
                 Share
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors whitespace-nowrap">
+              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted rounded transition-colors whitespace-nowrap">
                 <StarIcon className="h-4 w-4" />
                 Favorite
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors whitespace-nowrap">
+              <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 rounded transition-colors whitespace-nowrap">
                 Delete
               </button>
             </div>
@@ -582,7 +541,6 @@ export default function Toolbar({
         </div>
       )}
 
-      {/* Click outside handlers */}
       {(showSortMenu || showFilterMenu || showMoreMenu) && (
         <div
           className="fixed inset-0 z-0"

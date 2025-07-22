@@ -173,8 +173,8 @@ export default function File({
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className={`flex h-full w-full items-center justify-center rounded-lg ${getFileTypeColor()}`}>
-                <div className="h-16 w-16">
+              <div className="flex h-full w-full items-center justify-center">
+                <div className="h-16 w-16 text-muted-foreground">
                   {getFileIcon()}
                 </div>
               </div>
@@ -248,10 +248,10 @@ export default function File({
 
           <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
             <h3 
-              className="text-sm font-medium text-card-foreground line-clamp-2 mb-2" 
+              className="text-sm font-medium text-card-foreground mb-2" 
               title={file.name}
             >
-              {file.name}
+              {file.name.length > 30 ? file.name.substring(0, 30) + '...' : file.name}
             </h3>
 
             <div className="text-xs text-muted-foreground mb-1">

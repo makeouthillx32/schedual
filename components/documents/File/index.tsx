@@ -162,9 +162,9 @@ export default function File({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
+        <div className="flex flex-col space-y-2">
           
-          <div className="relative mb-4 h-32 w-full">
+          <div className="relative h-32 w-full">
             {file.mime_type?.startsWith('image/') && !imageError ? (
               <img
                 src={`/api/documents/${file.id}/thumbnail`}
@@ -183,17 +183,78 @@ export default function File({
             <div className="absolute top-2 right-2 rounded bg-background/90 backdrop-blur-sm px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm">
               {file.mime_type?.split('/')[1]?.toUpperCase() || 'FILE'}
             </div>
+
+            <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
+              isHovered || isSelected ? 'opacity-100' : 'opacity-0'
+            }`}>
+              {canPreview() && (
+                <button
+                  onClick={handlePreview}
+                  className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
+                  title="Preview file"
+                >
+                  <EyeIcon className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
+              
+              <button
+                onClick={handleDownload}
+                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
+                title="Download file"
+              >
+                <DownloadIcon className="h-3 w-3 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={handleToggleFavorite}
+                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <StarIcon 
+                  className={`h-3 w-3 ${
+                    isFavorite ? 'fill-primary text-primary' : 'text-muted-foreground'
+                  }`}
+                />
+              </button>
+              
+              <button
+                onClick={handleContextMenu}
+                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
+                title="More options"
+              >
+                <MoreVerticalIcon className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </div>
+
+            {(isHovered || isSelected) && (
+              <div className="absolute left-2 top-2">
+                <button
+                  onClick={handleSelect}
+                  className="rounded border-2 border-border bg-background p-0.5 transition-colors hover:border-ring"
+                >
+                  <div className={`h-3 w-3 rounded ${
+                    isSelected ? 'bg-primary' : 'bg-transparent'
+                  }`} />
+                </button>
+              </div>
+            )}
+
+            {isFavorite && (
+              <div className="absolute left-2 bottom-2">
+                <StarIcon className="h-4 w-4 fill-primary text-primary" />
+              </div>
+            )}
           </div>
 
-          <div className="w-full space-y-2">
+          <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
             <h3 
-              className="text-sm font-medium text-card-foreground line-clamp-2" 
+              className="text-sm font-medium text-card-foreground line-clamp-2 mb-2" 
               title={file.name}
             >
               {file.name}
             </h3>
 
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground mb-1">
               {formatFileSize(file.size_bytes)}
             </div>
 
@@ -203,84 +264,23 @@ export default function File({
                 <div className="mt-1">by {file.uploader_name}</div>
               )}
             </div>
-          </div>
 
-          {file.tags && file.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {file.tags.slice(0, 2).map((tag, index) => (
-                <span
-                  key={index}
-                  className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
-                >
-                  {tag}
-                </span>
-              ))}
-              {file.tags.length > 2 && (
-                <span className="text-xs text-muted-foreground">+{file.tags.length - 2}</span>
-              )}
-            </div>
-          )}
-
-          <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
-            isHovered || isSelected ? 'opacity-100' : 'opacity-0'
-          }`}>
-            {canPreview() && (
-              <button
-                onClick={handlePreview}
-                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-                title="Preview file"
-              >
-                <EyeIcon className="h-3 w-3 text-muted-foreground" />
-              </button>
+            {file.tags && file.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {file.tags.slice(0, 2).map((tag, index) => (
+                  <span
+                    key={index}
+                    className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {file.tags.length > 2 && (
+                  <span className="text-xs text-muted-foreground">+{file.tags.length - 2}</span>
+                )}
+              </div>
             )}
-            
-            <button
-              onClick={handleDownload}
-              className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-              title="Download file"
-            >
-              <DownloadIcon className="h-3 w-3 text-muted-foreground" />
-            </button>
-
-            <button
-              onClick={handleToggleFavorite}
-              className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-              title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <StarIcon 
-                className={`h-3 w-3 ${
-                  isFavorite ? 'fill-primary text-primary' : 'text-muted-foreground'
-                }`}
-              />
-            </button>
-            
-            <button
-              onClick={handleContextMenu}
-              className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-              title="More options"
-            >
-              <MoreVerticalIcon className="h-3 w-3 text-muted-foreground" />
-            </button>
           </div>
-
-          {(isHovered || isSelected) && (
-            <div className="absolute left-2 top-2">
-              <button
-                onClick={handleSelect}
-                className="rounded border-2 border-border bg-background p-0.5 transition-colors hover:border-ring"
-              >
-                <div className={`h-3 w-3 rounded ${
-                  isSelected ? 'bg-primary' : 'bg-transparent'
-                }`} />
-              </button>
-            </div>
-          )}
-
-          {isFavorite && (
-            <div className="absolute left-2 bottom-2">
-              <StarIcon className="h-4 w-4 fill-primary text-primary" />
-            </div>
-          )}
         </div>
       </div>
     );

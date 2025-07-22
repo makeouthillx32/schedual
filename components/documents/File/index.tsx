@@ -1,106 +1,122 @@
+// components/documents/File/index.tsx
 'use client';
-import React, { useState, useCallback } from 'react';
-import { 
-  FileIcon, 
-  ImageIcon, 
-  PdfIcon, 
-  WordIcon, 
-  ExcelIcon, 
-  PowerPointIcon,
-  VideoIcon,
-  AudioIcon,
-  ArchiveIcon,
-  CodeIcon,
-  StarIcon, 
-  MoreVerticalIcon, 
-  DownloadIcon,
-  EyeIcon,
-  ShareIcon
-} from './icons';
-import { DocumentItem } from '@/hooks/useDocuments';
+
+import React, { useState } from 'react';
+import { FileIcon, StarIcon, StarFilledIcon, MoreVerticalIcon, DownloadIcon } from '../icons';
 
 interface FileProps {
-  file: DocumentItem;
-  viewMode?: 'grid' | 'list';
-  isSelected?: boolean;
-  isFavorite?: boolean;
-  onPreview?: (fileId: string) => void;
-  onDownload?: (fileId: string) => void;
-  onToggleFavorite?: (fileId: string) => void;
-  onContextMenu?: (e: React.MouseEvent, fileId: string) => void;
-  onSelect?: (fileId: string, isMultiSelect?: boolean) => void;
-  className?: string;
+  file: {
+    id: string;
+    name: string;
+    path: string;
+    type: 'file';
+    size_bytes?: number;
+    created_at: string;
+    updated_at: string;
+    is_favorite: boolean;
+    mime_type?: string;
+    uploader_name?: string;
+    tags?: string[];
+  };
+  viewMode: 'grid' | 'list';
+  isSelected: boolean;
+  isFavorite: boolean;
+  onPreview: () => void;
+  onDownload: () => void;
+  onToggleFavorite: () => void;
+  onContextMenu: (e: React.MouseEvent, id: string) => void;
+  onSelect: (id: string, isMulti: boolean) => void;
 }
 
 export default function File({
   file,
-  viewMode = 'grid',
-  isSelected = false,
-  isFavorite = false,
+  viewMode,
+  isSelected,
+  isFavorite,
   onPreview,
   onDownload,
   onToggleFavorite,
   onContextMenu,
-  onSelect,
-  className = ''
+  onSelect
 }: FileProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const getFileIcon = useCallback(() => {
-    if (!file.mime_type) return <FileIcon className="h-full w-full" />;
-
-    const mimeType = file.mime_type.toLowerCase();
-    const iconProps = { className: "h-full w-full" };
-
-    if (mimeType.startsWith('image/')) return <ImageIcon {...iconProps} />;
-    if (mimeType.includes('pdf')) return <PdfIcon {...iconProps} />;
-    if (mimeType.includes('word') || mimeType.includes('document')) return <WordIcon {...iconProps} />;
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <ExcelIcon {...iconProps} />;
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return <PowerPointIcon {...iconProps} />;
-    if (mimeType.startsWith('video/')) return <VideoIcon {...iconProps} />;
-    if (mimeType.startsWith('audio/')) return <AudioIcon {...iconProps} />;
-    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return <ArchiveIcon {...iconProps} />;
-    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return <CodeIcon {...iconProps} />;
-
-    return <FileIcon {...iconProps} />;
-  }, [file.mime_type]);
-
-  const getFileTypeColor = useCallback(() => {
-    if (!file.mime_type) return 'text-muted-foreground bg-muted';
-
-    const mimeType = file.mime_type.toLowerCase();
+  // Clean up filename - remove MIME type if it appears as filename
+  const getDisplayName = (): string => {
+    // Check if the filename is actually a MIME type
+    const mimeTypePattern = /^(application\/|text\/|image\/|video\/|audio\/|vnd\.|multipart\/)/i;
     
-    if (mimeType.startsWith('image/')) return 'text-primary bg-primary/10';
-    if (mimeType.includes('pdf')) return 'text-destructive bg-destructive/10';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'text-accent-foreground bg-accent';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'text-primary bg-primary/20';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'text-secondary-foreground bg-secondary';
-    if (mimeType.startsWith('video/')) return 'text-primary bg-primary/15';
-    if (mimeType.startsWith('audio/')) return 'text-accent-foreground bg-accent/80';
-    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'text-secondary-foreground bg-secondary/80';
-    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return 'text-primary bg-primary/25';
+    if (mimeTypePattern.test(file.name)) {
+      // If filename is a MIME type, try to extract actual filename from other sources
+      // or generate a user-friendly name
+      return getFileNameFromMimeType(file.mime_type || file.name);
+    }
+    
+    return file.name;
+  };
 
-    return 'text-muted-foreground bg-muted';
-  }, [file.mime_type]);
+  // Generate user-friendly filename from MIME type
+  const getFileNameFromMimeType = (mimeType: string): string => {
+    const mime = mimeType.toLowerCase();
+    const timestamp = new Date(file.created_at).toLocaleDateString();
+    
+    if (mime.includes('spreadsheet') || mime.includes('excel')) {
+      return `Spreadsheet_${timestamp}.xlsx`;
+    }
+    if (mime.includes('document') || mime.includes('word')) {
+      return `Document_${timestamp}.docx`;
+    }
+    if (mime.includes('presentation') || mime.includes('powerpoint')) {
+      return `Presentation_${timestamp}.pptx`;
+    }
+    if (mime.includes('pdf')) {
+      return `Document_${timestamp}.pdf`;
+    }
+    if (mime.startsWith('image/')) {
+      const ext = mime.split('/')[1] || 'jpg';
+      return `Image_${timestamp}.${ext}`;
+    }
+    if (mime.startsWith('video/')) {
+      const ext = mime.split('/')[1] || 'mp4';
+      return `Video_${timestamp}.${ext}`;
+    }
+    if (mime.startsWith('audio/')) {
+      const ext = mime.split('/')[1] || 'mp3';
+      return `Audio_${timestamp}.${ext}`;
+    }
+    
+    return `File_${timestamp}`;
+  };
 
-  const canPreview = useCallback(() => {
-    if (!file.mime_type) return false;
-    const mimeType = file.mime_type.toLowerCase();
-    return mimeType.startsWith('image/') || 
-           mimeType.includes('pdf') || 
-           mimeType.startsWith('text/') ||
-           mimeType.includes('json');
-  }, [file.mime_type]);
+  // Get file type for display in metadata
+  const getFileTypeDisplay = (): string => {
+    if (!file.mime_type) return 'Unknown';
+    
+    const mime = file.mime_type.toLowerCase();
+    
+    if (mime.includes('spreadsheet') || mime.includes('excel')) return 'Excel Spreadsheet';
+    if (mime.includes('document') || mime.includes('word')) return 'Word Document';
+    if (mime.includes('presentation') || mime.includes('powerpoint')) return 'PowerPoint Presentation';
+    if (mime.includes('pdf')) return 'PDF Document';
+    if (mime.startsWith('image/')) return 'Image';
+    if (mime.startsWith('video/')) return 'Video';
+    if (mime.startsWith('audio/')) return 'Audio';
+    if (mime.startsWith('text/')) return 'Text File';
+    
+    return 'File';
+  };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+  // Format file size
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes || bytes === 0) return '0 KB';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
+  // Format date
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -115,268 +131,196 @@ export default function File({
     }
   };
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.file-actions')) {
-      return;
+  // Handle click
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      onSelect(file.id, true);
+    } else {
+      onPreview();
     }
+  };
 
-    if (canPreview()) {
-      onPreview?.(file.id);
-    }
-  }, [file.id, onPreview, canPreview]);
+  // Handle context menu
+  const handleContextMenu = (e: React.MouseEvent) => {
+    onContextMenu(e, file.id);
+  };
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onContextMenu?.(e, file.id);
-  }, [file.id, onContextMenu]);
-
-  const handleSelect = useCallback((e: React.MouseEvent) => {
+  // Handle favorite toggle
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const isMultiSelect = e.ctrlKey || e.metaKey;
-    onSelect?.(file.id, isMultiSelect);
-  }, [file.id, onSelect]);
+    onToggleFavorite();
+  };
 
-  const handleToggleFavorite = useCallback((e: React.MouseEvent) => {
+  // Handle download
+  const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFavorite?.(file.id);
-  }, [file.id, onToggleFavorite]);
+    onDownload();
+  };
 
-  const handleDownload = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDownload?.(file.id);
-  }, [file.id, onDownload]);
-
-  const handlePreview = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onPreview?.(file.id);
-  }, [file.id, onPreview]);
-
-  if (viewMode === 'grid') {
+  if (viewMode === 'list') {
     return (
-      <div
-        className={`file-grid group relative cursor-pointer transition-all duration-200 ${
-          isSelected ? 'ring-2 ring-ring ring-offset-2' : ''
-        } ${canPreview() ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+      <div 
+        className={`flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:bg-accent cursor-pointer transition-colors ${
+          isSelected ? 'bg-primary/10 border-primary' : ''
+        }`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col space-y-2">
-          
-          <div className="relative h-40 sm:h-32 w-full">
-            {file.mime_type?.startsWith('image/') && !imageError ? (
-              <img
-                src={`/api/documents/${file.id}/thumbnail`}
-                alt={file.name}
-                className="h-full w-full rounded-lg object-cover"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <div className="h-20 w-20 sm:h-16 sm:w-16 text-muted-foreground">
-                  {getFileIcon()}
-                </div>
-              </div>
-            )}
-            
-            <div className="absolute top-2 right-2 rounded bg-background/90 backdrop-blur-sm px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm">
-              {file.mime_type?.split('/')[1]?.toUpperCase() || 'FILE'}
-            </div>
-
-            <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
-              isHovered || isSelected ? 'opacity-100' : 'opacity-0'
-            }`}>
-              {canPreview() && (
-                <button
-                  onClick={handlePreview}
-                  className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-                  title="Preview file"
-                >
-                  <EyeIcon className="h-3 w-3 text-muted-foreground" />
-                </button>
-              )}
-              
-              <button
-                onClick={handleDownload}
-                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-                title="Download file"
-              >
-                <DownloadIcon className="h-3 w-3 text-muted-foreground" />
-              </button>
-
-              <button
-                onClick={handleToggleFavorite}
-                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <StarIcon 
-                  className={`h-3 w-3 ${
-                    isFavorite ? 'fill-primary text-primary' : 'text-muted-foreground'
-                  }`}
-                />
-              </button>
-              
-              <button
-                onClick={handleContextMenu}
-                className="rounded-full bg-background p-1 shadow-md transition-colors hover:bg-muted"
-                title="More options"
-              >
-                <MoreVerticalIcon className="h-3 w-3 text-muted-foreground" />
-              </button>
-            </div>
-
-            {(isHovered || isSelected) && (
-              <div className="absolute left-2 top-2">
-                <button
-                  onClick={handleSelect}
-                  className="rounded border-2 border-border bg-background p-0.5 transition-colors hover:border-ring"
-                >
-                  <div className={`h-3 w-3 rounded ${
-                    isSelected ? 'bg-primary' : 'bg-transparent'
-                  }`} />
-                </button>
-              </div>
-            )}
-
-            {isFavorite && (
-              <div className="absolute left-2 bottom-2">
-                <StarIcon className="h-4 w-4 fill-primary text-primary" />
-              </div>
-            )}
+        <div className="flex-shrink-0">
+          <FileIcon mimeType={file.mime_type} fileName={getDisplayName()} size="md" />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-foreground truncate">{getDisplayName()}</h3>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{formatFileSize(file.size_bytes)}</span>
+            <span>{formatDate(file.created_at)}</span>
+            <span>{getFileTypeDisplay()}</span>
+            {file.uploader_name && <span>by {file.uploader_name}</span>}
           </div>
+        </div>
 
-          <h3 
-            className="text-sm font-medium text-card-foreground px-1" 
-            title={file.name}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleFavoriteToggle}
+            className={`p-1 rounded transition-colors ${
+              isFavorite 
+                ? 'text-yellow-500' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Toggle favorite"
           >
-            {file.name.length > 30 ? file.name.substring(0, 30) + '...' : file.name}
-          </h3>
-
-          <div className="rounded-lg border border-border bg-card p-2 sm:p-3 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
-            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
-              {formatFileSize(file.size_bytes)}
-            </div>
-
-            <div className="text-xs text-muted-foreground">
-              <div>{formatDate(file.created_at)}</div>
-              {file.uploader_name && (
-                <div className="mt-1">by {file.uploader_name}</div>
-              )}
-            </div>
-
-            {file.tags && file.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {file.tags.slice(0, 2).map((tag, index) => (
-                  <span
-                    key={index}
-                    className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
-                {file.tags.length > 2 && (
-                  <span className="text-xs text-muted-foreground">+{file.tags.length - 2}</span>
-                )}
-              </div>
-            )}
-          </div>
+            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+          </button>
+          <button
+            onClick={handleDownload}
+            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Download"
+          >
+            <DownloadIcon />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onContextMenu(e, file.id);
+            }}
+            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="More options"
+          >
+            <MoreVerticalIcon />
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className={`file-list group flex cursor-pointer items-center gap-3 rounded-lg border border-border bg-card p-3 transition-all hover:bg-muted/50 ${
-        isSelected ? 'ring-2 ring-ring ring-offset-2' : ''
-      } ${canPreview() ? 'cursor-pointer' : 'cursor-default'} ${className}`}
-      onClick={handleClick}
-      onContextMenu={handleContextMenu}
+    <div 
+      className={`file-item relative rounded-lg bg-card border border-border p-4 transition-all hover:shadow-md cursor-pointer ${
+        isSelected ? 'bg-primary/10 border-primary' : ''
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
     >
-      {(isHovered || isSelected) && (
-        <button
-          onClick={handleSelect}
-          className="rounded border-2 border-border bg-background p-0.5 transition-colors hover:border-ring"
-        >
-          <div className={`h-3 w-3 rounded ${
-            isSelected ? 'bg-primary' : 'bg-transparent'
-          }`} />
-        </button>
+      {/* File Icon/Thumbnail */}
+      <div className="mb-3 flex justify-center">
+        <div className="relative">
+          {file.mime_type?.startsWith('image/') && !imageError ? (
+            <img
+              src={file.path}
+              alt={getDisplayName()}
+              className="h-16 w-16 rounded object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <FileIcon mimeType={file.mime_type} fileName={getDisplayName()} size="xl" />
+          )}
+        </div>
+      </div>
+
+      {/* File Name */}
+      <h3 
+        className="mb-2 text-center text-sm font-medium text-foreground line-clamp-2" 
+        title={getDisplayName()}
+      >
+        {getDisplayName()}
+      </h3>
+
+      {/* File Metadata */}
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Size:</span>
+          <span>{formatFileSize(file.size_bytes)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Type:</span>
+          <span>{getFileTypeDisplay()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Modified:</span>
+          <span>{formatDate(file.updated_at)}</span>
+        </div>
+        {file.uploader_name && (
+          <div className="flex justify-between">
+            <span>By:</span>
+            <span className="truncate">{file.uploader_name}</span>
+          </div>
+        )}
+        {file.mime_type && (
+          <div className="mt-2 p-1 bg-muted rounded text-xs font-mono text-center" title="MIME Type">
+            {file.mime_type}
+          </div>
+        )}
+      </div>
+
+      {/* Tags */}
+      {file.tags && file.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1 justify-center">
+          {file.tags.slice(0, 2).map((tag, index) => (
+            <span
+              key={index}
+              className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+            >
+              {tag}
+            </span>
+          ))}
+          {file.tags.length > 2 && (
+            <span className="text-xs text-muted-foreground">+{file.tags.length - 2}</span>
+          )}
+        </div>
       )}
 
-      <div className="flex-shrink-0">
-        <div className={`flex h-8 w-8 items-center justify-center rounded ${getFileTypeColor()}`}>
-          {getFileIcon()}
-        </div>
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate font-medium text-card-foreground">
-            {file.name}
-          </h3>
-          {isFavorite && (
-            <StarIcon className="h-4 w-4 fill-primary text-primary" />
-          )}
-          {file.is_shared && (
-            <ShareIcon className="h-4 w-4 text-primary" />
-          )}
-        </div>
-        
-        <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{formatFileSize(file.size_bytes)}</span>
-          <span>{formatDate(file.created_at)}</span>
-          {file.uploader_name && (
-            <span>by {file.uploader_name}</span>
-          )}
-          {file.tags && file.tags.length > 0 && (
-            <span>{file.tags.length} tag{file.tags.length !== 1 ? 's' : ''}</span>
-          )}
-        </div>
-      </div>
-
-      <div className={`file-actions flex gap-1 transition-opacity ${
+      {/* Action Buttons (Show on Hover) */}
+      <div className={`absolute right-2 top-2 flex gap-1 transition-opacity ${
         isHovered || isSelected ? 'opacity-100' : 'opacity-0'
       }`}>
-        {canPreview() && (
-          <button
-            onClick={handlePreview}
-            className="rounded p-1 transition-colors hover:bg-muted"
-            title="Preview file"
-          >
-            <EyeIcon className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
-        
+        <button
+          onClick={handleFavoriteToggle}
+          className={`p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ${
+            isFavorite ? '!text-yellow-500 !bg-yellow-50 !border-yellow-200' : ''
+          }`}
+          title="Toggle favorite"
+        >
+          {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+        </button>
         <button
           onClick={handleDownload}
-          className="rounded p-1 transition-colors hover:bg-muted"
-          title="Download file"
+          className="p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          title="Download"
         >
-          <DownloadIcon className="h-4 w-4 text-muted-foreground" />
+          <DownloadIcon />
         </button>
-
         <button
-          onClick={handleToggleFavorite}
-          className="rounded p-1 transition-colors hover:bg-muted"
-          title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <StarIcon 
-            className={`h-4 w-4 ${
-              isFavorite ? 'fill-primary text-primary' : 'text-muted-foreground'
-            }`}
-          />
-        </button>
-        
-        <button
-          onClick={handleContextMenu}
-          className="rounded p-1 transition-colors hover:bg-muted"
+          onClick={(e) => {
+            e.stopPropagation();
+            onContextMenu(e, file.id);
+          }}
+          className="p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           title="More options"
         >
-          <MoreVerticalIcon className="h-4 w-4 text-muted-foreground" />
+          <MoreVerticalIcon />
         </button>
       </div>
     </div>

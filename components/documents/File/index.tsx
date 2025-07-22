@@ -1,115 +1,106 @@
 // components/documents/File/index.tsx
 'use client';
 
-import React, { useState } from 'react';
-import { FileIcon, StarIcon, StarFilledIcon, MoreVerticalIcon, DownloadIcon } from '../icons';
+import React, { useState, useCallback } from 'react';
+import { 
+  FileIcon, 
+  ImageIcon, 
+  PdfIcon, 
+  WordIcon, 
+  ExcelIcon, 
+  PowerPointIcon,
+  VideoIcon,
+  AudioIcon,
+  ArchiveIcon,
+  CodeIcon,
+  StarIcon, 
+  MoreVerticalIcon, 
+  DownloadIcon,
+  EyeIcon,
+  ShareIcon
+} from './icons';
+import { DocumentItem } from '@/hooks/useDocuments';
 
 interface FileProps {
-  file: {
-    id: string;
-    name: string;
-    path: string;
-    type: 'file';
-    size_bytes?: number;
-    created_at: string;
-    updated_at: string;
-    is_favorite: boolean;
-    mime_type?: string;
-    uploader_name?: string;
-    tags?: string[];
-  };
-  viewMode: 'grid' | 'list';
-  isSelected: boolean;
-  isFavorite: boolean;
-  onPreview: () => void;
-  onDownload: () => void;
-  onToggleFavorite: () => void;
-  onContextMenu: (e: React.MouseEvent, id: string) => void;
-  onSelect: (id: string, isMulti: boolean) => void;
+  file: DocumentItem;
+  viewMode?: 'grid' | 'list';
+  isSelected?: boolean;
+  isFavorite?: boolean;
+  onPreview?: (fileId: string) => void;
+  onDownload?: (fileId: string) => void;
+  onToggleFavorite?: (fileId: string) => void;
+  onContextMenu?: (e: React.MouseEvent, fileId: string) => void;
+  onSelect?: (fileId: string, isMultiSelect?: boolean) => void;
+  className?: string;
 }
 
 export default function File({
   file,
-  viewMode,
-  isSelected,
-  isFavorite,
+  viewMode = 'grid',
+  isSelected = false,
+  isFavorite = false,
   onPreview,
   onDownload,
   onToggleFavorite,
   onContextMenu,
-  onSelect
+  onSelect,
+  className = ''
 }: FileProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Clean up filename - remove MIME type if it appears as filename
-  const getDisplayName = (): string => {
-    // Check if the filename is actually a MIME type
-    const mimeTypePattern = /^(application\/|text\/|image\/|video\/|audio\/|vnd\.|multipart\/)/i;
-    
-    if (mimeTypePattern.test(file.name)) {
-      // If filename is a MIME type, try to extract actual filename from other sources
-      // or generate a user-friendly name
-      return getFileNameFromMimeType(file.mime_type || file.name);
-    }
-    
-    return file.name;
-  };
+  // Get appropriate icon based on MIME type
+  const getFileIcon = useCallback(() => {
+    if (!file.mime_type) return <FileIcon className="h-full w-full" />;
 
-  // Generate user-friendly filename from MIME type
-  const getFileNameFromMimeType = (mimeType: string): string => {
-    const mime = mimeType.toLowerCase();
-    const timestamp = new Date(file.created_at).toLocaleDateString();
-    
-    if (mime.includes('spreadsheet') || mime.includes('excel')) {
-      return `Spreadsheet_${timestamp}.xlsx`;
-    }
-    if (mime.includes('document') || mime.includes('word')) {
-      return `Document_${timestamp}.docx`;
-    }
-    if (mime.includes('presentation') || mime.includes('powerpoint')) {
-      return `Presentation_${timestamp}.pptx`;
-    }
-    if (mime.includes('pdf')) {
-      return `Document_${timestamp}.pdf`;
-    }
-    if (mime.startsWith('image/')) {
-      const ext = mime.split('/')[1] || 'jpg';
-      return `Image_${timestamp}.${ext}`;
-    }
-    if (mime.startsWith('video/')) {
-      const ext = mime.split('/')[1] || 'mp4';
-      return `Video_${timestamp}.${ext}`;
-    }
-    if (mime.startsWith('audio/')) {
-      const ext = mime.split('/')[1] || 'mp3';
-      return `Audio_${timestamp}.${ext}`;
-    }
-    
-    return `File_${timestamp}`;
-  };
+    const mimeType = file.mime_type.toLowerCase();
+    const iconProps = { className: "h-full w-full" };
 
-  // Get file type for display in metadata
-  const getFileTypeDisplay = (): string => {
-    if (!file.mime_type) return 'Unknown';
+    if (mimeType.startsWith('image/')) return <ImageIcon {...iconProps} />;
+    if (mimeType.includes('pdf')) return <PdfIcon {...iconProps} />;
+    if (mimeType.includes('word') || mimeType.includes('document')) return <WordIcon {...iconProps} />;
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <ExcelIcon {...iconProps} />;
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return <PowerPointIcon {...iconProps} />;
+    if (mimeType.startsWith('video/')) return <VideoIcon {...iconProps} />;
+    if (mimeType.startsWith('audio/')) return <AudioIcon {...iconProps} />;
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return <ArchiveIcon {...iconProps} />;
+    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return <CodeIcon {...iconProps} />;
+
+    return <FileIcon {...iconProps} />;
+  }, [file.mime_type]);
+
+  // Get file type color
+  const getFileTypeColor = useCallback(() => {
+    if (!file.mime_type) return 'text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
+
+    const mimeType = file.mime_type.toLowerCase();
     
-    const mime = file.mime_type.toLowerCase();
-    
-    if (mime.includes('spreadsheet') || mime.includes('excel')) return 'Excel Spreadsheet';
-    if (mime.includes('document') || mime.includes('word')) return 'Word Document';
-    if (mime.includes('presentation') || mime.includes('powerpoint')) return 'PowerPoint Presentation';
-    if (mime.includes('pdf')) return 'PDF Document';
-    if (mime.startsWith('image/')) return 'Image';
-    if (mime.startsWith('video/')) return 'Video';
-    if (mime.startsWith('audio/')) return 'Audio';
-    if (mime.startsWith('text/')) return 'Text File';
-    
-    return 'File';
-  };
+    if (mimeType.startsWith('image/')) return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+    if (mimeType.includes('pdf')) return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30';
+    if (mimeType.startsWith('video/')) return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30';
+    if (mimeType.startsWith('audio/')) return 'text-pink-600 bg-pink-100 dark:text-pink-400 dark:bg-pink-900/30';
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
+    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30';
+
+    return 'text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
+  }, [file.mime_type]);
+
+  // Check if file can be previewed
+  const canPreview = useCallback(() => {
+    if (!file.mime_type) return false;
+    const mimeType = file.mime_type.toLowerCase();
+    return mimeType.startsWith('image/') || 
+           mimeType.includes('pdf') || 
+           mimeType.startsWith('text/') ||
+           mimeType.includes('json');
+  }, [file.mime_type]);
 
   // Format file size
-  const formatFileSize = (bytes?: number): string => {
-    if (!bytes || bytes === 0) return '0 KB';
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -131,83 +122,133 @@ export default function File({
     }
   };
 
-  // Handle click
-  const handleClick = (e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      onSelect(file.id, true);
-    } else {
-      onPreview();
+  // Format MIME type for display
+  const formatMimeType = (mimeType: string): string => {
+    // Convert long MIME types to user-friendly names
+    const mimeMap: Record<string, string> = {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PowerPoint',
+      'application/vnd.ms-excel': 'Excel',
+      'application/msword': 'Word',
+      'application/vnd.ms-powerpoint': 'PowerPoint',
+      'application/pdf': 'PDF',
+      'text/plain': 'Text',
+      'image/jpeg': 'JPEG',
+      'image/png': 'PNG',
+      'image/gif': 'GIF',
+      'image/webp': 'WebP',
+      'video/mp4': 'MP4',
+      'audio/mpeg': 'MP3'
+    };
+
+    const friendlyName = mimeMap[mimeType.toLowerCase()];
+    if (friendlyName) return friendlyName;
+
+    // If not in our map, try to extract the subtype
+    const parts = mimeType.split('/');
+    if (parts.length === 2) {
+      return parts[1].toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
+
+    return 'FILE';
   };
+
+  // Handle file click for preview
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    // Don't preview if clicking on action buttons
+    if ((e.target as HTMLElement).closest('.file-actions')) {
+      return;
+    }
+
+    if (canPreview()) {
+      onPreview?.(file.id);
+    } else if (e.ctrlKey || e.metaKey) {
+      onSelect?.(file.id, true);
+    } else {
+      onSelect?.(file.id, false);
+    }
+  }, [canPreview, onPreview, onSelect, file.id]);
 
   // Handle context menu
-  const handleContextMenu = (e: React.MouseEvent) => {
-    onContextMenu(e, file.id);
-  };
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onContextMenu?.(e, file.id);
+  }, [onContextMenu, file.id]);
 
   // Handle favorite toggle
-  const handleFavoriteToggle = (e: React.MouseEvent) => {
+  const handleFavoriteToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFavorite();
-  };
+    onToggleFavorite?.(file.id);
+  }, [onToggleFavorite, file.id]);
 
   // Handle download
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onDownload();
-  };
+    onDownload?.(file.id);
+  }, [onDownload, file.id]);
+
+  // Handle preview
+  const handlePreview = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPreview?.(file.id);
+  }, [onPreview, file.id]);
 
   if (viewMode === 'list') {
     return (
-      <div 
-        className={`flex items-center gap-3 p-3 rounded-lg bg-card border border-border hover:bg-accent cursor-pointer transition-colors ${
-          isSelected ? 'bg-primary/10 border-primary' : ''
-        }`}
+      <div
+        className={`group flex items-center gap-3 rounded-lg border p-3 transition-all hover:bg-accent hover:shadow-sm ${
+          isSelected ? 'bg-accent border-primary' : 'bg-card border-border'
+        } ${className}`}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex-shrink-0">
-          <FileIcon mimeType={file.mime_type} fileName={getDisplayName()} size="md" />
+        {/* File Icon */}
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded ${getFileTypeColor()}`}>
+          {getFileIcon()}
         </div>
-        
+
+        {/* File Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-foreground truncate">{getDisplayName()}</h3>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <h3 className="font-medium text-foreground truncate">{file.name}</h3>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
             <span>{formatFileSize(file.size_bytes)}</span>
             <span>{formatDate(file.created_at)}</span>
-            <span>{getFileTypeDisplay()}</span>
+            {file.mime_type && <span>{formatMimeType(file.mime_type)}</span>}
             {file.uploader_name && <span>by {file.uploader_name}</span>}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Actions */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {canPreview() && (
+            <button
+              onClick={handlePreview}
+              className="p-1.5 rounded hover:bg-accent-foreground/10 text-muted-foreground hover:text-foreground"
+              title="Preview"
+            >
+              <EyeIcon className="h-4 w-4" />
+            </button>
+          )}
+          
+          <button
+            onClick={handleDownload}
+            className="p-1.5 rounded hover:bg-accent-foreground/10 text-muted-foreground hover:text-foreground"
+            title="Download"
+          >
+            <DownloadIcon className="h-4 w-4" />
+          </button>
+
           <button
             onClick={handleFavoriteToggle}
-            className={`p-1 rounded transition-colors ${
-              isFavorite 
-                ? 'text-yellow-500' 
-                : 'text-muted-foreground hover:text-foreground'
+            className={`p-1.5 rounded hover:bg-accent-foreground/10 ${
+              isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Toggle favorite"
           >
-            {isFavorite ? <StarFilledIcon /> : <StarIcon />}
-          </button>
-          <button
-            onClick={handleDownload}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-            title="Download"
-          >
-            <DownloadIcon />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onContextMenu(e, file.id);
-            }}
-            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
-            title="More options"
-          >
-            <MoreVerticalIcon />
+            <StarIcon className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} />
           </button>
         </div>
       </div>
@@ -215,73 +256,58 @@ export default function File({
   }
 
   return (
-    <div 
-      className={`file-item relative rounded-lg bg-card border border-border p-4 transition-all hover:shadow-md cursor-pointer ${
-        isSelected ? 'bg-primary/10 border-primary' : ''
-      }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <div
+      className={`group relative flex h-48 w-full flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent hover:shadow-sm ${
+        isSelected ? 'bg-accent border-primary' : 'bg-card border-border'
+      } ${className}`}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {/* File Icon/Thumbnail */}
-      <div className="mb-3 flex justify-center">
-        <div className="relative">
-          {file.mime_type?.startsWith('image/') && !imageError ? (
-            <img
-              src={file.path}
-              alt={getDisplayName()}
-              className="h-16 w-16 rounded object-cover"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <FileIcon mimeType={file.mime_type} fileName={getDisplayName()} size="xl" />
-          )}
-        </div>
+      {/* File Preview/Icon */}
+      <div className="relative mb-3 h-16 w-16 flex-shrink-0">
+        {file.mime_type?.startsWith('image/') && !imageError ? (
+          <img
+            src={`/api/documents/${file.id}/thumbnail`}
+            alt={file.name}
+            className="h-full w-full rounded object-cover"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <div className={`flex h-full w-full items-center justify-center rounded ${getFileTypeColor()}`}>
+            {getFileIcon()}
+          </div>
+        )}
       </div>
 
       {/* File Name */}
       <h3 
-        className="mb-2 text-center text-sm font-medium text-foreground line-clamp-2" 
-        title={getDisplayName()}
+        className="mb-2 w-full truncate text-sm font-medium text-foreground text-center" 
+        title={file.name}
       >
-        {getDisplayName()}
+        {file.name}
       </h3>
 
-      {/* File Metadata */}
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <div className="flex justify-between">
-          <span>Size:</span>
-          <span>{formatFileSize(file.size_bytes)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Type:</span>
-          <span>{getFileTypeDisplay()}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Modified:</span>
-          <span>{formatDate(file.updated_at)}</span>
-        </div>
-        {file.uploader_name && (
-          <div className="flex justify-between">
-            <span>By:</span>
-            <span className="truncate">{file.uploader_name}</span>
-          </div>
-        )}
+      {/* Metadata Section - Now includes MIME type */}
+      <div className="text-xs text-muted-foreground text-center space-y-1">
+        <div>{formatFileSize(file.size_bytes)}</div>
+        <div>{formatDate(file.created_at)}</div>
         {file.mime_type && (
-          <div className="mt-2 p-1 bg-muted rounded text-xs font-mono text-center" title="MIME Type">
-            {file.mime_type}
-          </div>
+          <div className="font-medium">{formatMimeType(file.mime_type)}</div>
+        )}
+        {file.uploader_name && (
+          <div>by {file.uploader_name}</div>
         )}
       </div>
 
       {/* Tags */}
       {file.tags && file.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1 justify-center">
+        <div className="mt-2 flex flex-wrap justify-center gap-1">
           {file.tags.slice(0, 2).map((tag, index) => (
             <span
               key={index}
-              className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs"
+              className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
             >
               {tag}
             </span>
@@ -293,34 +319,46 @@ export default function File({
       )}
 
       {/* Action Buttons (Show on Hover) */}
-      <div className={`absolute right-2 top-2 flex gap-1 transition-opacity ${
+      <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
         isHovered || isSelected ? 'opacity-100' : 'opacity-0'
       }`}>
+        {canPreview() && (
+          <button
+            onClick={handlePreview}
+            className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
+            title="Preview"
+          >
+            <EyeIcon className="h-3.5 w-3.5" />
+          </button>
+        )}
+        
+        <button
+          onClick={handleDownload}
+          className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
+          title="Download"
+        >
+          <DownloadIcon className="h-3.5 w-3.5" />
+        </button>
+
         <button
           onClick={handleFavoriteToggle}
-          className={`p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors ${
-            isFavorite ? '!text-yellow-500 !bg-yellow-50 !border-yellow-200' : ''
+          className={`p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background ${
+            isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'
           }`}
           title="Toggle favorite"
         >
-          {isFavorite ? <StarFilledIcon /> : <StarIcon />}
+          <StarIcon className="h-3.5 w-3.5" fill={isFavorite ? 'currentColor' : 'none'} />
         </button>
-        <button
-          onClick={handleDownload}
-          className="p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Download"
-        >
-          <DownloadIcon />
-        </button>
+
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onContextMenu(e, file.id);
+            onContextMenu?.(e, file.id);
           }}
-          className="p-1.5 rounded-md bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
           title="More options"
         >
-          <MoreVerticalIcon />
+          <MoreVerticalIcon className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

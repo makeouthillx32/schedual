@@ -162,47 +162,51 @@ export default function File({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="flex flex-col items-center rounded-lg border border-border bg-card p-4 text-center shadow-sm transition-all hover:border-border/60 hover:shadow-md">
+        <div className="flex flex-col rounded-lg border border-border bg-card p-4 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
           
-          <div className="relative mb-3 h-12 w-12">
+          <div className="relative mb-4 h-32 w-full">
             {file.mime_type?.startsWith('image/') && !imageError ? (
               <img
                 src={`/api/documents/${file.id}/thumbnail`}
                 alt={file.name}
-                className="h-full w-full rounded object-cover"
+                className="h-full w-full rounded-lg object-cover"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className={`flex h-full w-full items-center justify-center rounded ${getFileTypeColor()}`}>
-                {getFileIcon()}
+              <div className={`flex h-full w-full items-center justify-center rounded-lg ${getFileTypeColor()}`}>
+                <div className="h-16 w-16">
+                  {getFileIcon()}
+                </div>
               </div>
             )}
             
-            <div className="absolute -bottom-1 -right-1 rounded bg-background px-1 py-0.5 text-xs font-medium text-muted-foreground shadow-sm">
+            <div className="absolute top-2 right-2 rounded bg-background/90 backdrop-blur-sm px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm">
               {file.mime_type?.split('/')[1]?.toUpperCase() || 'FILE'}
             </div>
           </div>
 
-          <h3 
-            className="mb-2 w-full truncate text-sm font-medium text-card-foreground" 
-            title={file.name}
-          >
-            {file.name}
-          </h3>
+          <div className="w-full space-y-2">
+            <h3 
+              className="text-sm font-medium text-card-foreground line-clamp-2" 
+              title={file.name}
+            >
+              {file.name}
+            </h3>
 
-          <div className="mb-1 text-xs text-muted-foreground">
-            {formatFileSize(file.size_bytes)}
-          </div>
+            <div className="text-xs text-muted-foreground">
+              {formatFileSize(file.size_bytes)}
+            </div>
 
-          <div className="text-xs text-muted-foreground">
-            <div>{formatDate(file.created_at)}</div>
-            {file.uploader_name && (
-              <div className="mt-1">by {file.uploader_name}</div>
-            )}
+            <div className="text-xs text-muted-foreground">
+              <div>{formatDate(file.created_at)}</div>
+              {file.uploader_name && (
+                <div className="mt-1">by {file.uploader_name}</div>
+              )}
+            </div>
           </div>
 
           {file.tags && file.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap justify-center gap-1">
+            <div className="mt-2 flex flex-wrap gap-1">
               {file.tags.slice(0, 2).map((tag, index) => (
                 <span
                   key={index}

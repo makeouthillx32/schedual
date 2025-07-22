@@ -164,7 +164,7 @@ export default function File({
       >
         <div className="flex flex-col space-y-2">
           
-          <div className="relative h-32 w-full">
+          <div className="relative h-40 sm:h-32 w-full">
             {file.mime_type?.startsWith('image/') && !imageError ? (
               <img
                 src={`/api/documents/${file.id}/thumbnail`}
@@ -174,7 +174,7 @@ export default function File({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <div className="h-16 w-16 text-muted-foreground">
+                <div className="h-20 w-20 sm:h-16 sm:w-16 text-muted-foreground">
                   {getFileIcon()}
                 </div>
               </div>
@@ -246,15 +246,15 @@ export default function File({
             )}
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
-            <h3 
-              className="text-sm font-medium text-card-foreground mb-2" 
-              title={file.name}
-            >
-              {file.name.length > 30 ? file.name.substring(0, 30) + '...' : file.name}
-            </h3>
+          <h3 
+            className="text-sm font-medium text-card-foreground px-1" 
+            title={file.name}
+          >
+            {file.name.length > 30 ? file.name.substring(0, 30) + '...' : file.name}
+          </h3>
 
-            <div className="text-xs text-muted-foreground mb-1">
+          <div className="rounded-lg border border-border bg-card p-2 sm:p-3 shadow-sm transition-all hover:border-border/60 hover:shadow-md">
+            <div className="text-xs sm:text-sm text-muted-foreground mb-1">
               {formatFileSize(file.size_bytes)}
             </div>
 

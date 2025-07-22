@@ -265,7 +265,7 @@ export default function File({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* File Preview/Icon */}
+      {/* File Preview/Icon - Full width, no background container */}
       <div className="relative mb-3 h-16 w-16 flex-shrink-0">
         {file.mime_type?.startsWith('image/') && !imageError ? (
           <img
@@ -275,7 +275,7 @@ export default function File({
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className={`flex h-full w-full items-center justify-center rounded ${getFileTypeColor()}`}>
+          <div className="flex h-full w-full items-center justify-center">
             {getFileIcon()}
           </div>
         )}
@@ -289,8 +289,8 @@ export default function File({
         {file.name}
       </h3>
 
-      {/* Metadata Section - Now includes MIME type */}
-      <div className="text-xs text-muted-foreground text-center space-y-1">
+      {/* Metadata Container - Now in its own background container */}
+      <div className="bg-muted/50 rounded-lg p-2 w-full text-xs text-muted-foreground text-center space-y-1">
         <div>{formatFileSize(file.size_bytes)}</div>
         <div>{formatDate(file.created_at)}</div>
         {file.mime_type && (

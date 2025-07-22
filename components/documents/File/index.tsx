@@ -1,6 +1,3 @@
-// components/documents/File/index.tsx
-'use client';
-
 import React, { useState, useCallback } from 'react';
 import { 
   FileIcon, 
@@ -19,7 +16,20 @@ import {
   EyeIcon,
   ShareIcon
 } from './icons';
-import { DocumentItem } from '@/hooks/useDocuments';
+
+interface DocumentItem {
+  id: string;
+  name: string;
+  type: 'file' | 'folder';
+  path: string;
+  size_bytes: number;
+  created_at: string;
+  updated_at: string;
+  is_favorite: boolean;
+  mime_type?: string;
+  uploader_name?: string;
+  tags?: string[];
+}
 
 interface FileProps {
   file: DocumentItem;
@@ -51,41 +61,22 @@ export default function File({
 
   // Get appropriate icon based on MIME type
   const getFileIcon = useCallback(() => {
-    if (!file.mime_type) return <FileIcon className="h-full w-full" />;
+    if (!file.mime_type) return <FileIcon className="h-full w-full text-hsl(var(--muted-foreground))" />;
 
     const mimeType = file.mime_type.toLowerCase();
     const iconProps = { className: "h-full w-full" };
 
-    if (mimeType.startsWith('image/')) return <ImageIcon {...iconProps} />;
-    if (mimeType.includes('pdf')) return <PdfIcon {...iconProps} />;
-    if (mimeType.includes('word') || mimeType.includes('document')) return <WordIcon {...iconProps} />;
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <ExcelIcon {...iconProps} />;
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return <PowerPointIcon {...iconProps} />;
-    if (mimeType.startsWith('video/')) return <VideoIcon {...iconProps} />;
-    if (mimeType.startsWith('audio/')) return <AudioIcon {...iconProps} />;
-    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return <ArchiveIcon {...iconProps} />;
-    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return <CodeIcon {...iconProps} />;
+    if (mimeType.startsWith('image/')) return <ImageIcon {...iconProps} className="h-full w-full text-green-500" />;
+    if (mimeType.includes('pdf')) return <PdfIcon {...iconProps} className="h-full w-full text-red-500" />;
+    if (mimeType.includes('word') || mimeType.includes('document')) return <WordIcon {...iconProps} className="h-full w-full text-blue-600" />;
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <ExcelIcon {...iconProps} className="h-full w-full text-green-600" />;
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return <PowerPointIcon {...iconProps} className="h-full w-full text-orange-500" />;
+    if (mimeType.startsWith('video/')) return <VideoIcon {...iconProps} className="h-full w-full text-purple-500" />;
+    if (mimeType.startsWith('audio/')) return <AudioIcon {...iconProps} className="h-full w-full text-pink-500" />;
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return <ArchiveIcon {...iconProps} className="h-full w-full text-yellow-600" />;
+    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return <CodeIcon {...iconProps} className="h-full w-full text-blue-500" />;
 
-    return <FileIcon {...iconProps} />;
-  }, [file.mime_type]);
-
-  // Get file type color
-  const getFileTypeColor = useCallback(() => {
-    if (!file.mime_type) return 'text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
-
-    const mimeType = file.mime_type.toLowerCase();
-    
-    if (mimeType.startsWith('image/')) return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-    if (mimeType.includes('pdf')) return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30';
-    if (mimeType.startsWith('video/')) return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/30';
-    if (mimeType.startsWith('audio/')) return 'text-pink-600 bg-pink-100 dark:text-pink-400 dark:bg-pink-900/30';
-    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30';
-    if (mimeType.includes('javascript') || mimeType.includes('json') || mimeType.includes('html') || mimeType.includes('css')) return 'text-indigo-600 bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30';
-
-    return 'text-gray-500 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
+    return <FileIcon {...iconProps} className="h-full w-full text-hsl(var(--muted-foreground))" />;
   }, [file.mime_type]);
 
   // Check if file can be previewed
@@ -124,7 +115,6 @@ export default function File({
 
   // Format MIME type for display
   const formatMimeType = (mimeType: string): string => {
-    // Convert long MIME types to user-friendly names
     const mimeMap: Record<string, string> = {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Excel',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Word',
@@ -145,7 +135,6 @@ export default function File({
     const friendlyName = mimeMap[mimeType.toLowerCase()];
     if (friendlyName) return friendlyName;
 
-    // If not in our map, try to extract the subtype
     const parts = mimeType.split('/');
     if (parts.length === 2) {
       return parts[1].toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -156,7 +145,6 @@ export default function File({
 
   // Handle file click for preview
   const handleClick = useCallback((e: React.MouseEvent) => {
-    // Don't preview if clicking on action buttons
     if ((e.target as HTMLElement).closest('.file-actions')) {
       return;
     }
@@ -197,36 +185,74 @@ export default function File({
   if (viewMode === 'list') {
     return (
       <div
-        className={`group flex items-center gap-3 rounded-lg border p-3 transition-all hover:bg-accent hover:shadow-sm ${
-          isSelected ? 'bg-accent border-primary' : 'bg-card border-border'
+        className={`group flex items-center gap-4 p-3 transition-all duration-200 ${
+          isSelected 
+            ? 'bg-hsl(var(--accent)) border border-hsl(var(--primary))' 
+            : isHovered 
+              ? 'bg-hsl(var(--accent))/50' 
+              : 'hover:bg-hsl(var(--accent))/30'
         } ${className}`}
+        style={{
+          borderRadius: '8px',
+          cursor: 'pointer'
+        }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* File Icon */}
-        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded ${getFileTypeColor()}`}>
-          {getFileIcon()}
+        {/* Large File Icon - No background container */}
+        <div className="h-12 w-12 flex-shrink-0 flex items-center justify-center">
+          {file.mime_type?.startsWith('image/') && !imageError ? (
+            <img
+              src={`/api/documents/${file.id}/thumbnail`}
+              alt={file.name}
+              className="h-full w-full rounded object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            getFileIcon()
+          )}
         </div>
 
-        {/* File Info */}
+        {/* File Name */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-foreground truncate">{file.name}</h3>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-            <span>{formatFileSize(file.size_bytes)}</span>
-            <span>{formatDate(file.created_at)}</span>
-            {file.mime_type && <span>{formatMimeType(file.mime_type)}</span>}
-            {file.uploader_name && <span>by {file.uploader_name}</span>}
+          <h3 className="font-medium text-hsl(var(--foreground)) truncate text-base">
+            {file.name}
+          </h3>
+          
+          {/* Metadata Container */}
+          <div 
+            className="mt-2 px-3 py-1 rounded-md text-xs text-hsl(var(--muted-foreground))"
+            style={{
+              backgroundColor: 'hsl(var(--muted))',
+              border: '1px solid hsl(var(--border))'
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span>{formatFileSize(file.size_bytes)}</span>
+              <span>•</span>
+              <span>{formatDate(file.created_at)}</span>
+              <span>•</span>
+              {file.mime_type && <span>{formatMimeType(file.mime_type)}</span>}
+              {file.uploader_name && (
+                <>
+                  <span>•</span>
+                  <span>by {file.uploader_name}</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className={`file-actions flex items-center gap-1 transition-opacity duration-200 ${
+          isHovered || isSelected ? 'opacity-100' : 'opacity-0'
+        }`}>
           {canPreview() && (
             <button
               onClick={handlePreview}
-              className="p-1.5 rounded hover:bg-accent-foreground/10 text-muted-foreground hover:text-foreground"
+              className="p-2 rounded-md transition-colors hover:bg-hsl(var(--accent)) text-hsl(var(--muted-foreground)) hover:text-hsl(var(--foreground))"
               title="Preview"
             >
               <EyeIcon className="h-4 w-4" />
@@ -235,7 +261,7 @@ export default function File({
           
           <button
             onClick={handleDownload}
-            className="p-1.5 rounded hover:bg-accent-foreground/10 text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-md transition-colors hover:bg-hsl(var(--accent)) text-hsl(var(--muted-foreground)) hover:text-hsl(var(--foreground))"
             title="Download"
           >
             <DownloadIcon className="h-4 w-4" />
@@ -243,54 +269,93 @@ export default function File({
 
           <button
             onClick={handleFavoriteToggle}
-            className={`p-1.5 rounded hover:bg-accent-foreground/10 ${
-              isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'
+            className={`p-2 rounded-md transition-colors hover:bg-hsl(var(--accent)) ${
+              isFavorite ? 'text-yellow-500' : 'text-hsl(var(--muted-foreground)) hover:text-hsl(var(--foreground))'
             }`}
             title="Toggle favorite"
           >
             <StarIcon className="h-4 w-4" fill={isFavorite ? 'currentColor' : 'none'} />
           </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onContextMenu?.(e, file.id);
+            }}
+            className="p-2 rounded-md transition-colors hover:bg-hsl(var(--accent)) text-hsl(var(--muted-foreground)) hover:text-hsl(var(--foreground))"
+            title="More options"
+          >
+            <MoreVerticalIcon className="h-4 w-4" />
+          </button>
         </div>
+
+        {/* Favorite indicator */}
+        {isFavorite && (
+          <div className="absolute top-2 right-2">
+            <StarIcon className="h-4 w-4 text-yellow-500" fill="currentColor" />
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div
-      className={`group relative flex h-48 w-full flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent hover:shadow-sm ${
-        isSelected ? 'bg-accent border-primary' : 'bg-card border-border'
+      className={`group relative flex flex-col items-center p-4 transition-all duration-200 ${
+        isSelected 
+          ? 'bg-hsl(var(--accent)) border-2 border-hsl(var(--primary))' 
+          : isHovered 
+            ? 'bg-hsl(var(--accent))/50' 
+            : 'hover:bg-hsl(var(--accent))/30'
       } ${className}`}
+      style={{
+        borderRadius: '12px',
+        width: '160px',
+        height: '180px',
+        cursor: 'pointer'
+      }}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* File Preview/Icon - Full width, no background container */}
-      <div className="relative mb-3 h-16 w-16 flex-shrink-0">
+      {/* Large File Icon - No background container */}
+      <div className="relative mb-3 h-16 w-16 flex-shrink-0 flex items-center justify-center">
         {file.mime_type?.startsWith('image/') && !imageError ? (
           <img
             src={`/api/documents/${file.id}/thumbnail`}
             alt={file.name}
-            className="h-full w-full rounded object-cover"
+            className="h-full w-full rounded-md object-cover"
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            {getFileIcon()}
+          getFileIcon()
+        )}
+        
+        {/* Favorite indicator on icon */}
+        {isFavorite && (
+          <div className="absolute -top-1 -right-1">
+            <StarIcon className="h-4 w-4 text-yellow-500" fill="currentColor" />
           </div>
         )}
       </div>
 
       {/* File Name */}
       <h3 
-        className="mb-2 w-full truncate text-sm font-medium text-foreground text-center" 
+        className="mb-3 w-full truncate text-sm font-medium text-hsl(var(--foreground)) text-center leading-tight" 
         title={file.name}
       >
         {file.name}
       </h3>
 
-      {/* Metadata Container - Now in its own background container */}
-      <div className="bg-muted/50 rounded-lg p-2 w-full text-xs text-muted-foreground text-center space-y-1">
+      {/* Metadata Container */}
+      <div 
+        className="w-full px-2 py-2 rounded-md text-xs text-hsl(var(--muted-foreground)) text-center space-y-1"
+        style={{
+          backgroundColor: 'hsl(var(--muted))',
+          border: '1px solid hsl(var(--border))'
+        }}
+      >
         <div>{formatFileSize(file.size_bytes)}</div>
         <div>{formatDate(file.created_at)}</div>
         {file.mime_type && (
@@ -307,25 +372,34 @@ export default function File({
           {file.tags.slice(0, 2).map((tag, index) => (
             <span
               key={index}
-              className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
+              className="rounded px-2 py-1 text-xs"
+              style={{
+                backgroundColor: 'hsl(var(--muted))',
+                color: 'hsl(var(--muted-foreground))'
+              }}
             >
               {tag}
             </span>
           ))}
           {file.tags.length > 2 && (
-            <span className="text-xs text-muted-foreground">+{file.tags.length - 2}</span>
+            <span className="text-xs text-hsl(var(--muted-foreground))">+{file.tags.length - 2}</span>
           )}
         </div>
       )}
 
       {/* Action Buttons (Show on Hover) */}
-      <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity ${
+      <div className={`file-actions absolute right-2 top-2 flex gap-1 transition-opacity duration-200 ${
         isHovered || isSelected ? 'opacity-100' : 'opacity-0'
       }`}>
         {canPreview() && (
           <button
             onClick={handlePreview}
-            className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-105"
+            style={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+              color: 'hsl(var(--muted-foreground))'
+            }}
             title="Preview"
           >
             <EyeIcon className="h-3.5 w-3.5" />
@@ -334,7 +408,12 @@ export default function File({
         
         <button
           onClick={handleDownload}
-          className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
+          className="p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--muted-foreground))'
+          }}
           title="Download"
         >
           <DownloadIcon className="h-3.5 w-3.5" />
@@ -342,9 +421,14 @@ export default function File({
 
         <button
           onClick={handleFavoriteToggle}
-          className={`p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background ${
-            isFavorite ? 'text-yellow-500' : 'text-muted-foreground hover:text-foreground'
+          className={`p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-105 ${
+            isFavorite ? 'text-yellow-500' : ''
           }`}
+          style={{
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            color: isFavorite ? '' : 'hsl(var(--muted-foreground))'
+          }}
           title="Toggle favorite"
         >
           <StarIcon className="h-3.5 w-3.5" fill={isFavorite ? 'currentColor' : 'none'} />
@@ -355,7 +439,12 @@ export default function File({
             e.stopPropagation();
             onContextMenu?.(e, file.id);
           }}
-          className="p-1.5 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background text-muted-foreground hover:text-foreground"
+          className="p-1.5 rounded-full shadow-sm transition-all duration-200 hover:scale-105"
+          style={{
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--muted-foreground))'
+          }}
           title="More options"
         >
           <MoreVerticalIcon className="h-3.5 w-3.5" />

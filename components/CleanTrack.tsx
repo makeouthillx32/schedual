@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/app/provider";
 import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X } from "lucide-react";
+import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
+import { exportTemplates } from "@/lib/exportUtils";
 
 interface CleanTrackItem {
   id?: number;
@@ -24,6 +26,13 @@ interface DailyInstance {
   status: string;
   created_at: string;
   updated_at: string;
+}
+
+interface BusinessCleaningRecord {
+  business_id: number;
+  business_name: string;
+  address: string;
+  cleaned_dates: number[];
 }
 
 interface CleanTrackProps {
@@ -52,10 +61,88 @@ export default function CleanTrack({
 
   const [movingBusiness, setMovingBusiness] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const completed = cleanTrack.filter(item => item.status === "cleaned").length;
   const moved = cleanTrack.filter(item => item.status === "moved").length;
   const pending = cleanTrack.filter(item => item.status === "pending").length;
+
+  // Load billing data for current month when component mounts
+  useEffect(() => {
+    loadBillingData();
+  }, [currentInstance]);
+
+  const loadBillingData = async () => {
+    if (!currentInstance) return;
+
+    try {
+      const instanceDate = new Date(currentInstance.instance_date);
+      const month = instanceDate.getMonth() + 1;
+      const year = instanceDate.getFullYear();
+      
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      console.log(`📊 Loading billing data for ${month}/${year}`);
+
+      // Fetch all businesses
+      const businessesRes = await fetch('/api/schedule/businesses');
+      if (!businessesRes.ok) throw new Error('Failed to fetch businesses');
+      const allBusinesses = await businessesRes.json();
+
+      // Fetch monthly instances
+      const instancesRes = await fetch(
+        `/api/schedule/daily-instances/monthly?start_date=${startDateStr}&end_date=${endDateStr}`
+      );
+      if (!instancesRes.ok) throw new Error('Failed to fetch monthly data');
+      const monthlyData = await instancesRes.json();
+
+      // Process data to create billing records
+      const businessRecords = new Map<number, BusinessCleaningRecord>();
+
+      // Initialize all businesses
+      allBusinesses.forEach((business: any) => {
+        businessRecords.set(business.id, {
+          business_id: business.id,
+          business_name: business.business_name,
+          address: business.address,
+          cleaned_dates: []
+        });
+      });
+
+      // Process monthly instances to mark cleaned dates
+      monthlyData.instances?.forEach((instance: any) => {
+        const instanceDate = new Date(instance.instance_date);
+        const dayOfMonth = instanceDate.getDate();
+
+        instance.daily_clean_items?.forEach((item: any) => {
+          if (item.status === 'cleaned') {
+            const record = businessRecords.get(item.business_id);
+            if (record && !record.cleaned_dates.includes(dayOfMonth)) {
+              record.cleaned_dates.push(dayOfMonth);
+            }
+          }
+        });
+      });
+
+      const processedData = Array.from(businessRecords.values())
+        .sort((a, b) => a.business_name.localeCompare(b.business_name));
+
+      setBillingData(processedData);
+      console.log(`✅ Loaded billing data: ${processedData.length} businesses`);
+
+    } catch (error) {
+      console.error('❌ Error loading billing data:', error);
+    }
+  };
 
   const handleMoveClick = (businessId: number) => {
     setMovingBusiness(businessId);
@@ -103,6 +190,43 @@ export default function CleanTrack({
       default:
         return <span className="text-[hsl(var(--muted-foreground))]">Pending</span>;
     }
+  };
+
+  // Create export template for CMS billing
+  const billingTemplate: ExportTemplate = {
+    id: 'cms-billing-from-track',
+    name: 'CMS Billing Report',
+    data: {
+      businesses: billingData,
+      month: currentMonth,
+      year: currentYear,
+      generated_from: 'clean_track',
+      instance_info: currentInstance ? {
+        id: currentInstance.id,
+        date: currentInstance.instance_date,
+        day: currentInstance.day_name
+      } : null
+    },
+    generator: async (data: any, format: 'excel' | 'pdf') => {
+      const { businesses, month, year } = data;
+      
+      console.log(`🔄 Generating ${format.toUpperCase()} billing report from Clean Track`);
+      console.log(`📊 Data: ${businesses.length} businesses, ${month}/${year}`);
+      
+      if (format === 'excel') {
+        return await exportTemplates.billing.excel(businesses, month, year);
+      } else {
+        return await exportTemplates.billing.pdf(businesses, month, year);
+      }
+    }
+  };
+
+  const getMonthName = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[currentMonth - 1] || '';
   };
 
   return (
@@ -272,22 +396,25 @@ export default function CleanTrack({
             Progress: {completed} of {cleanTrack.length} completed
             {moved > 0 && ` • ${moved} moved to future dates`}
           </div>
-          <button
-            className="px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors"
-            onClick={() => {
-              console.log("📊 Clean Track Report:", {
-                date: new Date().toISOString().split('T')[0],
-                day: currentDay,
-                week: week,
-                summary: { completed, pending, moved },
-                details: cleanTrack
-              });
-              alert(`Daily Report Generated!\n\nCompleted: ${completed}\nPending: ${pending}\nMoved: ${moved}\n\nCheck console for full details.`);
-            }}
-          >
-            Generate Report
-          </button>
+          
+          {/* Universal Export Button for CMS Billing */}
+          {billingData.length > 0 && currentInstance && (
+            <UniversalExportButton
+              template={billingTemplate}
+              filename={`CMS_Billing_${getMonthName()}_${currentYear}_from_CleanTrack`}
+              disabled={instanceLoading}
+              size="md"
+              variant="primary"
+              className="ml-4"
+            />
+          )}
         </div>
+        
+        {billingData.length > 0 && (
+          <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
+            💡 Export includes all {billingData.length} businesses for {getMonthName()} {currentYear}
+          </div>
+        )}
       </div>
     </div>
   );

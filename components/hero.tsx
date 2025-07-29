@@ -8,7 +8,7 @@ import RandomizerButton from "@/components/RandomizerButton";
 import WeatherWidget from "@/components/WeatherWidget";
 import ScheduleList from "@/components/ScheduleList";
 import { useTheme } from "@/app/provider";
-import { Calendar, CheckCircle2, Circle, ArrowRight, Clock } from "lucide-react";
+import { Calendar, CheckCircle2, Circle, ArrowRight, RefreshCw } from "lucide-react";
 
 interface JobSchedule {
   business_name: string;
@@ -16,6 +16,7 @@ interface JobSchedule {
   before_open: boolean;
   address: string;
   business_id?: number;
+  isCompleted?: boolean;
 }
 
 interface Member {
@@ -29,13 +30,27 @@ interface Member {
 }
 
 interface CleanTrackItem {
+  id?: number;
   business_id: number;
   business_name: string;
   address: string;
   before_open: boolean;
-  status: "pending" | "cleaned" | "missed";
+  status: "pending" | "cleaned" | "missed" | "moved";
   cleaned_at?: string;
   moved_to_date?: string;
+  notes?: string;
+  marked_by?: string;
+  updated_at?: string;
+}
+
+interface DailyInstance {
+  id: number;
+  instance_date: string;
+  week_number: number;
+  day_name: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
@@ -57,11 +72,11 @@ const Hero = () => {
   } | null>(null);
   const [activeTab, setActiveTab] = useState<"schedule" | "team" | "clean-track">("schedule");
   
-  // Clean Track state
+  const [currentInstance, setCurrentInstance] = useState<DailyInstance | null>(null);
   const [cleanTrack, setCleanTrack] = useState<CleanTrackItem[]>([]);
   const [moveToDate, setMoveToDate] = useState<{ [key: number]: string }>({});
+  const [instanceLoading, setInstanceLoading] = useState(false);
 
-  // 1) fetch live members
   useEffect(() => {
     fetch("/api/schedule/members")
       .then((res) => {
@@ -72,7 +87,6 @@ const Hero = () => {
       .catch(console.error);
   }, []);
 
-  // 2) set current day/week
   useEffect(() => {
     const today = new Date();
     setDay(
@@ -83,40 +97,56 @@ const Hero = () => {
     setWeek(Math.ceil(today.getDate() / 7));
   }, []);
 
-  // 3) load schedule when day/week change
   useEffect(() => {
     if (!day || week <= 0) return;
 
-    const loadSchedule = async () => {
+    const loadDailyData = async () => {
+      setInstanceLoading(true);
       try {
-        console.log("🔍 Loading schedule for week:", week, "day:", day);
-        const data = await fetchSchedule(week, day);
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+
+        const instanceRes = await fetch(
+          `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
+        );
         
-        if (!data.schedule?.length) {
+        if (!instanceRes.ok) {
+          throw new Error("Failed to load daily instance");
+        }
+
+        const instanceData = await instanceRes.json();
+        setCurrentInstance(instanceData.instance);
+        setCleanTrack(instanceData.items || []);
+
+        const scheduleData = await fetchSchedule(week, day);
+        
+        if (!scheduleData.schedule?.length) {
           setError("No businesses to clean today. Have a good day off!");
           setSchedule([]);
-          setCleanTrack([]);
           return;
         }
 
-        console.log("📊 Schedule data received:", data.schedule);
-
-        // use live members here
         const available = membersList.filter(
           (m) => m[day as keyof Member]
         );
 
-        const updated = data.schedule.map((entry: any) => {
-          console.log("🏢 Processing business entry:", entry);
+        const completedBusinessIds = new Set(
+          instanceData.items
+            ?.filter((item: CleanTrackItem) => item.status === "cleaned")
+            ?.map((item: CleanTrackItem) => item.business_id) || []
+        );
+
+        const updated = scheduleData.schedule.map((entry: any) => {
+          const isCompleted = completedBusinessIds.has(entry.business_id);
           
           return {
             ...entry,
+            isCompleted,
             jobs: assignRandomJobs(
               ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
               available
             ),
             onClick: () => {
-              console.log("🖱️ Business clicked:", entry);
               setToastInfo({
                 business_id: entry.business_id,
                 business_name: entry.business_name,
@@ -128,26 +158,19 @@ const Hero = () => {
         });
 
         setSchedule(updated);
-
-        // Initialize Clean Track with current schedule
-        const trackItems: CleanTrackItem[] = data.schedule.map((entry: any) => ({
-          business_id: entry.business_id || Math.random(),
-          business_name: entry.business_name,
-          address: entry.address,
-          before_open: entry.before_open,
-          status: "pending"
-        }));
-        setCleanTrack(trackItems);
         setError(null);
+
       } catch (err) {
-        console.error("❌ Error loading schedule:", err);
-        setError("No businesses to clean today. Have a good day off!");
+        console.error("❌ Error loading daily data:", err);
+        setError("Failed to load today's cleaning data");
         setSchedule([]);
         setCleanTrack([]);
+      } finally {
+        setInstanceLoading(false);
       }
     };
 
-    loadSchedule();
+    loadDailyData();
   }, [week, day, membersList]);
 
   const randomizeSchedule = () => {
@@ -166,44 +189,72 @@ const Hero = () => {
     );
   };
 
-  // Clean Track functions
-  const toggleBusinessStatus = (businessId: number) => {
-    setCleanTrack(prev => prev.map(item => {
-      if (item.business_id === businessId) {
-        if (item.status === "pending") {
-          return {
-            ...item,
-            status: "cleaned",
-            cleaned_at: new Date().toISOString()
-          };
-        } else if (item.status === "cleaned") {
-          return {
-            ...item,
-            status: "pending",
-            cleaned_at: undefined
-          };
-        }
+  const updateBusinessStatus = async (businessId: number, status: string, movedDate?: string) => {
+    if (!currentInstance) return;
+
+    try {
+      const updateData: any = {
+        instance_id: currentInstance.id,
+        business_id: businessId,
+        status
+      };
+
+      if (status === "moved" && movedDate) {
+        updateData.moved_to_date = movedDate;
       }
-      return item;
-    }));
+
+      const res = await fetch("/api/schedule/daily-instances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update business status");
+      }
+
+      const result = await res.json();
+
+      setCleanTrack(prev => prev.map(item => 
+        item.business_id === businessId 
+          ? { ...item, ...result.item }
+          : item
+      ));
+
+      setSchedule(prev => prev.map(entry => 
+        entry.business_id === businessId 
+          ? { ...entry, isCompleted: status === "cleaned" }
+          : entry
+      ));
+
+    } catch (error) {
+      console.error("❌ Error updating business status:", error);
+      alert("Failed to update business status. Please try again.");
+    }
   };
 
-  const moveBusinessToDate = (businessId: number) => {
+  const toggleBusinessStatus = async (businessId: number) => {
+    const currentItem = cleanTrack.find(item => item.business_id === businessId);
+    if (!currentItem) return;
+
+    let newStatus: string;
+    if (currentItem.status === "pending") {
+      newStatus = "cleaned";
+    } else if (currentItem.status === "cleaned") {
+      newStatus = "pending";
+    } else {
+      return;
+    }
+
+    await updateBusinessStatus(businessId, newStatus);
+  };
+
+  const moveBusinessToDate = async (businessId: number) => {
     const newDate = moveToDate[businessId];
     if (!newDate) return;
 
-    setCleanTrack(prev => prev.map(item => {
-      if (item.business_id === businessId) {
-        return {
-          ...item,
-          status: "missed",
-          moved_to_date: newDate
-        };
-      }
-      return item;
-    }));
+    await updateBusinessStatus(businessId, "moved", newDate);
 
-    // Clear the date input
     setMoveToDate(prev => ({
       ...prev,
       [businessId]: ""
@@ -217,11 +268,46 @@ const Hero = () => {
     }));
   };
 
+  const refreshInstance = async () => {
+    if (!day || week <= 0) return;
+    
+    setInstanceLoading(true);
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+
+    try {
+      const instanceRes = await fetch(
+        `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
+      );
+      
+      if (instanceRes.ok) {
+        const instanceData = await instanceRes.json();
+        setCurrentInstance(instanceData.instance);
+        setCleanTrack(instanceData.items || []);
+        
+        const completedBusinessIds = new Set(
+          instanceData.items
+            ?.filter((item: CleanTrackItem) => item.status === "cleaned")
+            ?.map((item: CleanTrackItem) => item.business_id) || []
+        );
+
+        setSchedule(prev => prev.map(entry => ({
+          ...entry,
+          isCompleted: completedBusinessIds.has(entry.business_id)
+        })));
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing instance:", error);
+    } finally {
+      setInstanceLoading(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "cleaned":
         return <CheckCircle2 size={20} className="text-green-600" />;
-      case "missed":
+      case "moved":
         return <ArrowRight size={20} className="text-yellow-600" />;
       default:
         return <Circle size={20} className="text-gray-400" />;
@@ -236,20 +322,20 @@ const Hero = () => {
             ✓ Cleaned {item.cleaned_at && `at ${new Date(item.cleaned_at).toLocaleTimeString()}`}
           </span>
         );
-      case "missed":
+      case "moved":
         return (
           <span className="text-yellow-600 font-medium">
             → Moved to {item.moved_to_date && new Date(item.moved_to_date).toLocaleDateString()}
           </span>
         );
       default:
-        return <span className="text-gray-500">Pending</span>;
+        return <span className="text-[hsl(var(--muted-foreground))]">Pending</span>;
     }
   };
 
   const CleanTrackTab = () => {
     const completed = cleanTrack.filter(item => item.status === "cleaned").length;
-    const missed = cleanTrack.filter(item => item.status === "missed").length;
+    const moved = cleanTrack.filter(item => item.status === "moved").length;
     const pending = cleanTrack.filter(item => item.status === "pending").length;
 
     return (
@@ -260,12 +346,38 @@ const Hero = () => {
             : "bg-[hsl(var(--background))] shadow-[var(--shadow-sm)]"
         }`}
       >
-        {/* Summary Stats */}
         <div className="mb-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center">
-            <CheckCircle2 size={24} className="mr-2 text-[hsl(var(--sidebar-primary))]" />
-            Clean Track - {day.charAt(0).toUpperCase() + day.slice(1)}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold flex items-center">
+              <CheckCircle2 size={24} className="mr-2 text-[hsl(var(--sidebar-primary))]" />
+              Clean Track - {day.charAt(0).toUpperCase() + day.slice(1)}
+            </h3>
+            <div className="flex items-center space-x-2">
+              {currentInstance && (
+                <div className="text-sm text-[hsl(var(--muted-foreground))]">
+                  Instance #{currentInstance.id}
+                </div>
+              )}
+              <button
+                onClick={refreshInstance}
+                disabled={instanceLoading}
+                className="p-2 hover:bg-[hsl(var(--secondary))] rounded transition-colors"
+                title="Refresh data"
+              >
+                <RefreshCw size={16} className={instanceLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
+          </div>
+          
+          {currentInstance && (
+            <div className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
+              <div className="flex items-center space-x-4">
+                <span>📅 {new Date(currentInstance.instance_date).toLocaleDateString()}</span>
+                <span>👥 Shared with team</span>
+                <span>🔄 Last updated: {new Date(currentInstance.updated_at).toLocaleTimeString()}</span>
+              </div>
+            </div>
+          )}
           
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className={`p-3 rounded-lg text-center ${
@@ -277,47 +389,44 @@ const Hero = () => {
             <div className={`p-3 rounded-lg text-center ${
               isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
             }`}>
-              <div className="text-2xl font-bold text-gray-500">{pending}</div>
+              <div className="text-2xl font-bold text-[hsl(var(--muted-foreground))]">{pending}</div>
               <div className="text-sm text-[hsl(var(--muted-foreground))]">Pending</div>
             </div>
             <div className={`p-3 rounded-lg text-center ${
               isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
             }`}>
-              <div className="text-2xl font-bold text-yellow-600">{missed}</div>
+              <div className="text-2xl font-bold text-yellow-600">{moved}</div>
               <div className="text-sm text-[hsl(var(--muted-foreground))]">Moved</div>
             </div>
           </div>
         </div>
 
-        {/* Business List */}
         <div className="space-y-3">
           {cleanTrack.map((item) => (
             <div
               key={item.business_id}
-              className={`p-4 rounded-lg border transition-all ${
+              className={`p-4 rounded-lg border border-[hsl(var(--border))] transition-all ${
                 isDark
-                  ? "bg-[hsl(var(--card))] border-[hsl(var(--border))]"
-                  : "bg-white border-[hsl(var(--border))]"
+                  ? "bg-[hsl(var(--card))]"
+                  : "bg-[hsl(var(--background))]"
               } ${
                 item.status === "cleaned" 
-                  ? "border-green-200 bg-green-50" 
-                  : item.status === "missed"
-                  ? "border-yellow-200 bg-yellow-50"
+                  ? "border-green-200 bg-green-50/50" 
+                  : item.status === "moved"
+                  ? "border-yellow-200 bg-yellow-50/50"
                   : ""
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3 flex-1">
-                  {/* Status Checkbox */}
                   <button
                     onClick={() => toggleBusinessStatus(item.business_id)}
                     className="mt-1 hover:scale-110 transition-transform"
-                    disabled={item.status === "missed"}
+                    disabled={item.status === "moved"}
                   >
                     {getStatusIcon(item.status)}
                   </button>
 
-                  {/* Business Info */}
                   <div className="flex-1">
                     <h4 className="font-semibold text-[hsl(var(--foreground))]">
                       {item.business_name}
@@ -328,8 +437,8 @@ const Hero = () => {
                     <div className="flex items-center space-x-3">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         item.before_open 
-                          ? "bg-red-100 text-red-800" 
-                          : "bg-blue-100 text-blue-800"
+                          ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]" 
+                          : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
                       }`}>
                         {item.before_open ? "Before Open" : "After Close"}
                       </span>
@@ -338,7 +447,6 @@ const Hero = () => {
                   </div>
                 </div>
 
-                {/* Move to Date Section */}
                 {item.status === "pending" && (
                   <div className="flex items-center space-x-2">
                     <input
@@ -354,7 +462,7 @@ const Hero = () => {
                       className={`px-3 py-1 text-sm rounded transition-colors ${
                         moveToDate[item.business_id]
                           ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
                       }`}
                     >
                       Move
@@ -366,12 +474,11 @@ const Hero = () => {
           ))}
         </div>
 
-        {/* Export/Summary Section */}
         <div className="mt-6 p-4 border-t border-[hsl(var(--border))]">
           <div className="flex items-center justify-between">
             <div className="text-sm text-[hsl(var(--muted-foreground))]">
               Progress: {completed} of {cleanTrack.length} completed
-              {missed > 0 && ` • ${missed} moved to future dates`}
+              {moved > 0 && ` • ${moved} moved to future dates`}
             </div>
             <button
               className="px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors"
@@ -380,10 +487,10 @@ const Hero = () => {
                   date: new Date().toISOString().split('T')[0],
                   day: day,
                   week: week,
-                  summary: { completed, pending, missed },
+                  summary: { completed, pending, moved },
                   details: cleanTrack
                 });
-                alert(`Daily Report Generated!\n\nCompleted: ${completed}\nPending: ${pending}\nMoved: ${missed}\n\nCheck console for full details.`);
+                alert(`Daily Report Generated!\n\nCompleted: ${completed}\nPending: ${pending}\nMoved: ${moved}\n\nCheck console for full details.`);
               }}
             >
               Generate Report
@@ -462,7 +569,6 @@ const Hero = () => {
           : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]"
       }`}
     >
-      {/* Page Title */}
       <div className="mb-6">
         <h2
           className={`text-2xl font-bold ${
@@ -491,13 +597,11 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Weather & Randomizer */}
       <div className="mb-6">
         <WeatherWidget />
         <RandomizerButton onClick={randomizeSchedule} />
       </div>
 
-      {/* Tabs */}
       <div className="mb-6 border-b border-[hsl(var(--border))]">
         <ul className="flex flex-wrap -mb-px">
           <li className="mr-6">
@@ -540,12 +644,11 @@ const Hero = () => {
         </ul>
       </div>
 
-      {/* Content */}
       {error ? (
         <div
           className={`rounded-lg p-8 mb-6 ${
             isDark
-              ? "bg-[hsl(var(--destructive))/0.2] text-[hsl(var(--destructive-foreground))]"
+              ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]"
               : "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
           }`}
         >
@@ -559,7 +662,6 @@ const Hero = () => {
               schedule={schedule.map((entry) => ({
                 ...entry,
                 onClick: () => {
-                  console.log("📋 ScheduleList business clicked:", entry);
                   setToastInfo({
                     business_id: entry.business_id,
                     business_name: entry.business_name,

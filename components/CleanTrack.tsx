@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/app/provider";
-import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search } from "lucide-react";
 import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
 import { exportTemplates } from "@/lib/exportUtils";
 
@@ -16,6 +16,7 @@ interface CleanTrackItem {
   notes?: string;
   marked_by?: string;
   updated_at?: string;
+  is_added?: boolean; // Flag for businesses added on-the-fly
 }
 
 interface DailyInstance {
@@ -35,6 +36,13 @@ interface BusinessCleaningRecord {
   cleaned_dates: number[];
 }
 
+interface AvailableBusiness {
+  id: number;
+  business_name: string;
+  address: string;
+  before_open: boolean;
+}
+
 interface CleanTrackProps {
   cleanTrack: CleanTrackItem[];
   currentInstance: DailyInstance | null;
@@ -44,6 +52,7 @@ interface CleanTrackProps {
   onToggleBusinessStatus: (businessId: number) => void;
   onMoveBusinessToDate: (businessId: number, date: string) => void;
   onRefreshInstance: () => void;
+  onAddBusiness: (businessId: number, notes?: string) => void; // New prop for adding businesses
 }
 
 export default function CleanTrack({
@@ -54,7 +63,8 @@ export default function CleanTrack({
   instanceLoading,
   onToggleBusinessStatus,
   onMoveBusinessToDate,
-  onRefreshInstance
+  onRefreshInstance,
+  onAddBusiness
 }: CleanTrackProps) {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
@@ -64,15 +74,43 @@ export default function CleanTrack({
   const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  
+  // Add business states
+  const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [availableBusinesses, setAvailableBusinesses] = useState<AvailableBusiness[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBusinessToAdd, setSelectedBusinessToAdd] = useState<AvailableBusiness | null>(null);
+  const [addBusinessNotes, setAddBusinessNotes] = useState("");
 
   const completed = cleanTrack.filter(item => item.status === "cleaned").length;
   const moved = cleanTrack.filter(item => item.status === "moved").length;
   const pending = cleanTrack.filter(item => item.status === "pending").length;
+  const added = cleanTrack.filter(item => item.is_added).length;
 
   // Load billing data for current month when component mounts
   useEffect(() => {
     loadBillingData();
+    loadAvailableBusinesses();
   }, [currentInstance]);
+
+  const loadAvailableBusinesses = async () => {
+    try {
+      const res = await fetch('/api/schedule/businesses');
+      if (res.ok) {
+        const businesses = await res.json();
+        
+        // Filter out businesses already in clean track
+        const currentBusinessIds = new Set(cleanTrack.map(item => item.business_id));
+        const available = businesses.filter((business: any) => 
+          !currentBusinessIds.has(business.id)
+        );
+        
+        setAvailableBusinesses(available);
+      }
+    } catch (error) {
+      console.error('Error loading available businesses:', error);
+    }
+  };
 
   const loadBillingData = async () => {
     if (!currentInstance) return;
@@ -91,24 +129,18 @@ export default function CleanTrack({
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      console.log(`📊 Loading billing data for ${month}/${year}`);
-
-      // Fetch all businesses
       const businessesRes = await fetch('/api/schedule/businesses');
       if (!businessesRes.ok) throw new Error('Failed to fetch businesses');
       const allBusinesses = await businessesRes.json();
 
-      // Fetch monthly instances
       const instancesRes = await fetch(
         `/api/schedule/daily-instances/monthly?start_date=${startDateStr}&end_date=${endDateStr}`
       );
       if (!instancesRes.ok) throw new Error('Failed to fetch monthly data');
       const monthlyData = await instancesRes.json();
 
-      // Process data to create billing records
       const businessRecords = new Map<number, BusinessCleaningRecord>();
 
-      // Initialize all businesses
       allBusinesses.forEach((business: any) => {
         businessRecords.set(business.id, {
           business_id: business.id,
@@ -118,7 +150,6 @@ export default function CleanTrack({
         });
       });
 
-      // Process monthly instances to mark cleaned dates
       monthlyData.instances?.forEach((instance: any) => {
         const instanceDate = new Date(instance.instance_date);
         const dayOfMonth = instanceDate.getDate();
@@ -137,10 +168,9 @@ export default function CleanTrack({
         .sort((a, b) => a.business_name.localeCompare(b.business_name));
 
       setBillingData(processedData);
-      console.log(`✅ Loaded billing data: ${processedData.length} businesses`);
 
     } catch (error) {
-      console.error('❌ Error loading billing data:', error);
+      console.error('Error loading billing data:', error);
     }
   };
 
@@ -161,6 +191,34 @@ export default function CleanTrack({
     setMovingBusiness(null);
     setSelectedDate("");
   };
+
+  const handleAddBusinessClick = () => {
+    setShowAddBusiness(true);
+    setSearchTerm("");
+    setSelectedBusinessToAdd(null);
+    setAddBusinessNotes("");
+    loadAvailableBusinesses();
+  };
+
+  const handleCancelAdd = () => {
+    setShowAddBusiness(false);
+    setSearchTerm("");
+    setSelectedBusinessToAdd(null);
+    setAddBusinessNotes("");
+  };
+
+  const handleConfirmAdd = () => {
+    if (selectedBusinessToAdd) {
+      const notes = addBusinessNotes.trim() || `Added on-the-fly - moved from another day`;
+      onAddBusiness(selectedBusinessToAdd.id, notes);
+      handleCancelAdd();
+    }
+  };
+
+  const filteredBusinesses = availableBusinesses.filter(business =>
+    business.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    business.address.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -192,7 +250,6 @@ export default function CleanTrack({
     }
   };
 
-  // Create export template for CMS billing
   const billingTemplate: ExportTemplate = {
     id: 'cms-billing-from-track',
     name: 'CMS Billing Report',
@@ -209,9 +266,6 @@ export default function CleanTrack({
     },
     generator: async (data: any, format: 'excel' | 'pdf') => {
       const { businesses, month, year } = data;
-      
-      console.log(`🔄 Generating ${format.toUpperCase()} billing report from Clean Track`);
-      console.log(`📊 Data: ${businesses.length} businesses, ${month}/${year}`);
       
       if (format === 'excel') {
         return await exportTemplates.billing.excel(businesses, month, year);
@@ -250,6 +304,14 @@ export default function CleanTrack({
               </div>
             )}
             <button
+              onClick={handleAddBusinessClick}
+              className="px-3 py-1 text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center"
+              title="Add business cleaned today"
+            >
+              <Plus size={14} className="mr-1" />
+              Add Business
+            </button>
+            <button
               onClick={onRefreshInstance}
               disabled={instanceLoading}
               className="p-2 hover:bg-[hsl(var(--secondary))] rounded transition-colors"
@@ -270,7 +332,7 @@ export default function CleanTrack({
           </div>
         )}
         
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           <div className={`p-3 rounded-lg text-center ${
             isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
           }`}>
@@ -289,8 +351,111 @@ export default function CleanTrack({
             <div className="text-2xl font-bold text-yellow-600">{moved}</div>
             <div className="text-sm text-[hsl(var(--muted-foreground))]">Moved</div>
           </div>
+          <div className={`p-3 rounded-lg text-center ${
+            isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
+          }`}>
+            <div className="text-2xl font-bold text-blue-600">{added}</div>
+            <div className="text-sm text-[hsl(var(--muted-foreground))]">Added</div>
+          </div>
         </div>
       </div>
+
+      {/* Add Business Modal */}
+      {showAddBusiness && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`w-full max-w-md mx-4 rounded-lg p-6 ${
+            isDark ? "bg-[hsl(var(--card))]" : "bg-white"
+          }`}>
+            <h4 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
+              Add Business to Today's Cleaning
+            </h4>
+            
+            {/* Search */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+                <input
+                  type="text"
+                  placeholder="Search businesses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Business List */}
+            <div className="max-h-64 overflow-y-auto mb-4 border border-[hsl(var(--border))] rounded">
+              {filteredBusinesses.length > 0 ? (
+                filteredBusinesses.map((business) => (
+                  <button
+                    key={business.id}
+                    onClick={() => setSelectedBusinessToAdd(business)}
+                    className={`w-full p-3 text-left border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--accent))] transition-colors ${
+                      selectedBusinessToAdd?.id === business.id ? "bg-[hsl(var(--accent))]" : ""
+                    }`}
+                  >
+                    <div className="font-medium text-[hsl(var(--foreground))]">
+                      {business.business_name}
+                    </div>
+                    <div className="text-sm text-[hsl(var(--muted-foreground))]">
+                      {business.address}
+                    </div>
+                    <div className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
+                      business.before_open 
+                        ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]" 
+                        : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
+                    }`}>
+                      {business.before_open ? "Before Open" : "After Close"}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-4 text-center text-[hsl(var(--muted-foreground))]">
+                  No businesses found
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            {selectedBusinessToAdd && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">
+                  Notes (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Moved from another day, Extra cleaning"
+                  value={addBusinessNotes}
+                  onChange={(e) => setAddBusinessNotes(e.target.value)}
+                  className="w-full px-3 py-2 border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                />
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCancelAdd}
+                className="flex-1 px-4 py-2 border border-[hsl(var(--border))] rounded text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAdd}
+                disabled={!selectedBusinessToAdd}
+                className={`flex-1 px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center justify-center ${
+                  !selectedBusinessToAdd ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                <Plus size={16} className="mr-1" />
+                Add to Track
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {cleanTrack.map((item) => (
@@ -305,6 +470,8 @@ export default function CleanTrack({
                 ? "border-green-200 bg-green-50/50" 
                 : item.status === "moved"
                 ? "border-yellow-200 bg-yellow-50/50"
+                : item.is_added
+                ? "border-blue-200 bg-blue-50/50"
                 : ""
             }`}
           >
@@ -319,9 +486,16 @@ export default function CleanTrack({
                 </button>
 
                 <div className="flex-1">
-                  <h4 className="font-semibold text-[hsl(var(--foreground))]">
-                    {item.business_name}
-                  </h4>
+                  <div className="flex items-center space-x-2">
+                    <h4 className="font-semibold text-[hsl(var(--foreground))]">
+                      {item.business_name}
+                    </h4>
+                    {item.is_added && (
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                        Added
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">
                     {item.address}
                   </p>
@@ -335,6 +509,11 @@ export default function CleanTrack({
                     </span>
                     {getStatusText(item)}
                   </div>
+                  {item.notes && (
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 italic">
+                      📝 {item.notes}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -342,39 +521,36 @@ export default function CleanTrack({
               {item.status === "pending" && (
                 <div className="flex items-center space-x-2">
                   {movingBusiness === item.business_id ? (
-                    <>
-                      {/* Date Selection UI */}
-                      <div className="flex items-center space-x-2 animate-in slide-in-from-right-2">
-                        <Calendar size={16} className="text-[hsl(var(--muted-foreground))]" />
-                        <input
-                          type="date"
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
-                          min={new Date().toISOString().split('T')[0]}
-                          autoFocus
-                        />
-                        <button
-                          onClick={handleDateConfirm}
-                          disabled={!selectedDate}
-                          className={`p-2 rounded transition-colors ${
-                            selectedDate
-                              ? "bg-green-600 text-white hover:bg-green-700"
-                              : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
-                          }`}
-                          title="Confirm move"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          onClick={handleCancelMove}
-                          className="p-2 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded hover:bg-[hsl(var(--secondary))] transition-colors"
-                          title="Cancel move"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </>
+                    <div className="flex items-center space-x-2 animate-in slide-in-from-right-2">
+                      <Calendar size={16} className="text-[hsl(var(--muted-foreground))]" />
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                        min={new Date().toISOString().split('T')[0]}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleDateConfirm}
+                        disabled={!selectedDate}
+                        className={`p-2 rounded transition-colors ${
+                          selectedDate
+                            ? "bg-green-600 text-white hover:bg-green-700"
+                            : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
+                        }`}
+                        title="Confirm move"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        onClick={handleCancelMove}
+                        className="p-2 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded hover:bg-[hsl(var(--secondary))] transition-colors"
+                        title="Cancel move"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleMoveClick(item.business_id)}
@@ -394,10 +570,10 @@ export default function CleanTrack({
         <div className="flex items-center justify-between">
           <div className="text-sm text-[hsl(var(--muted-foreground))]">
             Progress: {completed} of {cleanTrack.length} completed
-            {moved > 0 && ` • ${moved} moved to future dates`}
+            {moved > 0 && ` • ${moved} moved`}
+            {added > 0 && ` • ${added} added`}
           </div>
           
-          {/* Universal Export Button for CMS Billing */}
           {billingData.length > 0 && currentInstance && (
             <UniversalExportButton
               template={billingTemplate}

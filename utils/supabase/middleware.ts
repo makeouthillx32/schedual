@@ -1,29 +1,9 @@
-// utils/supabase/middleware.ts - FINAL FIX
+// utils/supabase/middleware.ts
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
-  // ✅ CRITICAL: Explicitly allow CMS routes and their API calls
-  const publicRoutes = [
-    '/CMS',
-    '/api/schedule/members',
-    '/api/schedule/daily-instances',
-    '/api/schedule/businesses',
-    '/api/Weather'
-  ];
-
-  const isPublicRoute = publicRoutes.some(route => 
-    req.nextUrl.pathname === route || 
-    req.nextUrl.pathname.startsWith(`${route}/`) ||
-    req.nextUrl.pathname.startsWith(route)
-  );
-
-  if (isPublicRoute) {
-    console.log(`[Middleware] Allowing public route: ${req.nextUrl.pathname}`);
-    return NextResponse.next();
-  }
-
-  // Continue with normal middleware logic for protected routes
+  // NEVER mutate the request object unless rewriting — this breaks dynamic API route params
   let res = NextResponse.next();
 
   const invite = req.nextUrl.searchParams.get("invite");
@@ -61,8 +41,8 @@ export async function middleware(req: NextRequest) {
   );
 
   if (isProtected && !session) {
-    const target = req.nextUrl.pathname + (req.nextUrl.search || "");
-    console.log(`[Middleware] Redirecting protected route: ${target}`);
+    const target =
+      req.nextUrl.pathname + (req.nextUrl.search || "");
     return NextResponse.redirect(
       new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url)
     );

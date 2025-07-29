@@ -1,3 +1,4 @@
+// components/hero.tsx - Fixed version with proper error handling
 "use client";
 
 import { useState, useEffect } from "react";
@@ -64,6 +65,7 @@ const Hero = () => {
   const [schedule, setSchedule] = useState<JobSchedule[]>([]);
   const [membersList, setMembersList] = useState<Member[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [toastInfo, setToastInfo] = useState<{
     business_id?: number;
     business_name: string;
@@ -76,14 +78,39 @@ const Hero = () => {
   const [cleanTrack, setCleanTrack] = useState<CleanTrackItem[]>([]);
   const [instanceLoading, setInstanceLoading] = useState(false);
 
+  // ✅ FIXED: Added proper error handling for members API
   useEffect(() => {
-    fetch("/api/schedule/members")
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to load members");
-        return res.json() as Promise<Member[]>;
-      })
-      .then(setMembersList)
-      .catch(console.error);
+    const fetchMembers = async () => {
+      try {
+        const res = await fetch("/api/schedule/members");
+        if (!res.ok) {
+          console.warn("Failed to load members, using empty list");
+          setMembersList([]);
+          return;
+        }
+        const members = await res.json();
+        
+        // ✅ FIXED: Validate members data structure
+        if (Array.isArray(members)) {
+          const validMembers = members.filter(member => 
+            member && 
+            typeof member === 'object' && 
+            member.name && 
+            typeof member.name === 'string'
+          );
+          console.log(`✅ Loaded ${validMembers.length} valid members`);
+          setMembersList(validMembers);
+        } else {
+          console.warn("Invalid members data format, using empty list");
+          setMembersList([]);
+        }
+      } catch (error) {
+        console.error("Error fetching members:", error);
+        setMembersList([]);
+      }
+    };
+
+    fetchMembers();
   }, []);
 
   useEffect(() => {
@@ -96,82 +123,54 @@ const Hero = () => {
     setWeek(Math.ceil(today.getDate() / 7));
   }, []);
 
-  const checkForMovedBusinesses = async (dateStr: string) => {
-    try {
-      const res = await fetch(`/api/schedule/daily-instances/moved?date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        return data.movedBusinesses || [];
-      }
-      return [];
-    } catch (error) {
-      console.error("Error checking for moved businesses:", error);
-      return [];
-    }
-  };
-
-  const handleRefreshInstance = async () => {
-    if (!day || week <= 0) return;
-    
-    setInstanceLoading(true);
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
-
-    try {
-      const instanceRes = await fetch(
-        `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
-      );
-      
-      if (instanceRes.ok) {
-        const instanceData = await instanceRes.json();
-        setCurrentInstance(instanceData.instance);
-        setCleanTrack(instanceData.items || []);
-        
-        const completedBusinessIds = new Set(
-          instanceData.items
-            ?.filter((item: CleanTrackItem) => item.status === "cleaned")
-            ?.map((item: CleanTrackItem) => item.business_id) || []
-        );
-
-        setSchedule(prev => prev.map(entry => ({
-          ...entry,
-          isCompleted: completedBusinessIds.has(entry.business_id)
-        })));
-      }
-    } catch (error) {
-      console.error("❌ Error refreshing instance:", error);
-    } finally {
-      setInstanceLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (!day || week <= 0) return;
 
     const loadDailyData = async () => {
+      setLoading(true);
       setInstanceLoading(true);
       try {
         const today = new Date();
         const dateStr = today.toISOString().split('T')[0];
 
-        const instanceRes = await fetch(
-          `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
-        );
-        
-        if (!instanceRes.ok) {
-          throw new Error("Failed to load daily instance");
+        // ✅ FIXED: Added proper error handling for daily instances
+        let instanceData = { instance: null, items: [] };
+        try {
+          const instanceRes = await fetch(
+            `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
+          );
+          
+          if (instanceRes.ok) {
+            instanceData = await instanceRes.json();
+            setCurrentInstance(instanceData.instance);
+          } else {
+            console.warn("Failed to load daily instance, continuing without it");
+          }
+        } catch (instanceError) {
+          console.error("Error loading daily instance:", instanceError);
         }
-
-        const instanceData = await instanceRes.json();
-        setCurrentInstance(instanceData.instance);
         
-        // Check for businesses moved to today from other days
-        const movedToToday = await checkForMovedBusinesses(dateStr);
+        // ✅ FIXED: Added proper error handling for moved businesses
+        let movedToToday = [];
+        try {
+          movedToToday = await checkForMovedBusinesses(dateStr);
+        } catch (movedError) {
+          console.error("Error checking moved businesses:", movedError);
+        }
+        
         const allItems = [...(instanceData.items || []), ...movedToToday];
-        
         setCleanTrack(allItems);
 
-        const scheduleData = await fetchSchedule(week, day);
+        // ✅ FIXED: Added proper error handling for schedule data
+        let scheduleData = { schedule: [] };
+        try {
+          scheduleData = await fetchSchedule(week, day);
+        } catch (scheduleError) {
+          console.error("Error fetching schedule:", scheduleError);
+          setError("Failed to load schedule data");
+          setSchedule([]);
+          return;
+        }
         
         if (!scheduleData.schedule?.length) {
           setError("No businesses to clean today. Have a good day off!");
@@ -179,9 +178,16 @@ const Hero = () => {
           return;
         }
 
-        const available = membersList.filter(
-          (m) => m[day as keyof Member]
-        );
+        // ✅ FIXED: Added safety checks for members filtering
+        const available = membersList.filter(member => {
+          if (!member || !member.name) {
+            console.warn("Skipping invalid member:", member);
+            return false;
+          }
+          return member[day as keyof Member] === true;
+        });
+
+        console.log(`✅ Found ${available.length} available members for ${day}`);
 
         const completedBusinessIds = new Set(
           allItems
@@ -195,10 +201,13 @@ const Hero = () => {
           return {
             ...entry,
             isCompleted,
-            jobs: assignRandomJobs(
-              ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
-              available
-            ),
+            // ✅ FIXED: Only assign jobs if we have available members
+            jobs: available.length > 0 
+              ? assignRandomJobs(
+                  ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+                  available
+                )
+              : [{ job_name: "No members available", member_name: "Please add team members" }],
             onClick: () => {
               setToastInfo({
                 business_id: entry.business_id,
@@ -219,6 +228,7 @@ const Hero = () => {
         setSchedule([]);
         setCleanTrack([]);
       } finally {
+        setLoading(false);
         setInstanceLoading(false);
       }
     };
@@ -227,9 +237,15 @@ const Hero = () => {
   }, [week, day, membersList]);
 
   const randomizeSchedule = () => {
-    const available = membersList.filter(
-      (m) => m[day as keyof Member]
-    );
+    const available = membersList.filter(member => {
+      if (!member || !member.name) return false;
+      return member[day as keyof Member] === true;
+    });
+
+    if (available.length === 0) {
+      console.warn("No available members to randomize");
+      return;
+    }
 
     setSchedule((prev) =>
       prev.map((entry) => ({
@@ -240,6 +256,20 @@ const Hero = () => {
         ),
       }))
     );
+  };
+
+  const checkForMovedBusinesses = async (dateStr: string) => {
+    try {
+      const res = await fetch(`/api/schedule/daily-instances/moved?date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.movedBusinesses || [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error checking for moved businesses:", error);
+      return [];
+    }
   };
 
   const updateBusinessStatus = async (businessId: number, status: string, movedDate?: string) => {
@@ -304,93 +334,57 @@ const Hero = () => {
 
   const handleMoveBusinessToDate = async (businessId: number, date: string) => {
     if (!date) return;
-
     await updateBusinessStatus(businessId, "moved", date);
   };
 
-  const handleDateChange = (businessId: number, date: string) => {
-    // This function is no longer needed with the new move flow
-  };
-
-  const handleAddBusiness = async (businessId: number, notes?: string) => {
-    if (!currentInstance) return;
+  const handleRefreshInstance = async () => {
+    if (!day || week <= 0) return;
+    
+    setInstanceLoading(true);
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
 
     try {
-      console.log(`➕ Adding business ${businessId} to today's track`);
-
-      // First, get the business details
-      const businessRes = await fetch(`/api/schedule/businesses?id=${businessId}`);
-      if (!businessRes.ok) throw new Error('Failed to fetch business details');
-      const businessData = await businessRes.json();
-
-      // Add to current instance
-      const addData = {
-        instance_id: currentInstance.id,
-        business_id: businessId,
-        status: 'pending',
-        notes: notes || 'Added on-the-fly - moved from another day'
-      };
-
-      const res = await fetch("/api/schedule/daily-instances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(addData)
-      });
-
-      if (!res.ok) throw new Error("Failed to add business to instance");
-
-      const result = await res.json();
-      console.log("✅ Business added to instance:", result);
-
-      // Update local clean track state
-      const newItem: CleanTrackItem = {
-        id: result.item.id,
-        business_id: businessId,
-        business_name: businessData.business_name,
-        address: businessData.address,
-        before_open: businessData.before_open,
-        status: 'pending',
-        notes: notes || 'Added on-the-fly - moved from another day',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      setCleanTrack(prev => [...prev, newItem]);
-
-      // Update schedule list to show the new business
-      const available = membersList.filter(
-        (m) => m[day as keyof Member]
+      const instanceRes = await fetch(
+        `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
       );
+      
+      if (instanceRes.ok) {
+        const instanceData = await instanceRes.json();
+        setCurrentInstance(instanceData.instance);
+        setCleanTrack(instanceData.items || []);
+        
+        const completedBusinessIds = new Set(
+          instanceData.items
+            ?.filter((item: CleanTrackItem) => item.status === "cleaned")
+            ?.map((item: CleanTrackItem) => item.business_id) || []
+        );
 
-      const newScheduleItem = {
-        business_id: businessId,
-        business_name: businessData.business_name,
-        address: businessData.address,
-        before_open: businessData.before_open,
-        isCompleted: false,
-        jobs: assignRandomJobs(
-          ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
-          available
-        ),
-        onClick: () => {
-          setToastInfo({
-            business_id: businessId,
-            business_name: businessData.business_name,
-            before_open: businessData.before_open,
-            address: businessData.address,
-          });
-        },
-      };
-
-      setSchedule(prev => [...prev, newScheduleItem]);
-
-      console.log("✅ Added business to both Clean Track and Schedule");
-
+        setSchedule(prev => prev.map(entry => ({
+          ...entry,
+          isCompleted: completedBusinessIds.has(entry.business_id)
+        })));
+      }
     } catch (error) {
-      console.error("❌ Error adding business:", error);
-      alert("Failed to add business. Please try again.");
+      console.error("❌ Error refreshing instance:", error);
+    } finally {
+      setInstanceLoading(false);
     }
   };
+
+  // ✅ ADDED: Loading state display
+  if (loading) {
+    return (
+      <div className={`p-4 ${isDark ? "bg-[hsl(var(--background))]" : "bg-[hsl(var(--muted))]"}`}>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[hsl(var(--sidebar-primary))] mx-auto mb-4"></div>
+            <p className="text-[hsl(var(--muted-foreground))]">Loading cleaning schedule...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -443,7 +437,7 @@ const Hero = () => {
                   : "text-[hsl(var(--muted-foreground))]"
               }`}
             >
-              Team Members
+              Team Members ({membersList.length})
             </button>
           </li>
           <li className="mr-6">
@@ -470,7 +464,9 @@ const Hero = () => {
               : "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
           }`}
         >
-          <h3 className="text-2xl font-bold mb-2">Good News!</h3>
+          <h3 className="text-2xl font-bold mb-2">
+            {error.includes("Failed") ? "System Message" : "Good News!"}
+          </h3>
           <p className="text-lg">{error}</p>
         </div>
       ) : (
@@ -508,7 +504,6 @@ const Hero = () => {
               onToggleBusinessStatus={handleToggleBusinessStatus}
               onMoveBusinessToDate={handleMoveBusinessToDate}
               onRefreshInstance={handleRefreshInstance}
-              onAddBusiness={handleAddBusiness}
             />
           )}
         </>

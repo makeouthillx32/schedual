@@ -64,8 +64,14 @@ export async function GET(req: NextRequest) {
     // If no instance exists, create a new one
     console.log("🆕 Creating new instance for", date, week, day);
     
-    // Get current user (optional for now)
-    const { data: { user } } = await supabase.auth.getUser();
+    // SAFE: Prevent redirect for anonymous users
+    let userId = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id ?? null;
+    } catch (err) {
+      console.log("🔓 No session found – proceeding anonymously");
+    }
 
     // Create new instance
     const { data: newInstance, error: createError } = await supabase
@@ -75,7 +81,7 @@ export async function GET(req: NextRequest) {
         week_number: parseInt(week),
         day_name: day.toLowerCase(),
         status: "active",
-        created_by: user?.id || null
+        created_by: userId
       }])
       .select()
       .single();

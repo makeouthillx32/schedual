@@ -15,6 +15,7 @@ interface JobSchedule {
   jobs: { job_name: string; member_name: string }[];
   before_open: boolean;
   address: string;
+  business_id?: number; // Add business_id to the interface
 }
 
 interface Member {
@@ -39,6 +40,7 @@ const Hero = () => {
   const [membersList, setMembersList] = useState<Member[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [toastInfo, setToastInfo] = useState<{
+    business_id?: number;
     business_name: string;
     before_open: boolean;
     address: string;
@@ -73,35 +75,47 @@ const Hero = () => {
 
     const loadSchedule = async () => {
       try {
+        console.log("🔍 Loading schedule for week:", week, "day:", day);
         const data = await fetchSchedule(week, day);
+        
         if (!data.schedule?.length) {
           setError("No businesses to clean today. Have a good day off!");
           setSchedule([]);
           return;
         }
 
+        console.log("📊 Schedule data received:", data.schedule);
+
         // use live members here
         const available = membersList.filter(
           (m) => m[day as keyof Member]
         );
 
-        const updated = data.schedule.map((entry: any) => ({
-          ...entry,
-          jobs: assignRandomJobs(
-            ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
-            available
-          ),
-          onClick: () =>
-            setToastInfo({
-              business_name: entry.business_name,
-              before_open: entry.before_open,
-              address: entry.address,
-            }),
-        }));
+        const updated = data.schedule.map((entry: any) => {
+          console.log("🏢 Processing business entry:", entry);
+          
+          return {
+            ...entry,
+            jobs: assignRandomJobs(
+              ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"],
+              available
+            ),
+            onClick: () => {
+              console.log("🖱️ Business clicked:", entry);
+              setToastInfo({
+                business_id: entry.business_id, // Include business_id here
+                business_name: entry.business_name,
+                before_open: entry.before_open,
+                address: entry.address,
+              });
+            },
+          };
+        });
 
         setSchedule(updated);
         setError(null);
-      } catch {
+      } catch (err) {
+        console.error("❌ Error loading schedule:", err);
         setError("No businesses to clean today. Have a good day off!");
         setSchedule([]);
       }
@@ -277,12 +291,15 @@ const Hero = () => {
             <ScheduleList
               schedule={schedule.map((entry) => ({
                 ...entry,
-                onClick: () =>
+                onClick: () => {
+                  console.log("📋 ScheduleList business clicked:", entry);
                   setToastInfo({
+                    business_id: entry.business_id, // Include business_id here too
                     business_name: entry.business_name,
                     before_open: entry.before_open,
                     address: entry.address,
-                  }),
+                  });
+                },
               }))}
             />
           )}
@@ -292,7 +309,13 @@ const Hero = () => {
       )}
 
       {toastInfo && (
-        <Toast {...toastInfo} onClose={() => setToastInfo(null)} />
+        <Toast 
+          business_id={toastInfo.business_id}
+          business_name={toastInfo.business_name}
+          address={toastInfo.address}
+          before_open={toastInfo.before_open}
+          onClose={() => setToastInfo(null)} 
+        />
       )}
     </div>
   );

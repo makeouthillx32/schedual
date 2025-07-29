@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useTheme } from "@/app/provider";
-import { CheckCircle2, Circle, ArrowRight, RefreshCw } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X } from "lucide-react";
 
 interface CleanTrackItem {
   id?: number;
@@ -31,10 +32,8 @@ interface CleanTrackProps {
   currentDay: string;
   week: number;
   instanceLoading: boolean;
-  moveToDate: { [key: number]: string };
   onToggleBusinessStatus: (businessId: number) => void;
-  onMoveBusinessToDate: (businessId: number) => void;
-  onDateChange: (businessId: number, date: string) => void;
+  onMoveBusinessToDate: (businessId: number, date: string) => void;
   onRefreshInstance: () => void;
 }
 
@@ -44,18 +43,37 @@ export default function CleanTrack({
   currentDay,
   week,
   instanceLoading,
-  moveToDate,
   onToggleBusinessStatus,
   onMoveBusinessToDate,
-  onDateChange,
   onRefreshInstance
 }: CleanTrackProps) {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
 
+  const [movingBusiness, setMovingBusiness] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+
   const completed = cleanTrack.filter(item => item.status === "cleaned").length;
   const moved = cleanTrack.filter(item => item.status === "moved").length;
   const pending = cleanTrack.filter(item => item.status === "pending").length;
+
+  const handleMoveClick = (businessId: number) => {
+    setMovingBusiness(businessId);
+    setSelectedDate("");
+  };
+
+  const handleDateConfirm = () => {
+    if (movingBusiness && selectedDate) {
+      onMoveBusinessToDate(movingBusiness, selectedDate);
+      setMovingBusiness(null);
+      setSelectedDate("");
+    }
+  };
+
+  const handleCancelMove = () => {
+    setMovingBusiness(null);
+    setSelectedDate("");
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -64,7 +82,7 @@ export default function CleanTrack({
       case "moved":
         return <ArrowRight size={20} className="text-yellow-600" />;
       default:
-        return <Circle size={20} className="text-gray-400" />;
+        return <Circle size={20} className="text-[hsl(var(--muted-foreground))]" />;
     }
   };
 
@@ -196,26 +214,51 @@ export default function CleanTrack({
                 </div>
               </div>
 
+              {/* Move Flow */}
               {item.status === "pending" && (
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="date"
-                    value={moveToDate[item.business_id] || ""}
-                    onChange={(e) => onDateChange(item.business_id, e.target.value)}
-                    className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                  <button
-                    onClick={() => onMoveBusinessToDate(item.business_id)}
-                    disabled={!moveToDate[item.business_id]}
-                    className={`px-3 py-1 text-sm rounded transition-colors ${
-                      moveToDate[item.business_id]
-                        ? "bg-yellow-600 text-white hover:bg-yellow-700"
-                        : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
-                    }`}
-                  >
-                    Move
-                  </button>
+                  {movingBusiness === item.business_id ? (
+                    <>
+                      {/* Date Selection UI */}
+                      <div className="flex items-center space-x-2 animate-in slide-in-from-right-2">
+                        <Calendar size={16} className="text-[hsl(var(--muted-foreground))]" />
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                          min={new Date().toISOString().split('T')[0]}
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleDateConfirm}
+                          disabled={!selectedDate}
+                          className={`p-2 rounded transition-colors ${
+                            selectedDate
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
+                          }`}
+                          title="Confirm move"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          onClick={handleCancelMove}
+                          className="p-2 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded hover:bg-[hsl(var(--secondary))] transition-colors"
+                          title="Cancel move"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleMoveClick(item.business_id)}
+                      className="px-3 py-1 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
+                    >
+                      Move
+                    </button>
+                  )}
                 </div>
               )}
             </div>

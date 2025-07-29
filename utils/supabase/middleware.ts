@@ -1,57 +1,71 @@
-// utils/supabase/middleware.ts
-import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+// utils/supabase/middleware.ts - Updated to explicitly exclude /CMS
+import { type NextRequest, NextResponse } from “next/server”;
+import { createServerClient } from “@supabase/ssr”;
 
 export async function middleware(req: NextRequest) {
-  // NEVER mutate the request object unless rewriting — this breaks dynamic API route params
-  let res = NextResponse.next();
+// NEVER mutate the request object unless rewriting — this breaks dynamic API route params
+let res = NextResponse.next();
 
-  const invite = req.nextUrl.searchParams.get("invite");
-  if (invite) {
-    res.cookies.set("invite", invite, {
-      path: "/",
-      maxAge: 60 * 10, // 10 minutes
-    });
-  }
+const invite = req.nextUrl.searchParams.get(“invite”);
+if (invite) {
+res.cookies.set(“invite”, invite, {
+path: “/”,
+maxAge: 60 * 10, // 10 minutes
+});
+}
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => req.cookies.getAll(),
-        setAll: (cookies) => {
-          cookies.forEach(({ name, value, options }) =>
-            res.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+const supabase = createServerClient(
+process.env.NEXT_PUBLIC_SUPABASE_URL!,
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+{
+cookies: {
+getAll: () => req.cookies.getAll(),
+setAll: (cookies) => {
+cookies.forEach(({ name, value, options }) =>
+res.cookies.set(name, value, options)
+);
+},
+},
+}
+);
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+// ✅ FIX: Explicitly exclude /CMS routes from protection
+const publicRoutes = [”/CMS”, “/CMS/schedule”];
+const isPublicRoute = publicRoutes.some(route =>
+req.nextUrl.pathname === route ||
+req.nextUrl.pathname.startsWith(`${route}/`)
+);
 
-  const protectedPrefixes = ["/protected", "/settings", "/api/messages"];
-  const isProtected = protectedPrefixes.some(
-    (prefix) =>
-      req.nextUrl.pathname === prefix ||
-      req.nextUrl.pathname.startsWith(`${prefix}/`)
-  );
+// Skip authentication for public CMS routes
+if (isPublicRoute) {
+console.log(`[Middleware] Allowing public access to: ${req.nextUrl.pathname}`);
+return res;
+}
 
-  if (isProtected && !session) {
-    const target =
-      req.nextUrl.pathname + (req.nextUrl.search || "");
-    return NextResponse.redirect(
-      new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url)
-    );
-  }
+const {
+data: { session },
+} = await supabase.auth.getSession();
 
-  return res;
+// Define routes that require authentication
+const protectedPrefixes = [”/protected”, “/settings”, “/api/messages”];
+const isProtected = protectedPrefixes.some(
+(prefix) =>
+req.nextUrl.pathname === prefix ||
+req.nextUrl.pathname.startsWith(`${prefix}/`)
+);
+
+if (isProtected && !session) {
+const target = req.nextUrl.pathname + (req.nextUrl.search || “”);
+console.log(`[Middleware] Redirecting to sign-in: ${target}`);
+return NextResponse.redirect(
+new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url)
+);
+}
+
+return res;
 }
 
 export const config = {
-  matcher:
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+matcher:
+“/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)”,
 };

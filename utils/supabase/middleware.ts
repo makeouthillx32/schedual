@@ -1,9 +1,29 @@
-// utils/supabase/middleware.ts - Updated to explicitly exclude /CMS
+// utils/supabase/middleware.ts - FINAL FIX
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
-  // NEVER mutate the request object unless rewriting — this breaks dynamic API route params
+  // ✅ CRITICAL: Explicitly allow CMS routes and their API calls
+  const publicRoutes = [
+    '/CMS',
+    '/api/schedule/members',
+    '/api/schedule/daily-instances',
+    '/api/schedule/businesses',
+    '/api/Weather'
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => 
+    req.nextUrl.pathname === route || 
+    req.nextUrl.pathname.startsWith(`${route}/`) ||
+    req.nextUrl.pathname.startsWith(route)
+  );
+
+  if (isPublicRoute) {
+    console.log(`[Middleware] Allowing public route: ${req.nextUrl.pathname}`);
+    return NextResponse.next();
+  }
+
+  // Continue with normal middleware logic for protected routes
   let res = NextResponse.next();
 
   const invite = req.nextUrl.searchParams.get("invite");
@@ -29,24 +49,10 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // ✅ FIX: Explicitly exclude /CMS routes from protection
-  const publicRoutes = ["/CMS", "/CMS/schedule"];
-  const isPublicRoute = publicRoutes.some(route => 
-    req.nextUrl.pathname === route || 
-    req.nextUrl.pathname.startsWith(`${route}/`)
-  );
-
-  // Skip authentication for public CMS routes
-  if (isPublicRoute) {
-    console.log(`[Middleware] Allowing public access to: ${req.nextUrl.pathname}`);
-    return res;
-  }
-
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Define routes that require authentication
   const protectedPrefixes = ["/protected", "/settings", "/api/messages"];
   const isProtected = protectedPrefixes.some(
     (prefix) =>
@@ -56,7 +62,7 @@ export async function middleware(req: NextRequest) {
 
   if (isProtected && !session) {
     const target = req.nextUrl.pathname + (req.nextUrl.search || "");
-    console.log(`[Middleware] Redirecting to sign-in: ${target}`);
+    console.log(`[Middleware] Redirecting protected route: ${target}`);
     return NextResponse.redirect(
       new URL(`/sign-in?redirect_to=${encodeURIComponent(target)}`, req.url)
     );

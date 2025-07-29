@@ -74,7 +74,6 @@ const Hero = () => {
   
   const [currentInstance, setCurrentInstance] = useState<DailyInstance | null>(null);
   const [cleanTrack, setCleanTrack] = useState<CleanTrackItem[]>([]);
-  const [moveToDate, setMoveToDate] = useState<{ [key: number]: string }>({});
   const [instanceLoading, setInstanceLoading] = useState(false);
 
   useEffect(() => {
@@ -116,7 +115,12 @@ const Hero = () => {
 
         const instanceData = await instanceRes.json();
         setCurrentInstance(instanceData.instance);
-        setCleanTrack(instanceData.items || []);
+        
+        // Check for businesses moved to today from other days
+        const movedToToday = await checkForMovedBusinesses(dateStr);
+        const allItems = [...(instanceData.items || []), ...movedToToday];
+        
+        setCleanTrack(allItems);
 
         const scheduleData = await fetchSchedule(week, day);
         
@@ -131,7 +135,7 @@ const Hero = () => {
         );
 
         const completedBusinessIds = new Set(
-          instanceData.items
+          allItems
             ?.filter((item: CleanTrackItem) => item.status === "cleaned")
             ?.map((item: CleanTrackItem) => item.business_id) || []
         );
@@ -187,6 +191,20 @@ const Hero = () => {
         ),
       }))
     );
+  };
+
+  const checkForMovedBusinesses = async (dateStr: string) => {
+    try {
+      const res = await fetch(`/api/schedule/daily-instances/moved?date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.movedBusinesses || [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error checking for moved businesses:", error);
+      return [];
+    }
   };
 
   const updateBusinessStatus = async (businessId: number, status: string, movedDate?: string) => {
@@ -249,23 +267,14 @@ const Hero = () => {
     await updateBusinessStatus(businessId, newStatus);
   };
 
-  const handleMoveBusinessToDate = async (businessId: number) => {
-    const newDate = moveToDate[businessId];
-    if (!newDate) return;
+  const handleMoveBusinessToDate = async (businessId: number, date: string) => {
+    if (!date) return;
 
-    await updateBusinessStatus(businessId, "moved", newDate);
-
-    setMoveToDate(prev => ({
-      ...prev,
-      [businessId]: ""
-    }));
+    await updateBusinessStatus(businessId, "moved", date);
   };
 
   const handleDateChange = (businessId: number, date: string) => {
-    setMoveToDate(prev => ({
-      ...prev,
-      [businessId]: date
-    }));
+    // This function is no longer needed with the new move flow
   };
 
   const handleRefreshInstance = async () => {
@@ -416,10 +425,8 @@ const Hero = () => {
               currentDay={day}
               week={week}
               instanceLoading={instanceLoading}
-              moveToDate={moveToDate}
               onToggleBusinessStatus={handleToggleBusinessStatus}
               onMoveBusinessToDate={handleMoveBusinessToDate}
-              onDateChange={handleDateChange}
               onRefreshInstance={handleRefreshInstance}
             />
           )}

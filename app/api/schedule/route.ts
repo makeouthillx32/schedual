@@ -1,3 +1,4 @@
+// app/api/schedule/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -31,12 +32,13 @@ export async function GET(req: Request) {
     }
 
     // Query the businesses scheduled for this week and day
+    // FIXED: Include business_id in the response
     const { data: businesses, error } = await supabase
       .from("Schedule")
       .select(
         `
         business_id,
-        Businesses!inner(business_name, address, before_open)
+        Businesses!inner(id, business_name, address, before_open)
       `
       )
       .eq(day, true)
@@ -55,16 +57,17 @@ export async function GET(req: Request) {
       );
     }
 
-    // Format the response to include jobs
+    // Format the response to include jobs AND business_id
     const jobs = ["Sweep and Mop", "Vacuum", "Bathrooms and Trash"];
     const schedule = businesses.map((entry: any) => ({
+      business_id: entry.business_id, // FIXED: Include business_id
       business_name: entry.Businesses.business_name,
       address: entry.Businesses.address,
       before_open: entry.Businesses.before_open,
       jobs,
     }));
 
-    console.log("Formatted Schedule:", schedule);
+    console.log("Formatted Schedule with business_id:", schedule);
 
     return NextResponse.json({ schedule });
   } catch (error) {

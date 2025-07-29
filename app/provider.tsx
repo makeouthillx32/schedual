@@ -85,9 +85,25 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !session) {
-      const publicRoutes = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password"];
-      if (!publicRoutes.includes(pathname)) {
+      // ✅ FIXED: Added /CMS and /CMS/schedule to public routes
+      const publicRoutes = [
+        "/", 
+        "/sign-in", 
+        "/sign-up", 
+        "/forgot-password", 
+        "/reset-password",
+        "/CMS",
+        "/CMS/schedule"
+      ];
+      
+      // ✅ FIXED: Also check if pathname starts with /CMS for any CMS subroutes
+      const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/CMS');
+      
+      if (!isPublicRoute) {
+        console.log(`[Provider] Redirecting to sign-in from: ${pathname}`);
         router.push("/sign-in");
+      } else {
+        console.log(`[Provider] Allowing public route: ${pathname}`);
       }
     }
   }, [session, isLoading, pathname, router]);

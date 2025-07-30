@@ -1,7 +1,23 @@
-// components/Docustore/ContextMenu/index.tsx
+// components/documents/ContextMenu/index.tsx - Enhanced with Public Folder & File Sharing
 'use client';
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import { 
+  Globe, 
+  Lock, 
+  Copy, 
+  Code, 
+  Eye, 
+  Link, 
+  Star,
+  Download,
+  Edit,
+  Move,
+  Trash2,
+  Share,
+  Info,
+  FolderOpen
+} from 'lucide-react';
 import { DocumentItem } from '@/hooks/useDocuments';
 
 interface ContextMenuProps {
@@ -10,6 +26,16 @@ interface ContextMenuProps {
   document?: DocumentItem;
   onClose: () => void;
   onAction: (action: string, documentId: string) => void;
+  
+  // Public folder specific props
+  isPublicFolder?: boolean;
+  publicSlug?: string;
+  onMakePublic?: (documentId: string) => void;
+  onMakePrivate?: (documentId: string) => void;
+  onCopyPublicUrl?: (publicSlug: string) => void;
+  onCopyFileUrl?: (documentId: string, fileName: string) => void;
+  onGenerateCode?: (publicSlug: string) => void;
+  
   className?: string;
 }
 
@@ -21,6 +47,8 @@ interface MenuAction {
   disabled?: boolean;
   dangerous?: boolean;
   separator?: boolean;
+  highlighted?: boolean;
+  submenu?: MenuAction[];
 }
 
 export default function ContextMenu({
@@ -29,17 +57,42 @@ export default function ContextMenu({
   document,
   onClose,
   onAction,
+  isPublicFolder = false,
+  publicSlug,
+  onMakePublic,
+  onMakePrivate,
+  onCopyPublicUrl,
+  onCopyFileUrl,
+  onGenerateCode,
   className = ''
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Handle action click
   const handleAction = useCallback((actionId: string) => {
-    if (document) {
-      onAction(actionId, document.id);
+    if (!document) return;
+
+    switch (actionId) {
+      case 'makePublic':
+        onMakePublic?.(document.id);
+        break;
+      case 'makePrivate':
+        onMakePrivate?.(document.id);
+        break;
+      case 'copyPublicUrl':
+        if (publicSlug) onCopyPublicUrl?.(publicSlug);
+        break;
+      case 'copyFileUrl':
+        onCopyFileUrl?.(document.id, document.name);
+        break;
+      case 'generateCode':
+        if (publicSlug) onGenerateCode?.(publicSlug);
+        break;
+      default:
+        onAction(actionId, document.id);
     }
     onClose();
-  }, [document, onAction, onClose]);
+  }, [document, onAction, onClose, onMakePublic, onMakePrivate, onCopyPublicUrl, onCopyFileUrl, onGenerateCode, publicSlug]);
 
   // Check if file can be previewed
   const canPreview = useCallback(() => {
@@ -51,26 +104,31 @@ export default function ContextMenu({
            mimeType.includes('json');
   }, [document?.mime_type]);
 
+  // Get public asset URL
+  const getPublicAssetUrl = useCallback(() => {
+    if (!publicSlug || !document) return '';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}/api/public/assets/${publicSlug}/${document.name}`;
+  }, [publicSlug, document]);
+
   // Get menu actions based on document type
   const getMenuActions = useCallback((): MenuAction[] => {
     if (!document) return [];
 
     const isFolder = document.type === 'folder';
     const isFile = document.type === 'file';
+    const isImage = document.mime_type?.startsWith('image/');
 
     const actions: MenuAction[] = [];
+
+    // === PRIMARY ACTIONS ===
 
     // Preview (files only)
     if (isFile && canPreview()) {
       actions.push({
         id: 'preview',
         label: 'Preview',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-          </svg>
-        ),
+        icon: <Eye className="h-4 w-4" />,
         shortcut: 'Space'
       });
     }
@@ -79,12 +137,8 @@ export default function ContextMenu({
     if (isFolder) {
       actions.push({
         id: 'open',
-        label: 'Open',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-          </svg>
-        ),
+        label: 'Open Folder',
+        icon: <FolderOpen className="h-4 w-4" />,
         shortcut: '⏎'
       });
     }
@@ -94,135 +148,205 @@ export default function ContextMenu({
       actions.push({
         id: 'download',
         label: 'Download',
-        icon: (
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-        ),
+        icon: <Download className="h-4 w-4" />,
         shortcut: '⌘D'
       });
     }
 
-    // Separator
+    // Separator after primary actions
     if (actions.length > 0) {
       actions.push({ id: 'sep1', label: '', icon: null, separator: true });
     }
+
+    // === PUBLIC FOLDER ACTIONS ===
+
+    if (isFolder) {
+      if (isPublicFolder) {
+        // Public folder actions
+        actions.push({
+          id: 'publicFolderActions',
+          label: 'Public Folder',
+          icon: <Globe className="h-4 w-4 text-green-500" />,
+          highlighted: true,
+          submenu: [
+            {
+              id: 'copyPublicUrl',
+              label: 'Copy Public URL',
+              icon: <Copy className="h-4 w-4" />,
+              shortcut: '⌘L'
+            },
+            {
+              id: 'generateCode',
+              label: 'Generate Code Snippet',
+              icon: <Code className="h-4 w-4" />
+            },
+            {
+              id: 'viewPublicAssets',
+              label: 'View Public Assets',
+              icon: <Eye className="h-4 w-4" />
+            },
+            { id: 'sep-public', label: '', icon: null, separator: true },
+            {
+              id: 'makePrivate',
+              label: 'Make Private',
+              icon: <Lock className="h-4 w-4" />,
+              dangerous: true
+            }
+          ]
+        });
+      } else {
+        // Make folder public option
+        actions.push({
+          id: 'makePublic',
+          label: 'Make Folder Public',
+          icon: <Globe className="h-4 w-4" />,
+          highlighted: true
+        });
+      }
+
+      // Separator after public folder actions
+      actions.push({ id: 'sep2', label: '', icon: null, separator: true });
+    }
+
+    // === FILE SHARING ACTIONS ===
+
+    if (isFile) {
+      const shareActions: MenuAction[] = [
+        {
+          id: 'copyFileUrl',
+          label: 'Copy File URL',
+          icon: <Link className="h-4 w-4" />,
+          shortcut: '⌘L'
+        }
+      ];
+
+      // If file is in a public folder, add public URL option
+      if (isPublicFolder && publicSlug) {
+        shareActions.unshift({
+          id: 'copyPublicFileUrl',
+          label: 'Copy Public URL',
+          icon: <Globe className="h-4 w-4 text-green-500" />,
+          highlighted: true
+        });
+      }
+
+      // If it's an image in a public folder, add code generation
+      if (isImage && isPublicFolder && publicSlug) {
+        shareActions.push({
+          id: 'generateImageCode',
+          label: 'Generate Image Code',
+          icon: <Code className="h-4 w-4" />
+        });
+      }
+
+      actions.push({
+        id: 'shareOptions',
+        label: 'Share',
+        icon: <Share className="h-4 w-4" />,
+        submenu: shareActions
+      });
+
+      // Separator after sharing actions
+      actions.push({ id: 'sep3', label: '', icon: null, separator: true });
+    }
+
+    // === STANDARD ACTIONS ===
 
     // Rename
     actions.push({
       id: 'rename',
       label: 'Rename',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      ),
+      icon: <Edit className="h-4 w-4" />,
       shortcut: 'F2'
-    });
-
-    // Duplicate
-    actions.push({
-      id: 'duplicate',
-      label: 'Duplicate',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-      ),
-      shortcut: '⌘D'
     });
 
     // Move
     actions.push({
       id: 'move',
       label: 'Move to...',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
-        </svg>
-      ),
+      icon: <Move className="h-4 w-4" />,
       shortcut: '⌘X'
-    });
-
-    // Separator
-    actions.push({ id: 'sep2', label: '', icon: null, separator: true });
-
-    // Add to favorites / Remove from favorites
-    actions.push({
-      id: 'favorite',
-      label: document.is_favorite ? 'Remove from Favorites' : 'Add to Favorites',
-      icon: (
-        <svg className="h-4 w-4" fill={document.is_favorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-        </svg>
-      ),
-      shortcut: '⌘F'
-    });
-
-    // Share
-    actions.push({
-      id: 'share',
-      label: 'Share',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-        </svg>
-      ),
-      shortcut: '⌘S'
-    });
-
-    // Copy link
-    actions.push({
-      id: 'copyLink',
-      label: 'Copy Link',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-        </svg>
-      ),
-      shortcut: '⌘L'
-    });
-
-    // Separator
-    actions.push({ id: 'sep3', label: '', icon: null, separator: true });
-
-    // Properties/Info
-    actions.push({
-      id: 'info',
-      label: 'Properties',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      shortcut: '⌘I'
     });
 
     // Separator
     actions.push({ id: 'sep4', label: '', icon: null, separator: true });
 
+    // Add to favorites / Remove from favorites
+    actions.push({
+      id: 'favorite',
+      label: document.is_favorite ? 'Remove from Favorites' : 'Add to Favorites',
+      icon: <Star className={`h-4 w-4 ${document.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />,
+      shortcut: '⌘F'
+    });
+
+    // Separator
+    actions.push({ id: 'sep5', label: '', icon: null, separator: true });
+
+    // Properties/Info
+    actions.push({
+      id: 'info',
+      label: 'Properties',
+      icon: <Info className="h-4 w-4" />,
+      shortcut: '⌘I'
+    });
+
+    // Separator
+    actions.push({ id: 'sep6', label: '', icon: null, separator: true });
+
     // Delete
     actions.push({
       id: 'delete',
       label: 'Delete',
-      icon: (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      ),
+      icon: <Trash2 className="h-4 w-4" />,
       shortcut: 'Del',
       dangerous: true
     });
 
     return actions;
-  }, [document, canPreview]);
+  }, [document, canPreview, isPublicFolder, publicSlug]);
 
-  // Position menu to stay within viewport
+  // Handle special actions
+  const handleSpecialAction = useCallback((actionId: string) => {
+    if (!document) return;
+
+    switch (actionId) {
+      case 'copyPublicFileUrl':
+        if (publicSlug) {
+          const url = getPublicAssetUrl();
+          navigator.clipboard.writeText(url);
+        }
+        break;
+      case 'generateImageCode':
+        if (publicSlug) {
+          const url = getPublicAssetUrl();
+          const code = `<Image
+  src="${url}"
+  alt="${document.name}"
+  width={400}
+  height={300}
+  className="rounded-lg"
+/>`;
+          navigator.clipboard.writeText(code);
+        }
+        break;
+      case 'viewPublicAssets':
+        if (publicSlug) {
+          const baseUrl = window.location.origin;
+          window.open(`${baseUrl}/api/public/assets/${publicSlug}/`, '_blank');
+        }
+        break;
+      default:
+        handleAction(actionId);
+        return;
+    }
+    onClose();
+  }, [document, publicSlug, getPublicAssetUrl, handleAction, onClose]);
+
+  // Position menu within viewport
   const getMenuPosition = useCallback(() => {
     if (!menuRef.current) return position;
 
     const menu = menuRef.current;
-    const rect = menu.getBoundingClientRect();
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight
@@ -231,55 +355,51 @@ export default function ContextMenu({
     let { x, y } = position;
 
     // Adjust horizontal position
-    if (x + rect.width > viewport.width) {
-      x = viewport.width - rect.width - 10;
-    }
-    if (x < 10) {
-      x = 10;
+    if (x + menu.offsetWidth > viewport.width) {
+      x = viewport.width - menu.offsetWidth - 10;
     }
 
     // Adjust vertical position
-    if (y + rect.height > viewport.height) {
-      y = viewport.height - rect.height - 10;
-    }
-    if (y < 10) {
-      y = 10;
+    if (y + menu.offsetHeight > viewport.height) {
+      y = viewport.height - menu.offsetHeight - 10;
     }
 
-    return { x, y };
+    return { x: Math.max(10, x), y: Math.max(10, y) };
   }, [position]);
 
-  // Handle click outside
+  // Handle clicks outside menu
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
       }
     };
 
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  // Handle escape key
+  useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
-
-  // Focus management
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      menuRef.current.focus();
-    }
-  }, [isOpen]);
 
   if (!isOpen || !document) return null;
 
@@ -289,22 +409,18 @@ export default function ContextMenu({
   return (
     <div
       ref={menuRef}
-      className={`context-menu fixed z-50 min-w-[200px] rounded-lg border border-gray-200 bg-white py-2 shadow-lg outline-none dark:border-gray-700 dark:bg-gray-800 ${className}`}
+      className={`fixed z-50 min-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 ${className}`}
       style={{
         left: menuPosition.x,
         top: menuPosition.y
       }}
-      tabIndex={-1}
-      role="menu"
-      aria-label="Context menu"
     >
       {menuActions.map((action) => {
         if (action.separator) {
           return (
             <div
               key={action.id}
-              className="my-1 h-px bg-gray-200 dark:bg-gray-700"
-              role="separator"
+              className="my-1 h-px bg-gray-200 dark:bg-gray-600"
             />
           );
         }
@@ -312,32 +428,65 @@ export default function ContextMenu({
         return (
           <button
             key={action.id}
-            onClick={() => handleAction(action.id)}
+            onClick={() => handleSpecialAction(action.id)}
             disabled={action.disabled}
-            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
               action.dangerous
-                ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                : action.highlighted
+                ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             } ${
               action.disabled
-                ? 'cursor-not-allowed opacity-50'
+                ? 'opacity-50 cursor-not-allowed'
                 : 'cursor-pointer'
             }`}
-            role="menuitem"
-            disabled={action.disabled}
           >
             <div className="flex items-center gap-3">
-              <span className="flex-shrink-0">{action.icon}</span>
+              {action.icon}
               <span>{action.label}</span>
             </div>
             {action.shortcut && (
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-gray-400 dark:text-gray-500">
                 {action.shortcut}
               </span>
             )}
           </button>
         );
       })}
+
+      {/* Document Info Footer */}
+      <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-2 px-3 pb-2">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="font-medium truncate" title={document.name}>
+            {document.name}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <span>{document.type === 'folder' ? 'Folder' : document.mime_type?.split('/')[1]?.toUpperCase() || 'File'}</span>
+            {document.type === 'file' && document.size_bytes && (
+              <>
+                <span>•</span>
+                <span>{formatFileSize(document.size_bytes)}</span>
+              </>
+            )}
+            {isPublicFolder && (
+              <>
+                <span>•</span>
+                <span className="text-green-600 dark:text-green-400 font-medium">Public</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
+}
+
+// Helper function to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }

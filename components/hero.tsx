@@ -55,6 +55,31 @@ interface DailyInstance {
   updated_at: string;
 }
 
+// Helper function to get local date for Ridgecrest, CA (Pacific Time)
+function getLocalDate(): string {
+  const now = new Date();
+  // Convert to Pacific Time (UTC-8 or UTC-7 depending on DST)
+  const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  const year = pacificTime.getFullYear();
+  const month = String(pacificTime.getMonth() + 1).padStart(2, '0');
+  const day = String(pacificTime.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Helper function to get local day name for Ridgecrest, CA
+function getLocalDayName(): string {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  return pacificTime.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
+}
+
+// Helper function to get local week number for Ridgecrest, CA
+function getLocalWeekNumber(): number {
+  const now = new Date();
+  const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+  return Math.ceil(pacificTime.getDate() / 7);
+}
+
 const Hero = () => {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
@@ -86,14 +111,15 @@ const Hero = () => {
       .catch(console.error);
   }, []);
 
+  // Set current day and week using Pacific Time for Ridgecrest, CA
   useEffect(() => {
-    const today = new Date();
-    setDay(
-      today
-        .toLocaleString("en-US", { weekday: "long" })
-        .toLowerCase()
-    );
-    setWeek(Math.ceil(today.getDate() / 7));
+    setDay(getLocalDayName());
+    setWeek(getLocalWeekNumber());
+    console.log("🌎 Local time for Ridgecrest, CA:", {
+      date: getLocalDate(),
+      day: getLocalDayName(),
+      week: getLocalWeekNumber()
+    });
   }, []);
 
   const checkForMovedBusinesses = async (dateStr: string) => {
@@ -114,8 +140,7 @@ const Hero = () => {
     if (!day || week <= 0) return;
     
     setInstanceLoading(true);
-    const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    const dateStr = getLocalDate(); // Use local date for Ridgecrest, CA
 
     try {
       const instanceRes = await fetch(
@@ -151,8 +176,7 @@ const Hero = () => {
     const loadDailyData = async () => {
       setInstanceLoading(true);
       try {
-        const today = new Date();
-        const dateStr = today.toISOString().split('T')[0];
+        const dateStr = getLocalDate(); // Use local date for Ridgecrest, CA
 
         console.log("🔍 Loading daily data for:", { dateStr, week, day });
 
@@ -443,7 +467,7 @@ const Hero = () => {
             className="mr-2 text-[hsl(var(--sidebar-primary))]"
           />
           <span className="text-[hsl(var(--muted-foreground))]">
-            Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)}
+            Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)} ({getLocalDate()})
           </span>
         </div>
       </div>

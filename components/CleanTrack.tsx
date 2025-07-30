@@ -257,12 +257,11 @@ export default function CleanTrack({
     }
   };
 
-  // Create the unified billing template using CMSBillingTemplate
+  // Create the unified billing template using CMSBillingTemplate with FRESH data
   const billingTemplate: ExportTemplate = {
     id: 'cms-billing-unified',
     name: 'CMS Billing Report',
     data: {
-      businesses: billingData,
       month: currentMonth,
       year: currentYear,
       generated_from: 'clean_track',
@@ -273,10 +272,14 @@ export default function CleanTrack({
       } : null
     },
     generator: async (data: any, format: 'excel' | 'pdf') => {
-      console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()}`);
-      const { businesses, month, year } = data;
+      console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()} with FRESH data`);
+      const { month, year } = data;
       
-      return await CMSBillingTemplate.generateReport(businesses, month, year, format);
+      // ✅ ALWAYS fetch fresh data from database, never use cached state
+      console.log(`🔄 Fetching fresh billing data for ${month}/${year} from database...`);
+      
+      const freshBillingData = await CMSBillingTemplate.generateMonthlyReport(month, year, format);
+      return freshBillingData;
     }
   };
 
@@ -580,14 +583,22 @@ export default function CleanTrack({
           </div>
           
           {billingData.length > 0 && currentInstance && (
-            <UniversalExportButton
-              template={billingTemplate}
-              filename={`CMS_Billing_${getMonthName()}_${currentYear}_from_CleanTrack`}
-              disabled={instanceLoading}
-              size="md"
-              variant="primary"
-              className="ml-4"
-            />
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={loadBillingData}
+                className="px-3 py-1 text-sm bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] rounded hover:bg-[hsl(var(--secondary))]/80 transition-colors"
+                title="Refresh billing data"
+              >
+                🔄 Refresh
+              </button>
+              <UniversalExportButton
+                template={billingTemplate}
+                filename={`CMS_Billing_${getMonthName()}_${currentYear}_from_CleanTrack`}
+                disabled={instanceLoading}
+                size="md"
+                variant="primary"
+              />
+            </div>
           )}
         </div>
         

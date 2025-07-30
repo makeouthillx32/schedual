@@ -1,13 +1,10 @@
-// components/documents/index.tsx
 'use client';
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   useDocuments,
   useFileUpload,
   useFolderFavorites,
 } from '@/hooks/useDocuments';
-
 import Toolbar from './Toolbar';
 import ContextMenu from './ContextMenu';
 import Preview from './Preview';
@@ -37,7 +34,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
   } | null>(null);
   const [previewDocument, setPreviewDocument] = useState<string | null>(null);
   const [showUploadZone, setShowUploadZone] = useState(false);
-
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -116,7 +112,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
     async (action: string, documentId: string) => {
       const document = documents.find((d) => d.id === documentId);
       if (!document) return;
-
       try {
         switch (action) {
           case 'preview':
@@ -145,7 +140,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
       } catch (error) {
         console.error(`Failed to ${action} document:`, error);
       }
-
       setContextMenu(null);
     },
     [documents, updateDocument, deleteDocument]
@@ -258,7 +252,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           isLoading={isSearching || isNavigating}
         />
       </div>
-
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           <div className="relative">
@@ -270,7 +263,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
                 </div>
               </div>
             )}
-
             <FileGrid
               documents={documents}
               viewMode={viewMode}
@@ -282,7 +274,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           </div>
         </div>
       </div>
-
       <div className="flex-shrink-0 border-t border-border p-6 bg-card">
         <FavoritesBar
           favorites={favoriteItems}
@@ -295,7 +286,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           }}
         />
       </div>
-
       {contextMenu && (
         <ContextMenu
           isOpen={true}
@@ -305,7 +295,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           onAction={handleDocumentAction}
         />
       )}
-
       {previewDocument && (
         <Preview
           isOpen={true}
@@ -318,7 +307,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
           onPrevious={(docId) => setPreviewDocument(docId)}
         />
       )}
-
       {showUploadZone && (
         <div className="fixed inset-0 bg-muted/70 flex items-center justify-center z-50">
           <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 text-foreground border border-border">

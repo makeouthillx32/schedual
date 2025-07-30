@@ -1,4 +1,4 @@
-// app/api/schedule/daily-instances/route.ts - FIXED RELATIONSHIP ISSUE
+// app/api/schedule/daily-instances/route.ts - FIXED to handle same day previous instances
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// GET - Fetch or create today's instance
+// GET - Fetch or create today's instance (with same-day fallback)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date"); // YYYY-MM-DD format
@@ -23,8 +23,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // FIXED: Use specific relationship to avoid ambiguity
-    const { data: existingInstance, error: fetchError } = await supabase
+    console.log("🔍 Looking for instance on:", date, "week:", week, "day:", day);
+
+    // STEP 1: Look for ANY instance on this date (prioritize reusing existing work)
+    console.log("🔍 Searching for ANY instance on date:", date);
+    
+    const { data: sameDayInstances, error: sameDayError } = await supabase
       .from("daily_clean_instances")
       .select(`
         *,
@@ -39,32 +43,89 @@ export async function GET(req: NextRequest) {
           moved_to_date,
           notes,
           marked_by,
-          updated_at
+          updated_at,
+          is_added,
+          added_reason
         )
       `)
       .eq("instance_date", date)
-      .eq("week_number", parseInt(week))
-      .eq("day_name", day.toLowerCase())
-      .single();
+      .order("id", { ascending: false }); // Get highest ID (most recent) first
 
-    if (fetchError && fetchError.code !== "PGRST116") {
-      console.error("Error fetching instance:", fetchError);
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+    if (sameDayError) {
+      console.error("Error searching same-day instances:", sameDayError);
+      // Continue to create new instance
     }
 
-    // If instance exists, return it
-    if (existingInstance) {
-      console.log("📋 Found existing instance:", existingInstance.id);
-      return NextResponse.json({
-        instance: existingInstance,
-        items: existingInstance.daily_clean_items || []
-      });
+    // If we found ANY instance for this date, use it and update metadata
+    if (sameDayInstances && sameDayInstances.length > 0) {
+      const existingInstance = sameDayInstances[0];
+      console.log("🔄 Found existing instance for this date:", existingInstance.id);
+      console.log("📊 Instance has", existingInstance.daily_clean_items?.length || 0, "items");
+
+      // Check if this is exact match or needs metadata update
+      const isExactMatch = existingInstance.week_number === parseInt(week) && 
+                          existingInstance.day_name === day.toLowerCase();
+
+      if (isExactMatch) {
+        console.log("✅ Exact match found, returning as-is");
+        return NextResponse.json({
+          instance: existingInstance,
+          items: existingInstance.daily_clean_items || []
+        });
+      } else {
+        console.log("🔄 Updating instance metadata to match current request");
+        // Update the instance with current week/day info
+        const { data: updatedInstance, error: updateError } = await supabase
+          .from("daily_clean_instances")
+          .update({
+            week_number: parseInt(week),
+            day_name: day.toLowerCase(),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingInstance.id)
+          .select(`
+            *,
+            daily_clean_items!daily_clean_items_instance_id_fkey (
+              id,
+              business_id,
+              business_name,
+              address,
+              before_open,
+              status,
+              cleaned_at,
+              moved_to_date,
+              notes,
+              marked_by,
+              updated_at,
+              is_added,
+              added_reason
+            )
+          `)
+          .single();
+
+        if (updateError) {
+          console.error("Error updating instance metadata:", updateError);
+          // Return the original instance anyway
+          return NextResponse.json({
+            instance: existingInstance,
+            items: existingInstance.daily_clean_items || [],
+            warning: "Could not update metadata but returned existing instance"
+          });
+        } else {
+          console.log("✅ Successfully updated instance metadata");
+          return NextResponse.json({
+            instance: updatedInstance,
+            items: updatedInstance.daily_clean_items || [],
+            isReused: true
+          });
+        }
+      }
     }
 
-    // If no instance exists, create a new one
-    console.log("🆕 Creating new instance for", date, week, day);
+    // STEP 2: Only create new instance if NO instance exists for this date
+    console.log("🆕 No instance found for", date, "- creating new one");
     
-    // SAFE: Prevent redirect for anonymous users
+    // Get current user safely
     let userId = null;
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -93,8 +154,7 @@ export async function GET(req: NextRequest) {
 
     console.log("✅ Created new instance:", newInstance.id);
 
-    // Now populate it with today's scheduled businesses
-    // Fetch scheduled businesses for this day/week
+    // Populate with today's scheduled businesses
     const { data: scheduledBusinesses, error: scheduleError } = await supabase
       .from("Schedule")
       .select(`
@@ -106,10 +166,14 @@ export async function GET(req: NextRequest) {
 
     if (scheduleError) {
       console.error("Error fetching scheduled businesses:", scheduleError);
-      return NextResponse.json({ error: scheduleError.message }, { status: 500 });
+      // Return empty instance rather than fail completely
+      return NextResponse.json({
+        instance: newInstance,
+        items: []
+      });
     }
 
-    // Create clean items for each scheduled business
+    // Create clean items for scheduled businesses
     if (scheduledBusinesses && scheduledBusinesses.length > 0) {
       const cleanItems = scheduledBusinesses.map((entry: any) => ({
         instance_id: newInstance.id,
@@ -117,7 +181,8 @@ export async function GET(req: NextRequest) {
         business_name: entry.Businesses.business_name,
         address: entry.Businesses.address,
         before_open: entry.Businesses.before_open,
-        status: "pending"
+        status: "pending",
+        is_added: false // These are scheduled, not added on-the-fly
       }));
 
       const { data: items, error: itemsError } = await supabase
@@ -174,10 +239,10 @@ export async function POST(req: NextRequest) {
       console.log("🔓 No user session found");
     }
 
-    // First, check if this business is already in this instance
+    // Check if this business is already in this instance
     const { data: existingItem, error: checkError } = await supabase
       .from("daily_clean_items")
-      .select("id, status")
+      .select("id, status, is_added")
       .eq("instance_id", instance_id)
       .eq("business_id", business_id)
       .single();
@@ -203,6 +268,7 @@ export async function POST(req: NextRequest) {
       } else if (status === "moved" && moved_to_date) {
         updateData.moved_to_date = moved_to_date;
         updateData.cleaned_at = null;
+        // Set moved_from_date using the trigger function
       } else if (status === "pending") {
         updateData.cleaned_at = null;
         updateData.moved_to_date = null;
@@ -231,7 +297,7 @@ export async function POST(req: NextRequest) {
       // Add new business to instance (on-the-fly addition)
       console.log("➕ Adding new business to instance");
       
-      // First, get the business details
+      // Get business details
       const { data: business, error: businessError } = await supabase
         .from("Businesses")
         .select("id, business_name, address, before_open")
@@ -253,6 +319,8 @@ export async function POST(req: NextRequest) {
         status,
         marked_by: userId,
         notes: notes || 'Added on-the-fly - moved from another day',
+        is_added: true, // Mark as added on-the-fly
+        added_reason: 'Client moved day / Extra cleaning',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

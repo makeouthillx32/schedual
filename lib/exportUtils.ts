@@ -107,7 +107,7 @@ export class ExcelExporter {
   }
 }
 
-// PDF Export Utility (simplified version - you might want to use a proper PDF library)
+// PDF Export Utility
 export class PDFExporter {
   static async exportHTML(htmlContent: string, filename?: string): Promise<Blob> {
     try {
@@ -222,7 +222,8 @@ export class PDFExporter {
 </body>
 </html>`;
 
-    return this.exportHTML(html);
+    // Fixed: Call static method correctly
+    return PDFExporter.exportHTML(html);
   }
 }
 
@@ -243,4 +244,16 @@ export const exportTemplates = {
     excel: async (data: any[]) => ExcelExporter.exportData(data, 'Schedule'),
     pdf: async (data: any[]) => PDFExporter.exportHTML(`<h1>Schedule Report</h1><pre>${JSON.stringify(data, null, 2)}</pre>`)
   }
+};
+
+// Helper function to trigger downloads
+export const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };

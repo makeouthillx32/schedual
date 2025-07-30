@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
         status,
         created_at,
         updated_at,
-        daily_clean_items (
+        daily_clean_items!daily_clean_items_instance_id_fkey (
           id,
           business_id,
           business_name,

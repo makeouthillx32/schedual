@@ -1,8 +1,9 @@
+// components/UniversalExportButton.tsx
 import { useState } from "react";
 import { useTheme } from "@/app/provider";
 import { Download, FileSpreadsheet, FileText, ChevronDown } from "lucide-react";
 
-// Universal template interface
+// Universal template interface - NAMED EXPORT
 export interface ExportTemplate {
   id: string;
   name: string;
@@ -20,6 +21,7 @@ interface UniversalExportButtonProps {
   variant?: 'primary' | 'secondary' | 'outline';
 }
 
+// DEFAULT EXPORT FUNCTION
 export default function UniversalExportButton({
   template,
   filename,

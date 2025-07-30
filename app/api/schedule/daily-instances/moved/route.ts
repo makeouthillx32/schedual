@@ -1,4 +1,4 @@
-// app/api/schedule/daily-instances/moved/route.ts
+// app/api/schedule/daily-instances/moved/route.ts - FIXED RELATIONSHIP ISSUE
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -23,12 +23,12 @@ export async function GET(req: NextRequest) {
   try {
     console.log("🔍 Checking for businesses moved to date:", date);
 
-    // Find all businesses that were moved to this specific date
+    // FIXED: Use specific relationship to avoid ambiguity
     const { data: movedItems, error: movedError } = await supabase
       .from("daily_clean_items")
       .select(`
         *,
-        daily_clean_instances!inner (
+        daily_clean_instances!daily_clean_items_instance_id_fkey (
           instance_date,
           day_name,
           week_number
@@ -57,9 +57,9 @@ export async function GET(req: NextRequest) {
       address: item.address,
       before_open: item.before_open,
       status: "pending", // Reset to pending when moved to new day
-      notes: `Moved from ${item.daily_clean_instances.day_name}`,
-      original_date: item.daily_clean_instances.instance_date,
-      moved_from: item.daily_clean_instances.day_name,
+      notes: `Moved from ${item.daily_clean_instances?.day_name || 'unknown day'}`,
+      original_date: item.daily_clean_instances?.instance_date,
+      moved_from: item.daily_clean_instances?.day_name,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));

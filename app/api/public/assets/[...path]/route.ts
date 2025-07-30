@@ -1,4 +1,4 @@
-// app/api/public/assets/[...path]/route.ts
+// app/api/public/assets/[...path]/route.ts - UPDATED FOR FOLDER SLUGS
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
@@ -23,39 +23,54 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient("service");
-    const assetPath = params.path.join('/');
+    const pathParts = params.path;
     
-    // Only serve from designated public folders
-    const allowedPaths = [
-      'company-assets/',
-      'public-images/',
-      'marketing/',
-      'logos/',
-      'brand-assets/'
-    ];
-    
-    const isAllowedPath = allowedPaths.some(allowed => 
-      assetPath.startsWith(allowed)
-    );
-    
-    if (!isAllowedPath) {
+    if (!pathParts || pathParts.length === 0) {
       return NextResponse.json(
-        { error: 'Asset not found or not publicly accessible' },
+        { error: 'Invalid path' },
+        { status: 400 }
+      );
+    }
+
+    const folderSlug = pathParts[0];
+    const fileName = pathParts.slice(1).join('/');
+
+    // If no filename provided, return folder contents
+    if (!fileName) {
+      return getFolderContents(supabase, folderSlug, request);
+    }
+
+    // Find the public folder by slug
+    const { data: publicFolder, error: folderError } = await supabase
+      .from('documents')
+      .select('id, path, name, is_public_folder')
+      .eq('public_slug', folderSlug)
+      .eq('type', 'folder')
+      .eq('is_public_folder', true)
+      .single();
+
+    if (folderError || !publicFolder) {
+      return NextResponse.json(
+        { error: 'Public folder not found' },
         { status: 404 }
       );
     }
 
-    // Get document info from database first
+    // Construct the full file path
+    const fullFilePath = `${publicFolder.path}/${fileName}`;
+
+    // Get the specific file from the public folder
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('id, name, mime_type, size_bytes, path, is_public')
-      .eq('path', assetPath)
-      .eq('is_public', true) // Only serve public assets
+      .eq('path', fullFilePath)
+      .eq('type', 'file')
+      .eq('is_public', true) // Only serve public files
       .single();
 
     if (docError || !document) {
       return NextResponse.json(
-        { error: 'Asset not found' },
+        { error: 'Asset not found in public folder' },
         { status: 404 }
       );
     }
@@ -63,11 +78,12 @@ export async function GET(
     // Get the actual file from storage
     const { data: fileData, error: storageError } = await supabase.storage
       .from('documents')
-      .download(assetPath);
+      .download(fullFilePath);
 
     if (storageError || !fileData) {
+      console.error('Storage error:', storageError);
       return NextResponse.json(
-        { error: 'Failed to retrieve asset' },
+        { error: 'Failed to retrieve asset from storage' },
         { status: 500 }
       );
     }
@@ -89,6 +105,81 @@ export async function GET(
   }
 }
 
+// Function to return folder contents (when no filename is provided)
+async function getFolderContents(
+  supabase: any,
+  folderSlug: string,
+  request: NextRequest
+) {
+  try {
+    // Get the public folder
+    const { data: publicFolder, error: folderError } = await supabase
+      .from('documents')
+      .select('id, path, name, is_public_folder')
+      .eq('public_slug', folderSlug)
+      .eq('type', 'folder')
+      .eq('is_public_folder', true)
+      .single();
+
+    if (folderError || !publicFolder) {
+      return NextResponse.json(
+        { error: 'Public folder not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get all public files in this folder
+    const { data: files, error: filesError } = await supabase
+      .from('documents')
+      .select('name, mime_type, size_bytes, created_at, path')
+      .like('path', `${publicFolder.path}%`)
+      .eq('type', 'file')
+      .eq('is_public', true)
+      .order('name');
+
+    if (filesError) {
+      return NextResponse.json(
+        { error: 'Failed to get folder contents' },
+        { status: 500 }
+      );
+    }
+
+    const baseUrl = new URL(request.url).origin;
+    const assetsWithUrls = files.map(file => {
+      // Extract just the filename from the full path
+      const fileName = file.path.replace(`${publicFolder.path}/`, '');
+      return {
+        name: fileName,
+        mime_type: file.mime_type,
+        size_bytes: file.size_bytes,
+        created_at: file.created_at,
+        public_url: `${baseUrl}/api/public/assets/${folderSlug}/${fileName}`
+      };
+    });
+
+    return NextResponse.json({
+      folder: {
+        name: publicFolder.name,
+        slug: folderSlug,
+        file_count: files.length
+      },
+      assets: assetsWithUrls
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=300', // 5 minutes cache for folder listings
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+
+  } catch (error) {
+    console.error('Folder contents error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function HEAD(
   request: NextRequest,
   { params }: { params: { path: string[] } }
@@ -98,5 +189,19 @@ export async function HEAD(
   return new NextResponse(null, {
     status: getResponse.status,
     headers: getResponse.headers
+  });
+}
+
+export async function OPTIONS(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    }
   });
 }

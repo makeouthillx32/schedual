@@ -275,11 +275,20 @@ export default function CleanTrack({
       console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()} with FRESH data`);
       const { month, year } = data;
       
-      // ✅ ALWAYS fetch fresh data from database, never use cached state
+      // ✅ Create a fresh template instance and fetch data
       console.log(`🔄 Fetching fresh billing data for ${month}/${year} from database...`);
       
-      const freshBillingData = await CMSBillingTemplate.generateMonthlyReport(month, year, format);
-      return freshBillingData;
+      const template = new CMSBillingTemplate(month, year);
+      await template.fetchCleaningData();
+      
+      if (format === 'excel') {
+        const arrayBuffer = template.generateExcel();
+        return new Blob([arrayBuffer], { 
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
+      } else {
+        return template.generateHTML();
+      }
     }
   };
 

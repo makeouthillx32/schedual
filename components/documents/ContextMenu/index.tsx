@@ -23,7 +23,7 @@ import { DocumentItem } from '@/hooks/useDocuments';
 interface ContextMenuProps {
   isOpen: boolean;
   position: { x: number; y: number };
-  document?: DocumentItem;
+  documentItem?: DocumentItem;
   onClose: () => void;
   onAction: (action: string, documentId: string) => void;
   
@@ -54,7 +54,7 @@ interface MenuAction {
 export default function ContextMenu({
   isOpen,
   position,
-  document,
+  documentItem,
   onClose,
   onAction,
   isPublicFolder = false,
@@ -70,54 +70,54 @@ export default function ContextMenu({
 
   // Handle action click
   const handleAction = useCallback((actionId: string) => {
-    if (!document) return;
+    if (!documentItem) return;
 
     switch (actionId) {
       case 'makePublic':
-        onMakePublic?.(document.id);
+        onMakePublic?.(documentItem.id);
         break;
       case 'makePrivate':
-        onMakePrivate?.(document.id);
+        onMakePrivate?.(documentItem.id);
         break;
       case 'copyPublicUrl':
         if (publicSlug) onCopyPublicUrl?.(publicSlug);
         break;
       case 'copyFileUrl':
-        onCopyFileUrl?.(document.id, document.name);
+        onCopyFileUrl?.(documentItem.id, documentItem.name);
         break;
       case 'generateCode':
         if (publicSlug) onGenerateCode?.(publicSlug);
         break;
       default:
-        onAction(actionId, document.id);
+        onAction(actionId, documentItem.id);
     }
     onClose();
-  }, [document, onAction, onClose, onMakePublic, onMakePrivate, onCopyPublicUrl, onCopyFileUrl, onGenerateCode, publicSlug]);
+  }, [documentItem, onAction, onClose, onMakePublic, onMakePrivate, onCopyPublicUrl, onCopyFileUrl, onGenerateCode, publicSlug]);
 
   // Check if file can be previewed
   const canPreview = useCallback(() => {
-    if (!document?.mime_type) return false;
-    const mimeType = document.mime_type.toLowerCase();
+    if (!documentItem?.mime_type) return false;
+    const mimeType = documentItem.mime_type.toLowerCase();
     return mimeType.startsWith('image/') || 
            mimeType.includes('pdf') || 
            mimeType.startsWith('text/') ||
            mimeType.includes('json');
-  }, [document?.mime_type]);
+  }, [documentItem?.mime_type]);
 
   // Get public asset URL
   const getPublicAssetUrl = useCallback(() => {
-    if (!publicSlug || !document) return '';
+    if (!publicSlug || !documentItem) return '';
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return `${baseUrl}/api/public/assets/${publicSlug}/${document.name}`;
-  }, [publicSlug, document]);
+    return `${baseUrl}/api/public/assets/${publicSlug}/${documentItem.name}`;
+  }, [publicSlug, documentItem]);
 
   // Get menu actions based on document type
   const getMenuActions = useCallback((): MenuAction[] => {
-    if (!document) return [];
+    if (!documentItem) return [];
 
-    const isFolder = document.type === 'folder';
-    const isFile = document.type === 'file';
-    const isImage = document.mime_type?.startsWith('image/');
+    const isFolder = documentItem.type === 'folder';
+    const isFile = documentItem.type === 'file';
+    const isImage = documentItem.mime_type?.startsWith('image/');
 
     const actions: MenuAction[] = [];
 
@@ -274,8 +274,8 @@ export default function ContextMenu({
     // Add to favorites / Remove from favorites
     actions.push({
       id: 'favorite',
-      label: document.is_favorite ? 'Remove from Favorites' : 'Add to Favorites',
-      icon: <Star className={`h-4 w-4 ${document.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />,
+      label: documentItem.is_favorite ? 'Remove from Favorites' : 'Add to Favorites',
+      icon: <Star className={`h-4 w-4 ${documentItem.is_favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />,
       shortcut: '⌘F'
     });
 
@@ -303,11 +303,11 @@ export default function ContextMenu({
     });
 
     return actions;
-  }, [document, canPreview, isPublicFolder, publicSlug]);
+  }, [documentItem, canPreview, isPublicFolder, publicSlug]);
 
   // Handle special actions
   const handleSpecialAction = useCallback((actionId: string) => {
-    if (!document) return;
+    if (!documentItem) return;
 
     switch (actionId) {
       case 'copyPublicFileUrl':
@@ -321,7 +321,7 @@ export default function ContextMenu({
           const url = getPublicAssetUrl();
           const code = `<Image
   src="${url}"
-  alt="${document.name}"
+  alt="${documentItem.name}"
   width={400}
   height={300}
   className="rounded-lg"
@@ -340,7 +340,7 @@ export default function ContextMenu({
         return;
     }
     onClose();
-  }, [document, publicSlug, getPublicAssetUrl, handleAction, onClose]);
+  }, [documentItem, publicSlug, getPublicAssetUrl, handleAction, onClose]);
 
   // Position menu within viewport
   const getMenuPosition = useCallback(() => {
@@ -401,7 +401,7 @@ export default function ContextMenu({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen || !document) return null;
+  if (!isOpen || !documentItem) return null;
 
   const menuPosition = getMenuPosition();
   const menuActions = getMenuActions();
@@ -458,15 +458,15 @@ export default function ContextMenu({
       {/* Document Info Footer */}
       <div className="border-t border-gray-200 dark:border-gray-600 mt-1 pt-2 px-3 pb-2">
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          <div className="font-medium truncate" title={document.name}>
-            {document.name}
+          <div className="font-medium truncate" title={documentItem.name}>
+            {documentItem.name}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span>{document.type === 'folder' ? 'Folder' : document.mime_type?.split('/')[1]?.toUpperCase() || 'File'}</span>
-            {document.type === 'file' && document.size_bytes && (
+            <span>{documentItem.type === 'folder' ? 'Folder' : documentItem.mime_type?.split('/')[1]?.toUpperCase() || 'File'}</span>
+            {documentItem.type === 'file' && documentItem.size_bytes && (
               <>
                 <span>•</span>
-                <span>{formatFileSize(document.size_bytes)}</span>
+                <span>{formatFileSize(documentItem.size_bytes)}</span>
               </>
             )}
             {isPublicFolder && (

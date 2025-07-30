@@ -1,4 +1,4 @@
-// app/api/schedule/daily-instances/route.ts - FIXED to handle same day previous instances
+// app/api/schedule/daily-instances/route.ts - FIXED timezone issues
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -7,6 +7,23 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Helper function to get local timestamp in correct format
+function getLocalTimestamp(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+  const localTime = new Date(now.getTime() - offset);
+  return localTime.toISOString();
+}
+
+// Helper function to get local date string (YYYY-MM-DD)
+function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // GET - Fetch or create today's instance (with same-day fallback)
 export async function GET(req: NextRequest) {
@@ -74,13 +91,13 @@ export async function GET(req: NextRequest) {
         });
       } else {
         console.log("🔄 Updating instance metadata to match current request");
-        // Update the instance with current week/day info
+        // Update the instance with current week/day info - FIXED TIMESTAMP
         const { data: updatedInstance, error: updateError } = await supabase
           .from("daily_clean_instances")
           .update({
             week_number: parseInt(week),
             day_name: day.toLowerCase(),
-            updated_at: new Date().toISOString()
+            updated_at: getLocalTimestamp()  // FIXED: Use local time
           })
           .eq("id", existingInstance.id)
           .select(`
@@ -259,11 +276,11 @@ export async function POST(req: NextRequest) {
       const updateData: any = {
         status,
         marked_by: userId,
-        updated_at: new Date().toISOString()
+        updated_at: getLocalTimestamp()  // FIXED: Use local time
       };
 
       if (status === "cleaned") {
-        updateData.cleaned_at = new Date().toISOString();
+        updateData.cleaned_at = getLocalTimestamp(); // FIXED: Use local time
         updateData.moved_to_date = null;
       } else if (status === "moved" && moved_to_date) {
         updateData.moved_to_date = moved_to_date;
@@ -309,7 +326,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Business not found" }, { status: 404 });
       }
 
-      // Create new clean item
+      // Create new clean item - FIXED TIMESTAMPS
       const newItemData: any = {
         instance_id,
         business_id,
@@ -321,12 +338,12 @@ export async function POST(req: NextRequest) {
         notes: notes || 'Added on-the-fly - moved from another day',
         is_added: true, // Mark as added on-the-fly
         added_reason: 'Client moved day / Extra cleaning',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: getLocalTimestamp(),  // FIXED: Use local time
+        updated_at: getLocalTimestamp()   // FIXED: Use local time
       };
 
       if (status === "cleaned") {
-        newItemData.cleaned_at = new Date().toISOString();
+        newItemData.cleaned_at = getLocalTimestamp(); // FIXED: Use local time
       } else if (status === "moved" && moved_to_date) {
         newItemData.moved_to_date = moved_to_date;
       }
@@ -369,7 +386,7 @@ export async function PATCH(req: NextRequest) {
       .from("daily_clean_instances")
       .update({ 
         status,
-        updated_at: new Date().toISOString()
+        updated_at: getLocalTimestamp()  // FIXED: Use local time
       })
       .eq("id", instance_id)
       .select()

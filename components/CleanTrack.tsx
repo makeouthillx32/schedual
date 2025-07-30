@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/app/provider";
 import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search } from "lucide-react";
 import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
-import { exportTemplates } from "@/lib/exportUtils";
+import { CMSBillingTemplate, BusinessCleaningRecord } from "@/lib/CMSBillingTemplate";
 
 interface CleanTrackItem {
   id?: number;
@@ -27,13 +27,6 @@ interface DailyInstance {
   status: string;
   created_at: string;
   updated_at: string;
-}
-
-interface BusinessCleaningRecord {
-  business_id: number;
-  business_name: string;
-  address: string;
-  cleaned_dates: number[];
 }
 
 interface AvailableBusiness {
@@ -146,7 +139,9 @@ export default function CleanTrack({
           business_id: business.id,
           business_name: business.business_name,
           address: business.address,
-          cleaned_dates: []
+          cleaned_dates: [],
+          moved_dates: [],
+          added_dates: []
         });
       });
 
@@ -155,10 +150,22 @@ export default function CleanTrack({
         const dayOfMonth = instanceDate.getDate();
 
         instance.daily_clean_items?.forEach((item: any) => {
-          if (item.status === 'cleaned') {
-            const record = businessRecords.get(item.business_id);
-            if (record && !record.cleaned_dates.includes(dayOfMonth)) {
-              record.cleaned_dates.push(dayOfMonth);
+          const record = businessRecords.get(item.business_id);
+          if (record) {
+            if (item.status === 'cleaned') {
+              if (!record.cleaned_dates.includes(dayOfMonth)) {
+                record.cleaned_dates.push(dayOfMonth);
+              }
+            } else if (item.status === 'moved') {
+              if (!record.moved_dates.includes(dayOfMonth)) {
+                record.moved_dates.push(dayOfMonth);
+              }
+            }
+            
+            if (item.is_added && item.status === 'cleaned') {
+              if (!record.added_dates.includes(dayOfMonth)) {
+                record.added_dates.push(dayOfMonth);
+              }
             }
           }
         });
@@ -250,8 +257,9 @@ export default function CleanTrack({
     }
   };
 
+  // Create the unified billing template using CMSBillingTemplate
   const billingTemplate: ExportTemplate = {
-    id: 'cms-billing-from-track',
+    id: 'cms-billing-unified',
     name: 'CMS Billing Report',
     data: {
       businesses: billingData,
@@ -265,13 +273,10 @@ export default function CleanTrack({
       } : null
     },
     generator: async (data: any, format: 'excel' | 'pdf') => {
+      console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()}`);
       const { businesses, month, year } = data;
       
-      if (format === 'excel') {
-        return await exportTemplates.billing.excel(businesses, month, year);
-      } else {
-        return await exportTemplates.billing.pdf(businesses, month, year);
-      }
+      return await CMSBillingTemplate.generateReport(businesses, month, year, format);
     }
   };
 

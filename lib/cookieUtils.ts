@@ -655,3 +655,33 @@ export const roleDebug = {
     console.groupEnd();
   }
 };
+// ADD THIS TO THE END OF YOUR lib/cookieUtils.ts FILE (before the final export/closing)
+
+// 👤 PROFILE CACHE - Missing from your current file
+export const profileCache = {
+  setProfile: (userId: string, profileData: any): void => {
+    storage.set(USER_ROLE_CACHE_KEYS.USER_PROFILE(userId), profileData, CACHE_EXPIRY.HOUR, userId);
+    if (profileData.role) userRoleCookies.setUserRole(profileData.role, userId);
+    console.log(`[ProfileCache] 👤 Set profile for user ${userId.slice(-4)}`);
+  },
+
+  getProfile: (userId: string): any | null => {
+    return storage.get(USER_ROLE_CACHE_KEYS.USER_PROFILE(userId), null, userId);
+  },
+
+  setPermissions: (userId: string, permissions: any): void => {
+    storage.set(USER_ROLE_CACHE_KEYS.USER_PERMISSIONS(userId), permissions, CACHE_EXPIRY.HOUR, userId);
+    console.log(`[ProfileCache] 🔐 Set permissions for user ${userId.slice(-4)}`);
+  },
+
+  getPermissions: (userId: string): any | null => {
+    return storage.get(USER_ROLE_CACHE_KEYS.USER_PERMISSIONS(userId), null, userId);
+  },
+
+  clearUserCaches: (userId: string): void => {
+    storage.remove(USER_ROLE_CACHE_KEYS.USER_PROFILE(userId));
+    storage.remove(USER_ROLE_CACHE_KEYS.USER_PERMISSIONS(userId));
+    userRoleCookies.clearUserRole();
+    console.log(`[ProfileCache] 🗑️ Cleared caches for user ${userId.slice(-4)}`);
+  }
+};

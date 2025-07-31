@@ -1,4 +1,4 @@
-// TimeSheetCalculator.tsx (Refactored)
+// TimeSheetCalculator.tsx (Updated with Persistence)
 import React from "react";
 import "./../../style/TSC.css";
 
@@ -8,9 +8,10 @@ import { WeekHeader } from "./_components/WeekHeader";
 import { ActionButtons } from "./_components/ActionButtons";
 import { TimesheetTable } from "./_components/TimesheetTable";
 import { TotalsSection } from "./_components/TotalsSection";
+import { DataManagement } from "./_components/DataManagement";
 
 // Hooks and Utils
-import { useTimesheetLogic } from "../../hooks/useTimesheetLogic";
+import { usePersistentTimesheetLogic } from "../../hooks/usePersistentTimesheetLogic";
 import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
 
 const TimeSheetCalculator: React.FC = () => {
@@ -31,7 +32,10 @@ const TimeSheetCalculator: React.FC = () => {
     removeRow,
     removeWeek,
     renameWeek,
-  } = useTimesheetLogic();
+    clearAllData,
+    exportData,
+    importData,
+  } = usePersistentTimesheetLogic();
 
   const activeWeek = weeks.find((week) => week.id === activeWeekId) || weeks[0];
   const totalHours = calculateAllWeeksTotal(weeks);
@@ -78,6 +82,12 @@ const TimeSheetCalculator: React.FC = () => {
         showPayCalculation={showPayCalculation}
         onHourlyRateChange={setHourlyRate}
         onTogglePayCalculation={() => setShowPayCalculation(!showPayCalculation)}
+      />
+
+      <DataManagement
+        onClearAll={clearAllData}
+        onExport={exportData}
+        onImport={importData}
       />
     </div>
   );

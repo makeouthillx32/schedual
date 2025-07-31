@@ -1,5 +1,5 @@
 // lib/templates/registerDesertTimesheet.ts - Register with your TemplateRegistry
-import { TemplateRegistry, TemplateIcons } from '../../components/Export';
+import { TemplateRegistry, TemplateIcons } from '@/components/Export';
 import { DesertTimesheetTemplate } from '../DesertTimesheetTemplate';
 
 // Register the Desert Area Timesheet template with your system

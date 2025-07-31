@@ -1,70 +1,75 @@
-/* Updated TSC.css file for multi-week support with mobile responsiveness */
-:root {
-  /* Color Palette */
-  --primary-blue: #2196F3;
-  --primary-blue-dark: #1976D2;
-  --success-green: #4CAF50;
-  --success-green-dark: #45a049;
-  --danger-red: #ff5252;
-  --danger-red-dark: #e04545;
-  --warning-orange: #FF9800;
-  --warning-orange-dark: #F57C00;
-  
-  /* Neutral Colors */
-  --white: #ffffff;
-  --gray-50: #fafafa;
-  --gray-100: #f4f4f4;
-  --gray-200: #e8e8e8;
-  --gray-300: #ddd;
-  --gray-400: #bbb;
-  --gray-500: #888;
-  --gray-600: #666;
-  --gray-700: #555;
-  --gray-800: #333;
-  --gray-900: #111;
-  
-  /* Background Colors */
-  --bg-light: #f8f8f8;
-  --bg-success: #e8f5e9;
-  --bg-alternate: #f4f4f4;
-  
-  /* Shadow and Border */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --border-radius: 4px;
-  --border-radius-lg: 8px;
-}
-
+/* Updated TSC.css file using theme color palette and CSS variables */
 .timesheet-container {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 .timesheet-container h1 {
   text-align: center;
   margin-bottom: 20px;
-  color: var(--gray-800);
+  color: hsl(var(--foreground));
 }
 
 .week-tabs {
   display: flex;
   overflow-x: auto;
   margin-bottom: 15px;
-  border-bottom: 1px solid var(--gray-300);
+  border-bottom: 1px solid hsl(var(--border));
   padding-bottom: 2px;
 }
 
 .week-tab {
   padding: 10px 15px;
-  border: 1px solid var(--gray-300);
+  border: 1px solid hsl(var(--border));
   border-bottom: none;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
-  background-color: var(--gray-100);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background-color: hsl(var(--muted));
   margin-right: 5px;
   cursor: pointer;
   position: relative;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.2s ease-in-out;
+}
+
+.week-tab.active {
+  background-color: hsl(var(--card));
+  border-bottom: 2px solid hsl(var(--card));
+  margin-bottom: -1px;
+  font-weight: bold;
+  color: hsl(var(--card-foreground));
+}
+
+.week-tab:hover {
+  background-color: hsl(var(--muted) / 0.8);
+}
+
+.week-tab.active:hover {
+  background-color: hsl(var(--card));
+}
+
+.week-tab.add-week {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.week-tab.add-week:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}
+
+.remove-week-button {
+  margin-left: 8px;
+  color: hsl(var(--destructive));
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.remove-week-button:hover {
+  color: hsl(var(--destructive) / 0.9);
+}
 
 .week-header {
   display: flex;
@@ -78,13 +83,16 @@
   font-weight: bold;
   padding: 5px 10px;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius);
   width: 200px;
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
 }
 
 .week-name-input:focus {
-  border-color: #ddd;
+  border-color: hsl(var(--ring));
   outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
 }
 
 .week-actions {
@@ -94,15 +102,16 @@
 
 .add-week-from-current {
   padding: 8px 15px;
-  background-color: #2196F3;
-  color: white;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
 .add-week-from-current:hover {
-  background-color: #0b7dda;
+  background-color: hsl(var(--secondary) / 0.9);
 }
 
 .action-buttons {
@@ -121,37 +130,46 @@
 .custom-day-input input {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+}
+
+.custom-day-input input:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
 }
 
 .add-button {
   padding: 8px 15px;
-  background-color: #4CAF50;
-  color: white;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
 .add-button:hover {
-  background-color: #45a049;
+  background-color: hsl(var(--primary) / 0.9);
 }
 
 .no-days-message {
   text-align: center;
   padding: 30px;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-  color: #666;
+  background-color: hsl(var(--muted));
+  border-radius: var(--radius);
+  color: hsl(var(--muted-foreground));
   font-style: italic;
 }
 
 .timesheet-table {
   width: 100%;
-  border-radius: 4px;
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   margin-bottom: 20px;
 }
 
@@ -160,12 +178,12 @@
   display: flex;
   flex-direction: column;
   padding: 15px;
-  background-color: #fff;
-  border-bottom: 1px solid #eee;
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .row-alternate {
-  background-color: #f4f4f4;
+  background-color: hsl(var(--muted) / 0.3);
 }
 
 .row-header {
@@ -177,14 +195,14 @@
 
 .day-label {
   font-weight: bold;
-  color: #555;
+  color: hsl(var(--card-foreground));
   font-size: 16px;
 }
 
 .hours-total-mobile {
   display: block;
   font-weight: bold;
-  color: #2196F3;
+  color: hsl(var(--primary));
   font-size: 14px;
 }
 
@@ -193,8 +211,8 @@
 }
 
 .remove-row-button {
-  background-color: #ff5252;
-  color: white;
+  background-color: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
   border: none;
   border-radius: 50%;
   width: 28px;
@@ -205,10 +223,11 @@
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
+  transition: all 0.2s ease-in-out;
 }
 
 .remove-row-button:hover {
-  background-color: #e04545;
+  background-color: hsl(var(--destructive) / 0.9);
 }
 
 .time-section {
@@ -230,7 +249,7 @@
 
 .time-label {
   font-size: 12px;
-  color: #666;
+  color: hsl(var(--muted-foreground));
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -255,7 +274,7 @@
 
 .break-label {
   font-size: 12px;
-  color: #666;
+  color: hsl(var(--muted-foreground));
   margin-bottom: 6px;
   font-weight: 500;
 }
@@ -264,44 +283,51 @@
   display: flex;
 }
 
-.hour-select, .minute-select {
-  width: 50px;
+.hour-select, .minute-select, .ampm-select, .break-select {
   text-align: center;
   padding: 8px 4px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
   font-size: 14px;
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease-in-out;
+}
+
+.hour-select:focus, .minute-select:focus, .ampm-select:focus, .break-select:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.hour-select, .minute-select {
+  width: 50px;
 }
 
 .ampm-select {
   width: 65px;
-  padding: 8px 4px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
 }
 
 .break-select {
   width: 100%;
   padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
 }
 
 .time-separator {
   margin: 0 2px;
   font-weight: bold;
   font-size: 14px;
+  color: hsl(var(--foreground));
 }
 
 .week-total-row {
   display: flex;
   justify-content: flex-end;
   padding: 10px 15px;
-  background-color: #e8f5e9;
-  border-top: 2px solid #ddd;
+  background-color: hsl(var(--accent) / 0.1);
+  border-top: 2px solid hsl(var(--border));
   font-weight: bold;
+  color: hsl(var(--accent-foreground));
 }
 
 .week-total-label {
@@ -311,13 +337,15 @@
 .week-total-hours {
   width: 100px;
   text-align: right;
+  color: hsl(var(--primary));
 }
 
 .totals-section {
   padding: 15px;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: hsl(var(--card));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid hsl(var(--border));
 }
 
 .week-summaries {
@@ -327,7 +355,7 @@
 .week-summaries h3 {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #333;
+  color: hsl(var(--card-foreground));
 }
 
 .week-summary-list {
@@ -338,12 +366,15 @@
   display: flex;
   justify-content: space-between;
   padding: 5px 0;
-  border-bottom: 1px dashed #ddd;
+  border-bottom: 1px dashed hsl(var(--border));
+  color: hsl(var(--card-foreground));
 }
 
 .all-weeks-total {
   font-size: 18px;
   margin: 15px 0;
+  color: hsl(var(--card-foreground));
+  font-weight: bold;
 }
 
 .hourly-rate-section {
@@ -353,47 +384,64 @@
   margin-bottom: 15px;
 }
 
+.hourly-rate-section label {
+  color: hsl(var(--card-foreground));
+  font-weight: 500;
+}
+
 .hourly-rate-section input {
   width: 80px;
   padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+}
+
+.hourly-rate-section input:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
 }
 
 .calculate-pay-button {
   padding: 8px 15px;
-  background-color: #4CAF50;
-  color: white;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
 }
 
 .calculate-pay-button:hover {
-  background-color: #45a049;
+  background-color: hsl(var(--primary) / 0.9);
 }
 
 .pay-calculation {
   margin-top: 15px;
   padding: 15px;
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: hsl(var(--muted) / 0.3);
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
 }
 
 .pay-detail {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
+  color: hsl(var(--card-foreground));
 }
 
 .pay-total {
   display: flex;
   justify-content: space-between;
   padding-top: 10px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid hsl(var(--border));
   font-weight: bold;
   font-size: 18px;
+  color: hsl(var(--primary));
 }
 
 /* Desktop styles (768px and up) */
@@ -427,14 +475,14 @@
 
   .hours-label {
     font-size: 12px;
-    color: #666;
+    color: hsl(var(--muted-foreground));
     margin-bottom: 4px;
     font-weight: 500;
   }
 
   .hours-value {
     font-weight: bold;
-    color: #2196F3;
+    color: hsl(var(--primary));
   }
 
   .time-section {
@@ -473,6 +521,7 @@
   .remove-row-button {
     width: 25px;
     height: 25px;
+    margin-left: 10px;
   }
 }
 

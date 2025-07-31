@@ -1,4 +1,40 @@
-/* Updated TSC.css file for multi-week support */
+/* Updated TSC.css file for multi-week support with mobile responsiveness */
+:root {
+  /* Color Palette */
+  --primary-blue: #2196F3;
+  --primary-blue-dark: #1976D2;
+  --success-green: #4CAF50;
+  --success-green-dark: #45a049;
+  --danger-red: #ff5252;
+  --danger-red-dark: #e04545;
+  --warning-orange: #FF9800;
+  --warning-orange-dark: #F57C00;
+  
+  /* Neutral Colors */
+  --white: #ffffff;
+  --gray-50: #fafafa;
+  --gray-100: #f4f4f4;
+  --gray-200: #e8e8e8;
+  --gray-300: #ddd;
+  --gray-400: #bbb;
+  --gray-500: #888;
+  --gray-600: #666;
+  --gray-700: #555;
+  --gray-800: #333;
+  --gray-900: #111;
+  
+  /* Background Colors */
+  --bg-light: #f8f8f8;
+  --bg-success: #e8f5e9;
+  --bg-alternate: #f4f4f4;
+  
+  /* Shadow and Border */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --border-radius: 4px;
+  --border-radius-lg: 8px;
+}
+
 .timesheet-container {
   max-width: 1000px;
   margin: 0 auto;
@@ -9,62 +45,26 @@
 .timesheet-container h1 {
   text-align: center;
   margin-bottom: 20px;
-  color: #333;
+  color: var(--gray-800);
 }
 
 .week-tabs {
   display: flex;
   overflow-x: auto;
   margin-bottom: 15px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--gray-300);
   padding-bottom: 2px;
 }
 
 .week-tab {
   padding: 10px 15px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--gray-300);
   border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  background-color: #f0f0f0;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  background-color: var(--gray-100);
   margin-right: 5px;
   cursor: pointer;
   position: relative;
-}
-
-.week-tab.active {
-  background-color: #fff;
-  border-bottom: 2px solid #fff;
-  margin-bottom: -1px;
-  font-weight: bold;
-}
-
-.week-tab:hover {
-  background-color: #e0e0e0;
-}
-
-.week-tab.active:hover {
-  background-color: #fff;
-}
-
-.week-tab.add-week {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.week-tab.add-week:hover {
-  background-color: #45a049;
-}
-
-.remove-week-button {
-  margin-left: 8px;
-  color: #ff5252;
-  font-weight: bold;
-  font-size: 16px;
-}
-
-.remove-week-button:hover {
-  color: #e04545;
-}
 
 .week-header {
   display: flex;
@@ -155,67 +155,41 @@
   margin-bottom: 20px;
 }
 
+/* Mobile-first timesheet row styles */
 .timesheet-row {
   display: flex;
-  padding: 10px 15px;
+  flex-direction: column;
+  padding: 15px;
   background-color: #fff;
-  align-items: center;
+  border-bottom: 1px solid #eee;
 }
 
 .row-alternate {
   background-color: #f4f4f4;
 }
 
-.day-label {
-  width: 120px;
-  font-weight: bold;
-  color: #555;
-}
-
-.time-section {
+.row-header {
   display: flex;
-  flex: 1;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
 }
 
-.time-input, .break-input {
-  display: flex;
-  align-items: center;
-}
-
-.time-separator {
-  margin: 0 4px;
+.day-label {
   font-weight: bold;
+  color: #555;
+  font-size: 16px;
 }
 
-.hour-select, .minute-select {
-  width: 60px;
-  text-align: center;
-  padding: 8px 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.ampm-select {
-  width: 80px;
-  padding: 8px 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  margin-left: 5px;
-}
-
-.break-select {
-  width: 100px;
-  padding: 8px 5px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.hours-total {
-  width: 80px;
-  text-align: right;
+.hours-total-mobile {
+  display: block;
   font-weight: bold;
+  color: #2196F3;
+  font-size: 14px;
+}
+
+.hours-total-desktop {
+  display: none;
 }
 
 .remove-row-button {
@@ -223,18 +197,102 @@
   color: white;
   border: none;
   border-radius: 50%;
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
   cursor: pointer;
-  margin-left: 10px;
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .remove-row-button:hover {
   background-color: #e04545;
+}
+
+.time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-row {
+  display: flex;
+  gap: 15px;
+}
+
+.time-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.time-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.time-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.break-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.break-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.break-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.break-input {
+  display: flex;
+}
+
+.hour-select, .minute-select {
+  width: 50px;
+  text-align: center;
+  padding: 8px 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.ampm-select {
+  width: 65px;
+  padding: 8px 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.break-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.time-separator {
+  margin: 0 2px;
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .week-total-row {
@@ -336,4 +394,174 @@
   border-top: 1px solid #ddd;
   font-weight: bold;
   font-size: 18px;
+}
+
+/* Desktop styles (768px and up) */
+@media (min-width: 768px) {
+  .timesheet-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 15px;
+  }
+
+  .row-header {
+    margin-bottom: 0;
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .day-label {
+    width: 120px;
+  }
+
+  .hours-total-mobile {
+    display: none;
+  }
+
+  .hours-total-desktop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+  }
+
+  .hours-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .hours-value {
+    font-weight: bold;
+    color: #2196F3;
+  }
+
+  .time-section {
+    flex-direction: row;
+    flex: 1;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .time-row {
+    flex: 1;
+    gap: 20px;
+  }
+
+  .break-row {
+    gap: 20px;
+    align-items: center;
+  }
+
+  .time-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .break-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-label, .break-label, .hours-label {
+    display: none;
+  }
+
+  .remove-row-button {
+    width: 25px;
+    height: 25px;
+  }
+}
+
+/* Large desktop styles (1024px and up) */
+@media (min-width: 1024px) {
+  .hour-select, .minute-select {
+    width: 60px;
+  }
+
+  .ampm-select {
+    width: 80px;
+  }
+
+  .break-select {
+    width: 100px;
+  }
+}
+
+/* Additional mobile improvements */
+@media (max-width: 767px) {
+  .timesheet-container {
+    padding: 10px;
+  }
+
+  .week-tabs {
+    padding: 0 5px;
+  }
+
+  .week-tab {
+    padding: 8px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .custom-day-input {
+    max-width: none;
+  }
+
+  .add-button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  /* Make sure selects are touch-friendly */
+  select {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Week header mobile adjustments */
+  .week-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .week-name-input {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .week-actions {
+    justify-content: center;
+  }
+
+  .add-week-from-current {
+    width: 100%;
+    padding: 10px 15px;
+  }
+
+  /* Mobile-friendly hourly rate section */
+  .hourly-rate-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .hourly-rate-section input {
+    width: 100%;
+  }
+
+  .calculate-pay-button {
+    width: 100%;
+    padding: 10px 15px;
+  }
 }

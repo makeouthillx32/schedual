@@ -75,7 +75,7 @@ export class DesertTimesheetTemplate {
   }
 
   generateExcel(): ArrayBuffer {
-    console.log('📊 Generating Desert Timesheet Excel with styled formatting');
+    console.log('📊 Generating Desert Timesheet Excel with exact form layout');
     
     // Prepare timesheet rows data
     const timesheetRows: Array<{
@@ -99,21 +99,26 @@ export class DesertTimesheetTemplate {
     const wb = XLSX.utils.book_new();
     const wsData: any[][] = [];
 
-    // Header rows
-    wsData.push(['DESERT AREA RESOURCES & TRAINING']);
-    wsData.push(['TIME SHEET']);
-    wsData.push(['']); // Empty row
-    wsData.push([`Employee's Name: ${this.data.employeeName}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', `Payroll Period: ${this.data.payrollPeriod === 1 ? '1st' : '2nd'} Half`]);
-    wsData.push(['']); // Empty row
+    // Build the exact form layout
+    wsData.push(['DESERT AREA RESOURCES & TRAINING', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    wsData.push(['TIME SHEET', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']); // Empty row
+    
+    // Employee info row
+    wsData.push([
+      `Employee's Name: ${this.data.employeeName}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 
+      `Type/Burns: `
+    ]);
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']); // Empty row
 
-    // Column headers
-    const headers = [
+    // Column headers matching the physical form exactly
+    wsData.push([
       'DATE',
-      'Employee Signature & Date',
-      'Base Hours',
-      'Late Scheduled Tool Hr',
+      "Employee's Signature & date",
+      'Base Hours', 
+      'late scheduled in Tool Hr (Hours)',
       'OVERTIME HOURS',
-      'TOTAL BENEFIT HOURS',
+      'TOTAL BENEFIT HOURS', 
       'Vacation Leave',
       'Sick Leave',
       'Holiday',
@@ -121,67 +126,72 @@ export class DesertTimesheetTemplate {
       'Job Coach JAY Team',
       'Thru Social Policy',
       'Time Out',
-      'Time In',
+      'Time In', 
       'Time Out',
       'Time In',
       'DATE'
-    ];
-    wsData.push(headers);
+    ]);
 
-    // Data rows for dates 16-31 (matching your physical form)
-    for (let date = 16; date <= 31; date++) {
-      const rowData = timesheetRows.find(r => r.date.toLowerCase().includes(date.toString())) || 
-                     timesheetRows[date - 16] || {};
+    // Create 15 data rows for dates 16-31 (matching the physical form)
+    for (let i = 0; i < 15; i++) {
+      const date = i + 16;
+      const rowData = timesheetRows[i] || {};
       
       wsData.push([
-        date,           // DATE
-        '',             // Employee Signature & Date
-        '',             // Base Hours  
-        '',             // Late Scheduled Tool Hr
-        '',             // OVERTIME HOURS
-        '',             // TOTAL BENEFIT HOURS
-        '',             // Vacation Leave
-        '',             // Sick Leave
-        '',             // Holiday
-        '',             // Other
-        '',             // Job Coach JAY Team
-        '',             // Thru Social Policy
-        rowData.timeOut || '',  // Time Out
-        rowData.timeIn || '',   // Time In
-        '',             // Time Out (2nd)
-        '',             // Time In (2nd)
-        date            // DATE (repeat)
+        date.toString(),                    // DATE
+        '',                                 // Employee Signature & Date  
+        '',                                 // Base Hours
+        '',                                 // late scheduled in Tool Hr
+        '',                                 // OVERTIME HOURS
+        '',                                 // TOTAL BENEFIT HOURS
+        '',                                 // Vacation Leave
+        '',                                 // Sick Leave  
+        '',                                 // Holiday
+        '',                                 // Other
+        '',                                 // Job Coach JAY Team
+        '',                                 // Thru Social Policy
+        rowData.timeOut || '',              // Time Out
+        rowData.timeIn || '',               // Time In
+        '',                                 // Time Out (second)
+        '',                                 // Time In (second) 
+        date.toString()                     // DATE (repeat)
       ]);
     }
 
     // Total row
-    wsData.push(['TOTAL HRS', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '31']);
+    wsData.push([
+      'TOTAL HRS', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '31'
+    ]);
+
+    // Notes section at bottom
+    wsData.push(['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    wsData.push(['Supervisor\'s Signature & date:', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', `Payroll Period: ${this.data.payrollPeriod === 1 ? '☑' : '☐'} 1st  ${this.data.payrollPeriod === 2 ? '☑' : '☐'} 2nd`]);
+    wsData.push(['I certify that the above information is true and correct to the best of my knowledge', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Column widths
-    const colWidths = [
-      { wch: 6 },   // DATE
-      { wch: 12 },  // Employee Signature
-      { wch: 8 },   // Base Hours
-      { wch: 10 },  // Tool Hr
-      { wch: 10 },  // Overtime
-      { wch: 12 },  // Benefits
-      { wch: 10 },  // Vacation
-      { wch: 8 },   // Sick
-      { wch: 8 },   // Holiday
+    // Set column widths to match the form layout
+    ws['!cols'] = [
+      { wch: 8 },   // DATE
+      { wch: 15 },  // Employee Signature  
+      { wch: 10 },  // Base Hours
+      { wch: 12 },  // Tool Hr
+      { wch: 12 },  // Overtime
+      { wch: 15 },  // Benefits
+      { wch: 12 },  // Vacation
+      { wch: 10 },  // Sick
+      { wch: 10 },  // Holiday
       { wch: 8 },   // Other
-      { wch: 10 },  // Job Coach
-      { wch: 10 },  // Social Policy
-      { wch: 8 },   // Time Out
-      { wch: 8 },   // Time In
-      { wch: 8 },   // Time Out 2
-      { wch: 8 },   // Time In 2
-      { wch: 6 }    // DATE
+      { wch: 12 },  // Job Coach
+      { wch: 12 },  // Social Policy
+      { wch: 10 },  // Time Out
+      { wch: 10 },  // Time In
+      { wch: 10 },  // Time Out 2
+      { wch: 10 },  // Time In 2
+      { wch: 8 }    // DATE
     ];
-    ws['!cols'] = colWidths;
 
-    // Apply styling
+    // Apply comprehensive styling to match the form
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
     for (let R = range.s.r; R <= range.e.r; R++) {
       for (let C = range.s.c; C <= range.e.c; C++) {
@@ -190,7 +200,7 @@ export class DesertTimesheetTemplate {
           ws[cellAddress] = { v: '', t: 's' };
         }
 
-        // Default cell styling
+        // Default cell styling with borders
         ws[cellAddress].s = {
           border: {
             top: { style: 'thin', color: { rgb: '000000' } },
@@ -198,67 +208,94 @@ export class DesertTimesheetTemplate {
             left: { style: 'thin', color: { rgb: '000000' } },
             right: { style: 'thin', color: { rgb: '000000' } }
           },
-          alignment: { horizontal: 'center', vertical: 'middle' }
+          alignment: { horizontal: 'center', vertical: 'middle', wrapText: true }
         };
 
         // Header styling
         if (R === 0) { // Main title
           ws[cellAddress].s.font = { bold: true, size: 16 };
           ws[cellAddress].s.alignment = { horizontal: 'center', vertical: 'middle' };
-        } else if (R === 1) { // Subtitle
+        } else if (R === 1) { // Subtitle  
           ws[cellAddress].s.font = { bold: true, size: 14 };
           ws[cellAddress].s.alignment = { horizontal: 'center', vertical: 'middle' };
         } else if (R === 3) { // Employee info row
-          ws[cellAddress].s.font = { bold: true, size: 10 };
+          ws[cellAddress].s.font = { bold: true, size: 11 };
           ws[cellAddress].s.alignment = { horizontal: 'left', vertical: 'middle' };
         } else if (R === 5) { // Column headers
-          ws[cellAddress].s.font = { bold: true, size: 9 };
+          ws[cellAddress].s.font = { bold: true, size: 8 };
           ws[cellAddress].s.fill = { fgColor: { rgb: 'F0F0F0' } };
+          ws[cellAddress].s.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
           ws[cellAddress].s.border = {
             top: { style: 'medium', color: { rgb: '000000' } },
             bottom: { style: 'medium', color: { rgb: '000000' } },
             left: { style: 'thin', color: { rgb: '000000' } },
             right: { style: 'thin', color: { rgb: '000000' } }
           };
-        } else if (R === wsData.length - 1) { // Total row
+        } else if (R === wsData.length - 4) { // Total row
           ws[cellAddress].s.font = { bold: true, size: 10 };
           ws[cellAddress].s.fill = { fgColor: { rgb: 'E0E0E0' } };
+        } else if (R >= wsData.length - 3) { // Signature section
+          ws[cellAddress].s.font = { size: 9 };
+          ws[cellAddress].s.alignment = { horizontal: 'left', vertical: 'middle' };
+        }
+
+        // Special styling for date columns
+        if ((C === 0 || C === 16) && R > 5 && R < wsData.length - 4) {
+          ws[cellAddress].s.font = { bold: true, size: 10 };
+          ws[cellAddress].s.fill = { fgColor: { rgb: 'F8F8F8' } };
+        }
+
+        // Time columns styling
+        if ((C === 12 || C === 13) && R > 5 && R < wsData.length - 4) {
+          ws[cellAddress].s.fill = { fgColor: { rgb: 'FFF8DC' } };
         }
       }
     }
 
-    // Merge cells for headers
+    // Merge cells for headers and signatures
     ws['!merges'] = [
       { s: { r: 0, c: 0 }, e: { r: 0, c: 16 } }, // Main title
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 16 } }  // Subtitle
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 16 } }, // Subtitle
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 10 } }, // Employee name
+      { s: { r: 3, c: 11 }, e: { r: 3, c: 16 } }, // Type/Burns
+      { s: { r: wsData.length - 2, c: 0 }, e: { r: wsData.length - 2, c: 10 } }, // Signature line
+      { s: { r: wsData.length - 2, c: 11 }, e: { r: wsData.length - 2, c: 16 } }, // Payroll period
+      { s: { r: wsData.length - 1, c: 0 }, e: { r: wsData.length - 1, c: 16 } }  // Certification text
     ];
 
-    // Row heights
+    // Set specific row heights
     const rowHeights: any[] = [];
     for (let i = 0; i < wsData.length; i++) {
       if (i === 0 || i === 1) {
         rowHeights.push({ hpt: 24 }); // Header rows
       } else if (i === 2 || i === 4) {
-        rowHeights.push({ hpt: 6 });  // Empty rows
+        rowHeights.push({ hpt: 8 });  // Empty spacing rows
+      } else if (i === 3) {
+        rowHeights.push({ hpt: 20 }); // Employee info
       } else if (i === 5) {
-        rowHeights.push({ hpt: 60 }); // Column header row (tall for rotated text effect)
+        rowHeights.push({ hpt: 60 }); // Column headers (tall for wrapped text)
+      } else if (i >= 6 && i < wsData.length - 4) {
+        rowHeights.push({ hpt: 20 }); // Data rows
       } else {
-        rowHeights.push({ hpt: 18 }); // Data rows
+        rowHeights.push({ hpt: 18 }); // Signature/notes section
       }
     }
     ws['!rows'] = rowHeights;
 
-    // Page setup
-    ws['!margins'] = { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0, footer: 0 };
+    // Page setup for proper printing
+    ws['!margins'] = { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 };
     ws['!pageSetup'] = { 
-      paperSize: 1, // Letter size
+      paperSize: 1,        // Letter size
       orientation: 'landscape', 
       fitToWidth: 1, 
-      fitToHeight: 0 
+      fitToHeight: 0,
+      horizontalDpi: 300,
+      verticalDpi: 300
     };
 
     XLSX.utils.book_append_sheet(wb, ws, 'Desert Timesheet');
-    console.log('✅ Desert Timesheet Excel generation complete');
+    console.log('✅ Desert Timesheet Excel generation complete with exact form layout');
+    
     return XLSX.write(wb, { 
       bookType: 'xlsx', 
       type: 'array', 

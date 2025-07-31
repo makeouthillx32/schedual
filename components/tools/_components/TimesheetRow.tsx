@@ -2,7 +2,6 @@
 import React from 'react';
 import { RowData } from '../../../types/timesheet';
 import { calculateTotal } from '../../../utils/timesheetUtils';
-import { TimeInput } from './TimeInput';
 
 interface TimesheetRowProps {
   row: RowData;
@@ -39,30 +38,80 @@ export const TimesheetRow: React.FC<TimesheetRowProps> = ({
         <div className="time-row">
           <div className="time-group">
             <label className="time-label">Start Time</label>
-            <TimeInput
-              hour={row.starthour}
-              minute={row.startminute}
-              ampm={row.startampm}
-              onHourChange={(hour) => onRowChange("starthour", hour)}
-              onMinuteChange={(minute) => onRowChange("startminute", minute)}
-              onAmPmChange={(ampm) => onRowChange("startampm", ampm)}
-              label="Start"
-              dayName={row.day}
-            />
+            <div className="time-input">
+              <select
+                className="hour-select"
+                aria-label={`Start Hour for ${row.day}`}
+                value={row.starthour}
+                onChange={(e) => onRowChange("starthour", parseInt(e.target.value))}
+              >
+                {[...Array(12)].map((_, i) => (
+                  <option key={i} value={i + 1}>
+                    {i + 1}
+                  </option>
+                ))}
+              </select>
+              <span className="time-separator">:</span>
+              <select
+                className="minute-select"
+                aria-label={`Start Minute for ${row.day}`}
+                value={row.startminute}
+                onChange={(e) => onRowChange("startminute", parseInt(e.target.value))}
+              >
+                <option value={0}>00</option>
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={45}>45</option>
+              </select>
+              <select
+                className="ampm-select"
+                aria-label={`AM/PM for Start Time of ${row.day}`}
+                value={row.startampm}
+                onChange={(e) => onRowChange("startampm", e.target.value)}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </div>
           
           <div className="time-group">
             <label className="time-label">End Time</label>
-            <TimeInput
-              hour={row.endhour}
-              minute={row.endminute}
-              ampm={row.endampm}
-              onHourChange={(hour) => onRowChange("endhour", hour)}
-              onMinuteChange={(minute) => onRowChange("endminute", minute)}
-              onAmPmChange={(ampm) => onRowChange("endampm", ampm)}
-              label="End"
-              dayName={row.day}
-            />
+            <div className="time-input">
+              <select
+                className="hour-select"
+                aria-label={`End Hour for ${row.day}`}
+                value={row.endhour}
+                onChange={(e) => onRowChange("endhour", parseInt(e.target.value))}
+              >
+                {[...Array(12)].map((_, i) => (
+                  <option key={i} value={i + 1}>
+                    {i + 1}
+                  </option>
+                ))}
+              </select>
+              <span className="time-separator">:</span>
+              <select
+                className="minute-select"
+                aria-label={`End Minute for ${row.day}`}
+                value={row.endminute}
+                onChange={(e) => onRowChange("endminute", parseInt(e.target.value))}
+              >
+                <option value={0}>00</option>
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={45}>45</option>
+              </select>
+              <select
+                className="ampm-select"
+                aria-label={`AM/PM for End Time of ${row.day}`}
+                value={row.endampm}
+                onChange={(e) => onRowChange("endampm", e.target.value)}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </div>
         </div>
         

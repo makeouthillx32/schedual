@@ -3,15 +3,15 @@ import React from "react";
 import "./../../style/TSC.css";
 
 // Components
-import { WeekTabs } from "./components/tools/_components/WeekTabs";
-import { WeekHeader } from "./components/tools/_components/WeekHeader";
-import { ActionButtons } from "./components/tools/_components/ActionButtons";
-import { TimesheetTable } from "./components/tools/_components/TimesheetTable";
-import { TotalsSection } from "./components/tools/_components/TotalsSection";
+import { WeekTabs } from "./_components/WeekTabs";
+import { WeekHeader } from "./_components/WeekHeader";
+import { ActionButtons } from "./_components/ActionButtons";
+import { TimesheetTable } from "./_components/TimesheetTable";
+import { TotalsSection } from "./_components/TotalsSection";
 
 // Hooks and Utils
-import { useTimesheetLogic } from "./hooks/useTimesheetLogic";
-import { calculateAllWeeksTotal } from "./utils/timesheetUtils";
+import { useTimesheetLogic } from "../../hooks/useTimesheetLogic";
+import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
 
 const TimeSheetCalculator: React.FC = () => {
   const {

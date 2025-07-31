@@ -1,14 +1,17 @@
-// app/api/documents/[id]/download/route.ts
+// app/api/documents/[id]/download/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> } // FIXED: Next.js 15 params structure
 ) {
   try {
-    const supabase = createClient();
-    const { id } = params;
+    // FIXED: Add await for createClient
+    const supabase = await createClient();
+    
+    // FIXED: Await params in Next.js 15
+    const { id } = await context.params;
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -16,38 +19,21 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get document information
+    // Get document details
     const { data: document, error: docError } = await supabase
       .from("documents")
-      .select(`
-        id,
-        name,
-        type,
-        mime_type,
-        size_bytes,
-        storage_path,
-        bucket_name,
-        uploaded_by
-      `)
+      .select("id, name, storage_path, bucket_name, mime_type, size_bytes")
       .eq("id", id)
+      .eq("uploaded_by", user.id) // Ensure user owns the document
       .is("deleted_at", null)
       .single();
 
     if (docError || !document) {
+      console.error("Document fetch error:", docError);
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Don't allow downloading folders
-    if (document.type === "folder") {
-      return NextResponse.json({ error: "Cannot download folders" }, { status: 400 });
-    }
-
-    // Check if file exists in storage
-    if (!document.storage_path) {
-      return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
-    }
-
-    // Get the file from Supabase Storage
+    // Get file from Supabase Storage
     const { data: fileData, error: storageError } = await supabase.storage
       .from(document.bucket_name || "documents")
       .download(document.storage_path);
@@ -69,19 +55,20 @@ export async function GET(
         user_agent: req.headers.get("user-agent") || ""
       }]);
 
-    // Convert Blob to ArrayBuffer
-    const arrayBuffer = await fileData.arrayBuffer();
-
-    // Set appropriate headers
-    const headers = new Headers();
-    headers.set("Content-Type", document.mime_type || "application/octet-stream");
-    headers.set("Content-Length", document.size_bytes?.toString() || "0");
-    headers.set("Content-Disposition", `attachment; filename="${encodeURIComponent(document.name)}"`);
-    headers.set("Cache-Control", "private, max-age=0");
-
-    console.log(`📥 Downloaded file: ${document.name} (${document.size_bytes} bytes)`);
+    // Convert file to buffer
+    const buffer = await fileData.arrayBuffer();
     
-    return new NextResponse(arrayBuffer, {
+    // Set appropriate headers
+    const headers = new Headers({
+      'Content-Type': document.mime_type || 'application/octet-stream',
+      'Content-Length': buffer.byteLength.toString(),
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(document.name)}"`,
+      'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
+    return new NextResponse(buffer, {
       status: 200,
       headers
     });

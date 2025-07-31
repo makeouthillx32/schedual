@@ -26,12 +26,29 @@ interface PublicFolderHook {
 }
 
 export function usePublicFolders(): PublicFolderHook {
-  const { documents, updateDocument, fetchDocuments } = useDocuments();
+  const { documents, fetchDocuments } = useDocuments();
   const [publicFolders, setPublicFolders] = useState<PublicFolder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter and transform folders into public folders
+  // Generate URL-friendly slug from folder name
+  const generateFolderSlug = useCallback((folderName: string): string => {
+    return folderName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 50);
+  }, []);
+
+  // Get public asset URL
+  const getPublicAssetUrl = useCallback((folderSlug: string, fileName: string): string => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return fileName 
+      ? `${baseUrl}/api/public/assets/${folderSlug}/${fileName}`
+      : `${baseUrl}/api/public/assets/${folderSlug}/`;
+  }, []);
+
+  // Filter and transform folders into public folders - FIXED: moved generateFolderSlug and getPublicAssetUrl above
   useEffect(() => {
     const folders = documents
       .filter(doc => doc.type === 'folder' && doc.is_public_folder)
@@ -47,16 +64,7 @@ export function usePublicFolders(): PublicFolderHook {
       }));
     
     setPublicFolders(folders);
-  }, [documents]);
-
-  // Generate URL-friendly slug from folder name
-  const generateFolderSlug = useCallback((folderName: string): string => {
-    return folderName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .substring(0, 50);
-  }, []);
+  }, [documents, generateFolderSlug, getPublicAssetUrl]);
 
   // Make folder public with optional custom slug
   const makefolderPublic = useCallback(async (folderId: string, customSlug?: string) => {
@@ -64,16 +72,20 @@ export function usePublicFolders(): PublicFolderHook {
     setError(null);
     
     try {
+      console.log('🎯 makefolderPublic called with folderId:', folderId, 'customSlug:', customSlug);
+      
       const folder = documents.find(d => d.id === folderId);
-      if (!folder) throw new Error('Folder not found');
+      if (!folder) {
+        throw new Error('Folder not found');
+      }
 
       const slug = customSlug || generateFolderSlug(folder.name);
+      console.log('🎯 Generated slug:', slug);
       
-      // Check if slug already exists
-      const slugExists = publicFolders.some(f => f.public_slug === slug && f.id !== folderId);
-      if (slugExists) {
-        throw new Error('Slug already exists. Please choose a different one.');
-      }
+      // SIMPLIFIED: Remove client-side slug check - let the server handle it
+      // The server does a more reliable database check anyway
+      
+      console.log('🎯 Calling API with payload:', { folderId, publicSlug: slug });
 
       // Call API to make folder public
       const response = await fetch('/api/documents/make-public', {
@@ -87,20 +99,30 @@ export function usePublicFolders(): PublicFolderHook {
         })
       });
 
+      console.log('🎯 API response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('🎯 API error response:', errorData);
         throw new Error(errorData.error || 'Failed to make folder public');
       }
 
+      const responseData = await response.json();
+      console.log('🎯 API success response:', responseData);
+
       // Refresh documents to get updated data
       await fetchDocuments();
+      console.log('🎯 Documents refreshed successfully');
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to make folder public');
+      console.error('🎯 makefolderPublic error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to make folder public';
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [documents, publicFolders, fetchDocuments, generateFolderSlug]);
+  }, [documents, fetchDocuments, generateFolderSlug]);
 
   // Make folder private
   const makeFolderPrivate = useCallback(async (folderId: string) => {
@@ -108,6 +130,8 @@ export function usePublicFolders(): PublicFolderHook {
     setError(null);
     
     try {
+      console.log('🎯 makeFolderPrivate called with folderId:', folderId);
+      
       // Call API to make folder private
       const response = await fetch('/api/documents/make-private', {
         method: 'POST',
@@ -119,37 +143,38 @@ export function usePublicFolders(): PublicFolderHook {
         })
       });
 
+      console.log('🎯 Make private API response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('🎯 Make private API error response:', errorData);
         throw new Error(errorData.error || 'Failed to make folder private');
       }
 
+      const responseData = await response.json();
+      console.log('🎯 Make private API success response:', responseData);
+
       // Refresh documents to get updated data
       await fetchDocuments();
+      console.log('🎯 Documents refreshed successfully after making private');
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to make folder private');
+      console.error('🎯 makeFolderPrivate error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to make folder private';
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
     }
   }, [fetchDocuments]);
 
-  // Get public asset URL
-  const getPublicAssetUrl = useCallback((folderSlug: string, fileName: string): string => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    return fileName 
-      ? `${baseUrl}/api/public/assets/${folderSlug}/${fileName}`
-      : `${baseUrl}/api/public/assets/${folderSlug}/`;
-  }, []);
-
   // Copy folder URL to clipboard
   const copyFolderUrl = useCallback((folderSlug: string) => {
     const url = getPublicAssetUrl(folderSlug, '');
     navigator.clipboard.writeText(url).then(() => {
-      console.log('Folder URL copied to clipboard');
-      // You can add a toast notification here
+      console.log('🎯 Folder URL copied to clipboard:', url);
     }).catch(err => {
-      console.error('Failed to copy URL:', err);
+      console.error('🎯 Failed to copy URL:', err);
     });
   }, [getPublicAssetUrl]);
 

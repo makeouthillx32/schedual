@@ -6,6 +6,7 @@ import {
   useFileUpload,
   useFolderFavorites,
 } from '@/hooks/useDocuments';
+import { usePublicFolders } from '@/hooks/usePublicFolders';
 import Toolbar from './Toolbar';
 import ContextMenu from './ContextMenu';
 import Preview from './Preview';
@@ -60,6 +61,13 @@ export default function Documents({ className = '' }: DocumentsProps) {
 
   const { uploadFiles, isUploading } = useFileUpload();
   const { favorites, addFavorite, removeFavorite } = useFolderFavorites();
+  const { 
+    makefolderPublic, 
+    makeFolderPrivate, 
+    copyFolderUrl, 
+    generateUsageExample,
+    getPublicAssetUrl 
+  } = usePublicFolders();
 
   useEffect(() => {
     if (!loading && isInitialLoading) {
@@ -162,19 +170,63 @@ export default function Documents({ className = '' }: DocumentsProps) {
     [createFolder, currentPath, fetchDocuments]
   );
 
+  // Public folder handlers
+  const handleMakePublic = useCallback(async (documentId: string) => {
+    console.log('🎯 Making folder public:', documentId);
+    try {
+      await makefolderPublic(documentId);
+      toast.success('Folder made public successfully');
+      await fetchDocuments(); // Refresh to get updated data
+    } catch (error) {
+      console.error('❌ Failed to make folder public:', error);
+      toast.error('Failed to make folder public');
+    }
+  }, [makefolderPublic, fetchDocuments]);
+
+  const handleMakePrivate = useCallback(async (documentId: string) => {
+    console.log('🎯 Making folder private:', documentId);
+    try {
+      await makeFolderPrivate(documentId);
+      toast.success('Folder made private successfully');
+      await fetchDocuments(); // Refresh to get updated data
+    } catch (error) {
+      console.error('❌ Failed to make folder private:', error);
+      toast.error('Failed to make folder private');
+    }
+  }, [makeFolderPrivate, fetchDocuments]);
+
+  const handleCopyPublicUrl = useCallback((publicSlug: string) => {
+    console.log('🎯 Copying public URL for slug:', publicSlug);
+    try {
+      copyFolderUrl(publicSlug);
+      toast.success('Public URL copied to clipboard');
+    } catch (error) {
+      console.error('❌ Failed to copy URL:', error);
+      toast.error('Failed to copy URL');
+    }
+  }, [copyFolderUrl]);
+
+  const handleGenerateCode = useCallback((publicSlug: string) => {
+    console.log('🎯 Generating code for slug:', publicSlug);
+    try {
+      const code = generateUsageExample(publicSlug);
+      navigator.clipboard.writeText(code);
+      toast.success('Code snippet copied to clipboard');
+    } catch (error) {
+      console.error('❌ Failed to generate code:', error);
+      toast.error('Failed to generate code');
+    }
+  }, [generateUsageExample]);
+
   const handleDocumentAction = useCallback(
     async (action: string, documentId: string) => {
       console.log('🎯 Document action triggered:', { action, documentId });
       const document = documents.find((d) => d.id === documentId);
-<<<<<<< HEAD
       if (!document) {
         console.error('❌ Document not found for action:', documentId);
         return;
       }
       
-=======
-      if (!document) return;
->>>>>>> ea31ae4888cb79c7d59982b3f0d03d86090c2f8f
       try {
         switch (action) {
           case 'preview':
@@ -210,11 +262,8 @@ export default function Documents({ className = '' }: DocumentsProps) {
       } catch (error) {
         console.error(`❌ Failed to ${action} document:`, error);
       }
-<<<<<<< HEAD
       
       // Always close context menu after action
-=======
->>>>>>> ea31ae4888cb79c7d59982b3f0d03d86090c2f8f
       setContextMenu(null);
     },
     [documents, updateDocument, deleteDocument]
@@ -420,7 +469,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
       );
     }
 
-<<<<<<< HEAD
     if (error) {
       return (
         <div className="p-8">
@@ -463,42 +511,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
             {(loading || isSearching || isNavigating) && (
               <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
                 <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border border-border">
-=======
-  return (
-    <main className={`flex-1 flex flex-col overflow-hidden bg-background text-foreground ${className}`}>
-      <div className="sticky top-0 z-10 border-b border-border bg-card">
-        <Toolbar
-          searchQuery={searchQuery}
-          onSearchChange={handleSearch}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onUpload={() => setShowUploadZone(true)}
-          onCreateFolder={async () => {
-            const name = prompt('Enter folder name:');
-            if (name) {
-              await createFolder(name, currentPath);
-            }
-          }}
-          onRefresh={fetchDocuments}
-          sortBy="name"
-          sortOrder="asc"
-          onSortChange={() => {}}
-          showFavoritesOnly={false}
-          onToggleFavorites={() => {}}
-          selectedCount={selectedItems.length}
-          onClearSelection={() => setSelectedItems([])}
-          onSelectAll={() => setSelectedItems(documents.map((d) => d.id))}
-          isUploading={isUploading}
-          isLoading={isSearching || isNavigating}
-        />
-      </div>
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          <div className="relative">
-            {(isSearching || isNavigating) && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
-                <div className="flex items-center gap-2 text-muted-foreground">
->>>>>>> ea31ae4888cb79c7d59982b3f0d03d86090c2f8f
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                   <span className="text-sm text-muted-foreground">{
                     isSearching ? 'Searching...' : isNavigating ? 'Navigating...' : 'Loading...'
@@ -516,7 +528,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
             />
           </div>
         </div>
-<<<<<<< HEAD
 
         <div className="flex-shrink-0 border-t border-border p-6 bg-card">
           <FavoritesBar
@@ -553,6 +564,13 @@ export default function Documents({ className = '' }: DocumentsProps) {
               console.log('🎯 Context menu onAction called:', { action, docId });
               handleDocumentAction(action, docId);
             }}
+            // Public folder props
+            isPublicFolder={documents.find((d) => d.id === contextMenu.documentId)?.is_public_folder || false}
+            publicSlug={documents.find((d) => d.id === contextMenu.documentId)?.public_slug || undefined}
+            onMakePublic={handleMakePublic}
+            onMakePrivate={handleMakePrivate}
+            onCopyPublicUrl={handleCopyPublicUrl}
+            onGenerateCode={handleGenerateCode}
             className="context-menu"
           />
         )}
@@ -594,65 +612,6 @@ export default function Documents({ className = '' }: DocumentsProps) {
                   Cancel
                 </button>
               </div>
-=======
-      </div>
-      <div className="flex-shrink-0 border-t border-border p-6 bg-card">
-        <FavoritesBar
-          favorites={favoriteItems}
-          currentPath={currentPath}
-          onNavigate={handleNavigate}
-          onAddFavorite={(path, name) => addFavorite(path, name)}
-          onRemoveFavorite={(favoriteId) => {
-            const favorite = favorites.find((f) => f.id === favoriteId);
-            if (favorite) removeFavorite(favorite.folder_path);
-          }}
-        />
-      </div>
-      {contextMenu && (
-        <ContextMenu
-          isOpen={true}
-          position={{ x: contextMenu.x, y: contextMenu.y }}
-          document={documents.find((d) => d.id === contextMenu.documentId)}
-          onClose={() => setContextMenu(null)}
-          onAction={handleDocumentAction}
-        />
-      )}
-      {previewDocument && (
-        <Preview
-          isOpen={true}
-          document={previewDoc}
-          documents={documents}
-          onClose={() => setPreviewDocument(null)}
-          onDownload={(docId) => handleDocumentAction('download', docId)}
-          onDelete={(docId) => handleDocumentAction('delete', docId)}
-          onNext={(docId) => setPreviewDocument(docId)}
-          onPrevious={(docId) => setPreviewDocument(docId)}
-        />
-      )}
-      {showUploadZone && (
-        <div className="fixed inset-0 bg-muted/70 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4 text-foreground border border-border">
-            <h3 className="text-lg font-medium mb-4">Upload Files</h3>
-            <input
-              type="file"
-              multiple
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                if (files.length > 0) {
-                  handleFileUpload(files);
-                  setShowUploadZone(false);
-                }
-              }}
-              className="block w-full border border-border rounded-lg p-2 bg-background text-foreground"
-            />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => setShowUploadZone(false)}
-                className="px-4 py-2 text-muted-foreground border border-border rounded-lg hover:bg-muted"
-              >
-                Cancel
-              </button>
->>>>>>> ea31ae4888cb79c7d59982b3f0d03d86090c2f8f
             </div>
           </div>
         )}

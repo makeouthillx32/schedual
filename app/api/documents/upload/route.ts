@@ -1,10 +1,11 @@
-// app/api/documents/upload/route.ts
+// app/api/documents/upload/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
+    // FIXED: Add await here - this was the issue!
+    const supabase = await createClient();
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -130,7 +131,8 @@ export async function POST(req: NextRequest) {
 // Handle multiple file uploads
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = createClient();
+    // FIXED: Add await here too!
+    const supabase = await createClient();
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -170,7 +172,7 @@ export async function PUT(req: NextRequest) {
           ? `${folderPath}${timestamp}-${safeFileName}`
           : `${timestamp}-${safeFileName}`;
 
-        // Upload to storage
+        // Upload file to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("documents")
           .upload(storagePath, file, {
@@ -179,6 +181,7 @@ export async function PUT(req: NextRequest) {
           });
 
         if (uploadError) {
+          console.error("Storage upload error:", uploadError);
           errors.push({
             filename: file.name,
             error: "Failed to upload to storage"
@@ -186,7 +189,7 @@ export async function PUT(req: NextRequest) {
           continue;
         }
 
-        // Create database record
+        // Create document record in database
         const documentPath = folderPath ? `${folderPath}${file.name}` : file.name;
         const parentPath = folderPath || null;
 
@@ -211,19 +214,21 @@ export async function PUT(req: NextRequest) {
           .single();
 
         if (dbError) {
-          // Clean up uploaded file
+          console.error("Database insert error:", dbError);
+          
+          // Clean up uploaded file if database insert fails
           await supabase.storage
             .from("documents")
             .remove([uploadData.path]);
-          
+            
           errors.push({
             filename: file.name,
-            error: "Failed to create database record"
+            error: "Failed to create document record"
           });
           continue;
         }
 
-        // Log activity
+        // Log upload activity
         await supabase
           .from("document_activity")
           .insert([{
@@ -233,10 +238,16 @@ export async function PUT(req: NextRequest) {
             details: {
               file_size: file.size,
               mime_type: file.type
-            }
+            },
+            ip_address: req.headers.get("x-forwarded-for")?.split(',')[0] || 
+                       req.headers.get("x-real-ip") || null,
+            user_agent: req.headers.get("user-agent") || ""
           }]);
 
-        results.push({
+        console.log(`📤 Uploaded file: ${file.name} (${file.size} bytes) to ${folderPath || 'root'}`);
+
+        // Transform the response to match expected format
+        const transformedDocument = {
           id: document.id,
           name: document.name,
           path: document.path,
@@ -251,28 +262,32 @@ export async function PUT(req: NextRequest) {
           tags: document.tags || [],
           storage_path: document.storage_path,
           bucket_name: document.bucket_name
-        });
+        };
 
-      } catch (error) {
+        results.push(transformedDocument);
+
+      } catch (fileError) {
+        console.error(`Error processing file ${file.name}:`, fileError);
         errors.push({
           filename: file.name,
-          error: "Unexpected error during upload"
+          error: "Processing error"
         });
       }
     }
 
-    console.log(`📤 Batch upload: ${results.length} successful, ${errors.length} failed`);
-
     return NextResponse.json({
-      success: results,
+      success: true,
+      uploaded: results,
       errors: errors,
-      total: files.length,
-      successful: results.length,
-      failed: errors.length
+      summary: {
+        total: files.length,
+        successful: results.length,
+        failed: errors.length
+      }
     });
 
   } catch (error) {
-    console.error("Batch Upload API Error:", error);
+    console.error("Bulk Upload API Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

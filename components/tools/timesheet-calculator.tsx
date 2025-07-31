@@ -1,4 +1,4 @@
-// TimeSheetCalculator.tsx (Updated with Persistence)
+// TimeSheetCalculator.tsx (Final with Universal Export Integration)
 import React from "react";
 import "./../../style/TSC.css";
 
@@ -9,10 +9,14 @@ import { ActionButtons } from "./_components/ActionButtons";
 import { TimesheetTable } from "./_components/TimesheetTable";
 import { TotalsSection } from "./_components/TotalsSection";
 import { DataManagement } from "./_components/DataManagement";
+import { SimpleTimesheetExport } from "./_components/SimpleTimesheetExport";
 
 // Hooks and Utils
 import { usePersistentTimesheetLogic } from "../../hooks/usePersistentTimesheetLogic";
 import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
+
+// Import the template registration (this registers it with your system)
+import "../../lib/templates/desertTimesheetTemplate";
 
 const TimeSheetCalculator: React.FC = () => {
   const {
@@ -83,6 +87,9 @@ const TimeSheetCalculator: React.FC = () => {
         onHourlyRateChange={setHourlyRate}
         onTogglePayCalculation={() => setShowPayCalculation(!showPayCalculation)}
       />
+
+      {/* Simple integration with your Universal Export Button system */}
+      <SimpleTimesheetExport weeks={weeks} />
 
       <DataManagement
         onClearAll={clearAllData}

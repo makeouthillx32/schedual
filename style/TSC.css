@@ -613,4 +613,147 @@
     width: 100%;
     padding: 10px 15px;
   }
+  /* Add these styles to your TSC.css file */
+
+  .simple-timesheet-export {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 2px solid #2563eb;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  }
+
+  .simple-timesheet-export h3 {
+    margin: 0 0 1.5rem 0;
+    color: #1e40af;
+    font-size: 1.25rem;
+  }
+
+  .export-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  .form-group input[type="text"] {
+    padding: 0.75rem;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    font-weight: normal;
+  }
+
+  .radio-group label:hover {
+    background-color: rgba(37, 99, 235, 0.05);
+  }
+
+  .radio-group input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  .export-summary {
+    grid-column: 1 / -1;
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid #10b981;
+    margin: 1rem 0;
+  }
+
+  .export-summary p {
+    margin: 0 0 0.5rem 0;
+    color: #374151;
+    font-weight: 600;
+  }
+
+  .export-summary ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #6b7280;
+  }
+
+  .export-summary li {
+    margin-bottom: 0.25rem;
+  }
+
+  .export-help {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .export-help p {
+    margin: 0 0 0.75rem 0;
+    color: #374151;
+    font-weight: 600;
+  }
+
+  .export-help ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #6b7280;
+  }
+
+  .export-help li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .export-help strong {
+    color: #374151;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .export-form {
+      grid-template-columns: 1fr;
+    }
+    
+    .radio-group {
+      flex-direction: column;
+    }
+    
+    .simple-timesheet-export {
+      padding: 1rem;
+    }
+  }
 }

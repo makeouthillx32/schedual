@@ -9,7 +9,7 @@ export interface ExportTemplate {
   name: string;
   description?: string;
   data: any;
-  generator: (data: any, format: 'excel' | 'pdf') => Promise<string | Blob>;
+  generator: (data: any, format: 'excel' | 'pdf') => Promise<string | Blob | ArrayBuffer>;
   supportedFormats?: ('excel' | 'pdf')[];
   category?: 'billing' | 'timesheet' | 'calendar' | 'punchcard' | 'report' | 'other';
   icon?: React.ComponentType<{ size?: number; className?: string }>;
@@ -44,112 +44,31 @@ export class TemplateRegistry {
   static has(id: string): boolean {
     return this.templates.has(id);
   }
+
+  // Remove a template
+  static unregister(id: string): boolean {
+    return this.templates.delete(id);
+  }
+
+  // Clear all templates
+  static clear(): void {
+    this.templates.clear();
+  }
+
+  // Get template count
+  static count(): number {
+    return this.templates.size;
+  }
 }
 
-// Pre-register existing templates
-export const registerExistingTemplates = () => {
-  // CMS Billing Template
-  TemplateRegistry.register({
-    id: 'cms-billing',
-    name: 'CMS Billing Report',
-    description: 'Monthly cleaning billing report with all business data',
-    data: null, // Will be set dynamically
-    category: 'billing',
-    icon: Building2,
-    supportedFormats: ['excel', 'pdf'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      const { CMSBillingTemplate } = await import('@/lib/CMSBillingTemplate');
-      const { businesses, month, year } = data;
-      return await CMSBillingTemplate.generateReport(businesses, month, year, format);
-    }
-  });
-
-  // Coach Client Timesheet
-  TemplateRegistry.register({
-    id: 'coach-client-timesheet',
-    name: 'Coach Client Timesheet',
-    description: 'Timesheet template for coaches with client specializations',
-    data: null,
-    category: 'timesheet',
-    icon: Clock,
-    supportedFormats: ['excel'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      const { CoachClientTimesheetTemplate } = await import('@/lib/timesheet-templates/CoachClientTimesheetTemplate');
-      const { currentDate, coachInfo, clients } = data;
-      const workbook = await CoachClientTimesheetTemplate.createTimesheetTemplate(currentDate, coachInfo, clients);
-      return await workbook.xlsx.writeBuffer();
-    }
-  });
-
-  // Coach Personal Timesheet
-  TemplateRegistry.register({
-    id: 'coach-personal-timesheet',
-    name: 'Coach Personal Timesheet',
-    description: 'Personal timesheet template for job coaches',
-    data: null,
-    category: 'timesheet',
-    icon: Clock,
-    supportedFormats: ['excel'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      const { JobCoachPersonalTimesheetTemplate } = await import('@/lib/timesheet-templates/JobCoachPersonalTimesheetTemplate');
-      const { currentDate, personalCoachInfo } = data;
-      const workbook = await JobCoachPersonalTimesheetTemplate.createPersonalTimesheet(currentDate, personalCoachInfo);
-      return await workbook.xlsx.writeBuffer();
-    }
-  });
-
-  // Client Personal Timesheet
-  TemplateRegistry.register({
-    id: 'client-personal-timesheet',
-    name: 'Client Personal Timesheet',
-    description: 'Specialized timesheet template for clients',
-    data: null,
-    category: 'timesheet',
-    icon: Clock,
-    supportedFormats: ['excel'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      const { ClientPersonalTimesheetTemplate } = await import('@/lib/timesheet-templates/ClientPersonalTimesheetTemplate');
-      const { currentDate, clientInfo } = data;
-      const workbook = await ClientPersonalTimesheetTemplate.createSpecializedClientTimesheet(currentDate, clientInfo);
-      return await workbook.xlsx.writeBuffer();
-    }
-  });
-
-  // Calendar Export Template
-  TemplateRegistry.register({
-    id: 'calendar-export',
-    name: 'Calendar Export',
-    description: 'Export calendar events with role-based filtering',
-    data: null,
-    category: 'calendar',
-    icon: Calendar,
-    supportedFormats: ['excel'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      const { CalendarTemplateUtils } = await import('@/lib/calendar-templates/CalendarTemplateUtils');
-      const { currentDate, filteredEvents, userRole, userInfo } = data;
-      const workbook = await CalendarTemplateUtils.createStyledCalendar(currentDate, filteredEvents, userRole, userInfo);
-      return await workbook.xlsx.writeBuffer();
-    }
-  });
-
-  // Punch Card Template
-  TemplateRegistry.register({
-    id: 'punchcard-pdf',
-    name: 'Punch Card PDF',
-    description: 'Generate printable punch card templates',
-    data: null,
-    category: 'punchcard',
-    icon: Printer,
-    supportedFormats: ['pdf'],
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      // This would integrate with your existing PDFGenerator component
-      const { templateType, quantity } = data;
-      // Return HTML string for PDF generation
-      return `<html><body>Punch Card PDF for ${templateType} - Quantity: ${quantity}</body></html>`;
-    }
-  });
-
-  console.log(`✅ Registered ${TemplateRegistry.getAll().length} export templates`);
+// Icon mapping for different categories
+const CategoryIcons = {
+  billing: Building2,
+  timesheet: Clock,
+  calendar: Calendar,
+  punchcard: Printer,
+  report: FileBarChart,
+  other: FileBarChart
 };
 
 // Props interface
@@ -166,7 +85,7 @@ interface UniversalExportButtonProps {
   showTemplateInfo?: boolean;
 }
 
-// Main Export Component
+// Main Export Component - NO DIRECT IMPORTS OF TEMPLATE FILES
 export default function UniversalExportButton({
   templateId,
   templateData,
@@ -186,14 +105,15 @@ export default function UniversalExportButton({
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get template from registry
+  // Get template from registry (populated by the consuming component)
   const template = TemplateRegistry.get(templateId);
 
   if (!template) {
     console.error(`❌ Template not found: ${templateId}`);
+    console.log(`📋 Available templates: ${Array.from(TemplateRegistry.getAll().map(t => t.id)).join(', ')}`);
     return (
       <div className="text-red-500 text-sm p-2 border border-red-300 rounded">
-        Template "{templateId}" not found. Please check the template ID.
+        Template "{templateId}" not found. Please register it first.
       </div>
     );
   }
@@ -242,6 +162,7 @@ export default function UniversalExportButton({
         throw new Error('No data provided for export');
       }
 
+      // Call the generator function provided by the template
       const result = await template.generator(exportData, format);
       
       // Generate filename
@@ -303,8 +224,8 @@ export default function UniversalExportButton({
     }
   };
 
-  // Get template icon
-  const TemplateIcon = template.icon || FileBarChart;
+  // Get template icon (use provided icon or default to category icon)
+  const TemplateIcon = template.icon || CategoryIcons[template.category || 'other'];
 
   return (
     <div className="relative inline-block">
@@ -403,34 +324,52 @@ export default function UniversalExportButton({
   );
 }
 
-// Template Builder Helper Functions
-export const TemplateBuilder = {
-  // Create a billing template
-  billing: (businesses: any[], month: number, year: number) => ({
-    templateId: 'cms-billing',
-    templateData: { businesses, month, year }
-  }),
+// Utility function to create a template object
+export const createExportTemplate = (config: {
+  id: string;
+  name: string;
+  description?: string;
+  category?: 'billing' | 'timesheet' | 'calendar' | 'punchcard' | 'report' | 'other';
+  supportedFormats?: ('excel' | 'pdf')[];
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  generator: (data: any, format: 'excel' | 'pdf') => Promise<string | Blob | ArrayBuffer>;
+}): ExportTemplate => ({
+  data: {}, // Will be populated by the consumer
+  ...config
+});
 
-  // Create a timesheet template
-  timesheet: (type: 'coach-client' | 'coach-personal' | 'client-personal', data: any) => ({
-    templateId: `${type}-timesheet`,
-    templateData: data
-  }),
-
-  // Create a calendar template
-  calendar: (currentDate: Date, events: any[], userRole: string, userInfo: any) => ({
-    templateId: 'calendar-export',
-    templateData: { currentDate, filteredEvents: events, userRole, userInfo }
-  }),
-
-  // Create a punchcard template
-  punchcard: (templateType: string, quantity: number) => ({
-    templateId: 'punchcard-pdf',
-    templateData: { templateType, quantity }
-  })
+// Hook to register and use templates
+export const useExportTemplate = (template: ExportTemplate) => {
+  // Register the template when hook is used
+  TemplateRegistry.register(template);
+  
+  return {
+    templateId: template.id,
+    isRegistered: TemplateRegistry.has(template.id)
+  };
 };
 
-// Auto-register templates when module loads
-if (typeof window !== 'undefined') {
-  registerExistingTemplates();
-}
+// Export utilities for debugging and management
+export const ExportUtils = {
+  // Get all registered templates
+  getRegisteredTemplates: () => TemplateRegistry.getAll(),
+  
+  // Get template by ID
+  getTemplate: (id: string) => TemplateRegistry.get(id),
+  
+  // Check if template exists
+  hasTemplate: (id: string) => TemplateRegistry.has(id),
+  
+  // Get templates by category
+  getTemplatesByCategory: (category: string) => TemplateRegistry.getByCategory(category),
+  
+  // Clear all templates (useful for testing)
+  clearAllTemplates: () => TemplateRegistry.clear(),
+  
+  // Get registry stats
+  getStats: () => ({
+    totalTemplates: TemplateRegistry.count(),
+    categories: [...new Set(TemplateRegistry.getAll().map(t => t.category))],
+    templateIds: TemplateRegistry.getAll().map(t => t.id)
+  })
+};

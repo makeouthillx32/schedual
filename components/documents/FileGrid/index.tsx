@@ -12,12 +12,17 @@ interface DocumentItem {
   name: string;
   type: 'file' | 'folder';
   path: string;
-  size?: number;
+  size_bytes?: number;  // Fixed: was 'size', should be 'size_bytes' to match interface
   created_at: string;
   updated_at: string;
   is_favorite: boolean;
   mime_type?: string;
   fileCount?: number;
+  // Added missing properties that components might expect
+  is_public_folder?: boolean;
+  public_slug?: string;
+  uploader_name?: string;
+  tags?: string[];
 }
 
 interface FileGridProps {
@@ -51,6 +56,13 @@ function FileGrid({
   onSelect,
   className = '',
 }: FileGridProps) {
+  console.log('🎯 FileGrid rendering with:', {
+    documentsCount: documents.length,
+    viewMode,
+    currentPath,
+    hasContextMenuHandler: !!onContextMenu
+  });
+
   const getChartColorClass = (index: number): string => {
     const chartColors = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'];
     return chartColors[index % chartColors.length];
@@ -78,6 +90,22 @@ function FileGrid({
     }`;
   }, [viewMode]);
 
+  // Enhanced context menu handler with debugging
+  const handleContextMenu = React.useCallback((e: React.MouseEvent, id: string) => {
+    console.log('🎯 FileGrid handleContextMenu called:', { id, hasHandler: !!onContextMenu });
+    if (onContextMenu) {
+      onContextMenu(e, id);
+    } else {
+      console.warn('❌ FileGrid: onContextMenu handler is missing');
+    }
+  }, [onContextMenu]);
+
+  // Enhanced select handler with debugging
+  const handleSelect = React.useCallback((id: string, isMulti: boolean) => {
+    console.log('🎯 FileGrid handleSelect called:', { id, isMulti });
+    onSelect(id, isMulti);
+  }, [onSelect]);
+
   return (
     <div className={`file-grid-container flex flex-col w-full space-y-6 ${className}`}>
       <Breadcrumb currentPath={currentPath || ''} onNavigate={onNavigate} />
@@ -91,6 +119,7 @@ function FileGrid({
                 pathParts.length > 1
                   ? pathParts.slice(0, -1).join('/') + '/'
                   : '';
+              console.log('🎯 FileGrid navigating back to:', parentPath);
               onNavigate(parentPath);
             }}
             className="flex items-center gap-2 px-4 py-2 text-primary hover:text-primary/80 hover:bg-accent rounded-lg transition-colors"
@@ -124,35 +153,86 @@ function FileGrid({
         {documents.length === 0 ? (
           <EmptyState />
         ) : (
-          documents.map((doc, index) =>
-            doc.type === 'folder' ? (
-              <Folder
-                key={doc.id}
-                folder={doc}
-                viewMode={viewMode}
-                isSelected={selectedItems.includes(doc.id)}
-                isFavorite={doc.is_favorite}
-                chartColorClass={getChartColorClass(index)}
-                onNavigate={onNavigate}
-                onToggleFavorite={(path, name) => onAddFavorite(path, name)}
-                onContextMenu={onContextMenu}
-                onSelect={onSelect}
-              />
-            ) : (
-              <File
-                key={doc.id}
-                file={doc}
-                viewMode={viewMode}
-                isSelected={selectedItems.includes(doc.id)}
-                isFavorite={doc.is_favorite}
-                onPreview={() => onPreview(doc.id)}
-                onDownload={() => onDownload(doc.id)}
-                onToggleFavorite={() => onToggleFavorite(doc.id)}
-                onContextMenu={onContextMenu}
-                onSelect={onSelect}
-              />
-            )
-          )
+          documents.map((doc, index) => {
+            console.log('🎯 Rendering document:', { 
+              id: doc.id, 
+              name: doc.name, 
+              type: doc.type,
+              index 
+            });
+
+            if (doc.type === 'folder') {
+              return (
+                <Folder
+                  key={doc.id}
+                  folder={{
+                    id: doc.id,
+                    name: doc.name,
+                    path: doc.path,
+                    type: 'folder',
+                    is_favorite: doc.is_favorite,
+                    is_public_folder: doc.is_public_folder,
+                    public_slug: doc.public_slug,
+                    fileCount: doc.fileCount
+                  }}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  index={index}
+                  chartColorClass={getChartColorClass(index)}
+                  onNavigate={onNavigate}
+                  onToggleFavorite={(path, name) => {
+                    console.log('🎯 FileGrid folder favorite toggle:', { path, name });
+                    onAddFavorite(path, name);
+                  }}
+                  onContextMenu={handleContextMenu}
+                  onSelect={handleSelect}
+                  // Pass through additional public folder handlers if available
+                  onMakePublic={undefined} // These would come from parent if needed
+                  onMakePrivate={undefined}
+                  onCopyPublicUrl={undefined}
+                  onViewPublicAssets={undefined}
+                  onGenerateCode={undefined}
+                />
+              );
+            } else {
+              return (
+                <File
+                  key={doc.id}
+                  file={{
+                    id: doc.id,
+                    name: doc.name,
+                    type: 'file',
+                    path: doc.path,
+                    size_bytes: doc.size_bytes || 0,
+                    created_at: doc.created_at,
+                    updated_at: doc.updated_at,
+                    is_favorite: doc.is_favorite,
+                    mime_type: doc.mime_type,
+                    uploader_name: doc.uploader_name,
+                    tags: doc.tags
+                  }}
+                  viewMode={viewMode}
+                  isSelected={selectedItems.includes(doc.id)}
+                  isFavorite={doc.is_favorite}
+                  onPreview={() => {
+                    console.log('🎯 FileGrid file preview:', doc.id);
+                    onPreview(doc.id);
+                  }}
+                  onDownload={() => {
+                    console.log('🎯 FileGrid file download:', doc.id);
+                    onDownload(doc.id);
+                  }}
+                  onToggleFavorite={() => {
+                    console.log('🎯 FileGrid file favorite toggle:', doc.id);
+                    onToggleFavorite(doc.id);
+                  }}
+                  onContextMenu={handleContextMenu}
+                  onSelect={handleSelect}
+                />
+              );
+            }
+          })
         )}
       </div>
     </div>
@@ -160,7 +240,7 @@ function FileGrid({
 }
 
 export default React.memo(FileGrid, (prevProps, nextProps) => {
-  return (
+  const isEqual = (
     prevProps.documents === nextProps.documents &&
     prevProps.viewMode === nextProps.viewMode &&
     prevProps.selectedItems === nextProps.selectedItems &&
@@ -168,4 +248,12 @@ export default React.memo(FileGrid, (prevProps, nextProps) => {
     prevProps.currentPath === nextProps.currentPath &&
     prevProps.className === nextProps.className
   );
+  
+  console.log('🎯 FileGrid memo check:', { 
+    isEqual, 
+    documentsChanged: prevProps.documents !== nextProps.documents,
+    viewModeChanged: prevProps.viewMode !== nextProps.viewMode 
+  });
+  
+  return isEqual;
 });

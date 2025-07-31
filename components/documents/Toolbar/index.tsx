@@ -88,6 +88,17 @@ export default function Toolbar({
     onSearchChange('');
   }, [onSearchChange]);
 
+  // Fixed: Wrap the handlers to prevent event objects from being passed
+  const handleCreateFolder = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onCreateFolder();
+  }, [onCreateFolder]);
+
+  const handleUpload = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    onUpload();
+  }, [onUpload]);
+
   return (
     <div className={`toolbar bg-background border border-border rounded-lg shadow-sm ${className}`}>
       
@@ -116,7 +127,7 @@ export default function Toolbar({
         <div className="p-3">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
             <button
-              onClick={onUpload}
+              onClick={handleUpload}
               disabled={isUploading}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
                 isUploading
@@ -130,7 +141,7 @@ export default function Toolbar({
             </button>
 
             <button
-              onClick={onCreateFolder}
+              onClick={handleCreateFolder}
               className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors whitespace-nowrap flex-shrink-0"
               title="New folder"
             >
@@ -479,7 +490,7 @@ export default function Toolbar({
 
             <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
               <button
-                onClick={onCreateFolder}
+                onClick={handleCreateFolder}
                 className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                 title="New folder"
               >
@@ -488,7 +499,7 @@ export default function Toolbar({
               </button>
 
               <button
-                onClick={onUpload}
+                onClick={handleUpload}
                 disabled={isUploading}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                   isUploading

@@ -1,6 +1,7 @@
-// TimeSheetCalculator.tsx (Final with Universal Export Integration)
-import React from "react";
+// TimeSheetCalculator.tsx (Simple with direct export)
+import React, { useState } from "react";
 import "./../../style/TSC.css";
+import UniversalExportButton from "../Export";
 
 // Components
 import { WeekTabs } from "./_components/WeekTabs";
@@ -9,16 +10,18 @@ import { ActionButtons } from "./_components/ActionButtons";
 import { TimesheetTable } from "./_components/TimesheetTable";
 import { TotalsSection } from "./_components/TotalsSection";
 import { DataManagement } from "./_components/DataManagement";
-import { SimpleTimesheetExport } from "./_components/SimpleTimesheetExport";
 
 // Hooks and Utils
 import { usePersistentTimesheetLogic } from "../../hooks/usePersistentTimesheetLogic";
 import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
 
-// Import the template registration (this registers it with your system)
+// Register the template
 import "../../lib/templates/desertTimesheetTemplate";
 
 const TimeSheetCalculator: React.FC = () => {
+  const [employeeName, setEmployeeName] = useState('');
+  const [payrollPeriod, setPayrollPeriod] = useState<1 | 2>(1);
+
   const {
     weeks,
     activeWeekId,
@@ -88,8 +91,58 @@ const TimeSheetCalculator: React.FC = () => {
         onTogglePayCalculation={() => setShowPayCalculation(!showPayCalculation)}
       />
 
-      {/* Simple integration with your Universal Export Button system */}
-      <SimpleTimesheetExport weeks={weeks} />
+      {/* Export Section */}
+      <div className="export-section">
+        <h3>📋 Export to Physical Form</h3>
+        
+        <div className="export-form">
+          <div className="form-group">
+            <label>Employee Name:</label>
+            <input
+              type="text"
+              value={employeeName}
+              onChange={(e) => setEmployeeName(e.target.value)}
+              placeholder="Enter employee name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Payroll Period:</label>
+            <div className="radio-group">
+              <label>
+                <input
+                  type="radio"
+                  value={1}
+                  checked={payrollPeriod === 1}
+                  onChange={() => setPayrollPeriod(1)}
+                />
+                1st Half
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value={2}
+                  checked={payrollPeriod === 2}
+                  onChange={() => setPayrollPeriod(2)}
+                />
+                2nd Half
+              </label>
+            </div>
+          </div>
+
+          <UniversalExportButton
+            templateId="desert-area-timesheet"
+            templateData={{
+              employeeName,
+              payrollPeriod,
+              weeks
+            }}
+            filename={`Desert_Timesheet_${employeeName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`}
+            size="lg"
+            variant="primary"
+          />
+        </div>
+      </div>
 
       <DataManagement
         onClearAll={clearAllData}

@@ -71,11 +71,11 @@ export default function CleanTrack({
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
   
-  const [exportMonth, setExportMonth] = useState(() => {
+  const [currentMonth, setCurrentMonth] = useState(() => {
     const pacificTime = getPacificTimeDate();
     return pacificTime.getMonth() + 1;
   });
-  const [exportYear, setExportYear] = useState(() => {
+  const [currentYear, setCurrentYear] = useState(() => {
     const pacificTime = getPacificTimeDate();
     return pacificTime.getFullYear();
   });
@@ -94,7 +94,7 @@ export default function CleanTrack({
   useEffect(() => {
     loadBillingData();
     loadAvailableBusinesses();
-  }, [currentInstance, exportMonth, exportYear]);
+  }, [currentInstance]);
 
   const loadAvailableBusinesses = async () => {
     try {
@@ -113,9 +113,18 @@ export default function CleanTrack({
   };
 
   const loadBillingData = async () => {
+    if (!currentInstance) return;
+
     try {
-      const startDate = new Date(exportYear, exportMonth - 1, 1);
-      const endDate = new Date(exportYear, exportMonth, 0);
+      const instanceDate = new Date(currentInstance.instance_date);
+      const month = instanceDate.getMonth() + 1;
+      const year = instanceDate.getFullYear();
+      
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
       
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
@@ -290,8 +299,8 @@ export default function CleanTrack({
     id: 'cms-billing-unified',
     name: 'CMS Billing Report',
     data: {
-      month: exportMonth,
-      year: exportYear,
+      month: currentMonth,
+      year: currentYear,
       generated_from: 'clean_track',
       instance_info: currentInstance ? {
         id: currentInstance.id,
@@ -315,12 +324,41 @@ export default function CleanTrack({
     }
   };
 
-  const getMonthName = (month: number) => {
+  const lastMonthTemplate: ExportTemplate = {
+    id: 'cms-billing-last-month',
+    name: 'CMS Billing Report (Last Month)',
+    data: {
+      month: currentMonth === 1 ? 12 : currentMonth - 1,
+      year: currentMonth === 1 ? currentYear - 1 : currentYear,
+      generated_from: 'clean_track',
+      instance_info: currentInstance ? {
+        id: currentInstance.id,
+        date: currentInstance.instance_date,
+        day: currentInstance.day_name
+      } : null
+    },
+    generator: async (data: any, format: 'excel' | 'pdf') => {
+      const { month, year } = data;
+      const template = new CMSBillingTemplate(month, year);
+      await template.fetchCleaningData();
+      
+      if (format === 'excel') {
+        const arrayBuffer = template.generateExcel();
+        return new Blob([arrayBuffer], { 
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        });
+      } else {
+        return template.generateHTML();
+      }
+    }
+  };
+
+  const getMonthName = () => {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    return months[month - 1] || '';
+    return months[currentMonth - 1] || '';
   };
 
   return (

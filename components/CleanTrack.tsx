@@ -16,7 +16,7 @@ interface CleanTrackItem {
   notes?: string;
   marked_by?: string;
   updated_at?: string;
-  is_added?: boolean; // Flag for businesses added on-the-fly
+  is_added?: boolean;
 }
 
 interface DailyInstance {
@@ -45,7 +45,20 @@ interface CleanTrackProps {
   onToggleBusinessStatus: (businessId: number) => void;
   onMoveBusinessToDate: (businessId: number, date: string) => void;
   onRefreshInstance: () => void;
-  onAddBusiness: (businessId: number, notes?: string) => void; // New prop for adding businesses
+  onAddBusiness: (businessId: number, notes?: string) => void;
+}
+
+function getPacificTimeDate(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+}
+
+function getLocalDate(): string {
+  const pacificTime = getPacificTimeDate();
+  const year = pacificTime.getFullYear();
+  const month = String(pacificTime.getMonth() + 1).padStart(2, '0');
+  const day = String(pacificTime.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function CleanTrack({
@@ -65,10 +78,15 @@ export default function CleanTrack({
   const [movingBusiness, setMovingBusiness] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const pacificTime = getPacificTimeDate();
+    return pacificTime.getMonth() + 1;
+  });
+  const [currentYear, setCurrentYear] = useState(() => {
+    const pacificTime = getPacificTimeDate();
+    return pacificTime.getFullYear();
+  });
   
-  // Add business states
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [availableBusinesses, setAvailableBusinesses] = useState<AvailableBusiness[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,7 +98,6 @@ export default function CleanTrack({
   const pending = cleanTrack.filter(item => item.status === "pending").length;
   const added = cleanTrack.filter(item => item.is_added).length;
 
-  // Load billing data for current month when component mounts
   useEffect(() => {
     loadBillingData();
     loadAvailableBusinesses();
@@ -91,13 +108,10 @@ export default function CleanTrack({
       const res = await fetch('/api/schedule/businesses');
       if (res.ok) {
         const businesses = await res.json();
-        
-        // Filter out businesses already in clean track
         const currentBusinessIds = new Set(cleanTrack.map(item => item.business_id));
         const available = businesses.filter((business: any) => 
           !currentBusinessIds.has(business.id)
         );
-        
         setAvailableBusinesses(available);
       }
     } catch (error) {
@@ -109,9 +123,9 @@ export default function CleanTrack({
     if (!currentInstance) return;
 
     try {
-      const instanceDate = new Date(currentInstance.instance_date);
-      const month = instanceDate.getMonth() + 1;
-      const year = instanceDate.getFullYear();
+      const pacificTime = getPacificTimeDate();
+      const month = pacificTime.getMonth() + 1;
+      const year = pacificTime.getFullYear();
       
       setCurrentMonth(month);
       setCurrentYear(year);
@@ -257,7 +271,6 @@ export default function CleanTrack({
     }
   };
 
-  // Create the unified billing template using CMSBillingTemplate with FRESH data
   const billingTemplate: ExportTemplate = {
     id: 'cms-billing-unified',
     name: 'CMS Billing Report',
@@ -275,7 +288,6 @@ export default function CleanTrack({
       console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()} with FRESH data`);
       const { month, year } = data;
       
-      // ✅ Create a fresh template instance and fetch data
       console.log(`🔄 Fetching fresh billing data for ${month}/${year} from database...`);
       
       const template = new CMSBillingTemplate(month, year);
@@ -342,7 +354,7 @@ export default function CleanTrack({
         {currentInstance && (
           <div className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
             <div className="flex items-center space-x-4">
-              <span>📅 {new Date(currentInstance.instance_date).toLocaleDateString()}</span>
+              <span>📅 {getPacificTimeDate().toLocaleDateString()}</span>
               <span>👥 Shared with team</span>
               <span>🔄 Last updated: {new Date(currentInstance.updated_at).toLocaleTimeString()}</span>
             </div>
@@ -377,7 +389,6 @@ export default function CleanTrack({
         </div>
       </div>
 
-      {/* Add Business Modal */}
       {showAddBusiness && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={`w-full max-w-md mx-4 rounded-lg p-6 ${
@@ -387,7 +398,6 @@ export default function CleanTrack({
               Add Business to Today's Cleaning
             </h4>
             
-            {/* Search */}
             <div className="mb-4">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
@@ -402,7 +412,6 @@ export default function CleanTrack({
               </div>
             </div>
 
-            {/* Business List */}
             <div className="max-h-64 overflow-y-auto mb-4 border border-[hsl(var(--border))] rounded">
               {filteredBusinesses.length > 0 ? (
                 filteredBusinesses.map((business) => (
@@ -435,7 +444,6 @@ export default function CleanTrack({
               )}
             </div>
 
-            {/* Notes */}
             {selectedBusinessToAdd && (
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">
@@ -451,7 +459,6 @@ export default function CleanTrack({
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelAdd}
@@ -534,7 +541,6 @@ export default function CleanTrack({
                 </div>
               </div>
 
-              {/* Move Flow */}
               {item.status === "pending" && (
                 <div className="flex items-center space-x-2">
                   {movingBusiness === item.business_id ? (
@@ -545,7 +551,7 @@ export default function CleanTrack({
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
-                        min={new Date().toISOString().split('T')[0]}
+                        min={getLocalDate()}
                         autoFocus
                       />
                       <button

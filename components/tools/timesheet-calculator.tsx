@@ -1,7 +1,6 @@
-// TimeSheetCalculator.tsx (Simple with direct export)
+// TimeSheetCalculator.tsx (Self-contained with direct template functions)
 import React, { useState } from "react";
 import "./../../style/TSC.css";
-import UniversalExportButton from "../Export";
 
 // Components
 import { WeekTabs } from "./_components/WeekTabs";
@@ -15,12 +14,13 @@ import { DataManagement } from "./_components/DataManagement";
 import { usePersistentTimesheetLogic } from "../../hooks/usePersistentTimesheetLogic";
 import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
 
-// Register the template
-import "../../lib/templates/desertTimesheetTemplate";
+// Import template functions directly
+import { generateDesertTimesheetExcel, generateDesertTimesheetHTML } from "../../lib/templates/desertTimesheetTemplate";
 
 const TimeSheetCalculator: React.FC = () => {
   const [employeeName, setEmployeeName] = useState('');
   const [payrollPeriod, setPayrollPeriod] = useState<1 | 2>(1);
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     weeks,
@@ -46,6 +46,52 @@ const TimeSheetCalculator: React.FC = () => {
 
   const activeWeek = weeks.find((week) => week.id === activeWeekId) || weeks[0];
   const totalHours = calculateAllWeeksTotal(weeks);
+
+  // Simple export function using template functions directly
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    if (!employeeName.trim()) {
+      alert('Please enter an employee name');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      let result: ArrayBuffer | string;
+      
+      if (format === 'excel') {
+        result = generateDesertTimesheetExcel(employeeName, payrollPeriod, weeks);
+      } else {
+        result = generateDesertTimesheetHTML(employeeName, payrollPeriod, weeks);
+      }
+
+      // Download the file
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `Desert_Timesheet_${employeeName.replace(/\s+/g, '_')}_${timestamp}.${format === 'excel' ? 'xlsx' : 'html'}`;
+      
+      let blob: Blob;
+      if (result instanceof ArrayBuffer) {
+        blob = new Blob([result], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      } else {
+        blob = new Blob([result], { type: 'text/html' });
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log(`✅ Exported ${filename} successfully`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="timesheet-container">
@@ -91,7 +137,7 @@ const TimeSheetCalculator: React.FC = () => {
         onTogglePayCalculation={() => setShowPayCalculation(!showPayCalculation)}
       />
 
-      {/* Export Section */}
+      {/* Simple Export Section */}
       <div className="export-section">
         <h3>📋 Export to Physical Form</h3>
         
@@ -130,17 +176,23 @@ const TimeSheetCalculator: React.FC = () => {
             </div>
           </div>
 
-          <UniversalExportButton
-            templateId="desert-area-timesheet"
-            templateData={{
-              employeeName,
-              payrollPeriod,
-              weeks
-            }}
-            filename={`Desert_Timesheet_${employeeName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`}
-            size="lg"
-            variant="primary"
-          />
+          <div className="export-buttons">
+            <button
+              onClick={() => handleExport('excel')}
+              disabled={isExporting || !employeeName.trim()}
+              className="export-btn excel-btn"
+            >
+              {isExporting ? 'Exporting...' : '📊 Export Excel'}
+            </button>
+            
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting || !employeeName.trim()}
+              className="export-btn pdf-btn"
+            >
+              {isExporting ? 'Exporting...' : '📄 Export HTML'}
+            </button>
+          </div>
         </div>
       </div>
 

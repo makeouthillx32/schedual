@@ -1,32 +1,11 @@
-// lib/templates/desertTimesheetTemplate.ts
+// lib/templates/desertTimesheetTemplate.ts - Pure template functions
 import * as XLSX from 'sheetjs-style';
-import { TemplateRegistry, TemplateIcons } from '../../components/Export';
-
-// Register the template
-TemplateRegistry.register({
-  id: 'desert-area-timesheet',
-  name: 'Desert Area Timesheet',
-  description: 'Official Desert Area Resources & Training timesheet form',
-  category: 'timesheet',
-  icon: TemplateIcons.timesheet,
-  supportedFormats: ['excel', 'pdf'],
-  data: {},
-  generator: async (data: any, format: 'excel' | 'pdf') => {
-    const { employeeName, payrollPeriod, weeks } = data;
-
-    if (format === 'excel') {
-      return generateExcel(employeeName, payrollPeriod, weeks);
-    } else {
-      return generateHTML(employeeName, payrollPeriod, weeks);
-    }
-  }
-});
 
 function convertTimeToString(hour: number, minute: number, ampm: string): string {
   return `${hour}:${minute.toString().padStart(2, '0')} ${ampm}`;
 }
 
-function generateExcel(employeeName: string, payrollPeriod: 1 | 2, weeks: any[]): ArrayBuffer {
+export function generateDesertTimesheetExcel(employeeName: string, payrollPeriod: 1 | 2, weeks: any[]): ArrayBuffer {
   // Prepare timesheet data
   const timesheetRows: Array<{ timeIn: string; timeOut: string; }> = [];
   weeks.forEach(week => {
@@ -136,7 +115,7 @@ function generateExcel(employeeName: string, payrollPeriod: 1 | 2, weeks: any[])
   return XLSX.write(wb, { bookType: 'xlsx', type: 'array', cellStyles: true });
 }
 
-function generateHTML(employeeName: string, payrollPeriod: 1 | 2, weeks: any[]): string {
+export function generateDesertTimesheetHTML(employeeName: string, payrollPeriod: 1 | 2, weeks: any[]): string {
   const timesheetRows: Array<{ timeIn: string; timeOut: string; }> = [];
   weeks.forEach(week => {
     week.rows.forEach((row: any) => {

@@ -62,7 +62,7 @@ export default function UniversalExportButton({
     return months[month - 1] || '';
   };
 
-  const handleExport = async (format: 'excel' | 'pdf', monthType: 'current' | 'last') => {
+  const handleExport = async (monthType: 'current' | 'last') => {
     setIsExporting(true);
     setShowDropdown(false);
 
@@ -85,15 +85,14 @@ export default function UniversalExportButton({
         year: exportYear
       };
 
-      console.log(`🔄 Exporting ${template.name} as ${format.toUpperCase()} for ${getMonthName(exportMonth)} ${exportYear}`);
+      console.log(`🔄 Exporting ${template.name} for ${getMonthName(exportMonth)} ${exportYear}`);
       
-      const result = await template.generator(exportData, format);
+      const result = await template.generator(exportData, 'excel');
       
       const timestamp = new Date().toISOString().split('T')[0];
       const monthName = getMonthName(exportMonth);
       const baseFilename = filename || `${template.name}_${monthName}_${exportYear}_${timestamp}`;
-      const extension = format === 'excel' ? 'xlsx' : 'pdf';
-      const fullFilename = `${baseFilename}.${extension}`;
+      const fullFilename = `${baseFilename}.xlsx`;
 
       if (result instanceof Blob) {
         const url = URL.createObjectURL(result);
@@ -104,20 +103,9 @@ export default function UniversalExportButton({
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-      } else if (typeof result === 'string') {
-        const mimeType = format === 'excel' ? 'text/csv' : 'application/pdf';
-        const blob = new Blob([result], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fullFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
       }
 
-      console.log(`✅ ${template.name} exported successfully as ${format.toUpperCase()}`);
+      console.log(`✅ ${template.name} exported successfully`);
       
     } catch (error) {
       console.error(`❌ Error exporting ${template.name}:`, error);
@@ -153,59 +141,37 @@ export default function UniversalExportButton({
 
       {showDropdown && !disabled && !isExporting && (
         <div
-          className={`absolute top-full left-0 mt-1 w-64 rounded-md shadow-lg z-50 ${
+          className={`absolute top-full right-0 mt-1 w-48 rounded-md shadow-lg z-50 ${
             isDark
               ? "bg-[hsl(var(--card))] border border-[hsl(var(--border))]"
               : "bg-white border border-[hsl(var(--border))]"
           }`}
         >
           <div className="py-1">
-            <div className="px-4 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))] border-b border-[hsl(var(--border))]">
-              {currentMonth} {pacificTime.getFullYear()} (Current Month)
-            </div>
-            
             <button
-              onClick={() => handleExport('excel', 'current')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
+              onClick={() => handleExport('current')}
+              className={`w-full px-4 py-3 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
                 isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
               }`}
             >
-              <FileSpreadsheet size={16} className="mr-2 text-green-600" />
-              Export as Excel (.xlsx)
+              <FileSpreadsheet size={16} className="mr-3 text-green-600" />
+              <div>
+                <div className="font-medium">{currentMonth} {pacificTime.getFullYear()}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">Current Month</div>
+              </div>
             </button>
             
             <button
-              onClick={() => handleExport('pdf', 'current')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
+              onClick={() => handleExport('last')}
+              className={`w-full px-4 py-3 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
                 isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
               }`}
             >
-              <FileText size={16} className="mr-2 text-red-600" />
-              Export as PDF (.pdf)
-            </button>
-
-            <div className="px-4 py-2 text-xs font-medium text-[hsl(var(--muted-foreground))] border-b border-t border-[hsl(var(--border))]">
-              {lastMonth} {lastMonthDate.getFullYear()} (Last Month)
-            </div>
-            
-            <button
-              onClick={() => handleExport('excel', 'last')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
-                isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
-              }`}
-            >
-              <FileSpreadsheet size={16} className="mr-2 text-green-600" />
-              Export as Excel (.xlsx)
-            </button>
-            
-            <button
-              onClick={() => handleExport('pdf', 'last')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
-                isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
-              }`}
-            >
-              <FileText size={16} className="mr-2 text-red-600" />
-              Export as PDF (.pdf)
+              <FileSpreadsheet size={16} className="mr-3 text-green-600" />
+              <div>
+                <div className="font-medium">{lastMonth} {lastMonthDate.getFullYear()}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">Last Month</div>
+              </div>
             </button>
           </div>
         </div>

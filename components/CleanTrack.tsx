@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "@/app/provider";
-import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
 import { CMSBillingTemplate, BusinessCleaningRecord } from "@/lib/CMSBillingTemplate";
 
@@ -16,7 +16,7 @@ interface CleanTrackItem {
   notes?: string;
   marked_by?: string;
   updated_at?: string;
-  is_added?: boolean; // Flag for businesses added on-the-fly
+  is_added?: boolean;
 }
 
 interface DailyInstance {
@@ -45,7 +45,12 @@ interface CleanTrackProps {
   onToggleBusinessStatus: (businessId: number) => void;
   onMoveBusinessToDate: (businessId: number, date: string) => void;
   onRefreshInstance: () => void;
-  onAddBusiness: (businessId: number, notes?: string) => void; // New prop for adding businesses
+  onAddBusiness: (businessId: number, notes?: string) => void;
+}
+
+function getPacificTimeDate(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
 }
 
 export default function CleanTrack({
@@ -65,10 +70,16 @@ export default function CleanTrack({
   const [movingBusiness, setMovingBusiness] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   
-  // Add business states
+  const [exportMonth, setExportMonth] = useState(() => {
+    const pacificTime = getPacificTimeDate();
+    return pacificTime.getMonth() + 1;
+  });
+  const [exportYear, setExportYear] = useState(() => {
+    const pacificTime = getPacificTimeDate();
+    return pacificTime.getFullYear();
+  });
+  
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [availableBusinesses, setAvailableBusinesses] = useState<AvailableBusiness[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,24 +91,20 @@ export default function CleanTrack({
   const pending = cleanTrack.filter(item => item.status === "pending").length;
   const added = cleanTrack.filter(item => item.is_added).length;
 
-  // Load billing data for current month when component mounts
   useEffect(() => {
     loadBillingData();
     loadAvailableBusinesses();
-  }, [currentInstance]);
+  }, [currentInstance, exportMonth, exportYear]);
 
   const loadAvailableBusinesses = async () => {
     try {
       const res = await fetch('/api/schedule/businesses');
       if (res.ok) {
         const businesses = await res.json();
-        
-        // Filter out businesses already in clean track
         const currentBusinessIds = new Set(cleanTrack.map(item => item.business_id));
         const available = businesses.filter((business: any) => 
           !currentBusinessIds.has(business.id)
         );
-        
         setAvailableBusinesses(available);
       }
     } catch (error) {
@@ -106,18 +113,9 @@ export default function CleanTrack({
   };
 
   const loadBillingData = async () => {
-    if (!currentInstance) return;
-
     try {
-      const instanceDate = new Date(currentInstance.instance_date);
-      const month = instanceDate.getMonth() + 1;
-      const year = instanceDate.getFullYear();
-      
-      setCurrentMonth(month);
-      setCurrentYear(year);
-
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
+      const startDate = new Date(exportYear, exportMonth - 1, 1);
+      const endDate = new Date(exportYear, exportMonth, 0);
       
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
@@ -222,6 +220,37 @@ export default function CleanTrack({
     }
   };
 
+  const goToPreviousMonth = () => {
+    if (exportMonth === 1) {
+      setExportMonth(12);
+      setExportYear(prev => prev - 1);
+    } else {
+      setExportMonth(prev => prev - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (exportMonth === 12) {
+      setExportMonth(1);
+      setExportYear(prev => prev + 1);
+    } else {
+      setExportMonth(prev => prev + 1);
+    }
+  };
+
+  const getCurrentMonth = () => {
+    const pacificTime = getPacificTimeDate();
+    setExportMonth(pacificTime.getMonth() + 1);
+    setExportYear(pacificTime.getFullYear());
+  };
+
+  const getLastMonth = () => {
+    const pacificTime = getPacificTimeDate();
+    pacificTime.setMonth(pacificTime.getMonth() - 1);
+    setExportMonth(pacificTime.getMonth() + 1);
+    setExportYear(pacificTime.getFullYear());
+  };
+
   const filteredBusinesses = availableBusinesses.filter(business =>
     business.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     business.address.toLowerCase().includes(searchTerm.toLowerCase())
@@ -257,13 +286,12 @@ export default function CleanTrack({
     }
   };
 
-  // Create the unified billing template using CMSBillingTemplate with FRESH data
   const billingTemplate: ExportTemplate = {
     id: 'cms-billing-unified',
     name: 'CMS Billing Report',
     data: {
-      month: currentMonth,
-      year: currentYear,
+      month: exportMonth,
+      year: exportYear,
       generated_from: 'clean_track',
       instance_info: currentInstance ? {
         id: currentInstance.id,
@@ -272,12 +300,7 @@ export default function CleanTrack({
       } : null
     },
     generator: async (data: any, format: 'excel' | 'pdf') => {
-      console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()} with FRESH data`);
       const { month, year } = data;
-      
-      // ✅ Create a fresh template instance and fetch data
-      console.log(`🔄 Fetching fresh billing data for ${month}/${year} from database...`);
-      
       const template = new CMSBillingTemplate(month, year);
       await template.fetchCleaningData();
       
@@ -292,12 +315,12 @@ export default function CleanTrack({
     }
   };
 
-  const getMonthName = () => {
+  const getMonthName = (month: number) => {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    return months[currentMonth - 1] || '';
+    return months[month - 1] || '';
   };
 
   return (
@@ -377,7 +400,6 @@ export default function CleanTrack({
         </div>
       </div>
 
-      {/* Add Business Modal */}
       {showAddBusiness && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className={`w-full max-w-md mx-4 rounded-lg p-6 ${
@@ -387,7 +409,6 @@ export default function CleanTrack({
               Add Business to Today's Cleaning
             </h4>
             
-            {/* Search */}
             <div className="mb-4">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
@@ -402,7 +423,6 @@ export default function CleanTrack({
               </div>
             </div>
 
-            {/* Business List */}
             <div className="max-h-64 overflow-y-auto mb-4 border border-[hsl(var(--border))] rounded">
               {filteredBusinesses.length > 0 ? (
                 filteredBusinesses.map((business) => (
@@ -435,7 +455,6 @@ export default function CleanTrack({
               )}
             </div>
 
-            {/* Notes */}
             {selectedBusinessToAdd && (
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">
@@ -451,7 +470,6 @@ export default function CleanTrack({
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelAdd}
@@ -534,7 +552,6 @@ export default function CleanTrack({
                 </div>
               </div>
 
-              {/* Move Flow */}
               {item.status === "pending" && (
                 <div className="flex items-center space-x-2">
                   {movingBusiness === item.business_id ? (
@@ -593,6 +610,40 @@ export default function CleanTrack({
           
           {billingData.length > 0 && currentInstance && (
             <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mr-4">
+                <button
+                  onClick={getCurrentMonth}
+                  className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  title="Current month"
+                >
+                  Current
+                </button>
+                <button
+                  onClick={getLastMonth}
+                  className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                  title="Last month"
+                >
+                  Last
+                </button>
+                <button
+                  onClick={goToPreviousMonth}
+                  className="p-1 hover:bg-[hsl(var(--secondary))] rounded transition-colors"
+                  title="Previous month"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-medium min-w-[120px] text-center">
+                  {getMonthName(exportMonth)} {exportYear}
+                </span>
+                <button
+                  onClick={goToNextMonth}
+                  className="p-1 hover:bg-[hsl(var(--secondary))] rounded transition-colors"
+                  title="Next month"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              
               <button
                 onClick={loadBillingData}
                 className="px-3 py-1 text-sm bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] rounded hover:bg-[hsl(var(--secondary))]/80 transition-colors"
@@ -602,7 +653,7 @@ export default function CleanTrack({
               </button>
               <UniversalExportButton
                 template={billingTemplate}
-                filename={`CMS_Billing_${getMonthName()}_${currentYear}_from_CleanTrack`}
+                filename={`CMS_Billing_${getMonthName(exportMonth)}_${exportYear}_from_CleanTrack`}
                 disabled={instanceLoading}
                 size="md"
                 variant="primary"
@@ -613,7 +664,7 @@ export default function CleanTrack({
         
         {billingData.length > 0 && (
           <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
-            💡 Export includes all {billingData.length} businesses for {getMonthName()} {currentYear}
+            💡 Export includes all {billingData.length} businesses for {getMonthName(exportMonth)} {exportYear}
           </div>
         )}
       </div>

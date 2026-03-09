@@ -91,121 +91,197 @@ function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance
   const wb = XLSX.utils.book_new();
   const pt = getPacificTimeDate();
   const dateStr = pt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const dayName = instance?.day_name
-    ? instance.day_name.charAt(0).toUpperCase() + instance.day_name.slice(1)
-    : pt.toLocaleDateString("en-US", { weekday: "long" });
 
-  const wsData: any[][] = [
-    [`DART COMMERCIAL SERVICES — DAILY CLEAN REPORT`],
-    [],
-    [`Date: ${dateStr}`],
-    [`Day: ${dayName}   Instance: #${instance?.id ?? "—"}   Generated: ${new Date().toLocaleTimeString()}`],
-    [],
-    ["#", "Business", "Address", "Timing", "Status", "Cleaned At", "Moved To", "Added?", "Notes"],
-  ];
+  const cleaned = items.filter((i) => i.status === "cleaned").length;
+  const moved   = items.filter((i) => i.status === "moved").length;
+  const pending = items.filter((i) => i.status === "pending").length;
+  const added   = items.filter((i) => i.is_added).length;
+  const fieldNotes = getDailyNotes();
 
-  items.forEach((item, idx) => {
+  // Portrait layout: col A = label, col B = value (wide)
+  // 4 columns total: A(label), B(value), C(label), D(value)
+  const wsData: any[][] = [];
+  const merges: any[] = [];
+  let row = 0;
+
+  // ── Title block ──
+  wsData.push(["DART COMMERCIAL SERVICES", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push(["Daily Clean Report", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push([dateStr, "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push([`Instance #${instance?.id ?? "—"}   ·   Generated: ${new Date().toLocaleTimeString()}`, "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  // ── Summary bar (2x2 grid) ──
+  wsData.push([]); row++;
+  wsData.push(["Cleaned", cleaned, "Pending", pending]); row++;
+  wsData.push(["Moved",   moved,   "Added",   added]);   row++;
+  wsData.push([
+    "Completion",
+    items.length > 0 ? `${Math.round((cleaned / items.length) * 100)}%` : "0%",
+    "Total",
+    items.length,
+  ]); row++;
+
+  // ── Businesses header ──
+  wsData.push([]); row++;
+  wsData.push(["BUSINESSES SERVICED TODAY", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push(["Business Name", "Status", "Timing", "Cleaned At / Moved To"]);
+  const businessHeaderRow = row; row++;
+
+  // ── Business rows ──
+  const businessStartRow = row;
+  items.forEach((item) => {
+    const timeInfo = item.status === "cleaned" && item.cleaned_at
+      ? new Date(item.cleaned_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+      : item.status === "moved" && item.moved_to_date
+      ? `→ ${new Date(item.moved_to_date + "T00:00:00").toLocaleDateString()}`
+      : "—";
+
     wsData.push([
-      idx + 1,
-      item.business_name,
-      item.address || "",
-      item.before_open ? "Before Open" : "After Close",
+      item.business_name + (item.is_added ? "  ★" : ""),
       item.status.charAt(0).toUpperCase() + item.status.slice(1),
-      item.cleaned_at ? new Date(item.cleaned_at).toLocaleTimeString() : "",
-      item.moved_to_date ? new Date(item.moved_to_date + "T00:00:00").toLocaleDateString() : "",
-      item.is_added ? "Yes" : "",
-      item.notes || "",
+      item.before_open ? "Before Open" : "After Close",
+      timeInfo,
     ]);
+    row++;
+
+    // Address + notes on sub-row
+    const subCols: string[] = [item.address || ""];
+    if (item.notes) subCols[0] += `  |  📝 ${item.notes}`;
+    wsData.push([subCols[0], "", "", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+    row++;
   });
 
-  // Summary rows
-  const cleaned = items.filter((i) => i.status === "cleaned").length;
-  const moved = items.filter((i) => i.status === "moved").length;
-  const pending = items.filter((i) => i.status === "pending").length;
-  const added = items.filter((i) => i.is_added).length;
-
-  wsData.push(
-    [],
-    ["SUMMARY"],
-    ["Total Businesses", items.length],
-    ["Cleaned", cleaned],
-    ["Pending", pending],
-    ["Moved", moved],
-    ["Added On-the-Fly", added],
-    ["Completion Rate", items.length > 0 ? `${Math.round((cleaned / items.length) * 100)}%` : "0%"]
-  );
-
-  // Field notes from DailyNotes tab
-  const fieldNotes = getDailyNotes();
+  // ── Field notes ──
   if (fieldNotes.length > 0) {
-    wsData.push([], ["FIELD NOTES"], ["Category", "Note", "Time"]);
+    wsData.push([]); row++;
+    wsData.push(["FIELD NOTES", "", "", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+    const notesHeaderRow = row; row++;
+
+    wsData.push(["Category", "Note", "", "Time"]);
+    const notesColHeaderRow = row; row++;
+
     fieldNotes.forEach((n) => {
+      const time = new Date(n.createdAt).toLocaleTimeString("en-US", {
+        hour: "numeric", minute: "2-digit", hour12: true,
+        timeZone: "America/Los_Angeles",
+      });
       wsData.push([
         CATEGORY_LABELS[n.category] ?? n.category,
         n.text,
-        new Date(n.createdAt).toLocaleTimeString("en-US", {
-          hour: "numeric", minute: "2-digit", hour12: true,
-          timeZone: "America/Los_Angeles",
-        }),
+        "",
+        time,
       ]);
+      merges.push({ s: { r: row, c: 1 }, e: { r: row, c: 2 } });
+      row++;
     });
   }
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws["!merges"] = merges;
 
-  // Column widths
+  // ── Column widths — 4 readable portrait columns ──
   ws["!cols"] = [
-    { wch: 4 },  // #
-    { wch: 32 }, // Business
-    { wch: 30 }, // Address
-    { wch: 14 }, // Timing
-    { wch: 12 }, // Status
-    { wch: 12 }, // Cleaned At
-    { wch: 12 }, // Moved To
-    { wch: 8 },  // Added
-    { wch: 36 }, // Notes
+    { wch: 36 }, // A — business name / label
+    { wch: 14 }, // B — status / value
+    { wch: 14 }, // C — timing / label
+    { wch: 22 }, // D — time info / value
   ];
 
-  // Style header row (row index 5 = 0-based)
-  const headerRowIdx = 5;
-  const cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
-  cols.forEach((col) => {
-    const addr = `${col}${headerRowIdx + 1}`;
-    if (ws[addr]) {
-      ws[addr].s = {
-        font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "1E293B" } },
-        alignment: { horizontal: "center" },
+  // ── Row heights ──
+  const rowHeights: any[] = [];
+  for (let i = 0; i < wsData.length; i++) rowHeights.push({ hpt: 18 });
+  rowHeights[0] = { hpt: 26 }; // title
+  ws["!rows"] = rowHeights;
+
+  // ── Styles ──
+
+  // Title
+  if (ws["A1"]) ws["A1"].s = { font: { bold: true, size: 16, color: { rgb: "1E293B" } } };
+  if (ws["A2"]) ws["A2"].s = { font: { size: 12, color: { rgb: "475569" } } };
+  if (ws["A3"]) ws["A3"].s = { font: { bold: true, size: 11, color: { rgb: "1E293B" } } };
+  if (ws["A4"]) ws["A4"].s = { font: { size: 10, color: { rgb: "94A3B8" } } };
+
+  // Summary rows (rows 6–8, 0-indexed 5–7)
+  [5, 6, 7].forEach((r) => {
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${r + 1}`;
+      if (ws[addr]) {
+        const isValue = c === "B" || c === "D";
+        ws[addr].s = {
+          font: { bold: true, size: isValue ? 14 : 10, color: { rgb: isValue ? "1E293B" : "64748B" } },
+          fill: { fgColor: { rgb: "F1F5F9" } },
+          alignment: { horizontal: isValue ? "center" : "right" },
+        };
+      }
+    });
+  });
+
+  // Businesses section header
+  const bSecAddr = `A${businessHeaderRow}`;
+  if (ws[bSecAddr]) ws[bSecAddr].s = {
+    font: { bold: true, size: 10, color: { rgb: "FFFFFF" } },
+    fill: { fgColor: { rgb: "1E293B" } },
+  };
+
+  // Businesses column header row
+  const bhRow = businessHeaderRow + 1;
+  ["A","B","C","D"].forEach((c) => {
+    const addr = `${c}${bhRow}`;
+    if (ws[addr]) ws[addr].s = {
+      font: { bold: true, size: 10, color: { rgb: "475569" } },
+      fill: { fgColor: { rgb: "E2E8F0" } },
+    };
+  });
+
+  // Business data rows — alternate shading + status color on col B
+  const statusColors: Record<string, string> = {
+    cleaned: "16A34A", moved: "D97706", pending: "6B7280", missed: "DC2626",
+  };
+  let dataRow = businessHeaderRow + 2; // 1-based
+  items.forEach((item) => {
+    // Main row
+    const bg = { fgColor: { rgb: dataRow % 2 === 0 ? "FFFFFF" : "F8FAFC" } };
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${dataRow}`;
+      if (ws[addr]) ws[addr].s = { fill: bg, font: { bold: c === "A" } };
+    });
+    const statusAddr = `B${dataRow}`;
+    if (ws[statusAddr]) ws[statusAddr].s = {
+      fill: bg,
+      font: { bold: true, color: { rgb: statusColors[item.status] ?? "6B7280" } },
+    };
+    dataRow++;
+
+    // Sub-row (address + notes) — muted italic style
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${dataRow}`;
+      if (ws[addr]) ws[addr].s = {
+        font: { italic: true, size: 9, color: { rgb: "94A3B8" } },
+        fill: { fgColor: { rgb: "FAFAFA" } },
       };
-    }
+    });
+    dataRow++;
   });
 
-  // Style data rows
-  items.forEach((item, idx) => {
-    const rowNum = headerRowIdx + 2 + idx; // 1-based sheet row
-    const statusCell = `E${rowNum}`;
-    if (ws[statusCell]) {
-      const color =
-        item.status === "cleaned" ? "16A34A" :
-        item.status === "moved"   ? "D97706" :
-        item.status === "pending" ? "6B7280" : "DC2626";
-      ws[statusCell].s = { font: { bold: true, color: { rgb: color } } };
-    }
-  });
-
-  // Title style
-  if (ws["A1"]) {
-    ws["A1"].s = { font: { bold: true, size: 14, color: { rgb: "1E293B" } } };
-  }
-
-  // Merge title across columns
-  ws["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
-    { s: { r: 2, c: 0 }, e: { r: 2, c: 8 } },
-    { s: { r: 3, c: 0 }, e: { r: 3, c: 8 } },
-  ];
-
-  ws["!pageSetup"] = { paperSize: 1, orientation: "landscape", fitToWidth: 1 };
+  // Portrait, fit to page width
+  ws["!pageSetup"] = { paperSize: 1, orientation: "portrait", fitToWidth: 1, fitToHeight: 0 };
+  ws["!margins"] = { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0, footer: 0 };
 
   XLSX.utils.book_append_sheet(wb, ws, "Daily Report");
   const arrayBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });

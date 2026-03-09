@@ -167,13 +167,16 @@ function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance
   });
 
   // ── Field notes ──
+  const noteRowIndices: number[] = []; // track which rows need tall height + wrap
   if (fieldNotes.length > 0) {
     wsData.push([]); row++;
     wsData.push(["FIELD NOTES", "", "", ""]);
     merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
     const notesHeaderRow = row; row++;
 
-    wsData.push(["Category", "Note", "", "Time"]);
+    wsData.push(["Category", "", "Time", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+    merges.push({ s: { r: row, c: 2 }, e: { r: row, c: 3 } });
     const notesColHeaderRow = row; row++;
 
     fieldNotes.forEach((n) => {
@@ -181,14 +184,20 @@ function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance
         hour: "numeric", minute: "2-digit", hour12: true,
         timeZone: "America/Los_Angeles",
       });
-      wsData.push([
-        CATEGORY_LABELS[n.category] ?? n.category,
-        n.text,
-        "",
-        time,
-      ]);
-      merges.push({ s: { r: row, c: 1 }, e: { r: row, c: 2 } });
+      // Row 1: Category label | Time
+      wsData.push([CATEGORY_LABELS[n.category] ?? n.category, "", time, ""]);
+      merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+      merges.push({ s: { r: row, c: 2 }, e: { r: row, c: 3 } });
       row++;
+
+      // Row 2: Full note text, full width, wrapped
+      wsData.push([n.text, "", "", ""]);
+      merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+      noteRowIndices.push(row); // mark for wrap + tall height
+      row++;
+
+      // Spacer
+      wsData.push([]); row++;
     });
   }
 
@@ -205,9 +214,30 @@ function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance
 
   // ── Row heights ──
   const rowHeights: any[] = [];
-  for (let i = 0; i < wsData.length; i++) rowHeights.push({ hpt: 18 });
+  for (let i = 0; i < wsData.length; i++) {
+    if (noteRowIndices.includes(i)) {
+      // Estimate height: ~15pt per 80 chars of text
+      const text = wsData[i][0] as string ?? "";
+      const lines = Math.max(2, Math.ceil(text.length / 80));
+      rowHeights.push({ hpt: lines * 15 });
+    } else {
+      rowHeights.push({ hpt: 18 });
+    }
+  }
   rowHeights[0] = { hpt: 26 }; // title
   ws["!rows"] = rowHeights;
+
+  // Enable wrapText on all note text cells
+  noteRowIndices.forEach((r) => {
+    const addr = `A${r + 1}`;
+    if (ws[addr]) {
+      ws[addr].s = {
+        ...(ws[addr].s ?? {}),
+        alignment: { wrapText: true, vertical: "top" },
+        font: { size: 11, color: { rgb: "1E293B" } },
+      };
+    }
+  });
 
   // ── Styles ──
 

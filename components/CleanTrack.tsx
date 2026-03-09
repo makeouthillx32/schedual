@@ -62,6 +62,29 @@ function getLocalDate(): string {
   return `${year}-${month}-${day}`;
 }
 
+// ─── Daily Notes helper (reads from DailyNotes localStorage) ───────────────
+
+type FieldNote = { id: string; text: string; category: string; createdAt: string };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  general:  "General",
+  contract: "Contract Change",
+  client:   "Client Issue",
+  followup: "Follow-Up Needed",
+};
+
+function getDailyNotes(): FieldNote[] {
+  try {
+    const now = new Date();
+    const pt = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const key = `daily-notes-${pt.getFullYear()}-${String(pt.getMonth() + 1).padStart(2, "0")}-${String(pt.getDate()).padStart(2, "0")}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Daily Export Generators ───────────────────────────────────────────────
 
 function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance | null): Blob {
@@ -111,6 +134,22 @@ function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance
     ["Added On-the-Fly", added],
     ["Completion Rate", items.length > 0 ? `${Math.round((cleaned / items.length) * 100)}%` : "0%"]
   );
+
+  // Field notes from DailyNotes tab
+  const fieldNotes = getDailyNotes();
+  if (fieldNotes.length > 0) {
+    wsData.push([], ["FIELD NOTES"], ["Category", "Note", "Time"]);
+    fieldNotes.forEach((n) => {
+      wsData.push([
+        CATEGORY_LABELS[n.category] ?? n.category,
+        n.text,
+        new Date(n.createdAt).toLocaleTimeString("en-US", {
+          hour: "numeric", minute: "2-digit", hour12: true,
+          timeZone: "America/Los_Angeles",
+        }),
+      ]);
+    });
+  }
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
@@ -182,6 +221,14 @@ function generateDailyHTML(items: CleanTrackItem[], instance: DailyInstance | nu
   const moved = items.filter((i) => i.status === "moved").length;
   const pending = items.filter((i) => i.status === "pending").length;
   const added = items.filter((i) => i.is_added).length;
+  const fieldNotes = getDailyNotes();
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    general:  "#6b7280",
+    contract: "#d97706",
+    client:   "#dc2626",
+    followup: "#2563eb",
+  };
 
   const statusColor = (s: string) =>
     s === "cleaned" ? "#16a34a" : s === "moved" ? "#d97706" : s === "pending" ? "#6b7280" : "#dc2626";
@@ -254,6 +301,39 @@ function generateDailyHTML(items: CleanTrackItem[], instance: DailyInstance | nu
       </thead>
       <tbody>${rows}</tbody>
     </table>
+
+    ${fieldNotes.length > 0 ? `
+    <div style="margin-top:36px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:12px;">Field Notes & Updates</div>
+      <table>
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;white-space:nowrap;">Category</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;">Note</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;white-space:nowrap;">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fieldNotes.map((n, i) => {
+            const color = CATEGORY_COLORS[n.category] ?? "#6b7280";
+            const time = new Date(n.createdAt).toLocaleTimeString("en-US", {
+              hour: "numeric", minute: "2-digit", hour12: true,
+              timeZone: "America/Los_Angeles",
+            });
+            return `<tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"};border-bottom:1px solid #e2e8f0;">
+              <td style="padding:8px 10px;white-space:nowrap;">
+                <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;
+                  background:${color}22;color:${color};border:1px solid ${color}55;text-transform:uppercase;letter-spacing:.5px;">
+                  ${CATEGORY_LABELS[n.category] ?? n.category}
+                </span>
+              </td>
+              <td style="padding:8px 10px;font-size:13px;color:#1e293b;">${n.text}</td>
+              <td style="padding:8px 10px;font-size:12px;color:#64748b;white-space:nowrap;">${time}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>` : ""}
 
     <div style="margin-top:48px;border-top:2px solid #1e293b;padding-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
       ${["Technician Signature", "Supervisor Review", "Date Submitted"]

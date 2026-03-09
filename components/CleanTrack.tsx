@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/app/provider";
-import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search, FileDown, FileSpreadsheet, Printer, ChevronDown } from "lucide-react";
 import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
 import { CMSBillingTemplate, BusinessCleaningRecord } from "@/lib/CMSBillingTemplate";
 import * as XLSX from "sheetjs-style";
@@ -295,6 +295,20 @@ export default function CleanTrack({
   const [currentMonth, setCurrentMonth] = useState(() => getPacificTimeDate().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(() => getPacificTimeDate().getFullYear());
 
+  const [showDailyDropdown, setShowDailyDropdown] = useState(false);
+  const dailyDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close daily dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dailyDropdownRef.current && !dailyDropdownRef.current.contains(e.target as Node)) {
+        setShowDailyDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [availableBusinesses, setAvailableBusinesses] = useState<AvailableBusiness[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -464,23 +478,6 @@ export default function CleanTrack({
     ["January","February","March","April","May","June","July","August","September","October","November","December"][currentMonth - 1] || "";
 
   // ─── Export templates ────────────────────────────────────────────────────
-
-  // Capture current state for the daily template closure
-  const dailyExportItems = cleanTrack;
-  const dailyExportInstance = currentInstance;
-
-  const dailyTemplate: ExportTemplate = {
-    id: "cms-daily-report",
-    name: "Daily Report",
-    data: { date: getLocalDate() },
-    generator: async (_data, format) => {
-      if (format === "excel") {
-        return generateDailyExcelBlob(dailyExportItems, dailyExportInstance);
-      } else {
-        return generateDailyHTML(dailyExportItems, dailyExportInstance);
-      }
-    },
-  };
 
   const billingTemplate: ExportTemplate = {
     id: "cms-billing-unified",
@@ -768,15 +765,57 @@ export default function CleanTrack({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Daily export — always available when there are items */}
+            {/* Daily export — scoped to today's cleanTrack only */}
             {cleanTrack.length > 0 && (
-              <UniversalExportButton
-                template={dailyTemplate}
-                filename={`DART_Daily_Report_${getLocalDate()}`}
-                disabled={instanceLoading}
-                size="md"
-                variant="outline"
-              />
+              <div className="relative inline-block" ref={dailyDropdownRef}>
+                <button
+                  onClick={() => setShowDailyDropdown((v) => !v)}
+                  disabled={instanceLoading}
+                  className="px-4 py-2 text-sm font-medium rounded border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <FileDown size={15} />
+                  Export Today
+                  <ChevronDown size={13} />
+                </button>
+                {showDailyDropdown && (
+                  <div className={`absolute bottom-full mb-1 left-0 w-52 rounded-md shadow-lg z-50 border border-[hsl(var(--border))] ${isDark ? "bg-[hsl(var(--card))]" : "bg-white"}`}>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowDailyDropdown(false);
+                          const blob = generateDailyExcelBlob(cleanTrack, currentInstance);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `DART_Daily_Report_${getLocalDate()}.xlsx`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[hsl(var(--accent))] transition-colors ${isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"}`}
+                      >
+                        <FileSpreadsheet size={15} className="text-green-600" />
+                        Download Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDailyDropdown(false);
+                          const html = generateDailyHTML(cleanTrack, currentInstance);
+                          const win = window.open("", "_blank");
+                          if (!win) return;
+                          win.document.write(html);
+                          win.document.close();
+                          win.focus();
+                          win.print();
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[hsl(var(--accent))] transition-colors ${isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"}`}
+                      >
+                        <Printer size={15} className="text-blue-600" />
+                        Print / Save PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Monthly billing export — only when billing data is loaded */}

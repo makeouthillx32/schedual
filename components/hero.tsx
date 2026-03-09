@@ -9,8 +9,9 @@ import WeatherWidget from "@/components/WeatherWidget";
 import ScheduleList from "@/components/ScheduleList";
 import TeamMembersList from "@/components/TeamMembersList";
 import CleanTrack from "@/components/CleanTrack";
+import DailyNotes from "@/components/DailyNotes";
 import { useTheme } from "@/app/provider";
-import { Calendar, CheckCircle2 } from "lucide-react";
+import { Calendar, CheckCircle2, FileText } from "lucide-react";
 
 interface JobSchedule {
   business_name: string;
@@ -58,7 +59,6 @@ interface DailyInstance {
 // Helper function to get local date for Ridgecrest, CA (Pacific Time)
 function getLocalDate(): string {
   const now = new Date();
-  // Convert to Pacific Time (UTC-8 or UTC-7 depending on DST)
   const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
   const year = pacificTime.getFullYear();
   const month = String(pacificTime.getMonth() + 1).padStart(2, '0');
@@ -66,14 +66,12 @@ function getLocalDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-// Helper function to get local day name for Ridgecrest, CA
 function getLocalDayName(): string {
   const now = new Date();
   const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
   return pacificTime.toLocaleString("en-US", { weekday: "long" }).toLowerCase();
 }
 
-// Helper function to get local week number for Ridgecrest, CA
 function getLocalWeekNumber(): number {
   const now = new Date();
   const pacificTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
@@ -95,7 +93,7 @@ const Hero = () => {
     before_open: boolean;
     address: string;
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<"schedule" | "team" | "clean-track">("schedule");
+  const [activeTab, setActiveTab] = useState<"schedule" | "team" | "clean-track" | "notes">("schedule");
   
   const [currentInstance, setCurrentInstance] = useState<DailyInstance | null>(null);
   const [cleanTrack, setCleanTrack] = useState<CleanTrackItem[]>([]);
@@ -111,7 +109,6 @@ const Hero = () => {
       .catch(console.error);
   }, []);
 
-  // Set current day and week using Pacific Time for Ridgecrest, CA
   useEffect(() => {
     setDay(getLocalDayName());
     setWeek(getLocalWeekNumber());
@@ -140,7 +137,7 @@ const Hero = () => {
     if (!day || week <= 0) return;
     
     setInstanceLoading(true);
-    const dateStr = getLocalDate(); // Use local date for Ridgecrest, CA
+    const dateStr = getLocalDate();
 
     try {
       const instanceRes = await fetch(
@@ -176,15 +173,12 @@ const Hero = () => {
     const loadDailyData = async () => {
       setInstanceLoading(true);
       try {
-        const dateStr = getLocalDate(); // Use local date for Ridgecrest, CA
-
+        const dateStr = getLocalDate();
         console.log("🔍 Loading daily data for:", { dateStr, week, day });
 
-        // Initialize variables
         let instanceData = null;
         let allItems: CleanTrackItem[] = [];
 
-        // Try to load the daily instance - but don't fail if it doesn't work
         try {
           const instanceRes = await fetch(
             `/api/schedule/daily-instances?date=${dateStr}&week=${week}&day=${day}`
@@ -194,7 +188,6 @@ const Hero = () => {
             instanceData = await instanceRes.json();
             setCurrentInstance(instanceData.instance);
             
-            // Check for businesses moved to today from other days
             const movedToToday = await checkForMovedBusinesses(dateStr);
             allItems = [...(instanceData.items || []), ...movedToToday];
             
@@ -211,7 +204,6 @@ const Hero = () => {
           setCleanTrack([]);
         }
 
-        // Load the regular schedule data - this should always work
         const scheduleData = await fetchSchedule(week, day);
         
         if (!scheduleData.schedule?.length) {
@@ -222,14 +214,12 @@ const Hero = () => {
 
         console.log("📊 Schedule data received:", scheduleData.schedule);
 
-        // Get available members - filter out undefined/null and check they have name property
         const available = membersList.filter(
           (m) => m && m.name && m[day as keyof Member]
         );
 
         console.log("👥 Available members for", day, ":", available.map(m => m.name));
 
-        // Get completed business IDs from clean track
         const completedBusinessIds = new Set(
           allItems
             ?.filter((item: CleanTrackItem) => item.status === "cleaned")
@@ -238,9 +228,7 @@ const Hero = () => {
 
         const updated = scheduleData.schedule.map((entry: any) => {
           console.log("🏢 Processing business entry:", entry);
-          
           const isCompleted = completedBusinessIds.has(entry.business_id);
-          
           return {
             ...entry,
             isCompleted,
@@ -280,7 +268,6 @@ const Hero = () => {
     const available = membersList.filter(
       (m) => m && m.name && m[day as keyof Member]
     );
-
     setSchedule((prev) =>
       prev.map((entry) => ({
         ...entry,
@@ -315,9 +302,7 @@ const Hero = () => {
         body: JSON.stringify(updateData)
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to update business status");
-      }
+      if (!res.ok) throw new Error("Failed to update business status");
 
       const result = await res.json();
 
@@ -357,12 +342,11 @@ const Hero = () => {
 
   const handleMoveBusinessToDate = async (businessId: number, date: string) => {
     if (!date) return;
-
     await updateBusinessStatus(businessId, "moved", date);
   };
 
   const handleDateChange = (businessId: number, date: string) => {
-    // This function is no longer needed with the new move flow
+    // no-op — kept for interface compatibility
   };
 
   const handleAddBusiness = async (businessId: number, notes?: string) => {
@@ -375,12 +359,10 @@ const Hero = () => {
     try {
       console.log(`➕ Adding business ${businessId} to today's track`);
 
-      // First, get the business details
       const businessRes = await fetch(`/api/schedule/businesses?id=${businessId}`);
       if (!businessRes.ok) throw new Error('Failed to fetch business details');
       const businessData = await businessRes.json();
 
-      // Add to current instance
       const addData = {
         instance_id: currentInstance.id,
         business_id: businessId,
@@ -399,7 +381,6 @@ const Hero = () => {
       const result = await res.json();
       console.log("✅ Business added to instance:", result);
 
-      // Update local clean track state
       const newItem: CleanTrackItem = {
         id: result.item.id,
         business_id: businessId,
@@ -408,13 +389,10 @@ const Hero = () => {
         before_open: businessData.before_open,
         status: 'pending',
         notes: notes || 'Added on-the-fly - moved from another day',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       };
 
       setCleanTrack(prev => [...prev, newItem]);
 
-      // Update schedule list to show the new business
       const available = membersList.filter(
         (m) => m && m.name && m[day as keyof Member]
       );
@@ -440,7 +418,6 @@ const Hero = () => {
       };
 
       setSchedule(prev => [...prev, newScheduleItem]);
-
       console.log("✅ Added business to both Clean Track and Schedule");
 
     } catch (error) {
@@ -448,6 +425,13 @@ const Hero = () => {
       alert("Failed to add business. Please try again.");
     }
   };
+
+  const tabs: { id: "schedule" | "team" | "clean-track" | "notes"; label: string; icon?: React.ReactNode }[] = [
+    { id: "schedule",    label: "Schedule" },
+    { id: "team",        label: "Team Members" },
+    { id: "clean-track", label: "Clean Track", icon: <CheckCircle2 size={14} /> },
+    { id: "notes",       label: "Notes",       icon: <FileText size={14} /> },
+  ];
 
   return (
     <div
@@ -462,10 +446,7 @@ const Hero = () => {
           Cleaning Schedule
         </h2>
         <div className="flex items-center mt-2">
-          <Calendar
-            size={18}
-            className="mr-2 text-[hsl(var(--sidebar-primary))]"
-          />
+          <Calendar size={18} className="mr-2 text-[hsl(var(--sidebar-primary))]" />
           <span className="text-[hsl(var(--muted-foreground))]">
             Week {week} - {day.charAt(0).toUpperCase() + day.slice(1)} ({getLocalDate()})
           </span>
@@ -477,45 +458,24 @@ const Hero = () => {
         <RandomizerButton onClick={randomizeSchedule} />
       </div>
 
+      {/* Tab bar */}
       <div className="mb-6 border-b border-[hsl(var(--border))]">
         <ul className="flex flex-wrap -mb-px">
-          <li className="mr-6">
-            <button
-              onClick={() => setActiveTab("schedule")}
-              className={`inline-block py-2 ${
-                activeTab === "schedule"
-                  ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
-                  : "text-[hsl(var(--muted-foreground))]"
-              }`}
-            >
-              Schedule
-            </button>
-          </li>
-          <li className="mr-6">
-            <button
-              onClick={() => setActiveTab("team")}
-              className={`inline-block py-2 ${
-                activeTab === "team"
-                  ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
-                  : "text-[hsl(var(--muted-foreground))]"
-              }`}
-            >
-              Team Members
-            </button>
-          </li>
-          <li className="mr-6">
-            <button
-              onClick={() => setActiveTab("clean-track")}
-              className={`inline-block py-2 flex items-center ${
-                activeTab === "clean-track"
-                  ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
-                  : "text-[hsl(var(--muted-foreground))]"
-              }`}
-            >
-              <CheckCircle2 size={16} className="mr-1" />
-              Clean Track
-            </button>
-          </li>
+          {tabs.map(tab => (
+            <li key={tab.id} className="mr-6">
+              <button
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex items-center gap-1.5 py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "text-[hsl(var(--sidebar-primary))] border-b-2 border-[hsl(var(--sidebar-primary))]"
+                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -550,10 +510,7 @@ const Hero = () => {
           )}
 
           {activeTab === "team" && (
-            <TeamMembersList 
-              members={membersList} 
-              currentDay={day} 
-            />
+            <TeamMembersList members={membersList} currentDay={day} />
           )}
           
           {activeTab === "clean-track" && (
@@ -568,6 +525,10 @@ const Hero = () => {
               onRefreshInstance={handleRefreshInstance}
               onAddBusiness={handleAddBusiness}
             />
+          )}
+
+          {activeTab === "notes" && (
+            <DailyNotes />
           )}
         </>
       )}

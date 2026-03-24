@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
 import { useTheme } from "@/app/provider";
 import Link from "next/link";
 import SwitchtoDarkMode from "./SwitchtoDarkMode";
@@ -15,15 +14,11 @@ interface NavProps {
 
 const Nav: React.FC<NavProps> = ({ pageTitle }) => {
   const { themeType } = useTheme();
-  const isDark = themeType === "dark";
 
   return (
     <nav
-      className={`flex justify-between items-center px-4 py-3 transition-colors gap-2 ${
-        isDark
-          ? "bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"
-          : "bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))]"
-      } shadow-[var(--shadow-sm)]`}
+      data-layout="app"
+      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] shadow-[var(--shadow-sm)]"
     >
       {/* Left: logo + page title */}
       <div className="flex items-center gap-3 min-w-0">
@@ -50,8 +45,8 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
         {/* Push permission banner — only visible when not yet subscribed */}
         <PushPermissionBanner />
 
-        {/* Notification bell — same component as dashboard header */}
-        <Notification />
+        {/* Notification bell — messages only on app pages */}
+        <Notification messagesOnly />
 
         {/* Theme toggle */}
         <SwitchtoDarkMode />

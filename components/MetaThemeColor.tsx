@@ -3,56 +3,66 @@
 import { useEffect } from "react";
 import { useTheme } from "@/app/provider";
 
+/**
+ * Sets the iOS/PWA status bar color from the layout-tokens.css system.
+ *
+ * layout-tokens.css defines --lt-status-bar on each [data-layout] element,
+ * always mirroring --gp-bg (the page background). We read it from the
+ * nearest [data-layout] ancestor — or fall back to :root --background.
+ *
+ * This is the single source of truth. The competing approaches in
+ * providers.tsx, theme-color-handler.tsx, and ios-status-bar-fix.tsx
+ * can be removed once this is confirmed working.
+ */
 export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
   const { themeType } = useTheme();
-  const isDark = themeType === "dark";
 
   useEffect(() => {
-    // Function to get computed CSS variable value
-    const getCSSVariable = (variable: string): string => {
-      const root = document.documentElement;
-      const value = getComputedStyle(root).getPropertyValue(variable).trim();
-      return value || '';
-    };
+    const root = document.documentElement;
+    const computed = getComputedStyle(root);
 
-    const meta = document.querySelector('meta[name="theme-color"]') || document.createElement("meta");
-    meta.setAttribute("name", "theme-color");
+    // Try to read --lt-status-bar from the nearest [data-layout] element.
+    // For "app" type pages the nav has data-layout="app",
+    // for "home" we fall back to root background.
+    let color = "";
 
-    let color;
-
-    if (type === "home") {
-      // For home pages, use home-prefixed variables
-      color = isDark 
-        ? getCSSVariable('--sidebar') 
-        : getCSSVariable('--background');
-    } else {
-      // For app pages, use standard variables
-      color = isDark 
-        ? getCSSVariable('--background') 
-        : getCSSVariable('--background');
-    }
-
-    // Ensure we have a valid color or fall back to defaults
-    if (!color || !color.startsWith('#') && !color.startsWith('hsl') && !color.startsWith('rgb')) {
-      // Try secondary source if primary failed
-      if (type === "home") {
-        color = isDark 
-          ? getCSSVariable('--sidebar') // Fall back to regular sidebar 
-          : getCSSVariable('--background'); // Fall back to regular background
-      }
-      
-      // If still no valid color, use hardcoded defaults
-      if (!color || !color.startsWith('#') && !color.startsWith('hsl') && !color.startsWith('rgb')) {
-        color = isDark ? "#111827" : "#ffffff";
+    if (type === "app") {
+      // Find the first [data-layout] element on the page
+      const layoutEl = document.querySelector("[data-layout]");
+      if (layoutEl) {
+        color = getComputedStyle(layoutEl)
+          .getPropertyValue("--lt-status-bar")
+          .trim();
       }
     }
 
-    meta.setAttribute("content", color);
-    
-    if (!document.head.contains(meta)) {
+    // Fall back to root --background if no layout element found
+    // or if this is a home page
+    if (!color) {
+      const raw = computed.getPropertyValue("--background").trim();
+      // --background is bare HSL components e.g. "240 9.09% 97.84%"
+      color = raw.includes("(") ? raw : `hsl(${raw})`;
+    }
+
+    // Ensure proper hsl() wrapping
+    if (color && !color.startsWith("#") && !color.startsWith("hsl") && !color.startsWith("rgb")) {
+      color = `hsl(${color})`;
+    }
+
+    // Final fallback
+    if (!color) {
+      color = themeType === "dark" ? "#111827" : "#ffffff";
+    }
+
+    // Set the meta tag
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
       document.head.appendChild(meta);
     }
-  }, [themeType, type, isDark]);
+    meta.setAttribute("content", color);
+  }, [themeType, type]);
 
   return null;
 }

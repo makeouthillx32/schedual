@@ -19,13 +19,10 @@ export function Sidebar() {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const toggleExpanded = (title: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(title) ? [] : [title]
-    );
+    setExpandedItems((prev) => (prev.includes(title) ? [] : [title]));
   };
 
   useEffect(() => {
-    // Keep collapsible open when its subpage is active
     NAV_DATA.some((section) =>
       section.items.some((item) =>
         item.items.some((subItem) => {
@@ -43,7 +40,7 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300"
@@ -53,6 +50,7 @@ export function Sidebar() {
       )}
 
       <aside
+        data-layout="sidebar"
         className={cn(
           "max-w-[290px] overflow-hidden border-r border-[hsl(var(--border))] bg-[hsl(var(--sidebar))] transition-[width] duration-200 ease-linear dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))]",
           isMobile ? "fixed bottom-0 top-0 z-50" : "sticky top-0 h-screen",
@@ -83,7 +81,6 @@ export function Sidebar() {
             )}
           </div>
 
-          {/* Navigation Sections */}
           <div className="custom-scrollbar mt-6 flex-1 overflow-y-auto pr-3 min-[850px]:mt-10">
             {NAV_DATA.map((section) => (
               <div key={section.label} className="mb-6">
@@ -108,10 +105,7 @@ export function Sidebar() {
                                 isActive={isSectionActive}
                                 onClick={() => toggleExpanded(item.title)}
                               >
-                                <item.icon
-                                  className="size-6 shrink-0"
-                                  aria-hidden="true"
-                                />
+                                <item.icon className="size-6 shrink-0" aria-hidden="true" />
                                 <span>{item.title}</span>
                                 <ChevronUp
                                   className={cn(
@@ -123,24 +117,18 @@ export function Sidebar() {
                               </MenuItem>
 
                               {expandedItems.includes(item.title) && (
-                                <ul
-                                  className="ml-9 mr-0 space-y-1.5 pb-[15px] pr-0 pt-2"
-                                  role="menu"
-                                >
-                                  {item.items.map((subItem) => {
-                                    const href = `${base}${subItem.url}`;
-                                    return (
-                                      <li key={subItem.title} role="none">
-                                        <MenuItem
-                                          as="link"
-                                          href={href}
-                                          isActive={pathname === href}
-                                        >
-                                          <span>{subItem.title}</span>
-                                        </MenuItem>
-                                      </li>
-                                    );
-                                  })}
+                                <ul className="ml-9 space-y-1.5">
+                                  {item.items.map((subItem) => (
+                                    <li key={subItem.url}>
+                                      <MenuItem
+                                        isActive={`${base}${subItem.url}` === pathname}
+                                        component="a"
+                                        href={`${base}${subItem.url}`}
+                                      >
+                                        <span>{subItem.title}</span>
+                                      </MenuItem>
+                                    </li>
+                                  ))}
                                 </ul>
                               )}
                             </div>
@@ -148,24 +136,14 @@ export function Sidebar() {
                         );
                       }
 
-                      // Single link item
-                      const href =
-                        "url" in item
-                          ? `${base}${item.url}`
-                          : `${base}/${item.title.toLowerCase().replace(/ /g, "-")}`;
-
                       return (
                         <li key={item.title}>
                           <MenuItem
-                            className="flex items-center gap-3 py-3"
-                            as="link"
-                            href={href}
-                            isActive={pathname === href}
+                            isActive={`${base}${item.url}` === pathname}
+                            component="a"
+                            href={`${base}${item.url}`}
                           >
-                            <item.icon
-                              className="size-6 shrink-0"
-                              aria-hidden="true"
-                            />
+                            <item.icon className="size-6 shrink-0" aria-hidden="true" />
                             <span>{item.title}</span>
                           </MenuItem>
                         </li>

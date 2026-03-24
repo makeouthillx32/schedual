@@ -14,7 +14,10 @@ export function Header() {
   const { toggleSidebar, isMobile } = useSidebarContext();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-5 shadow-[var(--shadow-sm)] dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))] md:px-5 2xl:px-10">
+    <header
+      data-layout="dashboard"
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-5 shadow-[var(--shadow-sm)] dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))] md:px-5 2xl:px-10"
+    >
       <button
         onClick={toggleSidebar}
         className="rounded-[var(--radius)] border border-[hsl(var(--border))] px-1.5 py-1 dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--background))] hover:dark:bg-[hsla(var(--background),0.1)] lg:hidden"
@@ -39,7 +42,9 @@ export function Header() {
         <h1 className="mb-0.5 text-heading-5 font-bold text-[hsl(var(--foreground))] dark:text-[hsl(var(--card-foreground))]">
           Dashboard
         </h1>
-        <p className="font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))]">DART Dashboard</p>
+        <p className="font-medium text-[hsl(var(--muted-foreground))] dark:text-[hsl(var(--muted-foreground))]">
+          DART Dashboard
+        </p>
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-2 min-[375px]:gap-4">
@@ -52,12 +57,10 @@ export function Header() {
           <SearchIcon className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 max-[1015px]:size-5" />
         </div>
 
-        {/* Wrap theme toggle to prevent size constraints */}
         <div className="flex items-center justify-center">
           {isMobile ? <SwitchtoDarkMode /> : <ThemeToggleSwitch />}
         </div>
 
-        {/* This will show the notification bell with dot */}
         <Notification />
 
         <div className="shrink-0">

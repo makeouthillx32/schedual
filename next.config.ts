@@ -1,5 +1,4 @@
 // next.config.ts
-
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -12,62 +11,57 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Add CORS headers for OpenGraph images
   async headers() {
     return [
+      // ── PWA — service worker must have this scope header ──
       {
-        source: '/opengraph-image.png',
+        source: "/sw.js",
         headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600',
-          },
+          { key: "Cache-Control",   value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type",    value: "application/javascript" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      // ── PWA manifest ──
+      {
+        source: "/manifest.json",
+        headers: [
+          { key: "Content-Type", value: "application/manifest+json" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
+        ],
+      },
+      // ── OG images ──
+      {
+        source: "/opengraph-image.png",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
         ],
       },
       {
-        source: '/twitter-image.png',
+        source: "/twitter-image.png",
         headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=3600',
-          },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
         ],
       },
     ];
   },
   typescript: {
-    ignoreBuildErrors: true, // ⛔ Temporarily disables type-checking for production builds
+    ignoreBuildErrors: true,
   },
-  // Fix for Watchpack watcher errors
   webpack: (config, { dev }) => {
     if (dev) {
-      // Configure webpack watcher for development
       config.watchOptions = {
-        poll: 1000, // Check for changes every second
-        aggregateTimeout: 300, // Delay rebuild after first change
-        ignored: [
-          '**/node_modules/**',
-          '**/.git/**',
-          '**/.next/**',
-          '**/dist/**',
-          '**/build/**',
-        ],
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ["**/node_modules/**", "**/.git/**", "**/.next/**"],
       };
     }
     return config;
   },
-  // Additional Next.js experimental features to reduce watcher load
   experimental: {
-    // Reduce the number of files being watched
-    optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
   },
 };
 

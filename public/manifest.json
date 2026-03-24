@@ -1,0 +1,40 @@
+{
+  "name": "DART Thrift",
+  "short_name": "DART",
+  "description": "DART Commercial Services — Delivery & Operations",
+  "start_url": "/Delivery",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/home/dartlogo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Delivery Board",
+      "url": "/Delivery",
+      "description": "Open the driver board"
+    },
+    {
+      "name": "New Order",
+      "url": "/Tools/delivery-intake",
+      "description": "Schedule a new delivery or pickup"
+    }
+  ]
+}

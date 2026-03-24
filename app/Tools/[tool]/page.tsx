@@ -5,8 +5,10 @@ import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import { use } from "react";
 
-// Map of tools
 const toolsMap: Record<string, React.ComponentType> = {
+  "delivery-intake": dynamic(() =>
+    import("@/components/tools/DeliveryIntakeForm")
+  ),
   "timesheet-calculator": dynamic(() =>
     import("@/components/tools/timesheet-calculator")
   ),
@@ -18,22 +20,17 @@ const toolsMap: Record<string, React.ComponentType> = {
 };
 
 const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {
-  // Unwrap the `params` Promise
   const resolvedParams = use(params);
   const { tool } = resolvedParams;
 
   const ToolComponent = toolsMap[tool];
 
   if (!ToolComponent) {
-    notFound(); // Show 404 if the tool doesn't exist
+    notFound();
     return null;
   }
 
-  return (
-    <div>
-      <ToolComponent />
-    </div>
-  );
+  return <ToolComponent />;
 };
 
 export default ToolPage;

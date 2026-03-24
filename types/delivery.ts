@@ -1,5 +1,4 @@
 // types/delivery.ts
-// Delivery & Pickup order types for the DART Thrift delivery module
 
 export type OrderStatus = "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
 export type OrderType = "delivery" | "pickup";
@@ -18,6 +17,8 @@ export interface DeliveryOrder {
   item_notes: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  /** Driver-adjustable time override — takes precedence over scheduled_time when set */
+  scheduled_time_override: string | null;
   payment_status: PaymentStatus;
   payment_notes: string | null;
   taken_by: string | null;

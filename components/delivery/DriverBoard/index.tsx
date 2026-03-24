@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { ShowcaseSection } from "@/components/Layouts/showcase-section";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Plus, Trash2, CheckCircle2, Circle } from "lucide-react";
-import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR } from "@/types/delivery";
+import { RefreshCw, Plus, Trash2, CheckCircle2, Circle, Clock } from "lucide-react";
+import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR, TIME_SLOTS } from "@/types/delivery";
 import { getLocalDate, formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
 
 type FilterView = "today" | "upcoming" | "all";
@@ -28,20 +27,24 @@ interface DriverBoardProps {
 export default function DriverBoard({ supabase, isDark, onCountsChange }: DriverBoardProps) {
   const today = getLocalDate();
 
-  // ── Delivery orders state ──────────────────────────────────────────────────
-  const [orders, setOrders]   = useState<DeliveryOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter]   = useState<FilterView>("today");
+  // ── Delivery orders ────────────────────────────────────────────────────────
+  const [orders,   setOrders]   = useState<DeliveryOrder[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [filter,   setFilter]   = useState<FilterView>("today");
   const [updating, setUpdating] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // ── Trash runs state ───────────────────────────────────────────────────────
-  const [trashRuns, setTrashRuns]       = useState<TrashRun[]>([]);
-  const [showAddTrash, setShowAddTrash] = useState(false);
-  const [trashNote, setTrashNote]       = useState("");
-  const [addingTrash, setAddingTrash]   = useState(false);
+  // ── Time override UI — keyed by order id ──────────────────────────────────
+  const [editingTime, setEditingTime]   = useState<string | null>(null);
+  const [pendingTime, setPendingTime]   = useState<string>("");
 
-  // ── Fetch orders ───────────────────────────────────────────────────────────
+  // ── Trash runs ─────────────────────────────────────────────────────────────
+  const [trashRuns,    setTrashRuns]    = useState<TrashRun[]>([]);
+  const [showAddTrash, setShowAddTrash] = useState(false);
+  const [trashNote,    setTrashNote]    = useState("");
+  const [addingTrash,  setAddingTrash]  = useState(false);
+
+  // ── Fetch helpers ──────────────────────────────────────────────────────────
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     let query = supabase
@@ -49,7 +52,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
       .select("*")
       .not("status", "in", '("cancelled","completed")')
       .order("scheduled_date", { ascending: true })
-      .order("scheduled_time",  { ascending: true });
+      .order("scheduled_time", { ascending: true });
 
     if (filter === "today")    query = query.or(`scheduled_date.eq.${today},scheduled_date.is.null`);
     if (filter === "upcoming") query = query.gte("scheduled_date", today);
@@ -64,7 +67,6 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     setLoading(false);
   }, [supabase, filter, today, onCountsChange]);
 
-  // ── Fetch trash runs ───────────────────────────────────────────────────────
   const fetchTrashRuns = useCallback(async () => {
     const { data } = await supabase
       .from("trash_runs")
@@ -85,7 +87,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     return () => { supabase.removeChannel(ch); };
   }, [fetchOrders, fetchTrashRuns]);
 
-  // ── Advance delivery order status ──────────────────────────────────────────
+  // ── Status advance ─────────────────────────────────────────────────────────
   const advanceStatus = async (order: DeliveryOrder) => {
     const cfg = STATUS_CFG[order.status];
     if (!cfg.next) return;
@@ -100,7 +102,6 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     const snapshot = [...orders];
     setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: cfg.next! } : o)));
     setUpdating(order.id);
-
     try {
       const { error } = await supabase
         .from("delivery_orders")
@@ -119,15 +120,60 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     }
   };
 
-  // ── Trash run handlers ─────────────────────────────────────────────────────
+  // ── Time override ──────────────────────────────────────────────────────────
+  // Converts "9:30 AM" → "09:30:00" for Postgres
+  const to24h = (t: string): string => {
+    const [time, mod] = t.split(" ");
+    let [h, m] = time.split(":").map(Number);
+    if (mod === "PM" && h !== 12) h += 12;
+    if (mod === "AM" && h === 12) h = 0;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  };
+
+  const saveTimeOverride = async (orderId: string) => {
+    if (!pendingTime) return;
+    const snapshot = [...orders];
+    const override = to24h(pendingTime);
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, scheduled_time_override: override } : o))
+    );
+    setEditingTime(null);
+    try {
+      const { error } = await supabase
+        .from("delivery_orders")
+        .update({ scheduled_time_override: override })
+        .eq("id", orderId);
+      if (error) throw error;
+    } catch (err) {
+      console.error("❌ Error saving time override:", err);
+      setOrders(snapshot);
+      alert("Failed to save time change. Please try again.");
+    }
+  };
+
+  const clearTimeOverride = async (orderId: string) => {
+    const snapshot = [...orders];
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, scheduled_time_override: null } : o))
+    );
+    try {
+      const { error } = await supabase
+        .from("delivery_orders")
+        .update({ scheduled_time_override: null })
+        .eq("id", orderId);
+      if (error) throw error;
+    } catch (err) {
+      setOrders(snapshot);
+      alert("Failed to clear time change.");
+    }
+  };
+
+  // ── Trash runs ─────────────────────────────────────────────────────────────
   const handleConfirmAddTrash = async () => {
     if (addingTrash) return;
     setAddingTrash(true);
     try {
-      await supabase.from("trash_runs").insert({
-        note:   trashNote.trim() || null,
-        status: "pending",
-      });
+      await supabase.from("trash_runs").insert({ note: trashNote.trim() || null, status: "pending" });
       setTrashNote("");
       setShowAddTrash(false);
       await fetchTrashRuns();
@@ -139,35 +185,27 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     }
   };
 
-  const handleCancelAddTrash = () => {
-    setShowAddTrash(false);
-    setTrashNote("");
-  };
-
   const toggleTrashRun = async (run: TrashRun) => {
-    // Optimistic update
     const snapshot = [...trashRuns];
     const next = run.status === "pending" ? "done" : "pending";
-    setTrashRuns((prev) =>
-      prev.map((r) => (r.id === run.id ? { ...r, status: next } : r))
-    );
+    setTrashRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, status: next } : r)));
     try {
       const { error } = await supabase
         .from("trash_runs")
-        .update({
-          status:       next,
-          completed_at: next === "done" ? new Date().toISOString() : null,
-        })
+        .update({ status: next, completed_at: next === "done" ? new Date().toISOString() : null })
         .eq("id", run.id);
       if (error) throw error;
     } catch (err) {
-      console.error("❌ Error updating trash run:", err);
       setTrashRuns(snapshot);
-      alert("Failed to update trash run. Please try again.");
+      alert("Failed to update trash run.");
     }
   };
 
-  // ── Status icon / text helpers ─────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  /** Returns the effective display time — override takes precedence */
+  const effectiveTime = (order: DeliveryOrder) =>
+    order.scheduled_time_override ?? order.scheduled_time;
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":   return <span className="text-xl">✅</span>;
@@ -190,11 +228,10 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
   return (
     <div className="space-y-4">
 
-      {/* ── Trash Runs ── */}
+      {/* ── Trash Runs ─────────────────────────────────────────────────────── */}
       <div className={`rounded-lg border border-[hsl(var(--border))] overflow-hidden ${
         isDark ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--background))]"
       }`}>
-        {/* Header row — mirrors CleanTrack's "Add Business" button */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-2">
             <Trash2 size={16} className="text-[hsl(var(--muted-foreground))]" />
@@ -205,28 +242,19 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
             onClick={() => setShowAddTrash(true)}
             className="px-3 py-1 text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center gap-1"
           >
-            <Plus size={14} />
-            Add Run
+            <Plus size={14} /> Add Run
           </button>
         </div>
-
-        {/* Trash run list */}
         {trashRuns.length === 0 ? (
           <p className="px-4 py-3 text-sm text-[hsl(var(--muted-foreground))]">No trash runs logged.</p>
         ) : (
           <div className="divide-y divide-[hsl(var(--border))]">
             {trashRuns.map((run) => (
               <div key={run.id} className="flex items-start space-x-3 px-4 py-3">
-                {/* Toggle icon — same pattern as CleanTrack status icon */}
-                <button
-                  onClick={() => toggleTrashRun(run)}
-                  className="mt-0.5 hover:scale-110 transition-transform shrink-0"
-                  title={run.status === "done" ? "Mark pending" : "Mark done"}
-                >
+                <button onClick={() => toggleTrashRun(run)} className="mt-0.5 hover:scale-110 transition-transform shrink-0">
                   {run.status === "done"
                     ? <CheckCircle2 size={20} className="text-green-600" />
-                    : <Circle      size={20} className="text-[hsl(var(--muted-foreground))]" />
-                  }
+                    : <Circle      size={20} className="text-[hsl(var(--muted-foreground))]" />}
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm ${run.status === "done" ? "line-through text-[hsl(var(--muted-foreground))]" : "text-[hsl(var(--foreground))]"}`}>
@@ -235,8 +263,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
                     {run.status === "done"
                       ? `✓ Done ${run.completed_at ? new Date(run.completed_at).toLocaleTimeString() : ""}`
-                      : new Date(run.created_at).toLocaleTimeString()
-                    }
+                      : new Date(run.created_at).toLocaleTimeString()}
                   </p>
                 </div>
               </div>
@@ -245,17 +272,13 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
         )}
       </div>
 
-      {/* ── Add Trash Run Modal — mirrors CleanTrack's Add Business modal exactly ── */}
+      {/* ── Add Trash Run Modal ─────────────────────────────────────────────── */}
       {showAddTrash && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className={`w-full max-w-md rounded-lg p-6 ${isDark ? "bg-[hsl(var(--card))]" : "bg-white"}`}>
-            <h4 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
-              Log Trash Run
-            </h4>
+            <h4 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">Log Trash Run</h4>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">
-                Notes (optional)
-              </label>
+              <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">Notes (optional)</label>
               <input
                 type="text"
                 placeholder="e.g. 3 bags from back dock, fridge from floor"
@@ -268,7 +291,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={handleCancelAddTrash}
+                onClick={() => { setShowAddTrash(false); setTrashNote(""); }}
                 className="flex-1 px-4 py-2 border border-[hsl(var(--border))] rounded text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
               >
                 Cancel
@@ -276,19 +299,16 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
               <button
                 onClick={handleConfirmAddTrash}
                 disabled={addingTrash}
-                className={`flex-1 px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center justify-center gap-1 ${
-                  addingTrash ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className={`flex-1 px-4 py-2 bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center justify-center gap-1 ${addingTrash ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <Plus size={16} />
-                {addingTrash ? "Adding…" : "Add Run"}
+                <Plus size={16} /> {addingTrash ? "Adding…" : "Add Run"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Delivery order filters + refresh ── */}
+      {/* ── Filter chips + refresh ──────────────────────────────────────────── */}
       <div className="flex items-center gap-2 flex-wrap">
         {(["today", "upcoming", "all"] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)}>
@@ -306,7 +326,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
         </button>
       </div>
 
-      {/* ── Order list ── */}
+      {/* ── Order list ─────────────────────────────────────────────────────── */}
       {loading ? (
         <p className="text-center py-12 text-sm text-[hsl(var(--muted-foreground))]">Loading orders…</p>
       ) : orders.length === 0 ? (
@@ -322,6 +342,8 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
             const primaryAddress = isDelivery ? order.destination_address : order.origin_address;
             const isExpanded = expanded === order.id;
             const isUpdating = updating === order.id;
+            const hasOverride = !!order.scheduled_time_override;
+            const displayTime = effectiveTime(order);
 
             return (
               <div
@@ -360,10 +382,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
                       <div className="flex items-center gap-3 flex-wrap">
                         {getStatusText(order)}
                         {isDelivery && (
-                          <span
-                            className="text-xs font-bold"
-                            style={{ color: PAYMENT_COLOR[order.payment_status] ?? "#888" }}
-                          >
+                          <span className="text-xs font-bold" style={{ color: PAYMENT_COLOR[order.payment_status] ?? "#888" }}>
                             $ {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                           </span>
                         )}
@@ -376,13 +395,17 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
                     </div>
                   </div>
 
+                  {/* Schedule chip + expand */}
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">
                       {formatDeliveryDate(order.scheduled_date)}
                     </span>
-                    {order.scheduled_time && (
-                      <span className="text-xs font-semibold text-[hsl(var(--foreground))] whitespace-nowrap">
-                        {formatDeliveryTime(order.scheduled_time)}
+                    {displayTime && (
+                      <span
+                        className={`text-xs font-semibold whitespace-nowrap ${hasOverride ? "text-amber-600" : "text-[hsl(var(--foreground))]"}`}
+                        title={hasOverride ? `Original: ${formatDeliveryTime(order.scheduled_time)}` : undefined}
+                      >
+                        {hasOverride && "✏️ "}{formatDeliveryTime(displayTime)}
                       </span>
                     )}
                     <button
@@ -394,14 +417,11 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
                   </div>
                 </div>
 
-                {/* Expanded panel */}
+                {/* ── Expanded panel ── */}
                 {isExpanded && (
                   <div className="mt-3 pt-3 border-t border-[hsl(var(--border))] space-y-2">
                     {order.customer_phone && (
-                      <a
-                        href={`tel:${order.customer_phone}`}
-                        className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--sidebar-primary))]"
-                      >
+                      <a href={`tel:${order.customer_phone}`} className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--sidebar-primary))]">
                         📞 {order.customer_phone}
                       </a>
                     )}
@@ -415,20 +435,76 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
                       </a>
                     )}
                     {isDelivery && order.payment_notes && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] italic">
-                        💳 {order.payment_notes}
-                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] italic">💳 {order.payment_notes}</p>
                     )}
                     {isDelivery  && order.origin_address      && <DetailRow label="Pickup From" value={order.origin_address} />}
                     {!isDelivery && order.destination_address && <DetailRow label="Drop Off To" value={order.destination_address} />}
                     {order.taken_by && <DetailRow label="Taken By" value={order.taken_by} />}
 
+                    {/* ── Time adjustment — same inline pattern as CleanTrack move date ── */}
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock size={13} className="text-[hsl(var(--muted-foreground))]" />
+                        <span className="text-xs font-semibold text-[hsl(var(--foreground))]">
+                          Time
+                          {hasOverride && (
+                            <span className="ml-1 text-amber-600">(adjusted from {formatDeliveryTime(order.scheduled_time)})</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {editingTime === order.id ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={pendingTime}
+                            onChange={(e) => setPendingTime(e.target.value)}
+                            className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                          >
+                            <option value="">-- Pick new time --</option>
+                            {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                          <button
+                            onClick={() => saveTimeOverride(order.id)}
+                            disabled={!pendingTime}
+                            className={`px-2 py-1 text-xs rounded text-white transition-colors ${pendingTime ? "bg-green-600 hover:bg-green-700" : "bg-[hsl(var(--muted))] cursor-not-allowed"}`}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingTime(null)}
+                            className="px-2 py-1 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${hasOverride ? "text-amber-600" : "text-[hsl(var(--foreground))]"}`}>
+                            {displayTime ? formatDeliveryTime(displayTime) : "No time set"}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setEditingTime(order.id);
+                              setPendingTime("");
+                            }}
+                            className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+                          >
+                            Change
+                          </button>
+                          {hasOverride && (
+                            <button
+                              onClick={() => clearTimeOverride(order.id)}
+                              className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {cfg.next && (
-                      <Button
-                        onClick={() => advanceStatus(order)}
-                        disabled={isUpdating}
-                        className="w-full mt-1"
-                      >
+                      <Button onClick={() => advanceStatus(order)} disabled={isUpdating} className="w-full mt-1">
                         {isUpdating ? "Updating…" : cfg.nextLabel}
                       </Button>
                     )}

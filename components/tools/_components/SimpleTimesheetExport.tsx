@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import UniversalExportButton from '../../Export';
 import { WeekData } from '../../../types/timesheet';
-import type { DesertTimesheetData } from '../../../lib/templates/desertTimesheetTemplate';
 
 interface SimpleTimesheetExportProps {
   weeks: WeekData[];
@@ -11,15 +10,6 @@ interface SimpleTimesheetExportProps {
 export const SimpleTimesheetExport: React.FC<SimpleTimesheetExportProps> = ({ weeks }) => {
   const [employeeName, setEmployeeName] = useState('');
   const [payrollPeriod, setPayrollPeriod] = useState<1 | 2>(1);
-
-  // Convert our timesheet data to the template format
-  const prepareTemplateData = (): DesertTimesheetData => {
-    return {
-      employeeName,
-      payrollPeriod,
-      weeks
-    };
-  };
 
   const getFilename = () => {
     const date = new Date();
@@ -79,13 +69,18 @@ export const SimpleTimesheetExport: React.FC<SimpleTimesheetExportProps> = ({ we
           </ul>
         </div>
 
-        {/* This is where the magic happens - just use your Universal Export Button! */}
+        {/* Using your TemplateRegistry system */}
         <UniversalExportButton
           templateId="desert-area-timesheet"
-          templateData={prepareTemplateData()}
+          templateData={{
+            employeeName,
+            payrollPeriod,
+            weeks
+          }}
           filename={getFilename()}
           size="lg"
           variant="primary"
+          showTemplateInfo={true}
         />
       </div>
 

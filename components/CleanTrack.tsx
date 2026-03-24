@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/app/provider";
-import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search } from "lucide-react";
+import { CheckCircle2, Circle, ArrowRight, RefreshCw, Calendar, Check, X, Plus, Search, FileDown, FileSpreadsheet, Printer, ChevronDown } from "lucide-react";
 import UniversalExportButton, { ExportTemplate } from "@/components/UniversalExportButton";
 import { CMSBillingTemplate, BusinessCleaningRecord } from "@/lib/CMSBillingTemplate";
+import * as XLSX from "sheetjs-style";
 
 interface CleanTrackItem {
   id?: number;
@@ -16,7 +17,7 @@ interface CleanTrackItem {
   notes?: string;
   marked_by?: string;
   updated_at?: string;
-  is_added?: boolean; // Flag for businesses added on-the-fly
+  is_added?: boolean;
 }
 
 interface DailyInstance {
@@ -45,8 +46,420 @@ interface CleanTrackProps {
   onToggleBusinessStatus: (businessId: number) => void;
   onMoveBusinessToDate: (businessId: number, date: string) => void;
   onRefreshInstance: () => void;
-  onAddBusiness: (businessId: number, notes?: string) => void; // New prop for adding businesses
+  onAddBusiness: (businessId: number, notes?: string) => void;
 }
+
+function getPacificTimeDate(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+}
+
+function getLocalDate(): string {
+  const pacificTime = getPacificTimeDate();
+  const year = pacificTime.getFullYear();
+  const month = String(pacificTime.getMonth() + 1).padStart(2, "0");
+  const day = String(pacificTime.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// ─── Daily Notes helper (reads from DailyNotes localStorage) ───────────────
+
+type FieldNote = { id: string; text: string; category: string; createdAt: string };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  general:  "General",
+  contract: "Contract Change",
+  client:   "Client Issue",
+  followup: "Follow-Up Needed",
+};
+
+function getDailyNotes(): FieldNote[] {
+  try {
+    const now = new Date();
+    const pt = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const key = `daily-notes-${pt.getFullYear()}-${String(pt.getMonth() + 1).padStart(2, "0")}-${String(pt.getDate()).padStart(2, "0")}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Daily Export Generators ───────────────────────────────────────────────
+
+function generateDailyExcelBlob(items: CleanTrackItem[], instance: DailyInstance | null): Blob {
+  const wb = XLSX.utils.book_new();
+  const pt = getPacificTimeDate();
+  const dateStr = pt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const cleaned = items.filter((i) => i.status === "cleaned").length;
+  const moved   = items.filter((i) => i.status === "moved").length;
+  const pending = items.filter((i) => i.status === "pending").length;
+  const added   = items.filter((i) => i.is_added).length;
+  const fieldNotes = getDailyNotes();
+
+  // Portrait layout: col A = label, col B = value (wide)
+  // 4 columns total: A(label), B(value), C(label), D(value)
+  const wsData: any[][] = [];
+  const merges: any[] = [];
+  let row = 0;
+
+  // ── Title block ──
+  wsData.push(["DART COMMERCIAL SERVICES", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push(["Daily Clean Report", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push([dateStr, "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push([`Instance #${instance?.id ?? "—"}   ·   Generated: ${new Date().toLocaleTimeString()}`, "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  // ── Summary bar (2x2 grid) ──
+  wsData.push([]); row++;
+  wsData.push(["Cleaned", cleaned, "Pending", pending]); row++;
+  wsData.push(["Moved",   moved,   "Added",   added]);   row++;
+  wsData.push([
+    "Completion",
+    items.length > 0 ? `${Math.round((cleaned / items.length) * 100)}%` : "0%",
+    "Total",
+    items.length,
+  ]); row++;
+
+  // ── Businesses header ──
+  wsData.push([]); row++;
+  wsData.push(["BUSINESSES SERVICED TODAY", "", "", ""]);
+  merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+  row++;
+
+  wsData.push(["Business Name", "Status", "Timing", "Cleaned At / Moved To"]);
+  const businessHeaderRow = row; row++;
+
+  // ── Business rows ──
+  const businessStartRow = row;
+  items.forEach((item) => {
+    const timeInfo = item.status === "cleaned" && item.cleaned_at
+      ? new Date(item.cleaned_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+      : item.status === "moved" && item.moved_to_date
+      ? `→ ${new Date(item.moved_to_date + "T00:00:00").toLocaleDateString()}`
+      : "—";
+
+    wsData.push([
+      item.business_name + (item.is_added ? "  ★" : ""),
+      item.status.charAt(0).toUpperCase() + item.status.slice(1),
+      item.before_open ? "Before Open" : "After Close",
+      timeInfo,
+    ]);
+    row++;
+
+    // Address + notes on sub-row
+    const subCols: string[] = [item.address || ""];
+    if (item.notes) subCols[0] += `  |  📝 ${item.notes}`;
+    wsData.push([subCols[0], "", "", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+    row++;
+  });
+
+  // ── Field notes ──
+  const noteRowIndices: number[] = []; // track which rows need tall height + wrap
+  if (fieldNotes.length > 0) {
+    wsData.push([]); row++;
+    wsData.push(["FIELD NOTES", "", "", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+    const notesHeaderRow = row; row++;
+
+    wsData.push(["Category", "", "Time", ""]);
+    merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+    merges.push({ s: { r: row, c: 2 }, e: { r: row, c: 3 } });
+    const notesColHeaderRow = row; row++;
+
+    fieldNotes.forEach((n) => {
+      const time = new Date(n.createdAt).toLocaleTimeString("en-US", {
+        hour: "numeric", minute: "2-digit", hour12: true,
+        timeZone: "America/Los_Angeles",
+      });
+      // Row 1: Category label | Time
+      wsData.push([CATEGORY_LABELS[n.category] ?? n.category, "", time, ""]);
+      merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 1 } });
+      merges.push({ s: { r: row, c: 2 }, e: { r: row, c: 3 } });
+      row++;
+
+      // Row 2: Full note text, full width, wrapped
+      wsData.push([n.text, "", "", ""]);
+      merges.push({ s: { r: row, c: 0 }, e: { r: row, c: 3 } });
+      noteRowIndices.push(row); // mark for wrap + tall height
+      row++;
+
+      // Spacer
+      wsData.push([]); row++;
+    });
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws["!merges"] = merges;
+
+  // ── Column widths — 4 readable portrait columns ──
+  ws["!cols"] = [
+    { wch: 36 }, // A — business name / label
+    { wch: 14 }, // B — status / value
+    { wch: 14 }, // C — timing / label
+    { wch: 22 }, // D — time info / value
+  ];
+
+  // ── Row heights ──
+  const rowHeights: any[] = [];
+  for (let i = 0; i < wsData.length; i++) {
+    if (noteRowIndices.includes(i)) {
+      // Estimate height: ~15pt per 80 chars of text
+      const text = wsData[i][0] as string ?? "";
+      const lines = Math.max(2, Math.ceil(text.length / 80));
+      rowHeights.push({ hpt: lines * 15 });
+    } else {
+      rowHeights.push({ hpt: 18 });
+    }
+  }
+  rowHeights[0] = { hpt: 26 }; // title
+  ws["!rows"] = rowHeights;
+
+  // Enable wrapText on all note text cells
+  noteRowIndices.forEach((r) => {
+    const addr = `A${r + 1}`;
+    if (ws[addr]) {
+      ws[addr].s = {
+        ...(ws[addr].s ?? {}),
+        alignment: { wrapText: true, vertical: "top" },
+        font: { size: 11, color: { rgb: "1E293B" } },
+      };
+    }
+  });
+
+  // ── Styles ──
+
+  // Title
+  if (ws["A1"]) ws["A1"].s = { font: { bold: true, size: 16, color: { rgb: "1E293B" } } };
+  if (ws["A2"]) ws["A2"].s = { font: { size: 12, color: { rgb: "475569" } } };
+  if (ws["A3"]) ws["A3"].s = { font: { bold: true, size: 11, color: { rgb: "1E293B" } } };
+  if (ws["A4"]) ws["A4"].s = { font: { size: 10, color: { rgb: "94A3B8" } } };
+
+  // Summary rows (rows 6–8, 0-indexed 5–7)
+  [5, 6, 7].forEach((r) => {
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${r + 1}`;
+      if (ws[addr]) {
+        const isValue = c === "B" || c === "D";
+        ws[addr].s = {
+          font: { bold: true, size: isValue ? 14 : 10, color: { rgb: isValue ? "1E293B" : "64748B" } },
+          fill: { fgColor: { rgb: "F1F5F9" } },
+          alignment: { horizontal: isValue ? "center" : "right" },
+        };
+      }
+    });
+  });
+
+  // Businesses section header
+  const bSecAddr = `A${businessHeaderRow}`;
+  if (ws[bSecAddr]) ws[bSecAddr].s = {
+    font: { bold: true, size: 10, color: { rgb: "FFFFFF" } },
+    fill: { fgColor: { rgb: "1E293B" } },
+  };
+
+  // Businesses column header row
+  const bhRow = businessHeaderRow + 1;
+  ["A","B","C","D"].forEach((c) => {
+    const addr = `${c}${bhRow}`;
+    if (ws[addr]) ws[addr].s = {
+      font: { bold: true, size: 10, color: { rgb: "475569" } },
+      fill: { fgColor: { rgb: "E2E8F0" } },
+    };
+  });
+
+  // Business data rows — alternate shading + status color on col B
+  const statusColors: Record<string, string> = {
+    cleaned: "16A34A", moved: "D97706", pending: "6B7280", missed: "DC2626",
+  };
+  let dataRow = businessHeaderRow + 2; // 1-based
+  items.forEach((item) => {
+    // Main row
+    const bg = { fgColor: { rgb: dataRow % 2 === 0 ? "FFFFFF" : "F8FAFC" } };
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${dataRow}`;
+      if (ws[addr]) ws[addr].s = { fill: bg, font: { bold: c === "A" } };
+    });
+    const statusAddr = `B${dataRow}`;
+    if (ws[statusAddr]) ws[statusAddr].s = {
+      fill: bg,
+      font: { bold: true, color: { rgb: statusColors[item.status] ?? "6B7280" } },
+    };
+    dataRow++;
+
+    // Sub-row (address + notes) — muted italic style
+    ["A","B","C","D"].forEach((c) => {
+      const addr = `${c}${dataRow}`;
+      if (ws[addr]) ws[addr].s = {
+        font: { italic: true, size: 9, color: { rgb: "94A3B8" } },
+        fill: { fgColor: { rgb: "FAFAFA" } },
+      };
+    });
+    dataRow++;
+  });
+
+  // Portrait, fit to page width
+  ws["!pageSetup"] = { paperSize: 1, orientation: "portrait", fitToWidth: 1, fitToHeight: 0 };
+  ws["!margins"] = { left: 0.5, right: 0.5, top: 0.75, bottom: 0.75, header: 0, footer: 0 };
+
+  XLSX.utils.book_append_sheet(wb, ws, "Daily Report");
+  const arrayBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+  return new Blob([arrayBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+}
+
+function generateDailyHTML(items: CleanTrackItem[], instance: DailyInstance | null): string {
+  const pt = getPacificTimeDate();
+  const dateStr = pt.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const cleaned = items.filter((i) => i.status === "cleaned").length;
+  const moved = items.filter((i) => i.status === "moved").length;
+  const pending = items.filter((i) => i.status === "pending").length;
+  const added = items.filter((i) => i.is_added).length;
+  const fieldNotes = getDailyNotes();
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    general:  "#6b7280",
+    contract: "#d97706",
+    client:   "#dc2626",
+    followup: "#2563eb",
+  };
+
+  const statusColor = (s: string) =>
+    s === "cleaned" ? "#16a34a" : s === "moved" ? "#d97706" : s === "pending" ? "#6b7280" : "#dc2626";
+
+  const rows = items
+    .map(
+      (item, idx) => `
+      <tr style="background:${idx % 2 === 0 ? "#fff" : "#f8fafc"}; border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px 10px; color:#64748b; font-size:12px;">${idx + 1}</td>
+        <td style="padding:8px 10px; font-weight:600; font-size:13px;">${item.business_name}${item.is_added ? ' <span style="font-size:10px;font-weight:700;color:#2563eb;background:#dbeafe;padding:1px 6px;border-radius:999px;vertical-align:middle;">Added</span>' : ""}</td>
+        <td style="padding:8px 10px; font-size:12px; color:#64748b;">${item.address || "—"}</td>
+        <td style="padding:8px 10px; font-size:11px;">
+          <span style="padding:2px 8px;border-radius:999px;background:${item.before_open ? "#fee2e2" : "#dcfce7"};color:${item.before_open ? "#dc2626" : "#16a34a"};font-weight:600;">
+            ${item.before_open ? "Before Open" : "After Close"}
+          </span>
+        </td>
+        <td style="padding:8px 10px;">
+          <span style="padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:${statusColor(item.status)}22;color:${statusColor(item.status)};border:1px solid ${statusColor(item.status)}55;">
+            ${item.status}
+          </span>
+        </td>
+        <td style="padding:8px 10px; font-size:12px; color:#64748b;">${item.cleaned_at ? new Date(item.cleaned_at).toLocaleTimeString() : item.moved_to_date ? `→ ${new Date(item.moved_to_date + "T00:00:00").toLocaleDateString()}` : "—"}</td>
+        <td style="padding:8px 10px; font-size:12px; color:#64748b; font-style:italic;">${item.notes || "—"}</td>
+      </tr>`
+    )
+    .join("");
+
+  return `<!DOCTYPE html><html><head><title>Daily Report – ${dateStr}</title>
+  <style>
+    body { font-family: Georgia, serif; padding: 40px; color: #1e293b; }
+    table { width: 100%; border-collapse: collapse; }
+    @media print { body { padding: 20px; } }
+  </style>
+  </head><body>
+    <div style="border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">DART Commercial Services</div>
+        <div style="font-size:14px;color:#475569;margin-top:2px;">Daily Clean Report</div>
+      </div>
+      <div style="text-align:right;font-size:13px;color:#475569;">
+        <div style="font-weight:700;color:#1e293b;font-size:15px;">${dateStr}</div>
+        <div>Instance #${instance?.id ?? "—"}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;">
+      ${[
+        { label: "Cleaned", count: cleaned, color: "#16a34a" },
+        { label: "Pending", count: pending, color: "#6b7280" },
+        { label: "Moved",   count: moved,   color: "#d97706" },
+        { label: "Added",   count: added,   color: "#2563eb" },
+      ]
+        .map(
+          ({ label, count, color }) =>
+            `<div style="border:2px solid ${color};border-radius:8px;padding:10px 14px;text-align:center;">
+              <div style="font-size:26px;font-weight:800;color:${color};">${count}</div>
+              <div style="font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:1px;">${label}</div>
+            </div>`
+        )
+        .join("")}
+    </div>
+
+    <table>
+      <thead>
+        <tr style="background:#1e293b;">
+          ${["#","Business","Address","Timing","Status","Time / Moved To","Notes"]
+            .map((h) => `<th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#fff;font-weight:700;">${h}</th>`)
+            .join("")}
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    ${fieldNotes.length > 0 ? `
+    <div style="margin-top:36px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:12px;">Field Notes & Updates</div>
+      <table>
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;white-space:nowrap;">Category</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;">Note</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#475569;border-bottom:2px solid #cbd5e1;white-space:nowrap;">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fieldNotes.map((n, i) => {
+            const color = CATEGORY_COLORS[n.category] ?? "#6b7280";
+            const time = new Date(n.createdAt).toLocaleTimeString("en-US", {
+              hour: "numeric", minute: "2-digit", hour12: true,
+              timeZone: "America/Los_Angeles",
+            });
+            return `<tr style="background:${i % 2 === 0 ? "#fff" : "#f8fafc"};border-bottom:1px solid #e2e8f0;">
+              <td style="padding:8px 10px;white-space:nowrap;">
+                <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;
+                  background:${color}22;color:${color};border:1px solid ${color}55;text-transform:uppercase;letter-spacing:.5px;">
+                  ${CATEGORY_LABELS[n.category] ?? n.category}
+                </span>
+              </td>
+              <td style="padding:8px 10px;font-size:13px;color:#1e293b;">${n.text}</td>
+              <td style="padding:8px 10px;font-size:12px;color:#64748b;white-space:nowrap;">${time}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>` : ""}
+
+    <div style="margin-top:48px;border-top:2px solid #1e293b;padding-top:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;">
+      ${["Technician Signature", "Supervisor Review", "Date Submitted"]
+        .map(
+          (l) =>
+            `<div>
+              <div style="border-bottom:1px solid #94a3b8;height:32px;"></div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:4px;text-transform:uppercase;letter-spacing:1px;">${l}</div>
+            </div>`
+        )
+        .join("")}
+    </div>
+
+    <div style="margin-top:24px;font-size:10px;color:#94a3b8;text-align:center;">
+      DART Commercial Services · Confidential · ${getLocalDate()}
+    </div>
+  </body></html>`;
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 
 export default function CleanTrack({
   cleanTrack,
@@ -57,7 +470,7 @@ export default function CleanTrack({
   onToggleBusinessStatus,
   onMoveBusinessToDate,
   onRefreshInstance,
-  onAddBusiness
+  onAddBusiness,
 }: CleanTrackProps) {
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
@@ -65,22 +478,34 @@ export default function CleanTrack({
   const [movingBusiness, setMovingBusiness] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [billingData, setBillingData] = useState<BusinessCleaningRecord[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  
-  // Add business states
+  const [currentMonth, setCurrentMonth] = useState(() => getPacificTimeDate().getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(() => getPacificTimeDate().getFullYear());
+
+  const [showDailyDropdown, setShowDailyDropdown] = useState(false);
+  const dailyDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close daily dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dailyDropdownRef.current && !dailyDropdownRef.current.contains(e.target as Node)) {
+        setShowDailyDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [showAddBusiness, setShowAddBusiness] = useState(false);
   const [availableBusinesses, setAvailableBusinesses] = useState<AvailableBusiness[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBusinessToAdd, setSelectedBusinessToAdd] = useState<AvailableBusiness | null>(null);
   const [addBusinessNotes, setAddBusinessNotes] = useState("");
 
-  const completed = cleanTrack.filter(item => item.status === "cleaned").length;
-  const moved = cleanTrack.filter(item => item.status === "moved").length;
-  const pending = cleanTrack.filter(item => item.status === "pending").length;
-  const added = cleanTrack.filter(item => item.is_added).length;
+  const completed = cleanTrack.filter((item) => item.status === "cleaned").length;
+  const moved = cleanTrack.filter((item) => item.status === "moved").length;
+  const pending = cleanTrack.filter((item) => item.status === "pending").length;
+  const added = cleanTrack.filter((item) => item.is_added).length;
 
-  // Load billing data for current month when component mounts
   useEffect(() => {
     loadBillingData();
     loadAvailableBusinesses();
@@ -88,52 +513,41 @@ export default function CleanTrack({
 
   const loadAvailableBusinesses = async () => {
     try {
-      const res = await fetch('/api/schedule/businesses');
+      const res = await fetch("/api/schedule/businesses");
       if (res.ok) {
         const businesses = await res.json();
-        
-        // Filter out businesses already in clean track
-        const currentBusinessIds = new Set(cleanTrack.map(item => item.business_id));
-        const available = businesses.filter((business: any) => 
-          !currentBusinessIds.has(business.id)
-        );
-        
-        setAvailableBusinesses(available);
+        const currentBusinessIds = new Set(cleanTrack.map((item) => item.business_id));
+        setAvailableBusinesses(businesses.filter((b: any) => !currentBusinessIds.has(b.id)));
       }
     } catch (error) {
-      console.error('Error loading available businesses:', error);
+      console.error("Error loading available businesses:", error);
     }
   };
 
   const loadBillingData = async () => {
     if (!currentInstance) return;
-
     try {
-      const instanceDate = new Date(currentInstance.instance_date);
-      const month = instanceDate.getMonth() + 1;
-      const year = instanceDate.getFullYear();
-      
+      const pt = getPacificTimeDate();
+      const month = pt.getMonth() + 1;
+      const year = pt.getFullYear();
       setCurrentMonth(month);
       setCurrentYear(year);
 
-      const startDate = new Date(year, month - 1, 1);
+      const startDateStr = `${year}-${String(month).padStart(2, "0")}-01`;
       const endDate = new Date(year, month, 0);
-      
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const endDateStr = `${year}-${String(month).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
 
-      const businessesRes = await fetch('/api/schedule/businesses');
-      if (!businessesRes.ok) throw new Error('Failed to fetch businesses');
+      const [businessesRes, instancesRes] = await Promise.all([
+        fetch("/api/schedule/businesses"),
+        fetch(`/api/schedule/daily-instances/monthly?start_date=${startDateStr}&end_date=${endDateStr}`),
+      ]);
+
+      if (!businessesRes.ok || !instancesRes.ok) throw new Error("Failed to fetch data");
+
       const allBusinesses = await businessesRes.json();
-
-      const instancesRes = await fetch(
-        `/api/schedule/daily-instances/monthly?start_date=${startDateStr}&end_date=${endDateStr}`
-      );
-      if (!instancesRes.ok) throw new Error('Failed to fetch monthly data');
       const monthlyData = await instancesRes.json();
 
       const businessRecords = new Map<number, BusinessCleaningRecord>();
-
       allBusinesses.forEach((business: any) => {
         businessRecords.set(business.id, {
           business_id: business.id,
@@ -141,43 +555,32 @@ export default function CleanTrack({
           address: business.address,
           cleaned_dates: [],
           moved_dates: [],
-          added_dates: []
+          added_dates: [],
         });
       });
 
       monthlyData.instances?.forEach((instance: any) => {
-        const instanceDate = new Date(instance.instance_date);
-        const dayOfMonth = instanceDate.getDate();
-
+        const dayOfMonth = parseInt(instance.instance_date.split("-")[2], 10);
         instance.daily_clean_items?.forEach((item: any) => {
           const record = businessRecords.get(item.business_id);
           if (record) {
-            if (item.status === 'cleaned') {
-              if (!record.cleaned_dates.includes(dayOfMonth)) {
-                record.cleaned_dates.push(dayOfMonth);
-              }
-            } else if (item.status === 'moved') {
-              if (!record.moved_dates.includes(dayOfMonth)) {
-                record.moved_dates.push(dayOfMonth);
-              }
-            }
-            
-            if (item.is_added && item.status === 'cleaned') {
-              if (!record.added_dates.includes(dayOfMonth)) {
-                record.added_dates.push(dayOfMonth);
-              }
-            }
+            if (item.status === "cleaned" && !record.cleaned_dates.includes(dayOfMonth))
+              record.cleaned_dates.push(dayOfMonth);
+            if (item.status === "moved" && !record.moved_dates.includes(dayOfMonth))
+              record.moved_dates.push(dayOfMonth);
+            if (item.is_added && item.status === "cleaned" && !record.added_dates.includes(dayOfMonth))
+              record.added_dates.push(dayOfMonth);
           }
         });
       });
 
-      const processedData = Array.from(businessRecords.values())
-        .sort((a, b) => a.business_name.localeCompare(b.business_name));
-
-      setBillingData(processedData);
-
+      setBillingData(
+        Array.from(businessRecords.values()).sort((a, b) =>
+          a.business_name.localeCompare(b.business_name)
+        )
+      );
     } catch (error) {
-      console.error('Error loading billing data:', error);
+      console.error("Error loading billing data:", error);
     }
   };
 
@@ -216,25 +619,25 @@ export default function CleanTrack({
 
   const handleConfirmAdd = () => {
     if (selectedBusinessToAdd) {
-      const notes = addBusinessNotes.trim() || `Added on-the-fly - moved from another day`;
-      onAddBusiness(selectedBusinessToAdd.id, notes);
+      onAddBusiness(
+        selectedBusinessToAdd.id,
+        addBusinessNotes.trim() || "Added on-the-fly - moved from another day"
+      );
       handleCancelAdd();
     }
   };
 
-  const filteredBusinesses = availableBusinesses.filter(business =>
-    business.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    business.address.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBusinesses = availableBusinesses.filter(
+    (b) =>
+      b.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "cleaned":
-        return <CheckCircle2 size={20} className="text-green-600" />;
-      case "moved":
-        return <ArrowRight size={20} className="text-yellow-600" />;
-      default:
-        return <Circle size={20} className="text-[hsl(var(--muted-foreground))]" />;
+      case "cleaned": return <CheckCircle2 size={20} className="text-green-600" />;
+      case "moved":   return <ArrowRight size={20} className="text-yellow-600" />;
+      default:        return <Circle size={20} className="text-[hsl(var(--muted-foreground))]" />;
     }
   };
 
@@ -257,48 +660,37 @@ export default function CleanTrack({
     }
   };
 
-  // Create the unified billing template using CMSBillingTemplate with FRESH data
+  const getMonthName = () =>
+    ["January","February","March","April","May","June","July","August","September","October","November","December"][currentMonth - 1] || "";
+
+  // ─── Export templates ────────────────────────────────────────────────────
+
   const billingTemplate: ExportTemplate = {
-    id: 'cms-billing-unified',
-    name: 'CMS Billing Report',
+    id: "cms-billing-unified",
+    name: "Monthly Billing",
     data: {
       month: currentMonth,
       year: currentYear,
-      generated_from: 'clean_track',
-      instance_info: currentInstance ? {
-        id: currentInstance.id,
-        date: currentInstance.instance_date,
-        day: currentInstance.day_name
-      } : null
+      instance_info: currentInstance
+        ? { id: currentInstance.id, date: currentInstance.instance_date, day: currentInstance.day_name }
+        : null,
     },
-    generator: async (data: any, format: 'excel' | 'pdf') => {
-      console.log(`🎯 Generating CMS Billing Report as ${format.toUpperCase()} with FRESH data`);
+    generator: async (data, format) => {
       const { month, year } = data;
-      
-      // ✅ Create a fresh template instance and fetch data
-      console.log(`🔄 Fetching fresh billing data for ${month}/${year} from database...`);
-      
       const template = new CMSBillingTemplate(month, year);
       await template.fetchCleaningData();
-      
-      if (format === 'excel') {
+      if (format === "excel") {
         const arrayBuffer = template.generateExcel();
-        return new Blob([arrayBuffer], { 
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        return new Blob([arrayBuffer], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
       } else {
         return template.generateHTML();
       }
-    }
+    },
   };
 
-  const getMonthName = () => {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return months[currentMonth - 1] || '';
-  };
+  // ────────────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -323,7 +715,6 @@ export default function CleanTrack({
             <button
               onClick={handleAddBusinessClick}
               className="px-3 py-1 text-sm bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] rounded hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors flex items-center"
-              title="Add business cleaned today"
             >
               <Plus size={14} className="mr-1" />
               Add Business
@@ -338,56 +729,44 @@ export default function CleanTrack({
             </button>
           </div>
         </div>
-        
+
         {currentInstance && (
           <div className="text-sm text-[hsl(var(--muted-foreground))] mb-4">
             <div className="flex items-center space-x-4">
-              <span>📅 {new Date(currentInstance.instance_date).toLocaleDateString()}</span>
+              <span>📅 {getPacificTimeDate().toLocaleDateString()}</span>
               <span>👥 Shared with team</span>
               <span>🔄 Last updated: {new Date(currentInstance.updated_at).toLocaleTimeString()}</span>
             </div>
           </div>
         )}
-        
+
         <div className="grid grid-cols-4 gap-4 mb-4">
-          <div className={`p-3 rounded-lg text-center ${
-            isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
-          }`}>
-            <div className="text-2xl font-bold text-green-600">{completed}</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">Cleaned</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${
-            isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
-          }`}>
-            <div className="text-2xl font-bold text-[hsl(var(--muted-foreground))]">{pending}</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">Pending</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${
-            isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
-          }`}>
-            <div className="text-2xl font-bold text-yellow-600">{moved}</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">Moved</div>
-          </div>
-          <div className={`p-3 rounded-lg text-center ${
-            isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
-          }`}>
-            <div className="text-2xl font-bold text-blue-600">{added}</div>
-            <div className="text-sm text-[hsl(var(--muted-foreground))]">Added</div>
-          </div>
+          {[
+            { label: "Cleaned", value: completed, color: "text-green-600" },
+            { label: "Pending", value: pending,   color: "text-[hsl(var(--muted-foreground))]" },
+            { label: "Moved",   value: moved,     color: "text-yellow-600" },
+            { label: "Added",   value: added,     color: "text-blue-600" },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              className={`p-3 rounded-lg text-center ${
+                isDark ? "bg-[hsl(var(--secondary))]" : "bg-[hsl(var(--muted))]"
+              }`}
+            >
+              <div className={`text-2xl font-bold ${color}`}>{value}</div>
+              <div className="text-sm text-[hsl(var(--muted-foreground))]">{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Add Business Modal */}
       {showAddBusiness && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className={`w-full max-w-md mx-4 rounded-lg p-6 ${
-            isDark ? "bg-[hsl(var(--card))]" : "bg-white"
-          }`}>
+          <div className={`w-full max-w-md mx-4 rounded-lg p-6 ${isDark ? "bg-[hsl(var(--card))]" : "bg-white"}`}>
             <h4 className="text-lg font-semibold mb-4 text-[hsl(var(--foreground))]">
               Add Business to Today's Cleaning
             </h4>
-            
-            {/* Search */}
             <div className="mb-4">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
@@ -401,8 +780,6 @@ export default function CleanTrack({
                 />
               </div>
             </div>
-
-            {/* Business List */}
             <div className="max-h-64 overflow-y-auto mb-4 border border-[hsl(var(--border))] rounded">
               {filteredBusinesses.length > 0 ? (
                 filteredBusinesses.map((business) => (
@@ -413,29 +790,23 @@ export default function CleanTrack({
                       selectedBusinessToAdd?.id === business.id ? "bg-[hsl(var(--accent))]" : ""
                     }`}
                   >
-                    <div className="font-medium text-[hsl(var(--foreground))]">
-                      {business.business_name}
-                    </div>
-                    <div className="text-sm text-[hsl(var(--muted-foreground))]">
-                      {business.address}
-                    </div>
-                    <div className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
-                      business.before_open 
-                        ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]" 
-                        : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
-                    }`}>
+                    <div className="font-medium text-[hsl(var(--foreground))]">{business.business_name}</div>
+                    <div className="text-sm text-[hsl(var(--muted-foreground))]">{business.address}</div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
+                        business.before_open
+                          ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]"
+                          : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
+                      }`}
+                    >
                       {business.before_open ? "Before Open" : "After Close"}
-                    </div>
+                    </span>
                   </button>
                 ))
               ) : (
-                <div className="p-4 text-center text-[hsl(var(--muted-foreground))]">
-                  No businesses found
-                </div>
+                <div className="p-4 text-center text-[hsl(var(--muted-foreground))]">No businesses found</div>
               )}
             </div>
-
-            {/* Notes */}
             {selectedBusinessToAdd && (
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2 text-[hsl(var(--foreground))]">
@@ -450,8 +821,6 @@ export default function CleanTrack({
                 />
               </div>
             )}
-
-            {/* Actions */}
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelAdd}
@@ -474,17 +843,16 @@ export default function CleanTrack({
         </div>
       )}
 
+      {/* Business list */}
       <div className="space-y-3">
         {cleanTrack.map((item) => (
           <div
             key={item.business_id}
             className={`p-4 rounded-lg border border-[hsl(var(--border))] transition-all ${
-              isDark
-                ? "bg-[hsl(var(--card))]"
-                : "bg-[hsl(var(--background))]"
+              isDark ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--background))]"
             } ${
-              item.status === "cleaned" 
-                ? "border-green-200 bg-green-50/50" 
+              item.status === "cleaned"
+                ? "border-green-200 bg-green-50/50"
                 : item.status === "moved"
                 ? "border-yellow-200 bg-yellow-50/50"
                 : item.is_added
@@ -501,40 +869,32 @@ export default function CleanTrack({
                 >
                   {getStatusIcon(item.status)}
                 </button>
-
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold text-[hsl(var(--foreground))]">
-                      {item.business_name}
-                    </h4>
+                    <h4 className="font-semibold text-[hsl(var(--foreground))]">{item.business_name}</h4>
                     {item.is_added && (
-                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        Added
-                      </span>
+                      <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Added</span>
                     )}
                   </div>
-                  <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">
-                    {item.address}
-                  </p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">{item.address}</p>
                   <div className="flex items-center space-x-3">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      item.before_open 
-                        ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]" 
-                        : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        item.before_open
+                          ? "bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]"
+                          : "bg-[hsl(var(--chart-2))]/10 text-[hsl(var(--chart-2))]"
+                      }`}
+                    >
                       {item.before_open ? "Before Open" : "After Close"}
                     </span>
                     {getStatusText(item)}
                   </div>
                   {item.notes && (
-                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 italic">
-                      📝 {item.notes}
-                    </p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 italic">📝 {item.notes}</p>
                   )}
                 </div>
               </div>
 
-              {/* Move Flow */}
               {item.status === "pending" && (
                 <div className="flex items-center space-x-2">
                   {movingBusiness === item.business_id ? (
@@ -545,7 +905,7 @@ export default function CleanTrack({
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         className="px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
-                        min={new Date().toISOString().split('T')[0]}
+                        min={getLocalDate()}
                         autoFocus
                       />
                       <button
@@ -556,14 +916,12 @@ export default function CleanTrack({
                             ? "bg-green-600 text-white hover:bg-green-700"
                             : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] cursor-not-allowed"
                         }`}
-                        title="Confirm move"
                       >
                         <Check size={14} />
                       </button>
                       <button
                         onClick={handleCancelMove}
                         className="p-2 bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] rounded hover:bg-[hsl(var(--secondary))] transition-colors"
-                        title="Cancel move"
                       >
                         <X size={14} />
                       </button>
@@ -583,37 +941,94 @@ export default function CleanTrack({
         ))}
       </div>
 
+      {/* Footer with both exports */}
       <div className="mt-6 p-4 border-t border-[hsl(var(--border))]">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="text-sm text-[hsl(var(--muted-foreground))]">
             Progress: {completed} of {cleanTrack.length} completed
             {moved > 0 && ` • ${moved} moved`}
             {added > 0 && ` • ${added} added`}
           </div>
-          
-          {billingData.length > 0 && currentInstance && (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={loadBillingData}
-                className="px-3 py-1 text-sm bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] rounded hover:bg-[hsl(var(--secondary))]/80 transition-colors"
-                title="Refresh billing data"
-              >
-                🔄 Refresh
-              </button>
-              <UniversalExportButton
-                template={billingTemplate}
-                filename={`CMS_Billing_${getMonthName()}_${currentYear}_from_CleanTrack`}
-                disabled={instanceLoading}
-                size="md"
-                variant="primary"
-              />
-            </div>
-          )}
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Daily export — scoped to today's cleanTrack only */}
+            {cleanTrack.length > 0 && (
+              <div className="relative inline-block" ref={dailyDropdownRef}>
+                <button
+                  onClick={() => setShowDailyDropdown((v) => !v)}
+                  disabled={instanceLoading}
+                  className="px-4 py-2 text-sm font-medium rounded border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  <FileDown size={15} />
+                  Export Today
+                  <ChevronDown size={13} />
+                </button>
+                {showDailyDropdown && (
+                  <div className={`absolute bottom-full mb-1 left-0 w-52 rounded-md shadow-lg z-50 border border-[hsl(var(--border))] ${isDark ? "bg-[hsl(var(--card))]" : "bg-white"}`}>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowDailyDropdown(false);
+                          const blob = generateDailyExcelBlob(cleanTrack, currentInstance);
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `DART_Daily_Report_${getLocalDate()}.xlsx`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[hsl(var(--accent))] transition-colors ${isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"}`}
+                      >
+                        <FileSpreadsheet size={15} className="text-green-600" />
+                        Download Excel (.xlsx)
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDailyDropdown(false);
+                          const html = generateDailyHTML(cleanTrack, currentInstance);
+                          const win = window.open("", "_blank");
+                          if (!win) return;
+                          win.document.write(html);
+                          win.document.close();
+                          win.focus();
+                          win.print();
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-[hsl(var(--accent))] transition-colors ${isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"}`}
+                      >
+                        <Printer size={15} className="text-blue-600" />
+                        Print / Save PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Monthly billing export — only when billing data is loaded */}
+            {billingData.length > 0 && currentInstance && (
+              <>
+                <button
+                  onClick={loadBillingData}
+                  className="px-3 py-1 text-sm bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] rounded hover:bg-[hsl(var(--secondary))]/80 transition-colors"
+                  title="Refresh billing data"
+                >
+                  🔄 Refresh
+                </button>
+                <UniversalExportButton
+                  template={billingTemplate}
+                  filename={`CMS_Billing_${getMonthName()}_${currentYear}`}
+                  disabled={instanceLoading}
+                  size="md"
+                  variant="primary"
+                />
+              </>
+            )}
+          </div>
         </div>
-        
+
         {billingData.length > 0 && (
           <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
-            💡 Export includes all {billingData.length} businesses for {getMonthName()} {currentYear}
+            💡 Monthly export includes all {billingData.length} businesses for {getMonthName()} {currentYear}
           </div>
         )}
       </div>

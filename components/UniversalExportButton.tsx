@@ -1,9 +1,7 @@
-// components/UniversalExportButton.tsx
 import { useState } from "react";
 import { useTheme } from "@/app/provider";
-import { Download, FileSpreadsheet, FileText, ChevronDown } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, ChevronDown, Calendar } from "lucide-react";
 
-// Universal template interface - NAMED EXPORT
 export interface ExportTemplate {
   id: string;
   name: string;
@@ -11,7 +9,6 @@ export interface ExportTemplate {
   generator: (data: any, format: 'excel' | 'pdf') => Promise<string | Blob>;
 }
 
-// Props interface
 interface UniversalExportButtonProps {
   template: ExportTemplate;
   filename?: string;
@@ -21,7 +18,11 @@ interface UniversalExportButtonProps {
   variant?: 'primary' | 'secondary' | 'outline';
 }
 
-// DEFAULT EXPORT FUNCTION
+function getPacificTimeDate(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}));
+}
+
 export default function UniversalExportButton({
   template,
   filename,
@@ -35,16 +36,13 @@ export default function UniversalExportButton({
 
   const [isExporting, setIsExporting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [exportFormat, setExportFormat] = useState<'excel' | 'pdf'>('excel');
 
-  // Size classes
   const sizeClasses = {
     sm: "px-3 py-1.5 text-sm",
     md: "px-4 py-2 text-sm",
     lg: "px-6 py-3 text-base"
   };
 
-  // Variant classes
   const getVariantClasses = () => {
     switch (variant) {
       case 'secondary':
@@ -56,37 +54,48 @@ export default function UniversalExportButton({
     }
   };
 
-  const handleExport = async (format: 'excel' | 'pdf') => {
+  const getMonthName = (month: number) => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1] || '';
+  };
+
+  const handleExport = async (monthType: 'current' | 'last') => {
     setIsExporting(true);
     setShowDropdown(false);
 
     try {
-      console.log(`🔄 Exporting ${template.name} as ${format.toUpperCase()}`);
-      
-      const result = await template.generator(template.data, format);
-      
-      // Generate filename
-      const timestamp = new Date().toISOString().split('T')[0];
-      const baseFilename = filename || `${template.name}_${timestamp}`;
-      const extension = format === 'excel' ? 'xlsx' : 'pdf';
-      const fullFilename = `${baseFilename}.${extension}`;
+      const pacificTime = getPacificTimeDate();
+      let exportMonth, exportYear;
 
-      // Handle download based on result type
+      if (monthType === 'current') {
+        exportMonth = pacificTime.getMonth() + 1;
+        exportYear = pacificTime.getFullYear();
+      } else {
+        pacificTime.setMonth(pacificTime.getMonth() - 1);
+        exportMonth = pacificTime.getMonth() + 1;
+        exportYear = pacificTime.getFullYear();
+      }
+
+      const exportData = {
+        ...template.data,
+        month: exportMonth,
+        year: exportYear
+      };
+
+      console.log(`🔄 Exporting ${template.name} for ${getMonthName(exportMonth)} ${exportYear}`);
+      
+      const result = await template.generator(exportData, 'excel');
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const monthName = getMonthName(exportMonth);
+      const baseFilename = filename || `${template.name}_${monthName}_${exportYear}_${timestamp}`;
+      const fullFilename = `${baseFilename}.xlsx`;
+
       if (result instanceof Blob) {
-        // Direct blob download (for Excel/PDF libraries)
         const url = URL.createObjectURL(result);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fullFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else if (typeof result === 'string') {
-        // String content (HTML, CSV, etc.)
-        const mimeType = format === 'excel' ? 'text/csv' : 'application/pdf';
-        const blob = new Blob([result], { type: mimeType });
-        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = fullFilename;
@@ -96,7 +105,7 @@ export default function UniversalExportButton({
         URL.revokeObjectURL(url);
       }
 
-      console.log(`✅ ${template.name} exported successfully as ${format.toUpperCase()}`);
+      console.log(`✅ ${template.name} exported successfully`);
       
     } catch (error) {
       console.error(`❌ Error exporting ${template.name}:`, error);
@@ -106,9 +115,14 @@ export default function UniversalExportButton({
     }
   };
 
+  const pacificTime = getPacificTimeDate();
+  const currentMonth = getMonthName(pacificTime.getMonth() + 1);
+  const lastMonthDate = new Date(pacificTime);
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonth = getMonthName(lastMonthDate.getMonth() + 1);
+
   return (
     <div className="relative inline-block">
-      {/* Main Export Button */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         disabled={disabled || isExporting}
@@ -121,14 +135,13 @@ export default function UniversalExportButton({
         `}
       >
         <Download size={16} className="mr-2" />
-        {isExporting ? `Exporting...` : `Export ${template.name}`}
+        {isExporting ? `Exporting...` : `Export`}
         <ChevronDown size={14} className="ml-2" />
       </button>
 
-      {/* Dropdown Menu */}
       {showDropdown && !disabled && !isExporting && (
         <div
-          className={`absolute top-full left-0 mt-1 w-48 rounded-md shadow-lg z-50 ${
+          className={`absolute top-full right-0 mt-1 w-48 rounded-md shadow-lg z-50 ${
             isDark
               ? "bg-[hsl(var(--card))] border border-[hsl(var(--border))]"
               : "bg-white border border-[hsl(var(--border))]"
@@ -136,29 +149,34 @@ export default function UniversalExportButton({
         >
           <div className="py-1">
             <button
-              onClick={() => handleExport('excel')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
+              onClick={() => handleExport('current')}
+              className={`w-full px-4 py-3 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
                 isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
               }`}
             >
-              <FileSpreadsheet size={16} className="mr-2 text-green-600" />
-              Export as Excel (.xlsx)
+              <FileSpreadsheet size={16} className="mr-3 text-green-600" />
+              <div>
+                <div className="font-medium">{currentMonth} {pacificTime.getFullYear()}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">Current Month</div>
+              </div>
             </button>
             
             <button
-              onClick={() => handleExport('pdf')}
-              className={`w-full px-4 py-2 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
+              onClick={() => handleExport('last')}
+              className={`w-full px-4 py-3 text-left text-sm flex items-center hover:bg-[hsl(var(--accent))] transition-colors ${
                 isDark ? "text-[hsl(var(--foreground))]" : "text-gray-700"
               }`}
             >
-              <FileText size={16} className="mr-2 text-red-600" />
-              Export as PDF (.pdf)
+              <FileSpreadsheet size={16} className="mr-3 text-green-600" />
+              <div>
+                <div className="font-medium">{lastMonth} {lastMonthDate.getFullYear()}</div>
+                <div className="text-xs text-[hsl(var(--muted-foreground))]">Last Month</div>
+              </div>
             </button>
           </div>
         </div>
       )}
 
-      {/* Backdrop to close dropdown */}
       {showDropdown && (
         <div
           className="fixed inset-0 z-40"

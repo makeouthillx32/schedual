@@ -1,5 +1,5 @@
-// TimeSheetCalculator.tsx (Final with Universal Export Integration)
-import React from "react";
+// TimeSheetCalculator.tsx (Self-contained with direct template functions)
+import React, { useState } from "react";
 import "./../../style/TSC.css";
 
 // Components
@@ -9,16 +9,19 @@ import { ActionButtons } from "./_components/ActionButtons";
 import { TimesheetTable } from "./_components/TimesheetTable";
 import { TotalsSection } from "./_components/TotalsSection";
 import { DataManagement } from "./_components/DataManagement";
-import { SimpleTimesheetExport } from "./_components/SimpleTimesheetExport";
 
 // Hooks and Utils
 import { usePersistentTimesheetLogic } from "../../hooks/usePersistentTimesheetLogic";
 import { calculateAllWeeksTotal } from "../../utils/timesheetUtils";
 
-// Import the template registration (this registers it with your system)
-import "../../lib/templates/desertTimesheetTemplate";
+// Import template functions directly
+import { generateDesertTimesheetExcel, generateDesertTimesheetHTML } from "../../lib/templates/desertTimesheetTemplate";
 
 const TimeSheetCalculator: React.FC = () => {
+  const [employeeName, setEmployeeName] = useState('');
+  const [payrollPeriod, setPayrollPeriod] = useState<1 | 2>(1);
+  const [isExporting, setIsExporting] = useState(false);
+
   const {
     weeks,
     activeWeekId,
@@ -43,6 +46,52 @@ const TimeSheetCalculator: React.FC = () => {
 
   const activeWeek = weeks.find((week) => week.id === activeWeekId) || weeks[0];
   const totalHours = calculateAllWeeksTotal(weeks);
+
+  // Simple export function using template functions directly
+  const handleExport = async (format: 'excel' | 'pdf') => {
+    if (!employeeName.trim()) {
+      alert('Please enter an employee name');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      let result: ArrayBuffer | string;
+      
+      if (format === 'excel') {
+        result = generateDesertTimesheetExcel(employeeName, payrollPeriod, weeks);
+      } else {
+        result = generateDesertTimesheetHTML(employeeName, payrollPeriod, weeks);
+      }
+
+      // Download the file
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `Desert_Timesheet_${employeeName.replace(/\s+/g, '_')}_${timestamp}.${format === 'excel' ? 'xlsx' : 'html'}`;
+      
+      let blob: Blob;
+      if (result instanceof ArrayBuffer) {
+        blob = new Blob([result], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      } else {
+        blob = new Blob([result], { type: 'text/html' });
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log(`✅ Exported ${filename} successfully`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="timesheet-container">
@@ -88,8 +137,64 @@ const TimeSheetCalculator: React.FC = () => {
         onTogglePayCalculation={() => setShowPayCalculation(!showPayCalculation)}
       />
 
-      {/* Simple integration with your Universal Export Button system */}
-      <SimpleTimesheetExport weeks={weeks} />
+      {/* Simple Export Section */}
+      <div className="export-section">
+        <h3>📋 Export to Physical Form</h3>
+        
+        <div className="export-form">
+          <div className="form-group">
+            <label>Employee Name:</label>
+            <input
+              type="text"
+              value={employeeName}
+              onChange={(e) => setEmployeeName(e.target.value)}
+              placeholder="Enter employee name"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Payroll Period:</label>
+            <div className="radio-group">
+              <label>
+                <input
+                  type="radio"
+                  value={1}
+                  checked={payrollPeriod === 1}
+                  onChange={() => setPayrollPeriod(1)}
+                />
+                1st Half
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value={2}
+                  checked={payrollPeriod === 2}
+                  onChange={() => setPayrollPeriod(2)}
+                />
+                2nd Half
+              </label>
+            </div>
+          </div>
+
+          <div className="export-buttons">
+            <button
+              onClick={() => handleExport('excel')}
+              disabled={isExporting || !employeeName.trim()}
+              className="export-btn excel-btn"
+            >
+              {isExporting ? 'Exporting...' : '📊 Export Excel'}
+            </button>
+            
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting || !employeeName.trim()}
+              className="export-btn pdf-btn"
+            >
+              {isExporting ? 'Exporting...' : '📄 Export HTML'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <DataManagement
         onClearAll={clearAllData}

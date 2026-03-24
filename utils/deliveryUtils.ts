@@ -1,79 +1,36 @@
-// types/delivery.ts
-// Delivery & Pickup order types for the DART Thrift delivery module
+// utils/deliveryUtils.ts
 
-export type OrderStatus = "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
-export type OrderType = "delivery" | "pickup";
-export type PaymentStatus = "paid" | "partial" | "unpaid" | "n/a";
-export type DeliveryTab = "driver" | "orders";
-
-export interface DeliveryOrder {
-  id: string;
-  order_type: OrderType;
-  status: OrderStatus;
-  customer_name: string;
-  customer_phone: string | null;
-  origin_address: string | null;
-  destination_address: string | null;
-  item_description: string;
-  item_notes: string | null;
-  scheduled_date: string | null;
-  scheduled_time: string | null;
-  payment_status: PaymentStatus;
-  payment_notes: string | null;
-  taken_by: string | null;
-  created_at: string;
+export function getLocalDate(): string {
+  const pt = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  return `${pt.getFullYear()}-${String(pt.getMonth() + 1).padStart(2, "0")}-${String(pt.getDate()).padStart(2, "0")}`;
 }
 
-export interface IntakeFormData {
-  order_type: OrderType;
-  customer_name: string;
-  customer_phone: string;
-  origin_address: string;
-  destination_address: string;
-  item_description: string;
-  item_notes: string;
-  scheduled_date: string;
-  scheduled_time: string;
-  payment_status: PaymentStatus;
-  payment_notes: string;
-  taken_by: string;
+export function formatDeliveryTime(t: string | null): string {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
-export const BLANK_FORM: IntakeFormData = {
-  order_type: "delivery",
-  customer_name: "",
-  customer_phone: "",
-  origin_address: "",
-  destination_address: "",
-  item_description: "",
-  item_notes: "",
-  scheduled_date: "",
-  scheduled_time: "",
-  payment_status: "unpaid",
-  payment_notes: "",
-  taken_by: "",
-};
+export function formatDeliveryDate(d: string | null): string {
+  if (!d) return "Date TBD";
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
 
-export const STATUS_CFG: Record<
-  OrderStatus,
-  { label: string; color: string; bg: string; next: OrderStatus | null; nextLabel: string }
-> = {
-  pending:     { label: "Pending",     color: "#b45309", bg: "#fef3c7", next: "in_progress", nextLabel: "Start Run" },
-  assigned:    { label: "Assigned",    color: "#1d4ed8", bg: "#dbeafe", next: "in_progress", nextLabel: "Start Run" },
-  in_progress: { label: "In Progress", color: "#7c3aed", bg: "#ede9fe", next: "completed",   nextLabel: "Mark Done" },
-  completed:   { label: "Completed",   color: "#166534", bg: "#dcfce7", next: null,           nextLabel: "" },
-  cancelled:   { label: "Cancelled",   color: "#991b1b", bg: "#fee2e2", next: null,           nextLabel: "" },
-};
+export function formatPhoneInput(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+  return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+}
 
-export const PAYMENT_COLOR: Record<string, string> = {
-  paid:    "#16a34a",
-  partial: "#d97706",
-  unpaid:  "#dc2626",
-  "n/a":   "#888",
-};
-
-export const TIME_SLOTS = [
-  "8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM",
-  "11:00 AM","11:30 AM","12:00 PM","12:30 PM","1:00 PM","1:30 PM",
-  "2:00 PM","2:30 PM","3:00 PM","3:30 PM","4:00 PM","4:30 PM","5:00 PM",
-];
+export function convertTo24h(t: string): string {
+  const [time, mod] = t.split(" ");
+  let [h, m] = time.split(":").map(Number);
+  if (mod === "PM" && h !== 12) h += 12;
+  if (mod === "AM" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+}

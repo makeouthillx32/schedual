@@ -4,45 +4,42 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import dynamic from "next/dynamic";
 import type { FC } from "react";
-import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard } from "lucide-react";
+import { Settings, User, ShoppingCart, Calendar, Clock, CreditCard, Truck } from "lucide-react";
 import { SettingsToast } from "@/components/settings/SettingsToast";
 
 type DynComp = FC<{}>;
 
 const settingsMap: Record<string, DynComp> = {
-  // Add default root component
   "": dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
   catalog: dynamic(() => import("@/components/settings/catalog-settings")) as DynComp,
   profile: dynamic(() => import("@/components/settings/profile-settings")) as DynComp,
   CMS: dynamic(() => import("@/components/settings/cms-settings")) as DynComp,
-  "CMS/schedule": dynamic(
-    () => import("@/components/settings/cms-settings")
-  ) as DynComp,
-  
-  // Tools settings - only include existing ones
+  "CMS/schedule": dynamic(() => import("@/components/settings/cms-settings")) as DynComp,
+
+  // ← Drop a file at components/settings/[name]-settings.tsx and add it here
+  Delivery: dynamic(() => import("@/components/settings/delivery-settings")) as DynComp,
+
   "Tools/punch-card-maker": dynamic(() => import("@/components/settings/punch-card-maker-settings")) as DynComp,
   "Tools/timesheet-calculator": dynamic(() => import("@/components/settings/timesheet-calculator-settings")) as DynComp,
 };
 
-// Map settings to icons
 const settingIcons: Record<string, JSX.Element> = {
-  "": <User size={20} />,
-  profile: <User size={20} />,
-  catalog: <ShoppingCart size={20} />,
-  CMS: <Calendar size={20} />,
-  "CMS/schedule": <Calendar size={20} />,
-  
-  // Tools icons - only for existing tools
-  "Tools/timesheet-calculator": <Clock size={20} />,
-  "Tools/punch-card-maker": <CreditCard size={20} />,
+  "":                            <User     size={20} />,
+  profile:                       <User     size={20} />,
+  catalog:                       <ShoppingCart size={20} />,
+  CMS:                           <Calendar size={20} />,
+  "CMS/schedule":                <Calendar size={20} />,
+  Delivery:                      <Truck    size={20} />,
+  "Tools/timesheet-calculator":  <Clock    size={20} />,
+  "Tools/punch-card-maker":      <CreditCard size={20} />,
 };
 
 interface SettingsPageProps {
   params: Promise<{ setting?: string[] }>;
-  searchParams?: Promise<{ 
-    toast?: string; 
-    message?: string; 
-    userRole?: string; 
+  searchParams?: Promise<{
+    toast?: string;
+    message?: string;
+    userRole?: string;
   }>;
 }
 
@@ -51,13 +48,11 @@ export default async function SettingsPage(props: SettingsPageProps) {
   const searchParams = await props.searchParams;
   const settingPath = setting.join("/");
 
-  // Check if we have toast parameters from middleware redirect
   if (searchParams?.toast && searchParams?.message) {
-    const toastType = searchParams.toast === 'auth-required' ? 'auth' : 'role';
-    const redirectTo = searchParams.toast === 'auth-required' ? '/sign-in' : '/dashboard';
-    
+    const toastType = searchParams.toast === "auth-required" ? "auth" : "role";
+    const redirectTo = searchParams.toast === "auth-required" ? "/sign-in" : "/dashboard";
     return (
-      <SettingsToast 
+      <SettingsToast
         type={toastType}
         message={searchParams.message}
         userRole={searchParams.userRole}
@@ -73,29 +68,25 @@ export default async function SettingsPage(props: SettingsPageProps) {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: () => {}, // not needed here
+        setAll: () => {},
       },
-    },
+    }
   );
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
-  // Simple auth check - redirect to sign-in if no session
   if (!session) {
     const target = "/settings/" + settingPath;
     redirect(`/sign-in?redirect_to=${encodeURIComponent(target)}`, RedirectType.replace);
   }
 
-  // Handle settings component selection
   const SettingsComponent = settingsMap[settingPath];
   if (!SettingsComponent) {
     redirect("/settings/profile", RedirectType.replace);
   }
 
   const settingTitle = getSettingTitle(settingPath);
-  const settingIcon = settingIcons[settingPath] || <Settings size={20} />;
+  const settingIcon  = settingIcons[settingPath] || <Settings size={20} />;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -120,37 +111,30 @@ export default async function SettingsPage(props: SettingsPageProps) {
   );
 }
 
-// Helper function to generate human-readable setting titles
 function getSettingTitle(settingPath: string): string {
   if (!settingPath) return "Account Settings";
-  
   const titles: Record<string, string> = {
-    profile: "Profile Settings",
-    catalog: "Catalog Settings",
-    CMS: "CMS Settings",
-    "CMS/schedule": "Schedule Settings",
-    
-    // Tools titles - only for existing tools
+    profile:                      "Profile Settings",
+    catalog:                      "Catalog Settings",
+    CMS:                          "CMS Settings",
+    "CMS/schedule":               "Schedule Settings",
+    Delivery:                     "Delivery Settings",
     "Tools/timesheet-calculator": "Timesheet Calculator Settings",
-    "Tools/punch-card-maker": "Punch Card Maker Settings", 
+    "Tools/punch-card-maker":     "Punch Card Maker Settings",
   };
-  
   return titles[settingPath] || "Settings";
 }
 
-// Helper function to generate setting descriptions
 function getSettingDescription(settingPath: string): string {
   const descriptions: Record<string, string> = {
-    "": "Manage your account preferences and personal information",
-    profile: "Update your profile information and account preferences",
-    catalog: "Manage your product catalog and inventory settings",
-    CMS: "Configure your content management system settings",
-    "CMS/schedule": "Customize your cleaning schedule and team assignments",
-    
-    // Tools descriptions - only for existing tools
+    "":                           "Manage your account preferences and personal information",
+    profile:                      "Update your profile information and account preferences",
+    catalog:                      "Manage your product catalog and inventory settings",
+    CMS:                          "Configure your content management system settings",
+    "CMS/schedule":               "Customize your cleaning schedule and team assignments",
+    Delivery:                     "Configure break and lunch windows. No deliveries will be scheduled during these times.",
     "Tools/timesheet-calculator": "Customize timesheet calculation preferences and default settings",
-    "Tools/punch-card-maker": "Configure punch card templates, layouts, and printing preferences",
+    "Tools/punch-card-maker":     "Configure punch card templates, layouts, and printing preferences",
   };
-  
   return descriptions[settingPath] || "Manage your settings and preferences";
 }

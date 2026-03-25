@@ -1,82 +1,122 @@
 "use client";
 
-import { Phone, MessageSquare } from "lucide-react";
-import { MapPicker } from "./MapPicker";
+import { Clock } from "lucide-react";
+import { TIME_SLOTS } from "@/types/delivery";
+import { formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
 
-interface QuickContactProps {
-  phone:         string;
-  name:          string;
-  address:       string | null;
-  scheduledTime?: string;
-  orderType:     "delivery" | "pickup";
+interface ReschedulePanelProps {
+  orderId:      string;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  hasOverride:  boolean;
+  displayTime:  string | null;
+  isEditing:    boolean;
+  pendingDate:  string;
+  pendingTime:  string;
+  onStartEdit:  () => void;
+  onDateChange: (date: string) => void;
+  onTimeChange: (time: string) => void;
+  onSave:       () => void;
+  onCancel:     () => void;
+  onReset:      () => void;
 }
 
 /**
- * One-tap call, map picker, and pre-written SMS templates.
- *
- * URL schemes used:
- *   tel:  → opens iPhone Phone app
- *   sms:  → opens iMessage with &body= pre-filled (user edits before sending)
- *
- * Messages are sent from YOUR company iPhone — no third-party service needed.
+ * Reschedule panel — inline date + time editor for a delivery order.
+ * Collapsed: shows current date · time with Change / Reset buttons.
+ * Expanded:  date input + time slot select + Save / Cancel.
  */
-export function QuickContact({ phone, name, address, scheduledTime, orderType }: QuickContactProps) {
-  const bare = phone.replace(/\D/g, "");
-
-  const messages = [
-    {
-      label: "On my way",
-      emoji: "🚗",
-      body:  `Hi ${name}, this is DART Thrift — we're on our way${scheduledTime ? ` for your ${scheduledTime} appointment` : ""}! We'll see you shortly.`,
-    },
-    {
-      label: "Running late",
-      emoji: "⏰",
-      body:  `Hi ${name}, this is DART Thrift — we're running a little behind schedule. We'll be there as soon as we can. Thank you for your patience!`,
-    },
-    {
-      label: orderType === "pickup" ? "Ready to load" : "Arrived",
-      emoji: orderType === "pickup" ? "📦" : "✅",
-      body:  orderType === "pickup"
-        ? `Hi ${name}, this is DART Thrift — we've arrived and are ready to load up. Please come out when you're ready!`
-        : `Hi ${name}, this is DART Thrift — we're outside and ready to deliver your item. Please come out or let us know where to bring it!`,
-    },
-  ];
-
-  const btnBase = "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors active:scale-95";
-
+export function ReschedulePanel({
+  orderId,
+  scheduledDate,
+  scheduledTime,
+  hasOverride,
+  displayTime,
+  isEditing,
+  pendingDate,
+  pendingTime,
+  onStartEdit,
+  onDateChange,
+  onTimeChange,
+  onSave,
+  onCancel,
+  onReset,
+}: ReschedulePanelProps) {
   return (
-    <div className="space-y-2">
-      {/* Call + Maps row */}
-      <div className="flex gap-2">
-        <a
-          href={`tel:${bare}`}
-          className={`${btnBase} flex-1 justify-center bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90`}
-        >
-          <Phone size={13} />
-          Call {phone}
-        </a>
-        {address && <MapPicker address={address} btnClassName={btnBase} />}
+    <div className="pt-1">
+      <div className="flex items-center gap-2 mb-1">
+        <Clock size={13} className="text-[hsl(var(--muted-foreground))]" />
+        <span className="text-xs font-semibold text-[hsl(var(--foreground))]">
+          Reschedule
+          {hasOverride && <span className="ml-1 text-amber-600">(adjusted)</span>}
+        </span>
       </div>
 
-      {/* SMS quick-send row */}
-      <div className="space-y-1">
-        <p className="text-xs text-[hsl(var(--muted-foreground))] font-medium flex items-center gap-1">
-          <MessageSquare size={11} /> Quick text — tap to open iMessage, edit &amp; send
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {messages.map((msg) => (
-            <a
-              key={msg.label}
-              href={`sms:${bare}&body=${encodeURIComponent(msg.body)}`}
-              className={`${btnBase} bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] justify-start`}
+      {isEditing ? (
+        <div className="flex flex-col gap-2">
+          {/* Date */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[hsl(var(--muted-foreground))] w-10 shrink-0">Date</span>
+            <input
+              type="date"
+              value={pendingDate || scheduledDate || ""}
+              onChange={(e) => onDateChange(e.target.value)}
+              className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+            />
+          </div>
+          {/* Time */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[hsl(var(--muted-foreground))] w-10 shrink-0">Time</span>
+            <select
+              value={pendingTime}
+              onChange={(e) => onTimeChange(e.target.value)}
+              className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
             >
-              <span className="text-base leading-none">{msg.emoji}</span>
-              <span>{msg.label}</span>
-            </a>
-          ))}
+              <option value="">-- Pick new time --</option>
+              {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          {/* Actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={onSave}
+              disabled={!pendingTime}
+              className={`flex-1 px-2 py-1.5 text-xs rounded font-semibold text-white transition-colors ${
+                pendingTime ? "bg-green-600 hover:bg-green-700" : "bg-[hsl(var(--muted))] cursor-not-allowed"
+              }`}
+            >
+              Save
+            </button>
+            <button
+              onClick={onCancel}
+              className="flex-1 px-2 py-1.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className={`text-sm font-medium ${hasOverride ? "text-amber-600" : "text-[hsl(var(--foreground))]"}`}>
+            {scheduledDate ? formatDeliveryDate(scheduledDate) : "Date TBD"}
+            {displayTime ? ` · ${formatDeliveryTime(displayTime)}` : ""}
+          </span>
+          <button
+            onClick={onStartEdit}
+            className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+          >
+            Change
+          </button>
+          {hasOverride && (
+            <button
+              onClick={onReset}
+              className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

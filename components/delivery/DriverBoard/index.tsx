@@ -1,261 +1,229 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { Clock, CheckCircle2, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw } from "lucide-react";
-import { DeliveryOrder, STATUS_CFG } from "@/types/delivery";
-import { getLocalDate } from "@/utils/deliveryUtils";
-import { TrashRun, FilterView } from "../_components/types";
-import { OrderCard }      from "../_components/OrderCard";
-import { TrashRunsPanel } from "../_components/TrashRunsPanel";
+import { Button } from "@/components/ui/button";
+import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR } from "@/types/delivery";
+import { formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
+import { QuickContact } from "./QuickContact";
+import { MapPicker } from "./MapPicker";
+import { DetailRow } from "./DetailRow";
+import { ReschedulePanel } from "./ReschedulePanel";
 
-interface DriverBoardProps {
-  supabase:       SupabaseClient;
-  isDark:         boolean;
-  onCountsChange: (today: number, upcoming: number) => void;
+interface OrderCardProps {
+  order:        DeliveryOrder;
+  isDark:       boolean;
+  isExpanded:   boolean;
+  isUpdating:   boolean;
+  isEditing:    boolean;
+  pendingDate:  string;
+  pendingTime:  string;
+  onToggleExpand:  () => void;
+  onAdvanceStatus: () => void;
+  onUndoStatus:    () => void;
+  onStartEdit:     () => void;
+  onDateChange:    (date: string) => void;
+  onTimeChange:    (time: string) => void;
+  onSave:          () => void;
+  onCancelEdit:    () => void;
+  onReset:         () => void;
 }
 
-export default function DriverBoard({ supabase, isDark, onCountsChange }: DriverBoardProps) {
-  const today = getLocalDate();
+function getStatusIcon(order: DeliveryOrder) {
+  switch (order.status) {
+    case "completed":   return <CheckCircle2 size={20} className="text-green-600" />;
+    case "in_progress": return <span className="text-xl">🔄</span>;
+    case "assigned":    return <span className="text-xl">📋</span>;
+    default:            return <Circle size={20} className="text-[hsl(var(--muted-foreground))]" />;
+  }
+}
 
-  // ── Orders ─────────────────────────────────────────────────────────────────
-  const [orders,   setOrders]   = useState<DeliveryOrder[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState<FilterView>("today");
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+function getStatusText(order: DeliveryOrder) {
+  switch (order.status) {
+    case "completed":
+      return (
+        <span className="text-green-600 font-medium text-xs">
+          ✓ Completed {order.completed_at ? `at ${new Date(order.completed_at).toLocaleTimeString()}` : ""}
+        </span>
+      );
+    case "in_progress": return <span className="text-purple-600 font-medium text-xs">🔄 In Progress</span>;
+    case "assigned":    return <span className="text-blue-600   font-medium text-xs">📋 Assigned</span>;
+    default:            return <span className="text-xs text-[hsl(var(--muted-foreground))]">Pending</span>;
+  }
+}
 
-  // ── Reschedule ─────────────────────────────────────────────────────────────
-  const [editingId,   setEditingId]   = useState<string | null>(null);
-  const [pendingTime, setPendingTime] = useState<string>("");
-  const [pendingDate, setPendingDate] = useState<string>("");
-
-  // ── Trash runs ─────────────────────────────────────────────────────────────
-  const [trashRuns, setTrashRuns] = useState<TrashRun[]>([]);
-
-  // ── Fetches ────────────────────────────────────────────────────────────────
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from("delivery_orders")
-      .select("*")
-      .neq("status", "cancelled")
-      .order("scheduled_date", { ascending: true })
-      .order("scheduled_time",  { ascending: true });
-
-    if (filter === "today")    query = query.or(`scheduled_date.eq.${today},scheduled_date.is.null`);
-    if (filter === "upcoming") query = query.gte("scheduled_date", today);
-
-    const { data } = await query;
-    const rows = (data ?? []) as DeliveryOrder[];
-    setOrders(rows);
-    onCountsChange(
-      rows.filter((o) => o.status !== "completed" && (o.scheduled_date === today || !o.scheduled_date)).length,
-      rows.filter((o) => o.status !== "completed" && o.scheduled_date && o.scheduled_date > today).length,
-    );
-    setLoading(false);
-  }, [supabase, filter, today, onCountsChange]);
-
-  const fetchTrashRuns = useCallback(async () => {
-    const todayPT = getLocalDate();
-    const nowLA   = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-    const offsetH = Math.round((new Date().getTime() - nowLA.getTime()) / 3600000);
-    const off     = `-${String(offsetH).padStart(2, "0")}:00`;
-    const startUTC = new Date(todayPT + "T00:00:00" + off).toISOString();
-    const endUTC   = new Date(todayPT + "T23:59:59" + off).toISOString();
-    const { data } = await supabase
-      .from("trash_runs").select("*")
-      .gte("created_at", startUTC).lte("created_at", endUTC)
-      .order("created_at", { ascending: false });
-    if (data) setTrashRuns(data as TrashRun[]);
-  }, [supabase]);
-
-  useEffect(() => {
-    fetchOrders();
-    fetchTrashRuns();
-    const ch = supabase
-      .channel("driver_board_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "delivery_orders" }, fetchOrders)
-      .on("postgres_changes", { event: "*", schema: "public", table: "trash_runs" },      fetchTrashRuns)
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchOrders, fetchTrashRuns]);
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const advanceStatus = async (order: DeliveryOrder) => {
-    const cfg = STATUS_CFG[order.status];
-    if (!cfg.next) return;
-    if (cfg.next === "completed" && !window.confirm(`Mark "${order.customer_name}" as completed?`)) return;
-    const snapshot = [...orders];
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: cfg.next! } : o)));
-    setUpdating(order.id);
-    try {
-      const { error } = await supabase.from("delivery_orders")
-        .update({ status: cfg.next, ...(cfg.next === "completed" ? { completed_at: new Date().toISOString() } : {}) })
-        .eq("id", order.id);
-      if (error) throw error;
-    } catch {
-      setOrders(snapshot);
-      alert("Failed to update order status.");
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const undoStatus = async (order: DeliveryOrder) => {
-    const cfg = STATUS_CFG[order.status];
-    if (!cfg.prev) return;
-    const snapshot = [...orders];
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: cfg.prev! } : o)));
-    setUpdating(order.id);
-    try {
-      const { error } = await supabase.from("delivery_orders")
-        .update({ status: cfg.prev, completed_at: null })
-        .eq("id", order.id);
-      if (error) throw error;
-    } catch {
-      setOrders(snapshot);
-      alert("Failed to undo status.");
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const to24h = (t: string) => {
-    const [time, mod] = t.split(" ");
-    let [h, m] = time.split(":").map(Number);
-    if (mod === "PM" && h !== 12) h += 12;
-    if (mod === "AM" && h === 12) h = 0;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
-  };
-
-  const saveReschedule = async (orderId: string) => {
-    if (!pendingTime) return;
-    const snapshot = [...orders];
-    const override = to24h(pendingTime);
-    const update: Record<string, string | null> = { scheduled_time_override: override };
-    if (pendingDate) update.scheduled_date = pendingDate;
-    setOrders((prev) => prev.map((o) =>
-      o.id === orderId ? { ...o, scheduled_time_override: override, ...(pendingDate ? { scheduled_date: pendingDate } : {}) } : o
-    ));
-    setEditingId(null);
-    setPendingDate("");
-    try {
-      const { error } = await supabase.from("delivery_orders").update(update).eq("id", orderId);
-      if (error) throw error;
-    } catch {
-      setOrders(snapshot);
-      alert("Failed to save reschedule.");
-    }
-  };
-
-  const clearReschedule = async (orderId: string) => {
-    const snapshot = [...orders];
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, scheduled_time_override: null } : o)));
-    try {
-      await supabase.from("delivery_orders").update({ scheduled_time_override: null }).eq("id", orderId);
-    } catch {
-      setOrders(snapshot);
-      alert("Failed to clear reschedule.");
-    }
-  };
-
-  const addTrashRun = async (note: string) => {
-    await supabase.from("trash_runs").insert({ note: note || null, status: "pending" });
-    await fetchTrashRuns();
-  };
-
-  const toggleTrashRun = async (run: TrashRun) => {
-    const snapshot = [...trashRuns];
-    const next = run.status === "pending" ? "done" : "pending";
-    setTrashRuns((prev) => prev.map((r) => (r.id === run.id ? { ...r, status: next } : r)));
-    try {
-      const { error } = await supabase.from("trash_runs")
-        .update({ status: next, completed_at: next === "done" ? new Date().toISOString() : null })
-        .eq("id", run.id);
-      if (error) throw error;
-    } catch {
-      setTrashRuns(snapshot);
-      alert("Failed to update trash run.");
-    }
-  };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
-  const activeOrders    = orders.filter((o) => o.status !== "completed");
-  const completedOrders = orders.filter((o) => o.status === "completed");
-
-  const cardProps = (order: DeliveryOrder) => ({
-    order,
-    isDark,
-    isExpanded:  expanded === order.id,
-    isUpdating:  updating === order.id,
-    isEditing:   editingId === order.id,
-    pendingDate,
-    pendingTime,
-    onToggleExpand:  () => setExpanded(expanded === order.id ? null : order.id),
-    onAdvanceStatus: () => advanceStatus(order),
-    onStartEdit:     () => { setEditingId(order.id); setPendingTime(""); setPendingDate(""); },
-    onDateChange:    setPendingDate,
-    onTimeChange:    setPendingTime,
-    onSave:          () => saveReschedule(order.id),
-    onCancelEdit:    () => { setEditingId(null); setPendingDate(""); },
-    onReset:         () => clearReschedule(order.id),
-    onUndoStatus:    () => undoStatus(order),
-  });
+export function OrderCard({
+  order,
+  isDark,
+  isExpanded,
+  isUpdating,
+  isEditing,
+  pendingDate,
+  pendingTime,
+  onToggleExpand,
+  onAdvanceStatus,
+  onUndoStatus,
+  onStartEdit,
+  onDateChange,
+  onTimeChange,
+  onSave,
+  onCancelEdit,
+  onReset,
+}: OrderCardProps) {
+  const cfg          = STATUS_CFG[order.status];
+  const isDelivery   = order.order_type === "delivery";
+  const primaryAddr  = isDelivery ? order.destination_address : order.origin_address;
+  const hasOverride  = !!order.scheduled_time_override;
+  const displayTime  = order.scheduled_time_override ?? order.scheduled_time;
+  const done         = order.status === "completed";
 
   return (
-    <div className="space-y-4">
-
-      <TrashRunsPanel
-        supabase={supabase}
-        isDark={isDark}
-        runs={trashRuns}
-        onToggle={toggleTrashRun}
-        onAdd={addTrashRun}
-      />
-
-      {/* Filter chips */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {(["today", "upcoming", "all"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)}>
-            <Badge variant={filter === f ? "default" : "outline"}>
-              {f === "today" ? "Today" : f === "upcoming" ? "Upcoming" : "All"}
-            </Badge>
+    <div
+      className={`p-4 rounded-[var(--radius)] border transition-all ${
+        done
+          ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-900/10"
+          : order.status === "in_progress"
+          ? "border-purple-200 bg-purple-50/50"
+          : isDark
+          ? "bg-[hsl(var(--card))] border-[hsl(var(--border))]"
+          : "bg-[hsl(var(--background))] border-[hsl(var(--border))]"
+      }`}
+    >
+      {/* ── Top row ── */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start space-x-3 flex-1 min-w-0">
+          <button
+            onClick={onAdvanceStatus}
+            className="mt-1 hover:scale-110 transition-transform shrink-0"
+            disabled={!cfg.next || isUpdating || done}
+            title={cfg.next ? cfg.nextLabel : "Completed"}
+          >
+            {getStatusIcon(order)}
           </button>
-        ))}
-        <button
-          onClick={fetchOrders}
-          className="ml-auto p-1.5 rounded-[var(--radius)] border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw size={14} />
-        </button>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <h4 className={`font-semibold truncate ${done ? "line-through text-[hsl(var(--muted-foreground))]" : "text-[hsl(var(--foreground))]"}`}>
+                {order.customer_name}
+              </h4>
+              <Badge variant={isDelivery ? "secondary" : "outline"}>
+                {isDelivery ? "📦" : "🚛"} {isDelivery ? "Delivery" : "Pickup"}
+              </Badge>
+              {isUpdating && <Badge variant="secondary">Updating…</Badge>}
+            </div>
+
+            <p className="text-sm mb-1 truncate text-[hsl(var(--muted-foreground))]">
+              {order.item_description}
+            </p>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {getStatusText(order)}
+              {cfg.prev && (
+                <button
+                  onClick={onUndoStatus}
+                  className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+                  title={cfg.prevLabel}
+                >
+                  ↩ {cfg.prevLabel}
+                </button>
+              )}
+              {isDelivery && !done && (
+                <span className="text-xs font-bold" style={{ color: PAYMENT_COLOR[order.payment_status] ?? "#888" }}>
+                  $ {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
+                </span>
+              )}
+            </div>
+
+            {order.item_notes && (
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 italic truncate">
+                📝 {order.item_notes}
+              </p>
+            )}
+
+            {/* ETA badge */}
+            {order.eta_minutes !== null && !done && (
+              <div className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${
+                order.eta_notified ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+              }`}>
+                <Clock size={11} />
+                {order.eta_notified
+                  ? `🚨 Leave now — ${order.eta_minutes} min drive`
+                  : `~${order.eta_minutes} min drive`}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Date / time / expand */}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">
+            {formatDeliveryDate(order.scheduled_date)}
+          </span>
+          {displayTime && (
+            <span
+              className={`text-xs font-semibold whitespace-nowrap ${hasOverride ? "text-amber-600" : done ? "text-green-600" : "text-[hsl(var(--foreground))]"}`}
+              title={hasOverride ? `Original: ${formatDeliveryTime(order.scheduled_time)}` : undefined}
+            >
+              {hasOverride && "✏️ "}{formatDeliveryTime(displayTime)}
+            </span>
+          )}
+          <button
+            onClick={onToggleExpand}
+            className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+          >
+            {isExpanded ? "▲" : "▼"}
+          </button>
+        </div>
       </div>
 
-      {/* Order list */}
-      {loading ? (
-        <p className="text-center py-12 text-sm text-[hsl(var(--muted-foreground))]">Loading orders…</p>
-      ) : orders.length === 0 ? (
-        <div className="text-center py-12 flex flex-col items-center gap-2 text-[hsl(var(--muted-foreground))]">
-          <span className="text-4xl">🎉</span>
-          <p className="text-sm font-medium">No orders for this view.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {activeOrders.map((o) => <OrderCard key={o.id} {...cardProps(o)} />)}
+      {/* ── Expanded panel ── */}
+      {isExpanded && (
+        <div className="mt-3 pt-3 border-t border-[hsl(var(--border))] space-y-3">
 
-          {completedOrders.length > 0 && (
-            <>
-              <div className="flex items-center gap-2 pt-2">
-                <div className="flex-1 h-px bg-green-200" />
-                <span className="text-xs font-bold text-green-600 uppercase tracking-wider">
-                  ✓ Completed ({completedOrders.length})
-                </span>
-                <div className="flex-1 h-px bg-green-200" />
-              </div>
-              {completedOrders.map((o) => <OrderCard key={o.id} {...cardProps(o)} />)}
-            </>
+          {order.customer_phone && (
+            <QuickContact
+              phone={order.customer_phone}
+              name={order.customer_name}
+              address={primaryAddr}
+              scheduledTime={displayTime ? formatDeliveryTime(displayTime) : undefined}
+              orderType={order.order_type}
+            />
+          )}
+
+          {!order.customer_phone && primaryAddr && (
+            <MapPicker address={primaryAddr} />
+          )}
+
+          {isDelivery && order.payment_notes && (
+            <p className="text-xs text-[hsl(var(--muted-foreground))] italic">💳 {order.payment_notes}</p>
+          )}
+          {isDelivery  && order.origin_address      && <DetailRow label="Pickup From" value={order.origin_address} />}
+          {!isDelivery && order.destination_address && <DetailRow label="Drop Off To" value={order.destination_address} />}
+          {order.taken_by && <DetailRow label="Taken By" value={order.taken_by} />}
+
+          {!done && (
+            <ReschedulePanel
+              orderId={order.id}
+              scheduledDate={order.scheduled_date}
+              scheduledTime={order.scheduled_time}
+              hasOverride={hasOverride}
+              displayTime={displayTime}
+              isEditing={isEditing}
+              pendingDate={pendingDate}
+              pendingTime={pendingTime}
+              onStartEdit={onStartEdit}
+              onDateChange={onDateChange}
+              onTimeChange={onTimeChange}
+              onSave={onSave}
+              onCancel={onCancelEdit}
+              onReset={onReset}
+            />
+          )}
+
+          {cfg.next && (
+            <Button onClick={onAdvanceStatus} disabled={isUpdating} className="w-full mt-1">
+              {isUpdating ? "Updating…" : cfg.nextLabel}
+            </Button>
           )}
         </div>
       )}

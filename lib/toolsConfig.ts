@@ -1,30 +1,21 @@
-import TimesheetCalculator from "@/components/tools/timesheet-calculator";
-import PunchCardMaker from "@/components/tools/PunchCardMaker";
-import DeliveryIntakeForm from "@/components/tools/DeliveryIntakeForm";
+// lib/toolsConfig.ts
+// NOTE: Components here are imported for toolsConfig metadata only.
+// The actual dynamic loading happens in app/Tools/[tool]/page.tsx.
 
 export const tools = [
   {
     name: "Delivery Intake",
     path: "/Tools/delivery-intake",
-    component: DeliveryIntakeForm,
-    description: "Schedule a delivery or furniture pickup for DART Thrift.",
-    icon: "📋",
-    public: true,
+    description: "Schedule a pickup or delivery order",
   },
   {
     name: "Timesheet Calculator",
     path: "/Tools/timesheet-calculator",
-    component: TimesheetCalculator,
-    description: "Calculate and export weekly timesheets.",
-    icon: "🕐",
-    public: false,
+    description: "Calculate hours and pay across multiple weeks",
   },
   {
     name: "Punch Card Maker",
     path: "/Tools/punch-card-maker",
-    component: PunchCardMaker,
-    description: "Design and print punch cards for clients.",
-    icon: "🃏",
-    public: false,
+    description: "Generate printable punch cards",
   },
 ];

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, CheckCircle2, Circle } from "lucide-react";
-import { TrashRun } from "./types";
+import { TrashRun } from "@/components/delivery/_components/types";
 
 interface TrashRunsPanelProps {
   supabase: SupabaseClient;

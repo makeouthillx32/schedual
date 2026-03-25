@@ -1,7 +1,7 @@
 "use client";
 
 import { Phone, MessageSquare } from "lucide-react";
-import { MapPicker } from "./MapPicker";
+import { MapPicker } from "@/components/delivery/_components/MapPicker";
 
 interface QuickContactProps {
   phone:         string;

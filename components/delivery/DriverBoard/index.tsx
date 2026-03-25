@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Plus, Trash2, CheckCircle2, Circle, Clock } from "lucide-react";
+import { RefreshCw, Plus, Trash2, CheckCircle2, Circle, Clock, Phone, MessageSquare, Navigation } from "lucide-react";
 import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR, TIME_SLOTS } from "@/types/delivery";
 import { getLocalDate, formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
 
@@ -72,11 +72,20 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
   }, [supabase, filter, today, onCountsChange]);
 
   const fetchTrashRuns = useCallback(async () => {
+    // Scope to today only (Pacific Time) — trash log resets each day.
+    // Offset is computed dynamically to handle both PDT (-07) and PST (-08).
+    const todayPT = getLocalDate();
+    const nowLA   = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const offsetH = Math.round((new Date().getTime() - nowLA.getTime()) / 3600000);
+    const off     = `-${String(offsetH).padStart(2, "0")}:00`;
+    const startUTC = new Date(todayPT + "T00:00:00" + off).toISOString();
+    const endUTC   = new Date(todayPT + "T23:59:59" + off).toISOString();
     const { data } = await supabase
       .from("trash_runs")
       .select("*")
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .gte("created_at", startUTC)
+      .lte("created_at", endUTC)
+      .order("created_at", { ascending: false });
     if (data) setTrashRuns(data as TrashRun[]);
   }, [supabase]);
 
@@ -318,21 +327,24 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
 
         {/* Expanded panel */}
         {isExpanded && (
-          <div className="mt-3 pt-3 border-t border-[hsl(var(--border))] space-y-2">
+          <div className="mt-3 pt-3 border-t border-[hsl(var(--border))] space-y-3">
+
+            {/* ── Quick contact actions ── */}
             {order.customer_phone && (
-              <a href={`tel:${order.customer_phone}`} className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--sidebar-primary))]">
-                📞 {order.customer_phone}
-              </a>
+              <QuickContact
+                phone={order.customer_phone}
+                name={order.customer_name}
+                address={primaryAddress}
+                scheduledTime={displayTime ? formatDeliveryTime(displayTime) : undefined}
+                orderType={order.order_type}
+              />
             )}
-            {primaryAddress && (
-              <a
-                href={`https://maps.google.com/?q=${encodeURIComponent(primaryAddress)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center gap-2 text-sm text-[hsl(var(--sidebar-primary))]"
-              >
-                📍 {primaryAddress}
-              </a>
+
+            {/* Address map picker when no phone */}
+            {!order.customer_phone && primaryAddress && (
+              <MapPicker address={primaryAddress} />
             )}
+
             {isDelivery && order.payment_notes && (
               <p className="text-xs text-[hsl(var(--muted-foreground))] italic">💳 {order.payment_notes}</p>
             )}
@@ -523,11 +535,166 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
   );
 }
 
+// ── MapPicker — tap to choose Apple Maps, Google Maps, or Waze ───────────────
+function MapPicker({ address, btnClassName }: { address: string; btnClassName?: string }) {
+  const [open, setOpen] = React.useState(false);
+  const enc = encodeURIComponent(address);
+
+  const apps = [
+    {
+      label: "Apple Maps",
+      emoji: "🍎",
+      href: `https://maps.apple.com/?q=${enc}`,
+    },
+    {
+      label: "Google Maps",
+      emoji: "🗺️",
+      href: `https://www.google.com/maps/search/?api=1&query=${enc}`,
+    },
+    {
+      label: "Waze",
+      emoji: "🚗",
+      href: `https://waze.com/ul?q=${enc}&navigate=yes`,
+    },
+  ];
+
+  // Inline picker — no portal needed, closes on outside tap via overlay
+  return (
+    <div className="relative">
+      {/* Trigger */}
+      {btnClassName ? (
+        // Inside QuickContact — matches the other action buttons
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`${btnClassName} bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))]`}
+        >
+          <Navigation size={13} />
+          Maps
+        </button>
+      ) : (
+        // No-phone fallback — address text style
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 text-sm text-[hsl(var(--sidebar-primary))] hover:underline"
+        >
+          📍 {address}
+        </button>
+      )}
+
+      {/* Picker popover */}
+      {open && (
+        <>
+          {/* Invisible backdrop to close on outside tap */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[160px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
+            {apps.map((app) => (
+              <a
+                key={app.label}
+                href={app.href}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] active:bg-[hsl(var(--accent))] transition-colors"
+              >
+                <span className="text-base leading-none">{app.emoji}</span>
+                {app.label}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2 text-xs">
       <span className="font-bold shrink-0 w-24 text-[hsl(var(--muted-foreground))]">{label}:</span>
       <span className="text-[hsl(var(--foreground))] break-words">{value}</span>
+    </div>
+  );
+}
+
+// ── QuickContact — one-tap call, maps, and pre-written SMS templates ─────────
+//
+// Uses native iOS URL schemes:
+//   tel:  → opens Phone app
+//   sms:  → opens iMessage with &body= pre-filled (user can edit before sending)
+//   maps: → opens Apple Maps
+//
+// The message goes from YOUR phone number, not a third-party service.
+
+interface QuickContactProps {
+  phone: string;
+  name: string;
+  address: string | null;
+  scheduledTime?: string;
+  orderType: "delivery" | "pickup";
+}
+
+function QuickContact({ phone, name, address, scheduledTime, orderType }: QuickContactProps) {
+  // Strip non-digits for URL schemes
+  const bare = phone.replace(/\D/g, "");
+
+  // Pre-written message templates
+  const messages = [
+    {
+      label: "On my way",
+      emoji: "🚗",
+      body: `Hi ${name}, this is DART Thrift — we're on our way${scheduledTime ? ` for your ${scheduledTime} appointment` : ""}! We'll see you shortly.`,
+    },
+    {
+      label: "Running late",
+      emoji: "⏰",
+      body: `Hi ${name}, this is DART Thrift — we're running a little behind schedule. We'll be there as soon as we can. Thank you for your patience!`,
+    },
+    {
+      label: orderType === "pickup" ? "Ready to load" : "Arrived",
+      emoji: orderType === "pickup" ? "📦" : "✅",
+      body: orderType === "pickup"
+        ? `Hi ${name}, this is DART Thrift — we've arrived and are ready to load up. Please come out when you're ready!`
+        : `Hi ${name}, this is DART Thrift — we're outside and ready to deliver your item. Please come out or let us know where to bring it!`,
+    },
+  ];
+
+  const btnBase = "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors active:scale-95";
+
+  return (
+    <div className="space-y-2">
+      {/* Call + Maps row */}
+      <div className="flex gap-2">
+        <a
+          href={`tel:${bare}`}
+          className={`${btnBase} flex-1 justify-center bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90`}
+        >
+          <Phone size={13} />
+          Call {phone}
+        </a>
+        {address && <MapPicker address={address} btnClassName={btnBase} />}
+      </div>
+
+      {/* SMS quick-send row */}
+      <div className="space-y-1">
+        <p className="text-xs text-[hsl(var(--muted-foreground))] font-medium flex items-center gap-1">
+          <MessageSquare size={11} /> Quick text — tap to open iMessage, edit &amp; send
+        </p>
+        <div className="flex flex-col gap-1.5">
+          {messages.map((msg) => (
+            <a
+              key={msg.label}
+              href={`sms:${bare}&body=${encodeURIComponent(msg.body)}`}
+              className={`${btnBase} bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] justify-start`}
+            >
+              <span className="text-base leading-none">{msg.emoji}</span>
+              <span>{msg.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

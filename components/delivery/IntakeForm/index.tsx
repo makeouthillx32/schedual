@@ -9,47 +9,90 @@ import { cn }       from "@/lib/utils";
 import { BLANK_FORM, TIME_SLOTS } from "@/types/delivery";
 import { formatPhoneInput, convertTo24h } from "@/utils/deliveryUtils";
 
-import { STEPS }              from "@/components/delivery/_components/types";
+import { STEPS, DRAFT_KEY }   from "@/components/delivery/_components/types";
 import { buildSlots, getUpcomingDates } from "@/components/delivery/_components/utils";
 import { StepShell }          from "@/components/delivery/_components/StepShell";
 import { OptionCard }         from "@/components/delivery/_components/OptionCard";
 import { Field }              from "@/components/delivery/_components/Field";
 import { SummaryRow }         from "@/components/delivery/_components/SummaryRow";
 import { DateStrip, SlotGrid, ExistingOrdersPanel } from "@/components/delivery/_components/TimeSlotGrid";
+import { AddressAutocomplete } from "@/components/delivery/_components/AddressAutocomplete";
 
 import type { IntakeFormProps, ScheduleBlock, ExistingOrder } from "@/components/delivery/_components/types";
 import type { IntakeFormData } from "@/types/delivery";
 
+// ── Draft persistence ─────────────────────────────────────────────────────────
+
+interface DraftState {
+  form:    IntakeFormData;
+  takenBy: string;
+  step:    number;
+}
+
+function loadDraft(): DraftState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as DraftState;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(state: DraftState) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
+  } catch { /* quota exceeded — fail silently */ }
+}
+
+function clearDraft() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function IntakeForm({ supabase }: IntakeFormProps) {
-  const [step, setStep]       = useState(1);
-  const [form, setForm]       = useState<IntakeFormData>(BLANK_FORM);
-  const [takenBy, setTakenBy] = useState("");
+  // Restore from draft on first mount
+  const draft = loadDraft();
+
+  const [step, setStep]       = useState(draft?.step ?? 1);
+  const [form, setForm]       = useState<IntakeFormData>(draft?.form ?? BLANK_FORM);
+  const [takenBy, setTakenBy] = useState(draft?.takenBy ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
 
-  const [blocks, setBlocks]           = useState<ScheduleBlock[]>([]);
-  const [dayOrders, setDayOrders]     = useState<ExistingOrder[]>([]);
+  const [blocks, setBlocks]             = useState<ScheduleBlock[]>([]);
+  const [dayOrders, setDayOrders]       = useState<ExistingOrder[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   const [animDir, setAnimDir] = useState<"fwd" | "bck">("fwd");
   const [animKey, setAnimKey] = useState(0);
 
   const isDelivery = form.order_type === "delivery";
-  const set = useCallback(
-    (k: keyof IntakeFormData, v: string) => setForm((p) => ({ ...p, [k]: v })),
-    [],
-  );
+
+  const set = useCallback((k: keyof IntakeFormData, v: string) =>
+    setForm((p) => ({ ...p, [k]: v })), []);
+
+  // Persist draft whenever form/step/takenBy changes
+  useEffect(() => {
+    saveDraft({ form, takenBy, step });
+  }, [form, takenBy, step]);
 
   // Load break/lunch blocks once
   useEffect(() => {
     supabase
       .from("delivery_schedule_blocks")
       .select("start_time, end_time, label, is_active")
+      .eq("is_active", true)
       .then(({ data }) => { if (data) setBlocks(data as ScheduleBlock[]); });
   }, [supabase]);
 
-  // Reload existing orders whenever selected date changes
+  // Reload existing orders when selected date changes
+  // FIX: use .neq() twice instead of broken .not("status","in",...) syntax
   useEffect(() => {
     if (!form.scheduled_date) { setDayOrders([]); return; }
     setLoadingSlots(true);
@@ -57,10 +100,11 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
       .from("delivery_orders")
       .select("id, customer_name, order_type, scheduled_time, item_description, status")
       .eq("scheduled_date", form.scheduled_date)
-      .not("status", "in", '("cancelled","completed")')
+      .neq("status", "cancelled")
+      .neq("status", "completed")
       .not("scheduled_time", "is", null)
-      .then(({ data }) => {
-        setDayOrders((data ?? []) as ExistingOrder[]);
+      .then(({ data, error: err }) => {
+        if (!err && data) setDayOrders(data as ExistingOrder[]);
         setLoadingSlots(false);
       });
   }, [form.scheduled_date, supabase]);
@@ -78,15 +122,18 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
   };
 
   const validate = (): string | null => {
-    if (step === 2 && !form.customer_name.trim())
+    // Step 1: Who
+    if (step === 1 && !form.customer_name.trim())
       return "Please enter the customer's name.";
-    if (step === 3 && isDelivery && !form.destination_address.trim())
+    // Step 2: Where + What
+    if (step === 2 && isDelivery && !form.destination_address.trim())
       return "Please enter the delivery address.";
-    if (step === 3 && !isDelivery && !form.origin_address.trim())
+    if (step === 2 && !isDelivery && !form.origin_address.trim())
       return "Please enter the pickup address.";
-    if (step === 4 && !form.item_description.trim())
+    if (step === 2 && !form.item_description.trim())
       return "Please describe the item(s).";
-    if (step === 7 && !takenBy.trim())
+    // Step 4: Confirm
+    if (step === 4 && !takenBy.trim())
       return "Please enter who is taking this order.";
     return null;
   };
@@ -145,6 +192,8 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         action_url: "/Delivery",
       });
 
+      // Only clear draft after confirmed success
+      clearDraft();
       setSavedId(order.id);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -173,7 +222,13 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         <Button
           size="lg"
           className="rounded-2xl px-8"
-          onClick={() => { setSavedId(null); setForm(BLANK_FORM); setTakenBy(""); setStep(1); }}
+          onClick={() => {
+            setSavedId(null);
+            setForm(BLANK_FORM);
+            setTakenBy("");
+            setDayOrders([]);
+            setStep(1);
+          }}
         >
           + Schedule Another
         </Button>
@@ -181,83 +236,79 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
     );
   }
 
-  // ── Progress bar ─────────────────────────────────────────────────────────────
+  // ── Progress ─────────────────────────────────────────────────────────────────
 
   const progress = ((step - 1) / (STEPS.length - 1)) * 100;
 
   return (
     <div className="max-w-lg mx-auto">
       <style>{`
-        @keyframes slideInFwd { from{opacity:0;transform:translateX(18px)} to{opacity:1;transform:translateX(0)} }
-        @keyframes slideInBck { from{opacity:0;transform:translateX(-18px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes slideInFwd { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes slideInBck { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
       `}</style>
 
-      {/* Progress */}
+      {/* Progress — 4 wide dots so they're easy to see */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2 px-1">
-          {STEPS.map((s) => (
-            <div key={s.id} className="flex flex-col items-center gap-1 flex-1">
-              <div className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 mx-auto",
-                s.id < step   ? "bg-green-500 text-white" :
-                s.id === step ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] scale-110 shadow-md" :
-                                "bg-muted text-muted-foreground",
-              )}>
-                {s.id < step ? <Check size={12} /> : s.id}
+        <div className="flex items-center gap-2 mb-3">
+          {STEPS.map((s, i) => (
+            <div key={s.id} className="flex items-center gap-2 flex-1">
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
+                  s.id < step   ? "bg-green-500 text-white" :
+                  s.id === step ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] scale-110 shadow-sm" :
+                                  "bg-muted text-muted-foreground",
+                )}>
+                  {s.id < step ? <Check size={13} /> : s.id}
+                </div>
+                <span className={cn(
+                  "text-[11px] font-semibold whitespace-nowrap",
+                  s.id === step ? "text-[hsl(var(--sidebar-primary))]" : "text-muted-foreground",
+                )}>
+                  {s.label}
+                </span>
               </div>
-              <span className={cn(
-                "text-[10px] hidden sm:block font-medium",
-                s.id === step ? "text-[hsl(var(--sidebar-primary))]" : "text-muted-foreground",
-              )}>
-                {s.label}
-              </span>
+              {/* Connector line between dots */}
+              {i < STEPS.length - 1 && (
+                <div className="flex-1 h-0.5 rounded-full mt-[-14px]"
+                  style={{ background: s.id < step ? "hsl(var(--sidebar-primary))" : "hsl(var(--muted))" }}
+                />
+              )}
             </div>
           ))}
         </div>
-        <div className="h-1 rounded-full bg-muted overflow-hidden mx-1">
-          <div
-            className="h-full rounded-full transition-all duration-500 ease-out bg-[hsl(var(--sidebar-primary))]"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
       </div>
 
-      {/* Animated step content */}
+      {/* Animated step */}
       <div
         key={animKey}
-        className="min-h-[360px]"
-        style={{ animation: `${animDir === "fwd" ? "slideInFwd" : "slideInBck"} 0.22s ease-out` }}
+        className="min-h-[380px]"
+        style={{ animation: `${animDir === "fwd" ? "slideInFwd" : "slideInBck"} 0.2s ease-out` }}
       >
-        {/* Step 1 — Type */}
+
+        {/* ── Step 1: Who + Type ─────────────────────────────────────────── */}
         {step === 1 && (
-          <StepShell title="What are we doing?" sub="Choose the type of order">
-            <div className="flex flex-col gap-4">
+          <StepShell title="What are we scheduling?" sub="Choose the type, then enter customer details">
+            {/* Type toggle — compact, side by side */}
+            <div className="flex gap-3 mb-6">
               <OptionCard
                 selected={form.order_type === "pickup"}
                 onClick={() => set("order_type", "pickup")}
-                icon={<Truck size={26} />}
+                icon={<Truck size={22} />}
                 label="Pickup"
-                desc="We go pick up a donation from a donor"
+                desc="Go get a donation"
               />
               <OptionCard
                 selected={form.order_type === "delivery"}
                 onClick={() => set("order_type", "delivery")}
-                icon={<Package size={26} />}
+                icon={<Package size={22} />}
                 label="Delivery"
-                desc="We deliver an item to a customer's home"
+                desc="Deliver to customer"
               />
             </div>
-          </StepShell>
-        )}
 
-        {/* Step 2 — Contact */}
-        {step === 2 && (
-          <StepShell
-            title={isDelivery ? "Who is the customer?" : "Who is the donor?"}
-            sub="Enter their name and phone number"
-          >
-            <div className="space-y-5">
-              <Field label="Full Name" required>
+            <div className="space-y-4">
+              <Field label="Customer / Donor Name" required>
                 <Input
                   placeholder={isDelivery ? "e.g. Nicole Larson" : "e.g. James Torres"}
                   value={form.customer_name}
@@ -266,7 +317,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
                   autoFocus
                 />
               </Field>
-              <Field label="Phone Number">
+              <Field label="Phone Number (optional)">
                 <Input
                   type="tel"
                   inputMode="tel"
@@ -280,91 +331,66 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
           </StepShell>
         )}
 
-        {/* Step 3 — Address */}
-        {step === 3 && (
+        {/* ── Step 2: Where + What ───────────────────────────────────────── */}
+        {step === 2 && (
           <StepShell
-            title={isDelivery ? "Where are we delivering?" : "Where are we picking up?"}
-            sub="Full street address in Ridgecrest"
+            title={isDelivery ? "Where & what?" : "Pickup from where?"}
+            sub="Address and item description"
           >
-            <div className="space-y-5">
+            <div className="space-y-4">
               {isDelivery ? (
-                <>
-                  <Field label="Delivery Address" required>
-                    <Input
-                      placeholder="123 Main St, Ridgecrest"
-                      value={form.destination_address}
-                      onChange={(e) => set("destination_address", e.target.value)}
-                      className="h-14 text-base rounded-2xl"
-                      autoFocus
-                    />
-                  </Field>
-                  <Field label="Pickup From (blank = from store)">
-                    <Input
-                      placeholder="232 Sahara Dr"
-                      value={form.origin_address}
-                      onChange={(e) => set("origin_address", e.target.value)}
-                      className="h-14 text-base rounded-2xl"
-                    />
-                  </Field>
-                </>
+                <Field label="Delivery Address" required>
+                  <AddressAutocomplete
+                    placeholder="123 Main St, Ridgecrest"
+                    value={form.destination_address}
+                    onChange={(v) => set("destination_address", v)}
+                    autoFocus
+                  />
+                </Field>
               ) : (
-                <>
-                  <Field label="Pickup Address" required>
-                    <Input
-                      placeholder="456 Oak Ave, Ridgecrest"
-                      value={form.origin_address}
-                      onChange={(e) => set("origin_address", e.target.value)}
-                      className="h-14 text-base rounded-2xl"
-                      autoFocus
-                    />
-                  </Field>
-                  <Field label="Drop Off To (blank = to store)">
-                    <Input
-                      placeholder="232 Sahara Dr"
-                      value={form.destination_address}
-                      onChange={(e) => set("destination_address", e.target.value)}
-                      className="h-14 text-base rounded-2xl"
-                    />
-                  </Field>
-                </>
+                <Field label="Pickup Address" required>
+                  <AddressAutocomplete
+                    placeholder="456 Oak Ave, Ridgecrest"
+                    value={form.origin_address}
+                    onChange={(v) => set("origin_address", v)}
+                    autoFocus
+                  />
+                </Field>
               )}
-            </div>
-          </StepShell>
-        )}
 
-        {/* Step 4 — Items */}
-        {step === 4 && (
-          <StepShell title="What are the items?" sub="Describe what we're moving">
-            <div className="space-y-5">
               <Field label="Item Description" required>
                 <Input
                   placeholder={isDelivery ? "e.g. Brown couch, 2 end tables" : "e.g. Dresser, recliner chair"}
                   value={form.item_description}
                   onChange={(e) => set("item_description", e.target.value)}
                   className="h-14 text-base rounded-2xl"
-                  autoFocus
                 />
               </Field>
+
               <Field label="Notes (optional)">
                 <Textarea
                   placeholder="e.g. Very heavy, needs two people"
                   value={form.item_notes}
                   onChange={(e) => set("item_notes", e.target.value)}
-                  className="text-base rounded-2xl resize-none min-h-[90px]"
+                  className="text-base rounded-2xl resize-none"
+                  rows={2}
                 />
               </Field>
             </div>
           </StepShell>
         )}
 
-        {/* Step 5 — When */}
-        {step === 5 && (
-          <StepShell title="When should we go?" sub="Pick a date — then choose an open time slot">
+        {/* ── Step 3: When ───────────────────────────────────────────────── */}
+        {step === 3 && (
+          <StepShell title="When should we go?" sub="Pick a date and time slot">
             <div className="space-y-5">
               <DateStrip
                 dates={dates}
                 selectedDate={form.scheduled_date}
-                onSelectDate={(v) => { set("scheduled_date", v); set("scheduled_time", ""); }}
+                onSelectDate={(v) => {
+                  set("scheduled_date", v);
+                  set("scheduled_time", "");
+                }}
               />
 
               {form.scheduled_date && (
@@ -381,95 +407,80 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
               )}
 
               {!form.scheduled_date && (
-                <button
-                  onClick={() => goTo(6, "fwd")}
-                  className="text-sm text-muted-foreground underline underline-offset-2"
-                >
-                  Skip — schedule later
-                </button>
+                <p className="text-sm text-muted-foreground">
+                  Select a date above to see available time slots.
+                </p>
               )}
             </div>
           </StepShell>
         )}
 
-        {/* Step 6 — Payment */}
-        {step === 6 && (
-          <StepShell
-            title={isDelivery ? "Payment status?" : "No payment needed"}
-            sub={isDelivery ? "How was this handled?" : "Pickups are free — just continue"}
-          >
-            {isDelivery ? (
-              <div className="space-y-3">
-                {([
-                  { value: "paid",    label: "Paid in Full",    emoji: "✅", desc: "Customer already paid"    },
-                  { value: "partial", label: "Partial Payment", emoji: "🔶", desc: "Deposit or partial paid"   },
-                  { value: "unpaid",  label: "Pay on Delivery", emoji: "💵", desc: "Collect when we arrive"    },
-                  { value: "n/a",     label: "N/A",             emoji: "—",  desc: "Not applicable"            },
-                ] as const).map((opt) => {
-                  const active = form.payment_status === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => set("payment_status", opt.value)}
-                      className={cn(
-                        "flex items-center gap-4 w-full px-5 py-4 rounded-2xl border-2 text-left transition-all active:scale-95",
-                        active
-                          ? "border-[hsl(var(--sidebar-primary))] bg-[hsl(var(--sidebar-primary)/0.08)]"
-                          : "border-border bg-background hover:border-[hsl(var(--sidebar-primary))]",
-                      )}
-                    >
-                      <span className="text-2xl w-8 text-center">{opt.emoji}</span>
-                      <div className="flex-1">
-                        <p className={cn("font-bold text-sm", active ? "text-[hsl(var(--sidebar-primary))]" : "text-foreground")}>
-                          {opt.label}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                      </div>
-                      {active && <Check size={18} className="text-[hsl(var(--sidebar-primary))] shrink-0" />}
-                    </button>
-                  );
-                })}
-                {(form.payment_status === "partial" || form.payment_status === "unpaid") && (
-                  <Field label="Payment Notes">
-                    <Input
-                      placeholder="e.g. $50 deposit paid, balance $120 due on delivery"
-                      value={form.payment_notes}
-                      onChange={(e) => set("payment_notes", e.target.value)}
-                      className="h-14 text-base rounded-2xl"
-                    />
-                  </Field>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4 py-8 text-center">
-                <span className="text-5xl">🎁</span>
-                <p className="text-muted-foreground">
-                  This is a donation pickup — no charge to the donor.
-                </p>
-              </div>
-            )}
-          </StepShell>
-        )}
-
-        {/* Step 7 — Confirm */}
-        {step === 7 && (
-          <StepShell title="Almost done!" sub="Review and confirm the order">
-            <div className="rounded-2xl border border-border bg-muted/30 p-5 mb-5 space-y-3">
+        {/* ── Step 4: Confirm ────────────────────────────────────────────── */}
+        {step === 4 && (
+          <StepShell title="Almost done!" sub="Review the order and confirm">
+            {/* Summary card */}
+            <div className="rounded-2xl border border-border bg-muted/30 p-4 mb-5 space-y-2.5">
               <SummaryRow label="Type"    value={isDelivery ? "📦 Delivery" : "🚛 Pickup"} />
               <SummaryRow label="Name"    value={form.customer_name} />
               {form.customer_phone && <SummaryRow label="Phone"   value={form.customer_phone} />}
-              <SummaryRow label="Address" value={(isDelivery ? form.destination_address : form.origin_address) || "—"} />
+              <SummaryRow
+                label="Address"
+                value={(isDelivery ? form.destination_address : form.origin_address) || "—"}
+              />
               <SummaryRow label="Items"   value={form.item_description} />
-              {form.item_notes && <SummaryRow label="Notes"   value={form.item_notes} />}
+              {form.item_notes && <SummaryRow label="Notes" value={form.item_notes} />}
               <SummaryRow
                 label="When"
                 value={form.scheduled_date
                   ? `${form.scheduled_date}${form.scheduled_time ? " @ " + form.scheduled_time : ""}`
                   : "Date TBD"}
               />
-              {isDelivery && <SummaryRow label="Payment" value={form.payment_status} />}
             </div>
-            <Field label="Your name — who is taking this order?" required>
+
+            {/* Payment — delivery only, inline, no separate step */}
+            {isDelivery && (
+              <div className="mb-5">
+                <Field label="Payment Status">
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { value: "paid",    label: "Paid ✅"   },
+                      { value: "partial", label: "Partial 🔶" },
+                      { value: "unpaid",  label: "On Delivery 💵" },
+                      { value: "n/a",     label: "N/A —"     },
+                    ] as const).map((opt) => {
+                      const active = form.payment_status === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          onClick={() => set("payment_status", opt.value)}
+                          className={cn(
+                            "py-3 px-3 rounded-xl border-2 text-sm font-semibold text-left transition-all active:scale-95",
+                            active
+                              ? "border-[hsl(var(--sidebar-primary))] bg-[hsl(var(--sidebar-primary)/0.08)] text-[hsl(var(--sidebar-primary))]"
+                              : "border-border bg-background text-foreground hover:border-[hsl(var(--sidebar-primary))]",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Field>
+                {(form.payment_status === "partial" || form.payment_status === "unpaid") && (
+                  <div className="mt-3">
+                    <Input
+                      placeholder="Payment notes — e.g. $50 deposit paid"
+                      value={form.payment_notes}
+                      onChange={(e) => set("payment_notes", e.target.value)}
+                      className="h-12 text-sm rounded-2xl"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Taken by */}
+            <Field label="Your name — who is taking this?" required>
               <Input
                 placeholder="e.g. Kaitlyn"
                 value={takenBy}
@@ -490,25 +501,25 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         </div>
       )}
 
-      {/* Nav buttons */}
+      {/* Nav */}
       <div className="flex gap-3 mt-6">
         {step > 1 && (
           <Button
             variant="outline"
             size="lg"
             onClick={() => goTo(step - 1, "bck")}
-            className="rounded-2xl gap-2"
+            className="rounded-2xl gap-1.5"
           >
             <ChevronLeft size={18} />
             Back
           </Button>
         )}
 
-        {step < 7 ? (
+        {step < 4 ? (
           <Button
             size="lg"
             onClick={handleNext}
-            className="flex-1 rounded-2xl gap-2"
+            className="flex-1 rounded-2xl gap-1.5"
           >
             Continue
             <ChevronRight size={18} />
@@ -518,7 +529,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
             size="lg"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 rounded-2xl gap-2"
+            className="flex-1 rounded-2xl gap-1.5"
           >
             {loading ? (
               <>
@@ -534,6 +545,19 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
           </Button>
         )}
       </div>
+
+      {/* Draft notice — only if resuming */}
+      {draft && step > 1 && (
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Draft restored —{" "}
+          <button
+            className="underline underline-offset-2"
+            onClick={() => { clearDraft(); setForm(BLANK_FORM); setTakenBy(""); setStep(1); }}
+          >
+            start over
+          </button>
+        </p>
+      )}
     </div>
   );
 }

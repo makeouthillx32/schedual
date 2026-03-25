@@ -1,6 +1,5 @@
 // components/delivery/_components/types.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { IntakeFormData } from "@/types/delivery";
 
 export interface IntakeFormProps {
   supabase: SupabaseClient;
@@ -46,12 +45,13 @@ export interface StepDef {
   label: string;
 }
 
+// 4 steps — replaces the paper schedule slip
 export const STEPS: StepDef[] = [
-  { id: 1, label: "Type"    },
-  { id: 2, label: "Contact" },
-  { id: 3, label: "Address" },
-  { id: 4, label: "Items"   },
-  { id: 5, label: "When"    },
-  { id: 6, label: "Payment" },
-  { id: 7, label: "Confirm" },
+  { id: 1, label: "Who"     },
+  { id: 2, label: "Where"   },
+  { id: 3, label: "When"    },
+  { id: 4, label: "Confirm" },
 ];
+
+// localStorage key for draft persistence
+export const DRAFT_KEY = "dart_intake_draft";

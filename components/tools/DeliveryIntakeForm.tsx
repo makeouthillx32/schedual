@@ -1,15 +1,13 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
+import { useMemo } from "react";
+import { createClient } from "@/utils/supabase/client";
 import { useTheme } from "@/app/provider";
 import IntakeForm from "@/components/delivery/IntakeForm";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default function DeliveryIntakeForm() {
+  // Create inside the component — never at module level on Vercel
+  const supabase = useMemo(() => createClient(), []);
   const { themeType } = useTheme();
   const isDark = themeType === "dark";
 

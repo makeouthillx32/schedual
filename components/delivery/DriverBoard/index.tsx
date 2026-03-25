@@ -33,9 +33,10 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
   const [updating, setUpdating] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Time override UI
-  const [editingTime, setEditingTime] = useState<string | null>(null);
-  const [pendingTime, setPendingTime] = useState<string>("");
+  // Reschedule UI (date + time)
+  const [editingTime,  setEditingTime]  = useState<string | null>(null);
+  const [pendingTime,  setPendingTime]  = useState<string>("");
+  const [pendingDate,  setPendingDate]  = useState<string>(""); // "YYYY-MM-DD"
 
   // Trash runs
   const [trashRuns,    setTrashRuns]    = useState<TrashRun[]>([]);
@@ -144,17 +145,21 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     if (!pendingTime) return;
     const snapshot = [...orders];
     const override = to24h(pendingTime);
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, scheduled_time_override: override } : o)));
+    // Build the update payload — include date if changed
+    const update: Record<string, string | null> = { scheduled_time_override: override };
+    if (pendingDate) update.scheduled_date = pendingDate;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, scheduled_time_override: override, ...(pendingDate ? { scheduled_date: pendingDate } : {}) } : o)));
     setEditingTime(null);
+    setPendingDate("");
     try {
       const { error } = await supabase
         .from("delivery_orders")
-        .update({ scheduled_time_override: override })
+        .update(update)
         .eq("id", orderId);
       if (error) throw error;
     } catch (err) {
       setOrders(snapshot);
-      alert("Failed to save time change.");
+      alert("Failed to save reschedule.");
     }
   };
 
@@ -165,7 +170,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
       await supabase.from("delivery_orders").update({ scheduled_time_override: null }).eq("id", orderId);
     } catch (err) {
       setOrders(snapshot);
-      alert("Failed to clear time change.");
+      alert("Failed to clear reschedule.");
     }
   };
 
@@ -352,40 +357,59 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
             {!isDelivery && order.destination_address && <DetailRow label="Drop Off To" value={order.destination_address} />}
             {order.taken_by && <DetailRow label="Taken By" value={order.taken_by} />}
 
-            {/* Time adjustment */}
+            {/* Reschedule — date + time */}
             {!done && (
               <div className="pt-1">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock size={13} className="text-[hsl(var(--muted-foreground))]" />
                   <span className="text-xs font-semibold text-[hsl(var(--foreground))]">
-                    Time{hasOverride && <span className="ml-1 text-amber-600">(adjusted from {formatDeliveryTime(order.scheduled_time)})</span>}
+                    Reschedule
+                    {hasOverride && <span className="ml-1 text-amber-600">(adjusted)</span>}
                   </span>
                 </div>
                 {editingTime === order.id ? (
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={pendingTime}
-                      onChange={(e) => setPendingTime(e.target.value)}
-                      className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
-                    >
-                      <option value="">-- Pick new time --</option>
-                      {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <button onClick={() => saveTimeOverride(order.id)} disabled={!pendingTime}
-                      className={`px-2 py-1 text-xs rounded text-white transition-colors ${pendingTime ? "bg-green-600 hover:bg-green-700" : "bg-[hsl(var(--muted))] cursor-not-allowed"}`}>
-                      Save
-                    </button>
-                    <button onClick={() => setEditingTime(null)}
-                      className="px-2 py-1 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] transition-colors">
-                      Cancel
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    {/* Date row */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] w-10 shrink-0">Date</span>
+                      <input
+                        type="date"
+                        value={pendingDate || order.scheduled_date || ""}
+                        onChange={(e) => setPendingDate(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                      />
+                    </div>
+                    {/* Time row */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] w-10 shrink-0">Time</span>
+                      <select
+                        value={pendingTime}
+                        onChange={(e) => setPendingTime(e.target.value)}
+                        className="flex-1 px-2 py-1 text-sm border border-[hsl(var(--border))] rounded bg-[hsl(var(--input))] text-[hsl(var(--foreground))]"
+                      >
+                        <option value="">-- Pick new time --</option>
+                        {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button onClick={() => saveTimeOverride(order.id)} disabled={!pendingTime}
+                        className={`flex-1 px-2 py-1.5 text-xs rounded font-semibold text-white transition-colors ${pendingTime ? "bg-green-600 hover:bg-green-700" : "bg-[hsl(var(--muted))] cursor-not-allowed"}`}>
+                        Save
+                      </button>
+                      <button onClick={() => { setEditingTime(null); setPendingDate(""); }}
+                        className="flex-1 px-2 py-1.5 text-xs rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))] transition-colors">
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-medium ${hasOverride ? "text-amber-600" : "text-[hsl(var(--foreground))]"}`}>
-                      {displayTime ? formatDeliveryTime(displayTime) : "No time set"}
+                      {order.scheduled_date ? formatDeliveryDate(order.scheduled_date) : "Date TBD"}
+                      {displayTime ? ` · ${formatDeliveryTime(displayTime)}` : ""}
                     </span>
-                    <button onClick={() => { setEditingTime(order.id); setPendingTime(""); }}
+                    <button onClick={() => { setEditingTime(order.id); setPendingTime(""); setPendingDate(""); }}
                       className="px-2 py-1 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors">
                       Change
                     </button>
@@ -589,7 +613,7 @@ function MapPicker({ address, btnClassName }: { address: string; btnClassName?: 
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 top-full mt-1.5 z-50 min-w-[160px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
+          <div className="absolute right-0 bottom-full mb-1.5 z-50 min-w-[160px] rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden">
             {apps.map((app) => (
               <a
                 key={app.label}

@@ -5,10 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR } from "@/types/delivery";
 import { formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
-import { QuickContact } from "./QuickContact";
-import { MapPicker } from "./MapPicker";
-import { DetailRow } from "./DetailRow";
-import { ReschedulePanel } from "./ReschedulePanel";
+import { QuickContact } from "@/components/delivery/_components/QuickContact";
+import { MapPicker } from "@/components/delivery/_components/MapPicker";
+import { DetailRow } from "@/components/delivery/_components/DetailRow";
+import { ReschedulePanel } from "@/components/delivery/_components/ReschedulePanel";
 
 interface OrderCardProps {
   order:        DeliveryOrder;

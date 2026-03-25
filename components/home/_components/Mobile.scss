@@ -5,21 +5,21 @@
   /* Remove all backdrop filter properties */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  
+
   /* Basic positioning and structure */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border-radius: 0 0 0.75rem 0.75rem;
   overflow: hidden;
-  
+
   /* Smooth scrolling */
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
-  
+
   /* Initial state - hidden but ready for animation */
   opacity: 0;
   transform: translateY(-20px);
   visibility: hidden;
-  
+
   /* Ensure smooth transitions */
   transition: none; /* Let animations handle this */
 }
@@ -30,7 +30,7 @@
   flex-direction: column;
   padding: 0.25rem 0;
   gap: 1px;
-  
+
   /* Ensure no backdrop effects */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -44,25 +44,25 @@
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   position: relative;
-  
+
   .menu-link {
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-decoration: none;
-    
+
     &:focus {
       outline: none;
     }
-    
+
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
       border-radius: 0.25rem;
     }
   }
-  
+
   .menu-toggle {
     padding-left: 0.5rem;
     background: none;
@@ -70,11 +70,11 @@
     cursor: pointer;
     display: flex;
     align-items: center;
-    
+
     &:focus {
       outline: none;
     }
-    
+
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
@@ -88,21 +88,20 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  
+
   .submenu-link {
     padding: 0.75rem 1rem 0.75rem 2rem;
     font-size: 0.875rem;
     font-weight: 400;
     text-decoration: none;
     position: relative;
-    
+
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
       border-radius: 0.25rem;
     }
-    
-    /* Subtle press animation */
+
     &:active {
       transform: translateX(2px);
     }
@@ -121,14 +120,13 @@
     background: transparent;
     cursor: pointer;
     text-decoration: none;
-    
+
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
       border-radius: 0.375rem;
     }
-    
-    /* Active state animation */
+
     &:active {
       transform: translateY(0) !important;
     }
@@ -139,46 +137,44 @@
 
 /* ONLY target the home page header with .header-container class */
 .header-container {
-  /* Force clear background - no overlays */
-  background: hsl(var(--background)) !important;
-  
+  /* ✅ FIXED: Use layout token instead of hardcoded hsl(var(--background))
+   * This ensures the iOS status bar color matches whatever layout-tokens.css
+   * has set for --lt-bg on this element's [data-layout] ancestor.
+   * Falls back to --gp-bg (which equals background) if no layout token set. */
+  background: var(--lt-bg, var(--gp-bg, hsl(var(--background)))) !important;
+
   /* Prevent any backdrop effects */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  
+
   /* Ensure it stays on top */
   position: relative !important;
   z-index: 100 !important;
-  
+
   /* Force hardware acceleration to separate layer */
   transform: translateZ(0) !important;
   will-change: auto !important;
-  
+
   /* Prevent inheritance of any backdrop effects */
   isolation: isolate !important;
-  
+
   /* Ensure solid background */
   opacity: 1 !important;
-  
+
   /* Home header specific children */
   .header-content,
   .header-logo,
-  .header-nav, 
+  .header-nav,
   .header-actions,
   .header-auth,
   .theme-switcher,
   .mobile-hamburger {
-    /* No backdrop effects on any header elements */
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    
-    /* Ensure solid backgrounds where needed */
     background-color: transparent !important;
-    
-    /* Prevent overlay effects */
     opacity: 1 !important;
   }
-  
+
   /* Logo specific protection */
   .logo-link,
   .logo-image {
@@ -190,7 +186,6 @@
 
 /* Mobile drawer overlay - position it relative to header */
 .mobile-drawer-overlay {
-  /* No longer needed - remove fixed positioning */
   display: none;
 }
 
@@ -198,106 +193,31 @@
 @media (max-width: 768px) {
   /* ONLY protect home page header - be very specific */
   .header-container {
-    /* Force solid background */
-    background: hsl(var(--background)) !important;
-    
+    /* ✅ FIXED: Use layout token instead of hardcoded background */
+    background: var(--lt-bg, var(--gp-bg, hsl(var(--background)))) !important;
+
     /* No backdrop effects whatsoever */
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    
+
     /* Highest z-index */
     z-index: 999 !important;
     position: relative !important;
-    
+
     /* Force GPU layer */
     transform: translateZ(0) !important;
     isolation: isolate !important;
-    
+
     /* Prevent any overlays */
     &::before,
     &::after {
       display: none !important;
     }
   }
-  
+
   /* Mobile drawer improvements for small screens */
   .mobile-menu-container {
     max-height: calc(100vh - 5rem);
     overflow-y: auto;
   }
-  
-  /* Enhanced touch targets for mobile - accessibility */
-  .mobile-menu-item {
-    min-height: 48px; /* Accessibility guideline for touch targets */
-  }
-  
-  .submenu-link {
-    min-height: 44px; /* Slightly smaller for hierarchy */
-  }
-  
-  .auth-button {
-    min-height: 48px;
-  }
-}
-
-/* ========== ANIMATION KEYFRAMES ========== */
-@keyframes mobile-drawer-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-    visibility: visible;
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    visibility: visible;
-  }
-}
-
-@keyframes mobile-drawer-slide-up {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-    visibility: visible;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-20px);
-    visibility: visible;
-  }
-}
-
-/* Animation classes with consistent timing */
-.animate-slide-down {
-  animation: mobile-drawer-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-  visibility: visible !important;
-}
-
-.animate-slide-up {
-  animation: mobile-drawer-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-  visibility: visible !important;
-}
-
-/* Ensure drawer starts hidden but animatable */
-.drawer-content {
-  /* Remove all backdrop filter properties */
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  
-  /* Basic positioning and structure */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border-radius: 0 0 0.75rem 0.75rem;
-  overflow: hidden;
-  
-  /* Smooth scrolling */
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  
-  /* Initial state - hidden but ready for animation */
-  opacity: 0;
-  transform: translateY(-20px);
-  visibility: hidden;
-  
-  /* Ensure smooth transitions */
-  transition: none; /* Let animations handle this */
 }

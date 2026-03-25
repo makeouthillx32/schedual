@@ -55,3 +55,15 @@ export const STEPS: StepDef[] = [
 
 // localStorage key for draft persistence
 export const DRAFT_KEY = "dart_intake_draft";
+
+// ── DriverBoard types ─────────────────────────────────────────────────────────
+
+export type FilterView = "today" | "upcoming" | "all";
+
+export interface TrashRun {
+  id:           string;
+  note:         string | null;
+  status:       "pending" | "done";
+  created_at:   string;
+  completed_at: string | null;
+}

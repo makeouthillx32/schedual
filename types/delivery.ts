@@ -1,7 +1,7 @@
 // types/delivery.ts
 
-export type OrderStatus = "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
-export type OrderType   = "delivery" | "pickup";
+export type OrderStatus   = "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
+export type OrderType     = "delivery" | "pickup";
 export type PaymentStatus = "paid" | "partial" | "unpaid" | "n/a";
 
 export interface DeliveryOrder {
@@ -60,13 +60,21 @@ export const BLANK_FORM: IntakeFormData = {
 
 export const STATUS_CFG: Record<
   OrderStatus,
-  { label: string; color: string; bg: string; next: OrderStatus | null; nextLabel: string }
+  {
+    label:     string;
+    color:     string;
+    bg:        string;
+    next:      OrderStatus | null;
+    nextLabel: string;
+    prev:      OrderStatus | null; // ← undo target
+    prevLabel: string;             // ← undo button label
+  }
 > = {
-  pending:     { label: "Pending",     color: "#b45309", bg: "#fef3c7", next: "in_progress", nextLabel: "Start Run" },
-  assigned:    { label: "Assigned",    color: "#1d4ed8", bg: "#dbeafe", next: "in_progress", nextLabel: "Start Run" },
-  in_progress: { label: "In Progress", color: "#7c3aed", bg: "#ede9fe", next: "completed",   nextLabel: "Mark Done" },
-  completed:   { label: "Completed",   color: "#166534", bg: "#dcfce7", next: null,           nextLabel: "" },
-  cancelled:   { label: "Cancelled",   color: "#991b1b", bg: "#fee2e2", next: null,           nextLabel: "" },
+  pending:     { label: "Pending",     color: "#b45309", bg: "#fef3c7", next: "in_progress", nextLabel: "Start Run", prev: null,          prevLabel: "" },
+  assigned:    { label: "Assigned",    color: "#1d4ed8", bg: "#dbeafe", next: "in_progress", nextLabel: "Start Run", prev: "pending",      prevLabel: "Undo Assign" },
+  in_progress: { label: "In Progress", color: "#7c3aed", bg: "#ede9fe", next: "completed",   nextLabel: "Mark Done", prev: "pending",      prevLabel: "Undo Start" },
+  completed:   { label: "Completed",   color: "#166534", bg: "#dcfce7", next: null,           nextLabel: "",          prev: "in_progress",  prevLabel: "Undo Complete" },
+  cancelled:   { label: "Cancelled",   color: "#991b1b", bg: "#fee2e2", next: null,           nextLabel: "",          prev: "pending",      prevLabel: "Undo Cancel" },
 };
 
 export const PAYMENT_COLOR: Record<string, string> = {

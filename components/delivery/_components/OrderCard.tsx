@@ -20,6 +20,7 @@ interface OrderCardProps {
   pendingTime:  string;
   onToggleExpand:  () => void;
   onAdvanceStatus: () => void;
+  onUndoStatus:    () => void;
   onStartEdit:     () => void;
   onDateChange:    (date: string) => void;
   onTimeChange:    (time: string) => void;
@@ -61,6 +62,7 @@ export function OrderCard({
   pendingTime,
   onToggleExpand,
   onAdvanceStatus,
+  onUndoStatus,
   onStartEdit,
   onDateChange,
   onTimeChange,
@@ -116,6 +118,15 @@ export function OrderCard({
 
             <div className="flex items-center gap-3 flex-wrap">
               {getStatusText(order)}
+              {cfg.prev && (
+                <button
+                  onClick={onUndoStatus}
+                  className="text-xs px-2 py-0.5 rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--accent))] transition-colors"
+                  title={cfg.prevLabel}
+                >
+                  ↩ {cfg.prevLabel}
+                </button>
+              )}
               {isDelivery && !done && (
                 <span className="text-xs font-bold" style={{ color: PAYMENT_COLOR[order.payment_status] ?? "#888" }}>
                   $ {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}

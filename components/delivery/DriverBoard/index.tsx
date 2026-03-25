@@ -103,6 +103,25 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     }
   };
 
+  const undoStatus = async (order: DeliveryOrder) => {
+    const cfg = STATUS_CFG[order.status];
+    if (!cfg.prev) return;
+    const snapshot = [...orders];
+    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, status: cfg.prev! } : o)));
+    setUpdating(order.id);
+    try {
+      const { error } = await supabase.from("delivery_orders")
+        .update({ status: cfg.prev, completed_at: null })
+        .eq("id", order.id);
+      if (error) throw error;
+    } catch {
+      setOrders(snapshot);
+      alert("Failed to undo status.");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const to24h = (t: string) => {
     const [time, mod] = t.split(" ");
     let [h, m] = time.split(":").map(Number);
@@ -182,6 +201,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
     onSave:          () => saveReschedule(order.id),
     onCancelEdit:    () => { setEditingId(null); setPendingDate(""); },
     onReset:         () => clearReschedule(order.id),
+    onUndoStatus:    () => undoStatus(order),
   });
 
   return (

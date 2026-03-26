@@ -252,6 +252,29 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         action_url: "/Delivery",
       });
 
+      // Fire push notification to all subscribed devices — fire-and-forget
+      // Don't await or let failure block the success state
+      const pushTitle = isDelivery
+        ? `📦 New Delivery — ${form.customer_name}`
+        : `🚛 New Pickup — ${form.customer_name}`;
+      const pushBody = [
+        isDelivery ? form.destination_address : form.origin_address,
+        form.scheduled_date
+          ? `${formatDeliveryDate(form.scheduled_date)}${form.scheduled_time ? " @ " + form.scheduled_time : ""}`
+          : "Date TBD",
+      ].filter(Boolean).join(" · ");
+
+      fetch("/api/push", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          title: pushTitle,
+          body:  pushBody,
+          url:   "/Delivery",
+          tag:   "dart-new-order",
+        }),
+      }).catch(() => { /* push failure is non-critical */ });
+
       // Only clear draft after confirmed success
       clearDraft();
       setSavedId(order.id);

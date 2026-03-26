@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, CheckCircle2, Circle } from "lucide-react";
+import { Clock, CheckCircle2, Circle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeliveryOrder, STATUS_CFG } from "@/types/delivery";
@@ -27,6 +27,7 @@ interface OrderCardProps {
   onSave:          () => void;
   onCancelEdit:    () => void;
   onReset:         () => void;
+  onDelete:        () => void;
 }
 
 function getStatusIcon(order: DeliveryOrder) {
@@ -69,6 +70,7 @@ export function OrderCard({
   onSave,
   onCancelEdit,
   onReset,
+  onDelete,
 }: OrderCardProps) {
   const cfg          = STATUS_CFG[order.status];
   const isDelivery   = order.order_type === "delivery";
@@ -227,6 +229,16 @@ export function OrderCard({
               {isUpdating ? "Updating…" : cfg.nextLabel}
             </Button>
           )}
+
+          {/* Delete order */}
+          <button
+            onClick={onDelete}
+            disabled={isUpdating}
+            className="w-full mt-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-[var(--radius)] border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+          >
+            <Trash2 size={13} />
+            Remove Order
+          </button>
         </div>
       )}
     </div>

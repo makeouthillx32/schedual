@@ -1,0 +1,31 @@
+{
+  "name": "DART Tools",
+  "short_name": "Tools",
+  "description": "DART Commercial Services — Staff Tools",
+  "start_url": "/Tools",
+  "scope": "/Tools",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/pwa/tools-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/tools-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Delivery Intake",
+      "url": "/Tools/delivery-intake",
+      "description": "Schedule a new delivery or pickup"
+    }
+  ]
+}

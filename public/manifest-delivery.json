@@ -1,0 +1,36 @@
+{
+  "name": "DART Delivery",
+  "short_name": "Delivery",
+  "description": "DART Thrift — Delivery & Pickup Board",
+  "start_url": "/Delivery",
+  "scope": "/Delivery",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/pwa/delivery-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/delivery-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Driver Board",
+      "url": "/Delivery",
+      "description": "Open the driver board"
+    },
+    {
+      "name": "New Order",
+      "url": "/Tools/delivery-intake",
+      "description": "Schedule a new delivery or pickup"
+    }
+  ]
+}

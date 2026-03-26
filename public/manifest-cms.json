@@ -1,0 +1,31 @@
+{
+  "name": "DART CMS",
+  "short_name": "CMS",
+  "description": "DART Commercial Services — Cleaning Schedule & Team",
+  "start_url": "/CMS",
+  "scope": "/CMS",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/pwa/cms-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/pwa/cms-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Schedule",
+      "url": "/CMS",
+      "description": "View cleaning schedule"
+    }
+  ]
+}

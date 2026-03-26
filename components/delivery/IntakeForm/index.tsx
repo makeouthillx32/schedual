@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Check, ChevronLeft, ChevronRight, Truck, Package, AlertCircle } from "lucide-react";
 import { Button }   from "@/components/ui/button";
 import { Input }    from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn }       from "@/lib/utils";
 import { BLANK_FORM, TIME_SLOTS } from "@/types/delivery";
-import { formatPhoneInput, convertTo24h } from "@/utils/deliveryUtils";
+import { formatPhoneInput, convertTo24h, formatDeliveryDate } from "@/utils/deliveryUtils";
 
 import { STEPS, DRAFT_KEY }   from "@/components/delivery/_components/types";
 import { buildSlots, getUpcomingDates } from "@/components/delivery/_components/utils";
@@ -23,10 +23,14 @@ import type { IntakeFormData } from "@/types/delivery";
 
 // ── Draft persistence ─────────────────────────────────────────────────────────
 
+// Bump this whenever the form shape changes — forces stale drafts to clear
+const DRAFT_VERSION = 2;
+
 interface DraftState {
   form:    IntakeFormData;
   takenBy: string;
   step:    number;
+  v?:      number;
 }
 
 function loadDraft(): DraftState | null {
@@ -34,7 +38,13 @@ function loadDraft(): DraftState | null {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as DraftState;
+    const parsed = JSON.parse(raw) as DraftState;
+    // Clear draft if it's from an older version
+    if (!parsed.v || parsed.v < DRAFT_VERSION) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -43,7 +53,7 @@ function loadDraft(): DraftState | null {
 function saveDraft(state: DraftState) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...state, v: DRAFT_VERSION }));
   } catch { /* quota exceeded — fail silently */ }
 }
 
@@ -69,6 +79,11 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
   const [dayOrders, setDayOrders]       = useState<ExistingOrder[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  // Per-date cache so tapping the same date twice is instant
+  const dateCache = useRef<Record<string, ExistingOrder[]>>({});
+  // Track in-flight fetches so we don't double-fire
+  const fetchingDate = useRef<string | null>(null);
+
   const [animDir, setAnimDir] = useState<"fwd" | "bck">("fwd");
   const [animKey, setAnimKey] = useState(0);
 
@@ -82,32 +97,77 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
     saveDraft({ form, takenBy, step });
   }, [form, takenBy, step]);
 
-  // Load break/lunch blocks once
-  useEffect(() => {
-    supabase
-      .from("delivery_schedule_blocks")
-      .select("start_time, end_time, label, is_active")
-      .eq("is_active", true)
-      .then(({ data }) => { if (data) setBlocks(data as ScheduleBlock[]); });
-  }, [supabase]);
+  // Fetch schedule blocks + orders for a date in parallel
+  // Blocks are only fetched once (cached in state); orders are cached per-date
+  const fetchSlotsForDate = useCallback(async (date: string) => {
+    if (!date) { setDayOrders([]); return; }
 
-  // Reload existing orders when selected date changes
-  // FIX: use .neq() twice instead of broken .not("status","in",...) syntax
-  useEffect(() => {
-    if (!form.scheduled_date) { setDayOrders([]); return; }
+    // Instant hit if we've already fetched this date
+    if (dateCache.current[date]) {
+      setDayOrders(dateCache.current[date]);
+      setLoadingSlots(false);
+      return;
+    }
+
+    // Prevent duplicate in-flight fetches for the same date
+    if (fetchingDate.current === date) return;
+    fetchingDate.current = date;
     setLoadingSlots(true);
-    supabase
-      .from("delivery_orders")
-      .select("id, customer_name, order_type, scheduled_time, item_description, status")
-      .eq("scheduled_date", form.scheduled_date)
-      .neq("status", "cancelled")
-      .neq("status", "completed")
-      .not("scheduled_time", "is", null)
-      .then(({ data, error: err }) => {
-        if (!err && data) setDayOrders(data as ExistingOrder[]);
-        setLoadingSlots(false);
-      });
-  }, [form.scheduled_date, supabase]);
+
+    // Fire blocks + orders in parallel — blocks only needed if not yet loaded
+    const blocksNeeded = blocks.length === 0;
+    const [blocksRes, ordersRes] = await Promise.all([
+      blocksNeeded
+        ? supabase
+            .from("delivery_schedule_blocks")
+            .select("start_time, end_time, label, is_active")
+            .eq("is_active", true)
+        : Promise.resolve({ data: null, error: null }),
+      supabase
+        .from("delivery_orders")
+        .select("id, customer_name, order_type, scheduled_time, scheduled_time_override, item_description, status")
+        .eq("scheduled_date", date)
+        .neq("status", "cancelled")
+        .neq("status", "completed")
+        .not("scheduled_time", "is", null),
+    ]);
+
+    if (blocksNeeded && blocksRes.data) setBlocks(blocksRes.data as ScheduleBlock[]);
+    const orders = (ordersRes.data ?? []) as ExistingOrder[];
+    dateCache.current[date] = orders;
+
+    // Only apply if this date is still the selected one
+    if (fetchingDate.current === date) {
+      setDayOrders(orders);
+      setLoadingSlots(false);
+      fetchingDate.current = null;
+    }
+  }, [supabase, blocks.length]);
+
+  // Trigger fetch when date changes
+  useEffect(() => {
+    fetchSlotsForDate(form.scheduled_date);
+  }, [form.scheduled_date, fetchSlotsForDate]);
+
+  // Prefetch the next 3 dates when the user reaches Step 3
+  useEffect(() => {
+    if (step !== 3) return;
+    const upcoming = getUpcomingDates(4).slice(1); // skip today, prefetch next 3
+    upcoming.forEach((d) => {
+      if (!dateCache.current[d.value]) {
+        supabase
+          .from("delivery_orders")
+          .select("id, customer_name, order_type, scheduled_time, scheduled_time_override, item_description, status")
+          .eq("scheduled_date", d.value)
+          .neq("status", "cancelled")
+          .neq("status", "completed")
+          .not("scheduled_time", "is", null)
+          .then(({ data }) => {
+            if (data) dateCache.current[d.value] = data as ExistingOrder[];
+          });
+      }
+    });
+  }, [step, supabase]);
 
   const dates = getUpcomingDates(21);
   const slots = buildSlots(TIME_SLOTS, blocks, dayOrders);
@@ -181,7 +241,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         content: [
           isDelivery ? `To: ${form.destination_address}` : `From: ${form.origin_address}`,
           form.scheduled_date
-            ? `${form.scheduled_date}${form.scheduled_time ? " @ " + form.scheduled_time : ""}`
+            ? `${formatDeliveryDate(form.scheduled_date)}${form.scheduled_time ? " @ " + form.scheduled_time : ""}`
             : "Date TBD",
           form.item_description,
         ].join(" · "),
@@ -432,52 +492,19 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
               <SummaryRow
                 label="When"
                 value={form.scheduled_date
-                  ? `${form.scheduled_date}${form.scheduled_time ? " @ " + form.scheduled_time : ""}`
+                  ? `${formatDeliveryDate(form.scheduled_date)}${form.scheduled_time ? " @ " + form.scheduled_time : " — time TBD"}`
                   : "Date TBD"}
               />
             </div>
 
-            {/* Payment — delivery only, inline, no separate step */}
-            {isDelivery && (
+            {/* Payment section commented out — DART Thrift does not take payments */}
+            {/* {isDelivery && (
               <div className="mb-5">
                 <Field label="Payment Status">
-                  <div className="grid grid-cols-2 gap-2">
-                    {([
-                      { value: "paid",    label: "Paid ✅"   },
-                      { value: "partial", label: "Partial 🔶" },
-                      { value: "unpaid",  label: "On Delivery 💵" },
-                      { value: "n/a",     label: "N/A —"     },
-                    ] as const).map((opt) => {
-                      const active = form.payment_status === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          onClick={() => set("payment_status", opt.value)}
-                          className={cn(
-                            "py-3 px-3 rounded-xl border-2 text-sm font-semibold text-left transition-all active:scale-95",
-                            active
-                              ? "border-[hsl(var(--sidebar-primary))] bg-[hsl(var(--sidebar-primary)/0.08)] text-[hsl(var(--sidebar-primary))]"
-                              : "border-border bg-background text-foreground hover:border-[hsl(var(--sidebar-primary))]",
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  ...payment buttons...
                 </Field>
-                {(form.payment_status === "partial" || form.payment_status === "unpaid") && (
-                  <div className="mt-3">
-                    <Input
-                      placeholder="Payment notes — e.g. $50 deposit paid"
-                      value={form.payment_notes}
-                      onChange={(e) => set("payment_notes", e.target.value)}
-                      className="h-12 text-sm rounded-2xl"
-                    />
-                  </div>
-                )}
               </div>
-            )}
+            )} */}
 
             {/* Taken by */}
             <Field label="Your name — who is taking this?" required>

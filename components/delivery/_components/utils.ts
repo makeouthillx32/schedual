@@ -1,5 +1,5 @@
 // components/delivery/_components/utils.ts
-import type { ScheduleBlock, ExistingOrder, SlotMeta, DateOption } from "./types";
+import type { ScheduleBlock, ExistingOrder, SlotMeta, DateOption } from "@/components/delivery/_components/types";
 
 // ── Time math ─────────────────────────────────────────────────────────────────
 
@@ -51,7 +51,9 @@ export function buildSlots(
     });
 
     const slotOrders = orders.filter((o) => {
-      const orderMins = pgTimeToMinutes(o.scheduled_time);
+      // Use the override time if set — this is the actual scheduled time
+      const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
+      const orderMins = pgTimeToMinutes(effectiveTime);
       return orderMins >= slotMins && orderMins < slotMins + 30;
     });
 

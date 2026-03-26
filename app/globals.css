@@ -114,6 +114,18 @@
   }
 }
 
+/* ── iOS zoom prevention ─────────────────────────────────────
+ * iOS Safari auto-zooms when an input's font-size < 16px.
+ * Setting font-size: 16px on focus prevents that entirely.
+ * The max() trick keeps the visual size unchanged while
+ * satisfying iOS's 16px threshold.
+ * ─────────────────────────────────────────────────────────── */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input, textarea, select {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
 /* ── Theme transition support ────────────────────────────── */
 .theme-transition-fallback {
   transition: all 0.4s ease-in-out !important;

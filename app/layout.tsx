@@ -110,7 +110,7 @@ export default function RootLayout({
       <head>
         {/* ✅ Additional head elements */}
         <meta name="theme-color" content="#ffffff" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="format-detection" content="telephone=no" />
         
         {/* ✅ Favicon and app icons */}

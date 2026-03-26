@@ -4,9 +4,9 @@
 import { AlertCircle } from "lucide-react";
 import { Label }       from "@/components/ui/label";
 import { cn }          from "@/lib/utils";
-import { SlotGridSkeleton } from "./skeleton";
-import { minutesToLabel, pgTimeToMinutes } from "./utils";
-import type { SlotMeta, DateOption, ExistingOrder } from "./types";
+import { SlotGridSkeleton } from "@/components/delivery/_components/skeleton";
+import { minutesToLabel, pgTimeToMinutes } from "@/components/delivery/_components/utils";
+import type { SlotMeta, DateOption, ExistingOrder } from "@/components/delivery/_components/types";
 
 // ── Date strip ────────────────────────────────────────────────────────────────
 
@@ -181,16 +181,21 @@ export function ExistingOrdersPanel({ orders }: OrdersPanelProps) {
         </span>
       </div>
       <div className="space-y-1">
-        {orders.map((o) => (
-          <div key={o.id} className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400">
-            <span className="font-medium">
-              {o.order_type === "pickup" ? "🚛" : "📦"} {o.customer_name}
-            </span>
-            <span className="font-mono text-amber-600 dark:text-amber-500">
-              {minutesToLabel(pgTimeToMinutes(o.scheduled_time))}
-            </span>
-          </div>
-        ))}
+        {orders.map((o) => {
+            const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
+            const rescheduled   = !!o.scheduled_time_override;
+            return (
+              <div key={o.id} className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400">
+                <span className="font-medium">
+                  {o.order_type === "pickup" ? "🚛" : "📦"} {o.customer_name}
+                </span>
+                <span className="font-mono text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                  {rescheduled && <span title="Rescheduled">✏️</span>}
+                  {minutesToLabel(pgTimeToMinutes(effectiveTime))}
+                </span>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

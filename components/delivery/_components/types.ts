@@ -14,12 +14,13 @@ export interface ScheduleBlock {
 }
 
 export interface ExistingOrder {
-  id:               string;
-  customer_name:    string;
-  order_type:       string;
-  scheduled_time:   string;
-  item_description: string;
-  status:           string;
+  id:                      string;
+  customer_name:           string;
+  order_type:              string;
+  scheduled_time:          string;
+  scheduled_time_override: string | null;
+  item_description:        string;
+  status:                  string;
 }
 
 export interface SlotMeta {

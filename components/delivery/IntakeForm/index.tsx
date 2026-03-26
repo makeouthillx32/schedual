@@ -275,6 +275,12 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         }),
       }).catch(() => { /* push failure is non-critical */ });
 
+      // Bust the date cache for this order's date so the next intake
+      // fetches fresh slot data and shows this order as taken
+      if (form.scheduled_date) {
+        delete dateCache.current[form.scheduled_date];
+      }
+
       // Only clear draft after confirmed success
       clearDraft();
       setSavedId(order.id);

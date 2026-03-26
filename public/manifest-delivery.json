@@ -1,7 +1,7 @@
 {
   "name": "DART Delivery",
   "short_name": "Delivery",
-  "description": "DART Thrift — Delivery & Pickup Board",
+  "description": "DART Thrift \u2014 Delivery & Pickup Board",
   "start_url": "/Delivery",
   "scope": "/Delivery",
   "display": "standalone",

@@ -13,24 +13,21 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      // ── PWA — service worker must have this scope header ──
       {
         source: "/sw.js",
         headers: [
-          { key: "Cache-Control",   value: "no-cache, no-store, must-revalidate" },
-          { key: "Content-Type",    value: "application/javascript" },
+          { key: "Cache-Control",          value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type",           value: "application/javascript" },
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
-      // ── PWA manifest ──
       {
-        source: "/manifest.json",
+        source: "/manifest:path*.json",
         headers: [
-          { key: "Content-Type", value: "application/manifest+json" },
-          { key: "Cache-Control", value: "public, max-age=3600" },
+          { key: "Content-Type",  value: "application/manifest+json" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
         ],
       },
-      // ── OG images ──
       {
         source: "/opengraph-image.png",
         headers: [

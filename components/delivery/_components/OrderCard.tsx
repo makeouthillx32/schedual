@@ -3,12 +3,12 @@
 import { Clock, CheckCircle2, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DeliveryOrder, STATUS_CFG, PAYMENT_COLOR } from "@/types/delivery";
+import { DeliveryOrder, STATUS_CFG } from "@/types/delivery";
 import { formatDeliveryDate, formatDeliveryTime } from "@/utils/deliveryUtils";
-import { QuickContact } from "./QuickContact";
-import { MapPicker } from "./MapPicker";
-import { DetailRow } from "./DetailRow";
-import { ReschedulePanel } from "./ReschedulePanel";
+import { QuickContact } from "@/components/delivery/_components/QuickContact";
+import { MapPicker } from "@/components/delivery/_components/MapPicker";
+import { DetailRow } from "@/components/delivery/_components/DetailRow";
+import { ReschedulePanel } from "@/components/delivery/_components/ReschedulePanel";
 
 interface OrderCardProps {
   order:        DeliveryOrder;
@@ -127,11 +127,12 @@ export function OrderCard({
                   ↩ {cfg.prevLabel}
                 </button>
               )}
-              {isDelivery && !done && (
+              {/* Payment badge commented out — DART Thrift does not take payments */}
+              {/* {isDelivery && !done && (
                 <span className="text-xs font-bold" style={{ color: PAYMENT_COLOR[order.payment_status] ?? "#888" }}>
                   $ {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                 </span>
-              )}
+              )} */}
             </div>
 
             {order.item_notes && (
@@ -194,9 +195,10 @@ export function OrderCard({
             <MapPicker address={primaryAddr} />
           )}
 
-          {isDelivery && order.payment_notes && (
+          {/* Payment notes commented out — DART Thrift does not take payments */}
+          {/* {isDelivery && order.payment_notes && (
             <p className="text-xs text-[hsl(var(--muted-foreground))] italic">💳 {order.payment_notes}</p>
-          )}
+          )} */}
           {isDelivery  && order.origin_address      && <DetailRow label="Pickup From" value={order.origin_address} />}
           {!isDelivery && order.destination_address && <DetailRow label="Drop Off To" value={order.destination_address} />}
           {order.taken_by && <DetailRow label="Taken By" value={order.taken_by} />}

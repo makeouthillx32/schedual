@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Badge } from "@/components/ui/badge";
 import TodayView from "@/components/delivery/views/TodayView";
+import DeliveryExportButton from "@/components/delivery/_components/DeliveryExportButton";
 import WeekView  from "@/components/delivery/views/WeekView";
 import AllView   from "@/components/delivery/views/AllView";
 
@@ -31,7 +32,7 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
 
   return (
     <div className="space-y-4">
-      {/* Tab bar */}
+      {/* Tab bar + export */}
       <div className="flex items-center gap-2">
         {TABS.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}>

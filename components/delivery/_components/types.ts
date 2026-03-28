@@ -59,7 +59,7 @@ export const DRAFT_KEY = "dart_intake_draft";
 
 // ── DriverBoard types ─────────────────────────────────────────────────────────
 
-export type FilterView = "today" | "upcoming" | "all";
+export type FilterView = "today" | "week" | "all";
 
 export interface TrashRun {
   id:           string;

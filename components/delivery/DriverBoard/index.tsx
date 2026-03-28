@@ -41,6 +41,9 @@ export default function DriverBoard({ supabase, isDark, onCountsChange }: Driver
             </Badge>
           </button>
         ))}
+        <div className="ml-auto">
+          <DeliveryExportButton supabase={supabase} />
+        </div>
       </div>
 
       {/* Active view — each mounts/unmounts independently */}

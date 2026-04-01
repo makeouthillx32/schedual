@@ -1,92 +1,56 @@
-// public/sw.js
-// Service worker for DART Thrift PWA
-// Handles push notifications and offline caching
+// public/sw.js — DART Delivery Service Worker
+// Push types:
+//   "new_order"    → new delivery/pickup (fires to ALL subscribed devices)
+//   "driver_alert" → targeted alert for a specific driver (by user_id)
 
-const CACHE_NAME = 'dart-thrift-v1';
+self.addEventListener("install",  () => self.skipWaiting());
+self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
-// ── Install ────────────────────────────────────────────────────────────────
-self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
-  self.skipWaiting();
-});
+// ── Push received ─────────────────────────────────────────────────────────────
+self.addEventListener("push", (e) => {
+  if (!e.data) return;
 
-// ── Activate ───────────────────────────────────────────────────────────────
-self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
+  let p;
+  try { p = e.data.json(); }
+  catch { p = { title: "DART Delivery", body: e.data.text(), url: "/Delivery" }; }
 
-// ── Push event — fires when server sends a push ────────────────────────────
-self.addEventListener('push', (event) => {
-  console.log('[SW] Push received');
+  const { title = "DART Delivery", body = "", url = "/Delivery", tag = "dart-delivery", type = "general" } = p;
 
-  let data = { title: 'DART Thrift', body: 'You have a new notification.', url: '/Delivery' };
+  const actions = [
+    { action: "view",    title: type === "new_order" ? "View Order" : "Open App" },
+    { action: "dismiss", title: "Dismiss" },
+  ];
 
-  try {
-    if (event.data) {
-      data = { ...data, ...event.data.json() };
-    }
-  } catch (e) {
-    console.error('[SW] Failed to parse push data:', e);
-  }
-
-  const options = {
-    body:    data.body,
-    icon:    '/images/home/dartlogo.svg',
-    badge:   '/images/home/dartlogo.svg',
-    tag:     data.tag || 'dart-notification',
-    data:    { url: data.url || '/Delivery' },
-    vibrate: [200, 100, 200],
-    requireInteraction: data.requireInteraction || false,
-    actions: data.actions || [],
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
-});
-
-// ── Notification click — open or focus the app ─────────────────────────────
-self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
-  event.notification.close();
-
-  const targetUrl = event.notification.data?.url || '/Delivery';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app is already open, focus it and navigate
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.focus();
-          client.navigate(targetUrl);
-          return;
-        }
-      }
-      // Otherwise open a new window
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon:               "/images/home/dartlogo.svg",
+      badge:              "/images/home/dartlogo.svg",
+      tag,
+      data:               { url },
+      requireInteraction: true,
+      vibrate:            [200, 100, 200],
+      actions,
     })
   );
 });
 
-// ── Fetch — network first, fall back to cache for navigation ───────────────
-self.addEventListener('fetch', (event) => {
-  // Only handle same-origin navigation requests for offline fallback
-  if (
-    event.request.mode === 'navigate' &&
-    event.request.url.startsWith(self.location.origin)
-  ) {
-    event.respondWith(
-      fetch(event.request).catch(() =>
-        caches.match('/offline.html') || fetch(event.request)
-      )
-    );
-  }
+// ── Notification click ────────────────────────────────────────────────────────
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  if (e.action === "dismiss") return;
+
+  const url = e.notification.data?.url || "/Delivery";
+
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      for (const c of clients) {
+        if (c.url.includes(url) && "focus" in c) return c.focus();
+      }
+      for (const c of clients) {
+        if ("focus" in c) return c.focus().then(() => c.navigate(url));
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
+    })
+  );
 });

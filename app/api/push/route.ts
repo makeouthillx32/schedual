@@ -1,6 +1,7 @@
 // app/api/push/route.ts
-// POST /api/push — send a push notification to all subscriptions
-// Called by the eta-checker Edge Function (or manually for testing)
+// Two notification paths:
+//   type: "new_order"    → all subscriptions (new delivery/pickup submitted by cashier)
+//   type: "driver_alert" → specific user_id only (targeted driver alert)
 
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
@@ -20,64 +21,65 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { title, body: msgBody, url, tag, user_id } = body;
+    const {
+      title,
+      body:    msgBody = "",
+      url    = "/Delivery",
+      tag    = "dart-delivery",
+      type   = "general",
+      user_id,
+    } = body;
 
     if (!title) {
       return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
-    // Fetch subscriptions — optionally filtered to a specific user
+    // new_order / general → all subscriptions
+    // driver_alert + user_id → only that user
     let query = supabase.from("push_subscriptions").select("*");
-    if (user_id) query = query.eq("user_id", user_id);
+    if (type === "driver_alert" && user_id) {
+      query = query.eq("user_id", user_id);
+    }
 
     const { data: subs, error: dbErr } = await query;
     if (dbErr) throw dbErr;
     if (!subs || subs.length === 0) {
-      return NextResponse.json({ sent: 0, message: "No subscriptions found" });
+      return NextResponse.json({ sent: 0, message: "No subscriptions found", type });
     }
 
-    const payload = JSON.stringify({
-      title,
-      body:             msgBody || "",
-      url:              url || "/Delivery",
-      tag:              tag || "dart-delivery",
-      requireInteraction: true,
-    });
+    const payload = JSON.stringify({ title, body: msgBody, url, tag, type });
 
     const results = await Promise.allSettled(
       subs.map((sub) =>
-        webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          payload
-        ).then(async () => {
-          // Update last_used_at
-          await supabase
-            .from("push_subscriptions")
-            .update({ last_used_at: new Date().toISOString() })
-            .eq("endpoint", sub.endpoint);
-        }).catch(async (err) => {
-          // 410 Gone = subscription expired, clean it up
-          if (err.statusCode === 410) {
+        webpush
+          .sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload
+          )
+          .then(async () => {
             await supabase
               .from("push_subscriptions")
-              .delete()
+              .update({ last_used_at: new Date().toISOString() })
               .eq("endpoint", sub.endpoint);
-          }
-          throw err;
-        })
+          })
+          .catch(async (err) => {
+            if (err.statusCode === 410) {
+              await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+            }
+            throw err;
+          })
       )
     );
 
-    const sent   = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
-
-    return NextResponse.json({ sent, failed, total: subs.length });
+    return NextResponse.json({
+      sent:   results.filter((r) => r.status === "fulfilled").length,
+      failed: results.filter((r) => r.status === "rejected").length,
+      total:  subs.length,
+      type,
+    });
 
   } catch (err) {
-    console.error("[Push API] Error:", err);
+    console.error("[Push API]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unknown error" },
       { status: 500 }
@@ -85,7 +87,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/push — health check
 export async function GET() {
-  return NextResponse.json({ status: "ok", message: "Push API is running" });
+  return NextResponse.json({ status: "ok" });
 }

@@ -3,6 +3,7 @@ import { Providers } from "./provider";
 import Nav from "@/components/nav";
 import Footer from "@/components/footer";
 import AccessibilityOverlay from "@/components/theme/accessibility";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 import type { Metadata } from "next";
 import ClientLayoutWrapper from "@/components/ClientLayout";
@@ -114,6 +115,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen font-[var(--font-sans)]">
+        {/* Registers /sw.js on every page so push subscriptions work app-wide */}
+        <ServiceWorkerRegistration />
         <Providers>
           <ClientLayoutWrapper>
             {children}

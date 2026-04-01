@@ -272,6 +272,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
           body:  pushBody,
           url:   "/Delivery",
           tag:   "dart-new-order",
+          type:  "new_order",
         }),
       }).catch(() => { /* push failure is non-critical */ });
 

@@ -390,4 +390,314 @@ export class DeliveryExportTemplate {
     <div class="footer">DART Thrift Commercial Services · Ridgecrest, CA · ${monthName} ${this.year}</div>
     </body></html>`;
   }
+
+  // ── Static yearly generators ──────────────────────────────────────────────
+  // Fetches all 12 months at once, generates either:
+  //   - Excel: 1 Summary sheet + 12 monthly sheets
+  //   - HTML:  all 12 months as continuous pages with page-break-after
+
+  static async generateYearlyExcel(
+    supabase: SupabaseClient,
+    year: number,
+  ): Promise<ArrayBuffer> {
+    const wb = XLSX.utils.book_new();
+    const hdrStyle = {
+      font: { bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: "166534" } },
+      alignment: { horizontal: "center" as const, wrapText: true },
+    };
+
+    // Fetch all 12 months in parallel
+    const monthTemplates = await Promise.all(
+      MONTHS.map(async (_, i) => {
+        const m    = i + 1;
+        const tmpl = new DeliveryExportTemplate(supabase, m, year);
+        await tmpl.fetchData();
+        return tmpl;
+      })
+    );
+
+    // ── Summary sheet ──────────────────────────────────────────────────────
+    const summaryHeaders = [
+      "Month", "Total Orders", "Deliveries", "Pickups",
+      "Completed", "Completion %", "Trash Runs", "Trash Done",
+    ];
+    const summaryRows = monthTemplates.map((t, i) => {
+      const deliveries = t.orders.filter((o) => o.order_type === "delivery").length;
+      const pickups    = t.orders.filter((o) => o.order_type === "pickup").length;
+      const completed  = t.orders.filter((o) => o.status === "completed").length;
+      const trashDone  = t.trash.filter((r)  => r.status === "done").length;
+      const pct        = t.orders.length > 0
+        ? `${Math.round((completed / t.orders.length) * 100)}%` : "—";
+      return [
+        MONTHS[i], t.orders.length, deliveries, pickups,
+        completed, pct, t.trash.length, trashDone,
+      ];
+    });
+
+    // Totals row
+    const totals = [
+      "TOTAL",
+      summaryRows.reduce((s, r) => s + (r[1] as number), 0),
+      summaryRows.reduce((s, r) => s + (r[2] as number), 0),
+      summaryRows.reduce((s, r) => s + (r[3] as number), 0),
+      summaryRows.reduce((s, r) => s + (r[4] as number), 0),
+      "—",
+      summaryRows.reduce((s, r) => s + (r[6] as number), 0),
+      summaryRows.reduce((s, r) => s + (r[7] as number), 0),
+    ];
+
+    const summaryWs = XLSX.utils.aoa_to_sheet([
+      [`DART Thrift — ${year} Annual Report`, "", "", "", "", "", "", ""],
+      [`Generated: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}`, "", "", "", "", "", "", ""],
+      [],
+      summaryHeaders,
+      ...summaryRows,
+      [],
+      totals,
+    ]);
+
+    summaryWs["!cols"] = [
+      { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 10 },
+      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+    ];
+    summaryWs["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+    ];
+
+    // Style title + headers
+    if (summaryWs["A1"]) summaryWs["A1"].s = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center" as const } };
+    if (summaryWs["A2"]) summaryWs["A2"].s = { font: { sz: 9, color: { rgb: "888888" } }, alignment: { horizontal: "center" as const } };
+    summaryHeaders.forEach((_, c) => {
+      const addr = XLSX.utils.encode_cell({ r: 3, c });
+      if (summaryWs[addr]) summaryWs[addr].s = hdrStyle;
+    });
+    // Totals row style
+    const totalsRow = 3 + summaryRows.length + 2;
+    summaryHeaders.forEach((_, c) => {
+      const addr = XLSX.utils.encode_cell({ r: totalsRow, c });
+      if (summaryWs[addr]) summaryWs[addr].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "166534" } },
+      };
+    });
+
+    summaryWs["!freeze"] = { xSplit: 0, ySplit: 4 };
+    XLSX.utils.book_append_sheet(wb, summaryWs, "📊 Annual Summary");
+
+    // ── One sheet per month ────────────────────────────────────────────────
+    const orderHeaders = [
+      "Date","Time","Type","Customer","Address","Items","Notes","Status","Taken By",
+    ];
+    const trashHeaders = ["Date","Time","Note","Status"];
+
+    monthTemplates.forEach((t, i) => {
+      const monthName = MONTHS[i];
+      if (t.orders.length === 0 && t.trash.length === 0) return; // skip empty months
+
+      const orderRows = t.orders.map((o, ri) => {
+        const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
+        const addr = o.order_type === "delivery" ? o.destination_address : o.origin_address;
+        return [
+          fmtDate(o.scheduled_date),
+          fmtTime(effectiveTime),
+          o.order_type === "delivery" ? "📦 Delivery" : "🚛 Pickup",
+          o.customer_name,
+          addr ?? "",
+          o.item_description,
+          o.item_notes ?? "",
+          o.status.charAt(0).toUpperCase() + o.status.slice(1).replace("_", " "),
+          o.taken_by ?? "",
+        ];
+      });
+
+      const trashRows = t.trash.map((tr) => {
+        const d  = new Date(tr.created_at);
+        const pt = new Date(d.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+        return [
+          pt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+          pt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+          tr.note ?? "Trash run to dump",
+          tr.status === "done" ? "✓ Done" : "Pending",
+        ];
+      });
+
+      // Build sheet: title → orders → gap → trash
+      const sheetData: any[][] = [
+        [`${monthName} ${year}`, "", "", "", "", "", "", "", ""],
+        [`${t.orders.length} orders · ${t.trash.length} trash runs`, "", "", "", "", "", "", "", ""],
+        [],
+        [...orderHeaders],
+        ...orderRows,
+        [],
+        ["TRASH RUNS", "", "", ""],
+        [...trashHeaders],
+        ...trashRows,
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws["!cols"] = [
+        { wch: 13 },{ wch: 9 },{ wch: 11 },{ wch: 18 },
+        { wch: 28 },{ wch: 26 },{ wch: 22 },{ wch: 12 },{ wch: 13 },
+      ];
+      ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } },
+      ];
+
+      if (ws["A1"]) ws["A1"].s = { font: { bold: true, sz: 13 } };
+      if (ws["A2"]) ws["A2"].s = { font: { sz: 9, color: { rgb: "888888" } } };
+
+      // Style order headers (row 4 = index 3)
+      orderHeaders.forEach((_, c) => {
+        const addr = XLSX.utils.encode_cell({ r: 3, c });
+        if (ws[addr]) ws[addr].s = hdrStyle;
+      });
+
+      // Style trash section header + headers
+      const trashTitleRow = 4 + orderRows.length + 1;
+      if (ws[XLSX.utils.encode_cell({ r: trashTitleRow, c: 0 })]) {
+        ws[XLSX.utils.encode_cell({ r: trashTitleRow, c: 0 })].s = { font: { bold: true, sz: 11 } };
+      }
+      trashHeaders.forEach((_, c) => {
+        const addr = XLSX.utils.encode_cell({ r: trashTitleRow + 1, c });
+        if (ws[addr]) ws[addr].s = hdrStyle;
+      });
+
+      ws["!freeze"] = { xSplit: 0, ySplit: 4 };
+      XLSX.utils.book_append_sheet(wb, ws, monthName.slice(0, 3)); // "Jan","Feb"…
+    });
+
+    return XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+  }
+
+  static async generateYearlyHTML(
+    supabase: SupabaseClient,
+    year: number,
+  ): Promise<string> {
+    const monthTemplates = await Promise.all(
+      MONTHS.map(async (_, i) => {
+        const tmpl = new DeliveryExportTemplate(supabase, i + 1, year);
+        await tmpl.fetchData();
+        return tmpl;
+      })
+    );
+
+    const monthSections = monthTemplates.map((t, i) => {
+      const monthName  = MONTHS[i];
+      const deliveries = t.orders.filter((o) => o.order_type === "delivery");
+      const pickups    = t.orders.filter((o) => o.order_type === "pickup");
+      const completed  = t.orders.filter((o) => o.status === "completed");
+      const trashDone  = t.trash.filter((r)  => r.status === "done");
+
+      const orderRows = t.orders.map((o, ri) => {
+        const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
+        const addr = o.order_type === "delivery" ? o.destination_address : o.origin_address;
+        const bg   = ri % 2 === 0 ? "#fff" : "#f0fdf4";
+        return `<tr style="background:${bg}">
+          <td>${fmtDate(o.scheduled_date)}</td>
+          <td>${fmtTime(effectiveTime)}</td>
+          <td>${o.order_type === "delivery" ? "📦 Del" : "🚛 Pick"}</td>
+          <td><strong>${o.customer_name}</strong></td>
+          <td>${addr ?? ""}</td>
+          <td>${o.item_description}</td>
+          <td style="color:${o.status === "completed" ? "#166534" : "#b45309"};font-weight:bold">
+            ${o.status.charAt(0).toUpperCase() + o.status.slice(1).replace("_", " ")}
+          </td>
+          <td>${o.taken_by ?? ""}</td>
+        </tr>`;
+      }).join("");
+
+      const trashRows = t.trash.map((tr, ri) => {
+        const d  = new Date(tr.created_at);
+        const pt = new Date(d.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+        const bg = ri % 2 === 0 ? "#fff" : "#f0fdf4";
+        return `<tr style="background:${bg}">
+          <td>${pt.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" })}</td>
+          <td>${pt.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" })}</td>
+          <td>${tr.note ?? "Trash run"}</td>
+          <td style="color:${tr.status === "done" ? "#166534" : "#b45309"};font-weight:bold">
+            ${tr.status === "done" ? "✓ Done" : "Pending"}
+          </td>
+        </tr>`;
+      }).join("");
+
+      return `
+      <div class="month-page">
+        <h2>${monthName} ${year}</h2>
+        <div class="stats">
+          <div class="stat"><div class="n">${t.orders.length}</div><div class="l">Orders</div></div>
+          <div class="stat"><div class="n">${deliveries.length}</div><div class="l">Deliveries</div></div>
+          <div class="stat"><div class="n">${pickups.length}</div><div class="l">Pickups</div></div>
+          <div class="stat"><div class="n">${completed.length}</div><div class="l">Completed</div></div>
+          <div class="stat"><div class="n">${t.trash.length}</div><div class="l">Trash Runs</div></div>
+          <div class="stat"><div class="n">${trashDone.length}</div><div class="l">Done</div></div>
+        </div>
+        <h3>Orders</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Customer</th><th>Address</th><th>Items</th><th>Status</th><th>Taken By</th></tr></thead>
+          <tbody>${orderRows || "<tr><td colspan='8' class='empty'>No orders</td></tr>"}</tbody>
+        </table>
+        <h3>Trash Runs</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Time</th><th>Note</th><th>Status</th></tr></thead>
+          <tbody>${trashRows || "<tr><td colspan='4' class='empty'>No trash runs</td></tr>"}</tbody>
+        </table>
+      </div>`;
+    }).join("\n");
+
+    // Annual summary totals
+    const totalOrders    = monthTemplates.reduce((s, t) => s + t.orders.length, 0);
+    const totalCompleted = monthTemplates.reduce((s, t) => s + t.orders.filter(o => o.status === "completed").length, 0);
+    const totalTrash     = monthTemplates.reduce((s, t) => s + t.trash.length, 0);
+    const totalDeliveries= monthTemplates.reduce((s, t) => s + t.orders.filter(o => o.order_type === "delivery").length, 0);
+    const totalPickups   = monthTemplates.reduce((s, t) => s + t.orders.filter(o => o.order_type === "pickup").length, 0);
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>DART Thrift — ${year} Annual Report</title>
+    <style>
+      @page { size: letter; margin: 0.5in; }
+      body { font-family: Arial, sans-serif; font-size: 9px; color: #1e293b; }
+      .cover { text-align:center; padding: 60px 0; page-break-after: always; }
+      .cover h1 { font-size: 28px; color: #166534; margin:0; }
+      .cover h2 { font-size: 18px; color: #444; margin: 8px 0 0; font-weight:normal; }
+      .cover .totals { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:40px auto; max-width:500px; }
+      .cover .total { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; }
+      .cover .total .n { font-size:28px; font-weight:bold; color:#166534; }
+      .cover .total .l { font-size:10px; color:#555; margin-top:4px; }
+      .month-page { page-break-after: always; }
+      .month-page:last-child { page-break-after: avoid; }
+      h2 { font-size:16px; color:#166534; border-bottom:2px solid #166534; padding-bottom:4px; margin:0 0 10px; }
+      h3 { font-size:10px; font-weight:bold; text-transform:uppercase; letter-spacing:.05em;
+           background:#166534; color:#fff; padding:4px 8px; margin:12px 0 0; border-radius:3px 3px 0 0; }
+      .stats { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:10px; }
+      .stat { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:6px; text-align:center; }
+      .stat .n { font-size:16px; font-weight:bold; color:#166534; }
+      .stat .l { font-size:8px; color:#555; }
+      table { width:100%; border-collapse:collapse; font-size:8px; }
+      th { background:#166534; color:#fff; padding:4px 5px; text-align:left; font-weight:bold; }
+      td { padding:3px 5px; border-bottom:1px solid #e2e8f0; }
+      .empty { text-align:center; color:#888; padding:8px; }
+      .meta { font-size:8px; color:#888; margin-top:4px; }
+    </style></head><body>
+
+    <div class="cover">
+      <h1>DART Thrift</h1>
+      <h2>${year} Annual Delivery &amp; Pickup Report</h2>
+      <p class="meta">Generated: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })}</p>
+      <div class="totals">
+        <div class="total"><div class="n">${totalOrders}</div><div class="l">Total Orders</div></div>
+        <div class="total"><div class="n">${totalDeliveries}</div><div class="l">Deliveries</div></div>
+        <div class="total"><div class="n">${totalPickups}</div><div class="l">Pickups</div></div>
+        <div class="total"><div class="n">${totalCompleted}</div><div class="l">Completed</div></div>
+        <div class="total"><div class="n">${totalTrash}</div><div class="l">Trash Runs</div></div>
+        <div class="total"><div class="n">${totalOrders > 0 ? Math.round((totalCompleted / totalOrders) * 100) : 0}%</div><div class="l">Completion</div></div>
+      </div>
+    </div>
+
+    ${monthSections}
+
+    </body></html>`;
+  }
 }

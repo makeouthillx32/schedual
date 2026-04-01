@@ -149,7 +149,7 @@ export default function DeliverySettings() {
                   : "border-dashed border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)] opacity-60"
               }`}
             >
-              {/* Label + type + toggle + delete */}
+              {/* Label + type badge */}
               <div className="flex items-center gap-2">
                 <input
                   value={block.label}
@@ -160,24 +160,32 @@ export default function DeliverySettings() {
                 <select
                   value={block.block_type}
                   onChange={(e) => updateBlock(block.id, "block_type", e.target.value)}
-                  className="text-xs px-2 py-0.5 rounded-full font-semibold bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] border-0 cursor-pointer"
+                  className="text-xs px-2 py-0.5 rounded-full font-semibold bg-[hsl(var(--accent))] text-[hsl(var(--foreground))] border-0 cursor-pointer shrink-0"
                 >
                   <option value="break">Break</option>
                   <option value="lunch">Lunch</option>
                 </select>
-                <button onClick={() => toggleActive(block)} title={block.is_active ? "Disable" : "Enable"}>
-                  {block.is_active
-                    ? <ToggleRight size={22} className="text-[hsl(var(--sidebar-primary))]" />
-                    : <ToggleLeft  size={22} className="text-[hsl(var(--muted-foreground))]" />}
-                </button>
-                <button onClick={() => deleteBlock(block.id)} title="Delete" className="text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors">
-                  <Trash2 size={15} />
-                </button>
+              </div>
+              {/* Toggle + delete — own row so nothing goes off screen */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+                  {block.is_active ? "Active" : "Disabled"}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => toggleActive(block)} title={block.is_active ? "Disable" : "Enable"}>
+                    {block.is_active
+                      ? <ToggleRight size={24} className="text-[hsl(var(--sidebar-primary))]" />
+                      : <ToggleLeft  size={24} className="text-[hsl(var(--muted-foreground))]" />}
+                  </button>
+                  <button onClick={() => deleteBlock(block.id)} title="Delete" className="text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
 
-              {/* Start → End time */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
+              {/* Start + End time — 2 col grid, always fits on mobile */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Start</label>
                   <input
                     type="time"
@@ -186,8 +194,7 @@ export default function DeliverySettings() {
                     className="w-full mt-1 px-2 py-1.5 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--input))] text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--sidebar-primary))]"
                   />
                 </div>
-                <span className="text-[hsl(var(--muted-foreground))] text-xs mt-4">→</span>
-                <div className="flex-1">
+                <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">End</label>
                   <input
                     type="time"
@@ -196,10 +203,11 @@ export default function DeliverySettings() {
                     className="w-full mt-1 px-2 py-1.5 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--input))] text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--sidebar-primary))]"
                   />
                 </div>
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))] mt-4 whitespace-nowrap">
-                  {pgTo12h(block.start_time)} – {pgTo12h(block.end_time)}
-                </span>
               </div>
+              {/* 12h preview — full width below, never overflows */}
+              <p className="text-xs text-center text-[hsl(var(--muted-foreground))] font-medium">
+                {pgTo12h(block.start_time)} → {pgTo12h(block.end_time)}
+              </p>
 
               {/* Save */}
               <button

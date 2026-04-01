@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Badge } from "@/components/ui/badge";
 import TodayView from "@/components/delivery/views/TodayView";
-import DeliveryExportButton from "@/components/delivery/_components/DeliveryExportButton";
+import DeliveryExportButton from "@/components/delivery/_components/ExportButton";
 import WeekView  from "@/components/delivery/views/WeekView";
 import AllView   from "@/components/delivery/views/AllView";
 

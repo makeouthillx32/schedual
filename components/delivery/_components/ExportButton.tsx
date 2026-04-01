@@ -40,6 +40,41 @@ function downloadBlob(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Share a PDF-ready HTML file via the native iOS share sheet.
+ * Uses Web Share API (navigator.share) which on iOS presents:
+ *   "Save to Files", AirDrop, Mail, Print, etc.
+ * Falls back to plain download on desktop / unsupported browsers.
+ */
+async function shareOrDownloadHTML(html: string, filename: string) {
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+
+  // Web Share API — available in iOS Safari 15+ and Chrome Android
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.share &&
+    navigator.canShare
+  ) {
+    const file = new File([blob], filename, { type: "text/html" });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: filename.replace(".html", ""),
+        });
+        return; // ✅ Share sheet opened — done
+      } catch (err: any) {
+        // User cancelled — not an error
+        if (err?.name === "AbortError") return;
+        // Fall through to download
+      }
+    }
+  }
+
+  // Fallback: straight download (desktop, or if share not supported)
+  downloadBlob(blob, filename);
+}
+
 type Mode = "month" | "year";
 
 export default function DeliveryExportButton({ supabase }: DeliveryExportButtonProps) {
@@ -49,8 +84,8 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
   const [selectedMonth, setSelectedMonth] = useState(getMonthOptions(6)[0]);
   const [selectedYear,  setSelectedYear]  = useState(new Date().getFullYear());
 
-  const menuRef = useRef<HTMLDivElement>(null);
-  const months  = getMonthOptions(6);
+  const menuRef    = useRef<HTMLDivElement>(null);
+  const months     = getMonthOptions(6);
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -62,7 +97,7 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const runExport = async (fmt: "excel" | "print") => {
+  const runExport = async (fmt: "excel" | "pdf") => {
     setOpen(false);
     setExporting(true);
     try {
@@ -70,18 +105,19 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
         const tmpl = new DeliveryExportTemplate(supabase, selectedMonth.month, selectedMonth.year);
         await tmpl.fetchData();
         const monthStr = `${MONTHS[selectedMonth.month - 1]}_${selectedMonth.year}`;
+
         if (fmt === "excel") {
-          const buf  = tmpl.generateExcel();
+          const buf = tmpl.generateExcel();
           downloadBlob(
             new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
             `DART_Delivery_${monthStr}.xlsx`
           );
         } else {
-          const html = tmpl.generateHTML();
-          downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `DART_Delivery_${monthStr}.html`);
+          await shareOrDownloadHTML(tmpl.generateHTML(), `DART_Delivery_${monthStr}.html`);
         }
+
       } else {
-        // ── Yearly ──
+        // Yearly
         if (fmt === "excel") {
           const buf = await DeliveryExportTemplate.generateYearlyExcel(supabase, selectedYear);
           downloadBlob(
@@ -90,7 +126,7 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
           );
         } else {
           const html = await DeliveryExportTemplate.generateYearlyHTML(supabase, selectedYear);
-          downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `DART_Delivery_${selectedYear}_Annual.html`);
+          await shareOrDownloadHTML(html, `DART_Delivery_${selectedYear}_Annual.html`);
         }
       }
     } catch (err) {
@@ -116,8 +152,10 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-68 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden" style={{ width: 272 }}>
-
+        <div
+          className="absolute right-0 top-full mt-1.5 z-50 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-lg overflow-hidden"
+          style={{ width: 272 }}
+        >
           {/* Mode toggle */}
           <div className="flex border-b border-[hsl(var(--border))]">
             {(["month", "year"] as Mode[]).map((m) => (
@@ -218,14 +256,14 @@ export default function DeliveryExportButton({ supabase }: DeliveryExportButtonP
               </div>
             </button>
             <button
-              onClick={() => runExport("print")}
+              onClick={() => runExport("pdf")}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] transition-colors text-left"
             >
               <Printer size={15} className="text-[hsl(var(--muted-foreground))] shrink-0" />
               <div>
-                <p className="font-semibold">Save / Share Report</p>
+                <p className="font-semibold">Save as PDF</p>
                 <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-normal">
-                  {mode === "month" ? "1 month · iOS share sheet" : "Cover page + 12 months · iOS share sheet"}
+                  {mode === "month" ? "1 page report · iOS share sheet" : "Cover + 12 months · iOS share sheet"}
                 </p>
               </div>
             </button>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Clock, Save, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Clock, Save, Plus, Trash2, ToggleLeft, ToggleRight, Bell } from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,25 +32,36 @@ function pgToInput(t: string): string {
 }
 
 export default function DeliverySettings() {
-  const [blocks,  setBlocks]  = useState<ScheduleBlock[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState<string | null>(null);
-  const [toast,   setToast]   = useState<string | null>(null);
+  const [blocks,       setBlocks]       = useState<ScheduleBlock[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState<string | null>(null);
+  const [toast,        setToast]        = useState<string | null>(null);
+  const [alertMinutes, setAlertMinutes] = useState<number>(10);
+  const [savingAlert,  setSavingAlert]  = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("delivery_schedule_blocks")
-      .select("*")
-      .order("start_time")
-      .then(({ data }) => {
-        if (data) setBlocks(data as ScheduleBlock[]);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase.from("delivery_schedule_blocks").select("*").order("start_time"),
+      supabase.from("app_settings").select("value").eq("key", "alert_minutes_before").single(),
+    ]).then(([blocksRes, alertRes]) => {
+      if (blocksRes.data) setBlocks(blocksRes.data as ScheduleBlock[]);
+      if (alertRes.data)  setAlertMinutes(parseInt(alertRes.data.value) || 10);
+      setLoading(false);
+    });
   }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  const saveAlertMinutes = async (val: number) => {
+    setSavingAlert(true);
+    await supabase
+      .from("app_settings")
+      .upsert({ key: "alert_minutes_before", value: String(val) }, { onConflict: "key" });
+    setSavingAlert(false);
+    showToast(`✓ Alert window set to ${val} minutes`);
   };
 
   const updateBlock = (id: string, field: keyof ScheduleBlock, value: string | boolean) => {
@@ -128,6 +139,67 @@ export default function DeliverySettings() {
         </button>
       </div>
 
+      {/* ── Alert Window ─────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Bell size={16} className="text-[hsl(var(--sidebar-primary))] shrink-0" />
+          <div>
+            <h3 className="text-sm font-semibold text-[hsl(var(--foreground))]">Delivery Alert Window</h3>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              How many minutes before a scheduled delivery or pickup to send a push notification.
+            </p>
+          </div>
+        </div>
+
+        {/* Quick-select buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {[5, 10, 15, 20, 30].map((min) => (
+            <button
+              key={min}
+              onClick={() => setAlertMinutes(min)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                alertMinutes === min
+                  ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] border-[hsl(var(--sidebar-primary))]"
+                  : "border-[hsl(var(--border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))]"
+              }`}
+            >
+              {min} min
+            </button>
+          ))}
+        </div>
+
+        {/* Custom value input */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              Custom (minutes)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={60}
+              value={alertMinutes}
+              onChange={(e) => setAlertMinutes(Math.max(1, Math.min(60, parseInt(e.target.value) || 10)))}
+              className="w-full mt-1 px-3 py-1.5 text-sm border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--input))] text-[hsl(var(--foreground))] focus:outline-none focus:border-[hsl(var(--sidebar-primary))]"
+              style={{ fontSize: "max(16px, 1em)" }}
+            />
+          </div>
+          <div className="mt-4 text-xs text-[hsl(var(--muted-foreground))] whitespace-nowrap">
+            = {alertMinutes} min before
+          </div>
+        </div>
+
+        <button
+          onClick={() => saveAlertMinutes(alertMinutes)}
+          disabled={savingAlert}
+          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90 transition-colors disabled:opacity-50"
+        >
+          <Save size={12} />
+          {savingAlert ? "Saving…" : "Save Alert Window"}
+        </button>
+      </div>
+
+      {/* ── Schedule Blocks ───────────────────────────────────────────────── */}
       {/* Blocks list */}
       {loading ? (
         <div className="space-y-3">

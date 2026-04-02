@@ -97,7 +97,7 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
       ];
       
       // ✅ FIXED: Also check if pathname starts with /CMS for any CMS subroutes
-      const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/CMS');
+      const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/CMS') || pathname.startsWith('/Tools');
       
       if (!isPublicRoute) {
         console.log(`[Provider] Redirecting to sign-in from: ${pathname}`);

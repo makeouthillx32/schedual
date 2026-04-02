@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
 
   return (
     <div className="relative"> {/* Add relative positioning container */}
-      <header className="header-container bg-background text-foreground border-border">
+      <header data-layout="shop" className="header-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-[var(--lt-border)]">
         <div className="header-content">
           {/* Left: Logo */}
           <div className="header-logo">

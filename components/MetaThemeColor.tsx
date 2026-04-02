@@ -30,13 +30,14 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
     };
 
     const run = () => {
+      // Always query the correct layout element — "app" nav or "shop" home header
+      const selector = type === "app" ? '[data-layout="app"]' : '[data-layout="shop"]';
+      const layoutEl = document.querySelector(selector);
+
       let color = "";
 
-      if (type === "app") {
-        const layoutEl = document.querySelector('[data-layout="app"]');
-        if (layoutEl) {
-          color = resolveVar("--lt-status-bar", layoutEl);
-        }
+      if (layoutEl) {
+        color = resolveVar("--lt-status-bar", layoutEl);
       }
 
       if (!color || color === "rgba(0, 0, 0, 0)") {

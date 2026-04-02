@@ -10,19 +10,19 @@
  */
 
 :root {
-  --gp-bg:         hsl(var(--background));
-  --gp-fg:         hsl(var(--foreground));
-  --gp-border:     hsl(var(--border));
+  --gp-bg:         hsl(var(--destructive));
+  --gp-fg:         hsl(var(--destructive-foreground));
+  --gp-border:     hsl(var(--destructive));
   --gp-shadow:     var(--shadow-sm);
-  --gp-status-bar: hsl(var(--background)); /* References --gp-bg value */
+  --gp-status-bar: hsl(var(--destructive));
 }
 
 .dark {
-  --gp-bg:         hsl(var(--background));
-  --gp-fg:         hsl(var(--foreground));
-  --gp-border:     hsl(var(--border));
+  --gp-bg:         hsl(var(--destructive));
+  --gp-fg:         hsl(var(--destructive-foreground));
+  --gp-border:     hsl(var(--destructive));
   --gp-shadow:     var(--shadow-md);
-  --gp-status-bar: hsl(var(--background)); /* References --gp-bg value */
+  --gp-status-bar: hsl(var(--destructive));
 }
 
 /* ─── SHOP HEADER ─────────────────────────────────────── */
@@ -49,7 +49,7 @@
 :is([data-layout]) [data-layout="app"] {
   --lt-bg:         var(--gp-bg);
   --lt-fg:         var(--gp-fg);
-  --lt-border:     hsl(var(--primary) / 0.2);
+  --lt-border:     var(--gp-border);
   --lt-shadow:     var(--gp-shadow);
   --lt-status-bar: var(--gp-bg); /* ✅ ALWAYS matches background */
 }
@@ -58,7 +58,7 @@
 .dark :is([data-layout]) [data-layout="app"] {
   --lt-bg:         var(--gp-bg);
   --lt-fg:         var(--gp-fg);
-  --lt-border:     hsl(var(--primary) / 0.2);
+  --lt-border:     var(--gp-border);
   --lt-shadow:     var(--gp-shadow);
   --lt-status-bar: var(--gp-bg); /* ✅ ALWAYS matches background */
 }

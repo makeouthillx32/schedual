@@ -1,6 +1,7 @@
 "use client";
 
 import MetaThemeColor from "@/components/MetaThemeColor";
+import Nav from "@/components/nav";
 import { tools } from "@/lib/toolsConfig";
 import Link from "next/link";
 import { useTheme } from "@/app/provider";
@@ -12,21 +13,8 @@ export default function ToolsPage() {
   return (
     <>
       <MetaThemeColor type="app" />
-      <div className="min-h-screen" style={{ background: "hsl(var(--background))" }}>
-
-        <div
-          className="sticky top-0 z-10 border-b px-4 pt-3 pb-3"
-          style={{ background: "hsl(var(--card))", borderColor: "hsl(var(--border))" }}
-        >
-          <p className="text-xs font-semibold tracking-widest uppercase"
-            style={{ color: "hsl(var(--muted-foreground))" }}>
-            DART
-          </p>
-          <h1 className="text-xl font-extrabold" style={{ color: "hsl(var(--foreground))" }}>
-            Tools
-          </h1>
-        </div>
-
+      <Nav pageTitle="Tools" />
+      <div className="min-h-screen bg-[hsl(var(--background))]">
         <div className="max-w-2xl mx-auto px-3 pt-5 pb-16 space-y-3">
           {tools.map((tool) => (
             <Link key={tool.path} href={tool.path} className="block">
@@ -58,7 +46,6 @@ export default function ToolsPage() {
             </Link>
           ))}
         </div>
-
       </div>
     </>
   );

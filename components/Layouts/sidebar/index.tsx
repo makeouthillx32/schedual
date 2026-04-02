@@ -52,7 +52,7 @@ export function Sidebar() {
       <aside
         data-layout="sidebar"
         className={cn(
-          "max-w-[290px] overflow-hidden border-r border-[hsl(var(--border))] bg-[hsl(var(--sidebar))] transition-[width] duration-200 ease-linear dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))]",
+          "max-w-[290px] overflow-hidden border-r border-[hsl(var(--border))] bg-[var(--lt-bg)] transition-[width] duration-200 ease-linear",
           isMobile ? "fixed bottom-0 top-0 z-50" : "sticky top-0 h-screen",
           isOpen ? "w-full" : "w-0"
         )}

@@ -174,7 +174,7 @@ const Footer: React.FC = () => {
   });
 
   return (
-    <section className="py-16 bg-[var(--background)] text-[var(--foreground)] border-t border-gray-200">
+    <section data-layout="footer" className="py-16 bg-[var(--background)] text-[var(--foreground)] border-t border-gray-200">
       <div className="container max-w-7xl mx-auto px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
         <div className="flex w-full flex-col justify-between gap-10 lg:flex-row lg:items-start lg:text-left">
           {/* Logo and Description Section */}

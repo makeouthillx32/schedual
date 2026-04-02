@@ -18,7 +18,7 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
   return (
     <nav
       data-layout="app"
-      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] shadow-[var(--shadow-sm)]"
+      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[var(--lt-bg)] text-[var(--lt-fg)] shadow-[var(--lt-shadow)]"
     >
       {/* Left: logo + page title */}
       <div className="flex items-center gap-3 min-w-0">

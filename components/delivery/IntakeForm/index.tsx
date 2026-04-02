@@ -114,15 +114,12 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
     fetchingDate.current = date;
     setLoadingSlots(true);
 
-    // Fire blocks + orders in parallel — blocks only needed if not yet loaded
-    const blocksNeeded = blocks.length === 0;
+    // Always fetch blocks fresh — ensures settings changes take effect immediately
     const [blocksRes, ordersRes] = await Promise.all([
-      blocksNeeded
-        ? supabase
-            .from("delivery_schedule_blocks")
-            .select("start_time, end_time, label, is_active")
-            .eq("is_active", true)
-        : Promise.resolve({ data: null, error: null }),
+      supabase
+        .from("delivery_schedule_blocks")
+        .select("start_time, end_time, label, is_active")
+        .eq("is_active", true),
       supabase
         .from("delivery_orders")
         .select("id, customer_name, order_type, scheduled_time, scheduled_time_override, item_description, status")
@@ -132,7 +129,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         .not("scheduled_time", "is", null),
     ]);
 
-    if (blocksNeeded && blocksRes.data) setBlocks(blocksRes.data as ScheduleBlock[]);
+    if (blocksRes.data) setBlocks(blocksRes.data as ScheduleBlock[]);
     const orders = (ordersRes.data ?? []) as ExistingOrder[];
     dateCache.current[date] = orders;
 
@@ -142,7 +139,7 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
       setLoadingSlots(false);
       fetchingDate.current = null;
     }
-  }, [supabase, blocks.length]);
+  }, [supabase]);
 
   // Trigger fetch when date changes
   useEffect(() => {
@@ -192,6 +189,19 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
       return "Please enter the pickup address.";
     if (step === 2 && !form.item_description.trim())
       return "Please describe the item(s).";
+    // Step 3: When — must have date + time, time must not be blocked or taken
+    if (step === 3) {
+      if (!form.scheduled_date)
+        return "Please select a date.";
+      if (!form.scheduled_time)
+        return "Please select a time slot.";
+      // Re-check the selected slot against current blocks/orders
+      const selectedSlot = slots.find((s) => s.label === form.scheduled_time);
+      if (selectedSlot?.blocked)
+        return `That time is blocked (${selectedSlot.blockLabel ?? "break/lunch"}). Please pick another slot.`;
+      if (selectedSlot && selectedSlot.orders.length > 0)
+        return "That time already has a booking. Please pick a different slot.";
+    }
     // Step 4: Confirm
     if (step === 4 && !takenBy.trim())
       return "Please enter who is taking this order.";
@@ -276,11 +286,8 @@ export default function IntakeForm({ supabase }: IntakeFormProps) {
         }),
       }).catch(() => { /* push failure is non-critical */ });
 
-      // Bust the date cache for this order's date so the next intake
-      // fetches fresh slot data and shows this order as taken
-      if (form.scheduled_date) {
-        delete dateCache.current[form.scheduled_date];
-      }
+      // Invalidate date cache so re-opening the form shows this order as taken
+      delete dateCache.current[form.scheduled_date];
 
       // Only clear draft after confirmed success
       clearDraft();

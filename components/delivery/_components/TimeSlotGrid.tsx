@@ -11,9 +11,9 @@ import type { SlotMeta, DateOption, ExistingOrder } from "@/components/delivery/
 // ── Date strip ────────────────────────────────────────────────────────────────
 
 interface DateStripProps {
-  dates:         DateOption[];
-  selectedDate:  string;
-  onSelectDate:  (value: string) => void;
+  dates:        DateOption[];
+  selectedDate: string;
+  onSelectDate: (value: string) => void;
 }
 
 export function DateStrip({ dates, selectedDate, onSelectDate }: DateStripProps) {
@@ -67,20 +67,15 @@ interface SlotGridProps {
 export function SlotGrid({ slots, selectedTime, loading, onSelect, selectedDate }: SlotGridProps) {
   if (loading) return <SlotGridSkeleton />;
 
-  const selectedSlot  = slots.find((s) => s.label === selectedTime);
-  const showWarning   = selectedSlot && !selectedSlot.available && !selectedSlot.blocked;
-
   return (
     <div>
-      {/* Header row */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <Label className="text-sm font-semibold">
           Time Slots —{" "}
           <span className="font-normal text-muted-foreground">
             {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
-              weekday: "long",
-              month:   "short",
-              day:     "numeric",
+              weekday: "long", month: "short", day: "numeric",
             })}
           </span>
         </Label>
@@ -89,10 +84,10 @@ export function SlotGrid({ slots, selectedTime, loading, onSelect, selectedDate 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-muted-foreground">
         {[
-          { color: "bg-[hsl(var(--sidebar-primary))]",                      label: "Selected" },
-          { color: "border-2 border-border bg-background",                  label: "Open"     },
-          { color: "bg-amber-100 border border-amber-300 dark:bg-amber-900/20", label: "Taken" },
-          { color: "bg-muted",                                               label: "Break"    },
+          { color: "bg-[hsl(var(--sidebar-primary))]",                          label: "Selected" },
+          { color: "border-2 border-border bg-background",                      label: "Open"     },
+          { color: "bg-red-100 border border-red-300 dark:bg-red-900/20",       label: "Booked"   },
+          { color: "bg-muted",                                                   label: "Break"    },
         ].map((l) => (
           <span key={l.label} className="flex items-center gap-1.5">
             <span className={cn("w-3 h-3 rounded-sm", l.color)} />
@@ -106,25 +101,29 @@ export function SlotGrid({ slots, selectedTime, loading, onSelect, selectedDate 
         {slots.map((slot) => {
           const active  = selectedTime === slot.label;
           const taken   = !slot.blocked && slot.orders.length > 0;
+          // Hard-disable: blocked by break/lunch OR already has an order
+          const disabled = slot.blocked || taken;
+
+          const tooltip = slot.blocked
+            ? `${slot.blockLabel} — unavailable`
+            : taken
+            ? `Booked: ${slot.orders.map((o) => o.customer_name).join(", ")}`
+            : undefined;
 
           return (
             <div key={slot.label} className="relative">
               <button
-                disabled={slot.blocked}
-                onClick={() => onSelect(active ? "" : slot.label)}
-                title={
-                  slot.blocked ? `${slot.blockLabel} — unavailable` :
-                  taken        ? slot.orders.map((o) => `${o.customer_name} (${o.order_type})`).join(", ") :
-                  undefined
-                }
+                disabled={disabled}
+                onClick={() => !disabled && onSelect(active ? "" : slot.label)}
+                title={tooltip}
                 className={cn(
                   "w-full py-2.5 px-1 rounded-xl border-2 text-xs font-semibold transition-all active:scale-95 flex flex-col items-center gap-0.5",
                   slot.blocked
                     ? "bg-muted border-muted text-muted-foreground cursor-not-allowed opacity-50"
+                    : taken
+                    ? "bg-red-50 border-red-300 text-red-700 cursor-not-allowed opacity-70 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700"
                     : active
                     ? "bg-[hsl(var(--sidebar-primary))] border-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]"
-                    : taken
-                    ? "bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700"
                     : "bg-background border-border text-foreground hover:border-[hsl(var(--sidebar-primary))]",
                 )}
               >
@@ -134,31 +133,21 @@ export function SlotGrid({ slots, selectedTime, loading, onSelect, selectedDate 
                     {slot.blockLabel}
                   </span>
                 )}
-                {taken && !active && (
-                  <span className="text-[9px] leading-tight font-normal">
-                    {slot.orders.length} order{slot.orders.length > 1 ? "s" : ""}
+                {taken && (
+                  <span className="text-[9px] leading-tight font-normal truncate w-full text-center px-0.5">
+                    {slot.orders[0].customer_name.split(" ")[0]}
                   </span>
                 )}
               </button>
 
-              {/* Amber dot on taken slots */}
-              {taken && !active && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 border-2 border-background" />
+              {/* Red dot on taken slots */}
+              {taken && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-background" />
               )}
             </div>
           );
         })}
       </div>
-
-      {/* Double-booking warning */}
-      {showWarning && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 p-3">
-          <AlertCircle size={15} className="text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-800 dark:text-amber-300">
-            <strong>Heads up:</strong> This time already has an order. You can still book it — just make sure there's enough time between runs.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -182,20 +171,20 @@ export function ExistingOrdersPanel({ orders }: OrdersPanelProps) {
       </div>
       <div className="space-y-1">
         {orders.map((o) => {
-            const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
-            const rescheduled   = !!o.scheduled_time_override;
-            return (
-              <div key={o.id} className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400">
-                <span className="font-medium">
-                  {o.order_type === "pickup" ? "🚛" : "📦"} {o.customer_name}
-                </span>
-                <span className="font-mono text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                  {rescheduled && <span title="Rescheduled">✏️</span>}
-                  {minutesToLabel(pgTimeToMinutes(effectiveTime))}
-                </span>
-              </div>
-            );
-          })}
+          const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
+          const rescheduled   = !!o.scheduled_time_override;
+          return (
+            <div key={o.id} className="flex items-center justify-between text-xs text-amber-700 dark:text-amber-400">
+              <span className="font-medium">
+                {o.order_type === "pickup" ? "🚛" : "📦"} {o.customer_name}
+              </span>
+              <span className="font-mono text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                {rescheduled && <span title="Rescheduled">✏️</span>}
+                {minutesToLabel(pgTimeToMinutes(effectiveTime))}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

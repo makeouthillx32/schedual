@@ -31,9 +31,12 @@ export function minutesToLabel(mins: number): string {
 
 /**
  * Annotates each TIME_SLOT label with:
- *   - blocked   → falls inside a break/lunch window
- *   - orders    → existing orders starting within 30 min of this slot
- *   - available → not blocked AND no orders
+ *   - blocked    → slot falls inside an active break/lunch window
+ *   - orders     → existing orders at EXACTLY this slot time
+ *   - available  → not blocked AND no orders at this exact time
+ *
+ * NOTE: We match orders by exact time (not a ±30 min window) so that
+ * only the specific slot that is already booked shows as taken.
  */
 export function buildSlots(
   slots:  string[],
@@ -43,6 +46,7 @@ export function buildSlots(
   return slots.map((label) => {
     const slotMins = labelToMinutes(label);
 
+    // Blocked if the slot falls inside any active break/lunch window
     const matchBlock = blocks.find((b) => {
       if (!b.is_active) return false;
       const start = pgTimeToMinutes(b.start_time);
@@ -50,11 +54,10 @@ export function buildSlots(
       return slotMins >= start && slotMins < end;
     });
 
+    // Orders that are scheduled at exactly this slot time
     const slotOrders = orders.filter((o) => {
-      // Use the override time if set — this is the actual scheduled time
       const effectiveTime = o.scheduled_time_override ?? o.scheduled_time;
-      const orderMins = pgTimeToMinutes(effectiveTime);
-      return orderMins >= slotMins && orderMins < slotMins + 30;
+      return pgTimeToMinutes(effectiveTime) === slotMins;
     });
 
     return {

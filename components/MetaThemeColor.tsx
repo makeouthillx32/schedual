@@ -19,30 +19,39 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
       return resolved;
     };
 
-    let color = "";
-
-    if (type === "app") {
-      const layoutEl = document.querySelector('[data-layout="app"]');
-      if (layoutEl) {
-        color = resolveVar("--lt-status-bar", layoutEl);
+    const setMetaColor = (color: string) => {
+      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+      if (!meta) {
+        meta = document.createElement("meta");
+        meta.setAttribute("name", "theme-color");
+        document.head.appendChild(meta);
       }
-    }
+      meta.setAttribute("content", color);
+    };
 
-    if (!color || color === "rgba(0, 0, 0, 0)") {
-      color = resolveVar("--background");
-    }
+    const run = () => {
+      let color = "";
 
-    if (!color || color === "rgba(0, 0, 0, 0)") {
-      color = themeType === "dark" ? "#111827" : "#ffffff";
-    }
+      if (type === "app") {
+        const layoutEl = document.querySelector('[data-layout="app"]');
+        if (layoutEl) {
+          color = resolveVar("--lt-status-bar", layoutEl);
+        }
+      }
 
-    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "theme-color");
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute("content", color);
+      if (!color || color === "rgba(0, 0, 0, 0)") {
+        color = resolveVar("--background");
+      }
+
+      if (!color || color === "rgba(0, 0, 0, 0)") {
+        color = themeType === "dark" ? "#111827" : "#ffffff";
+      }
+
+      setMetaColor(color);
+    };
+
+    const raf = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(raf);
   }, [themeType, type]);
 
   return null;

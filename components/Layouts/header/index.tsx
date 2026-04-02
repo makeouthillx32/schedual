@@ -16,7 +16,7 @@ export function Header() {
   return (
     <header
       data-layout="dashboard"
-      className="sticky top-0 z-30 flex items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-5 shadow-[var(--shadow-sm)] dark:border-[hsl(var(--sidebar-border))] dark:bg-[hsl(var(--card))] md:px-5 2xl:px-10"
+      className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--lt-border)] bg-[var(--lt-bg)] px-4 py-5 shadow-[var(--lt-shadow)] md:px-5 2xl:px-10"
     >
       <button
         onClick={toggleSidebar}

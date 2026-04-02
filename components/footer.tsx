@@ -105,6 +105,10 @@ const Footer: React.FC = () => {
   const getSections = useMemo(() => {
     const baseSections = [
       {
+        title: "Tools",
+        links: tools.map(({ name, path }) => ({ name, href: path })),
+      },
+      {
         title: "Resources",
         links: [
           { name: "Help Center", href: "/help" },
@@ -127,10 +131,7 @@ const Footer: React.FC = () => {
             { name: userSectionData.dashboardText, href: userSectionData.dashboardHref },
           ],
         },
-        {
-          title: "Tools",
-          links: tools.map(({ name, path }) => ({ name, href: path })),
-        },
+        
         ...baseSections,
       ];
     }

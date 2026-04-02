@@ -30,7 +30,6 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
     };
 
     const run = () => {
-      // Always query the correct layout element — "app" nav or "shop" home header
       const selector = type === "app" ? '[data-layout="app"]' : '[data-layout="shop"]';
       const layoutEl = document.querySelector(selector);
 

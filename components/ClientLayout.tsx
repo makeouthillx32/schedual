@@ -35,9 +35,10 @@ function getCookieConsentVariant(screenSize: 'mobile' | 'tablet' | 'desktop') {
   }
 }
 
-// Mirrors what DashboardThemeColorManager does — watches for mounted
-// [data-layout] elements and reads their actual computed backgroundColor.
-// This is the same technique that works in the dashboard.
+// Single source of truth for iOS status bar color.
+// Reads getComputedStyle(el).backgroundColor from the live [data-layout] header element —
+// same technique DashboardThemeColorManager uses (the one that actually works).
+// MutationObserver re-fires on any class/style change to <html> so theme switches update instantly.
 function useLayoutThemeColor() {
   const pathname = usePathname();
 
@@ -53,7 +54,6 @@ function useLayoutThemeColor() {
     };
 
     const updateColor = () => {
-      // Try app header first, then shop (home), then dashboard
       const el =
         document.querySelector('[data-layout="app"]') ||
         document.querySelector('[data-layout="shop"]') ||
@@ -67,10 +67,8 @@ function useLayoutThemeColor() {
       }
     };
 
-    // Run immediately
     updateColor();
 
-    // Watch for class/theme changes on <html> — same as dashboard
     const observer = new MutationObserver(() => {
       setTimeout(updateColor, 50);
     });
@@ -92,58 +90,33 @@ export default function ClientLayoutWrapper({
   const pathname = usePathname();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-
   const screenSize = useScreenSize();
   const cookieVariant = getCookieConsentVariant(screenSize);
 
   useLayoutThemeColor();
 
   const isHome = pathname === "/";
-  const isToolsPage = pathname.toLowerCase().startsWith("/tools");
-  const isDashboardPage = pathname.toLowerCase().startsWith("/dashboard");
+  const isToolsPage = pathname.startsWith("/Tools");
+  const isDashboardPage = pathname.startsWith("/dashboard");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const theme = localStorage.getItem("theme") || "light";
-      setIsDarkMode(theme === "dark");
+      const savedTheme = localStorage.getItem("theme");
+      setIsDarkMode(savedTheme === "dark");
     }
-  }, [pathname, isDarkMode]);
+  }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const isAuthPage =
-        pathname === "/sign-in" ||
-        pathname === "/sign-up" ||
-        pathname.startsWith("/auth");
-      if (!isAuthPage) {
-        setCookie("lastPage", pathname, { path: "/" });
-      }
-    }
-  }, [pathname]);
+    if (!isFirstLoad) return;
+    setIsFirstLoad(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const isAuthPage =
-      pathname === "/sign-in" ||
-      pathname === "/sign-up" ||
-      pathname.startsWith("/auth");
-
-    if (isAuthPage) return;
-    if (isFirstLoad) { setIsFirstLoad(false); return; }
-
-    analytics.onRouteChange(window.location.href);
-
-    let pageCategory = 'general';
-    if (isHome) pageCategory = 'landing';
-    else if (isToolsPage) pageCategory = 'tools';
-    else if (isDashboardPage) pageCategory = 'dashboard';
+    const pageCategory =
+      isHome ? 'home' :
+      isDashboardPage ? 'dashboard' :
+      isToolsPage ? 'tools' : 'app';
 
     setTimeout(() => {
-      analytics.trackEvent('navigation', {
-        category: 'user_flow',
-        action: 'page_change',
-        label: pageCategory,
+      analytics.trackPageView(pathname, {
         metadata: {
           pathname,
           from: document.referrer || 'direct',
@@ -210,4 +183,34 @@ export default function ClientLayoutWrapper({
       )}
     </>
   );
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100;
+  l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+  else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+  else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+  else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+  else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+  else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+  r = Math.round((r + m) * 255);
+  g = Math.round((g + m) * 255);
+  b = Math.round((b + m) * 255);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+function rgbToHex(rgb: string): string {
+  const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (match) {
+    const r = parseInt(match[1]).toString(16).padStart(2, '0');
+    const g = parseInt(match[2]).toString(16).padStart(2, '0');
+    const b = parseInt(match[3]).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  }
+  return rgb;
 }

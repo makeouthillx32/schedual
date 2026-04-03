@@ -9,9 +9,6 @@ import MobileDrawer from "@/components/home/MobileDrawer";
 import DesktopNav from "@/components/home/DesktopNav";
 
 interface HeaderProps {
-  theme: string;
-  mobileMenuOpen: boolean;
-  setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   navigateTo: (key: string) => (e?: React.MouseEvent) => void;
 }
 
@@ -21,14 +18,16 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   const { themeType } = useTheme();
 
   return (
-    <div className="relative"> {/* Add relative positioning container */}
-      <header data-layout="shop" className="header-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-[var(--lt-border)]">
+    <div className="relative">
+      <header
+        data-layout="shop"
+        className="header-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-[var(--lt-border)]"
+      >
         <div className="header-content">
-          {/* Left: Logo */}
           <div className="header-logo">
-            <a 
-              href="#" 
-              onClick={navigateTo("home")} 
+            <a
+              href="#"
+              onClick={navigateTo("home")}
               className="logo-link focus:ring-primary"
             >
               <img
@@ -43,14 +42,11 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
             </a>
           </div>
 
-          {/* Center: Desktop Nav */}
           <div className="header-nav">
             <DesktopNav navigateTo={navigateTo} />
           </div>
 
-          {/* Right: Auth + Dark mode + Hamburger */}
           <div className="header-actions">
-            {/* Desktop Auth */}
             <div className="header-auth">
               {!session ? (
                 <a
@@ -69,14 +65,12 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
               )}
             </div>
 
-            {/* Theme Switcher */}
             <div className="theme-switcher">
               <SwitchtoDarkMode />
             </div>
 
-            {/* Mobile Hamburger */}
             <button
-              className={`mobile-hamburger text-foreground focus:ring-primary ${
+              className={`mobile-hamburger text-[var(--lt-fg)] focus:ring-primary ${
                 mobileMenuOpen ? "menu-open" : ""
               }`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -92,7 +86,6 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
         </div>
       </header>
 
-      {/* Mobile Drawer - positioned relative to this container */}
       {mobileMenuOpen && (
         <MobileDrawer
           navigateTo={navigateTo}

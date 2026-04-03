@@ -5,10 +5,11 @@ import type { Session, User } from "@supabase/auth-helpers-nextjs";
 import { SessionContextProvider, useSessionContext } from "@supabase/auth-helpers-react";
 import { setCookie, getCookie, iosSessionHelpers } from "@/lib/cookieUtils";
 import { usePathname, useRouter } from "next/navigation";
-import { Theme } from "@/types/theme"; 
+import { Theme } from "@/types/theme";
 import { defaultThemeId, getThemeById, getAvailableThemeIds } from "@/themes";
 import { dynamicFontManager } from "@/lib/dynamicFontManager";
 import { transitionTheme, smoothThemeToggle } from "@/utils/themeTransitions";
+import { SidebarProvider } from "@/components/Layouts/sidebar/sidebar-context";
 
 interface EnhancedThemeContextType {
   themeType: "light" | "dark";
@@ -76,17 +77,20 @@ function InternalAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoading && !session) {
       const publicRoutes = [
-        "/", 
-        "/sign-in", 
-        "/sign-up", 
-        "/forgot-password", 
+        "/",
+        "/sign-in",
+        "/sign-up",
+        "/forgot-password",
         "/reset-password",
         "/CMS",
         "/CMS/schedule"
       ];
-      
-      const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/CMS') || pathname.startsWith('/Tools');
-      
+
+      const isPublicRoute =
+        publicRoutes.includes(pathname) ||
+        pathname.startsWith("/CMS") ||
+        pathname.startsWith("/Tools");
+
       if (!isPublicRoute) {
         router.push("/sign-in");
       }
@@ -115,21 +119,19 @@ export const Providers: React.FC<{
   const [themeId, setThemeIdState] = useState<string>(defaultThemeId);
   const [mounted, setMounted] = useState(false);
   const [availableThemes, setAvailableThemes] = useState<string[]>([]);
-  
+
   const getTheme = async (id?: string): Promise<Theme | null> => {
     const targetId = id || themeId;
     try {
       const theme = await getThemeById(targetId);
-      if (!theme) {
-        return await getThemeById(defaultThemeId);
-      }
+      if (!theme) return await getThemeById(defaultThemeId);
       return theme;
     } catch (error) {
       console.error(`❌ Error getting theme ${targetId}:`, error);
       return await getThemeById(defaultThemeId);
     }
   };
-  
+
   const setThemeId = async (id: string, element?: HTMLElement) => {
     const themeChangeCallback = async () => {
       try {
@@ -173,25 +175,20 @@ export const Providers: React.FC<{
         setAvailableThemes([defaultThemeId]);
       }
     };
-    
     loadAvailableThemes();
   }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setMounted(true);
-      
+
       const initializeTheme = async () => {
         const savedThemeId = localStorage.getItem("themeId") || getCookie("themeId");
         if (savedThemeId) {
           const theme = await getThemeById(savedThemeId);
-          if (theme) {
-            setThemeIdState(savedThemeId);
-          } else {
-            setThemeIdState(defaultThemeId);
-          }
+          setThemeIdState(theme ? savedThemeId : defaultThemeId);
         }
-        
+
         const savedThemeType = localStorage.getItem("theme") || getCookie("theme");
         if (!savedThemeType) {
           const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -200,44 +197,43 @@ export const Providers: React.FC<{
           setThemeType(savedThemeType as "light" | "dark");
         }
       };
-      
+
       initializeTheme();
     }
   }, []);
 
   useEffect(() => {
     if (!mounted || availableThemes.length === 0) return;
-    
+
     const applyTheme = async () => {
       try {
         const theme = await getTheme();
         if (!theme) return;
-        
+
         const variables = themeType === "dark" ? theme.dark : theme.light;
         const html = document.documentElement;
-        
+
         html.classList.remove("light", "dark");
-        availableThemes.forEach(id => html.classList.remove(`theme-${id}`));
+        availableThemes.forEach((id) => html.classList.remove(`theme-${id}`));
         html.classList.add(themeType);
         html.classList.add(`theme-${themeId}`);
-        
+
         for (const [key, value] of Object.entries(variables)) {
           html.style.setProperty(key, value);
         }
-        
+
         try {
           await dynamicFontManager.autoLoadFontsFromCSS();
         } catch (error) {
-          console.error('❌ Failed to auto-load fonts:', error);
+          console.error("❌ Failed to auto-load fonts:", error);
         }
-        
+
         if (theme.typography?.trackingNormal) {
           document.body.style.letterSpacing = theme.typography.trackingNormal;
         }
-        
+
         localStorage.setItem("theme", themeType);
         setCookie("theme", themeType, { path: "/", maxAge: 31536000 });
-        
       } catch (error) {
         console.error("❌ Error applying theme:", error);
       }
@@ -254,15 +250,12 @@ export const Providers: React.FC<{
   return (
     <SessionContextProvider supabaseClient={supabase} initialSession={session}>
       <InternalAuthProvider>
-        <ThemeContext.Provider value={{ 
-          themeType, 
-          toggleTheme,
-          themeId,
-          setThemeId,
-          getTheme,
-          availableThemes
-        }}>
-          {children}
+        <ThemeContext.Provider
+          value={{ themeType, toggleTheme, themeId, setThemeId, getTheme, availableThemes }}
+        >
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
         </ThemeContext.Provider>
       </InternalAuthProvider>
     </SessionContextProvider>

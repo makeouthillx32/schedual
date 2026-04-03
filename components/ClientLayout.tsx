@@ -35,7 +35,11 @@ function getCookieConsentVariant(s: "mobile" | "tablet" | "desktop") {
 
 function useLayoutThemeColor() {
   const pathname = usePathname();
+
   useEffect(() => {
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const setMetaColor = (color: string) => {
       let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
       if (!meta) {
@@ -46,27 +50,54 @@ function useLayoutThemeColor() {
       meta.setAttribute("content", color);
     };
 
-    const updateColor = () => {
+    const updateColor = (retries = 0) => {
       const el =
         document.querySelector('[data-layout="app"]') ||
         document.querySelector('[data-layout="shop"]') ||
         document.querySelector('[data-layout="dashboard"]');
-      if (!el) return;
+
+      if (!el) {
+        // Element not in DOM yet — retry up to 20 times (1 second total)
+        if (retries < 20) {
+          retryTimeout = setTimeout(() => updateColor(retries + 1), 50);
+        }
+        return;
+      }
+
       const bg = getComputedStyle(el).backgroundColor;
       if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-        setMetaColor(bg);
+        // Convert rgb(...) → #rrggbb for maximum iOS compatibility
+        setMetaColor(rgbToHex(bg));
       }
     };
 
     updateColor();
 
-    const observer = new MutationObserver(() => setTimeout(updateColor, 50));
+    // Debounced handler — childList+subtree fires many times per React render;
+    // debouncing at one animation frame collapses those into a single call.
+    const debouncedUpdate = () => {
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+      if (retryTimeout) clearTimeout(retryTimeout);
+      debounceTimeout = setTimeout(() => updateColor(), 16);
+    };
+
+    const observer = new MutationObserver(debouncedUpdate);
+
+    // Watch for BOTH attribute changes (theme toggle) AND DOM insertions
+    // (new page content with [data-layout] elements being mounted).
+    // Without childList+subtree the observer never fires on navigation.
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class", "data-theme", "style"],
+      childList: true,
+      subtree: true,
     });
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
   }, [pathname]);
 }
 
@@ -153,8 +184,8 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
           screenSize === "mobile"
             ? "We use cookies to enhance your experience. Essential cookies are required for functionality."
             : screenSize === "tablet"
-            ? "We use cookies to enhance your experience and analyze usage. Essential cookies required."
-            : "We use cookies to enhance your experience, analyze site usage, and improve our services. Essential cookies are required for basic functionality."
+              ? "We use cookies to enhance your experience and analyze usage. Essential cookies required."
+              : "We use cookies to enhance your experience, analyze site usage, and improve our services. Essential cookies are required for basic functionality."
         }
         learnMoreHref="/privacy-policy"
         onAcceptCallback={(p) => console.log("✅ Cookies accepted:", p)}

@@ -9,12 +9,9 @@ import type { Metadata } from "next";
 import ClientLayoutWrapper from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
-  // themeColor sets <meta name="theme-color"> in Next.js SSR output.
-  // Must match --gp-bg in layout-tokens.css (hsl(var(--destructive)) = terracotta red).
-  // JS in ClientLayout.tsx overrides this at runtime for theme changes.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ef4444" },
-    { media: "(prefers-color-scheme: dark)", color: "#ef4444" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   title: {
     template: '%s | Desert Area Resources and Training',

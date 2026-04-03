@@ -64,8 +64,8 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
         return;
       }
 
-      // Final fallback — use the known brand color
-      setMetaColor(themeType === "dark" ? "#ef4444" : "#ef4444");
+      // Final fallback — use the system background defaults
+      setMetaColor(themeType === "dark" ? "#111827" : "#ffffff");
     };
 
     // rAF ensures the DOM has painted before we read computed styles

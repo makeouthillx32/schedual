@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "CMS Schedule | Commercial Services",
   description: "View and manage your cleaning schedules with the CMS tool.",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ef4444" },
-    { media: "(prefers-color-scheme: dark)", color: "#ef4444" },
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
   ],
 };

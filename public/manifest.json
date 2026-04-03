@@ -4,8 +4,8 @@
   "description": "Desert Area Resources and Training",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ef4444",
-  "theme_color": "#ef4444",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
     {

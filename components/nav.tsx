@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import React from "react";
 import { useTheme } from "@/app/provider";
-import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
-import { CustomDropdown } from "@/components/CustomDropdown";
+import Link from "next/link";
+import SwitchtoDarkMode from "./SwitchtoDarkMode";
+import { CustomDropdown } from "@/components/Layouts/appheader/dropdown-menu";
 import { Notification } from "@/components/Layouts/header/notification";
 import PushPermissionBanner from "@/components/PushPermissionBanner";
 
@@ -19,6 +20,7 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
       data-layout="app"
       className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[var(--lt-bg)] text-[var(--lt-fg)] shadow-[var(--lt-shadow)]"
     >
+      {/* Left: logo + page title */}
       <div className="flex items-center gap-3 min-w-0">
         <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
           <img
@@ -38,10 +40,18 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
         )}
       </div>
 
+      {/* Right: push banner + notification bell + theme toggle + menu */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Push permission banner — only visible when not yet subscribed */}
         <PushPermissionBanner />
+
+        {/* Notification bell — messages only on app pages */}
         <Notification messagesOnly />
+
+        {/* Theme toggle */}
         <SwitchtoDarkMode />
+
+        {/* Hamburger dropdown */}
         <div className="relative z-10">
           <CustomDropdown />
         </div>

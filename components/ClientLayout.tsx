@@ -33,73 +33,7 @@ function getCookieConsentVariant(s: "mobile" | "tablet" | "desktop") {
   return "default";
 }
 
-function useLayoutThemeColor() {
-  const pathname = usePathname();
 
-  useEffect(() => {
-    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
-    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
-
-    const setMetaColor = (color: string) => {
-      let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-      if (!meta) {
-        meta = document.createElement("meta");
-        meta.setAttribute("name", "theme-color");
-        document.head.appendChild(meta);
-      }
-      meta.setAttribute("content", color);
-    };
-
-    const updateColor = (retries = 0) => {
-      const el =
-        document.querySelector('[data-layout="app"]') ||
-        document.querySelector('[data-layout="shop"]') ||
-        document.querySelector('[data-layout="dashboard"]');
-
-      if (!el) {
-        // Element not in DOM yet — retry up to 20 times (1 second total)
-        if (retries < 20) {
-          retryTimeout = setTimeout(() => updateColor(retries + 1), 50);
-        }
-        return;
-      }
-
-      const bg = getComputedStyle(el).backgroundColor;
-      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-        // Convert rgb(...) → #rrggbb for maximum iOS compatibility
-        setMetaColor(rgbToHex(bg));
-      }
-    };
-
-    updateColor();
-
-    // Debounced handler — childList+subtree fires many times per React render;
-    // debouncing at one animation frame collapses those into a single call.
-    const debouncedUpdate = () => {
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-      if (retryTimeout) clearTimeout(retryTimeout);
-      debounceTimeout = setTimeout(() => updateColor(), 16);
-    };
-
-    const observer = new MutationObserver(debouncedUpdate);
-
-    // Watch for BOTH attribute changes (theme toggle) AND DOM insertions
-    // (new page content with [data-layout] elements being mounted).
-    // Without childList+subtree the observer never fires on navigation.
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "data-theme", "style"],
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-      if (retryTimeout) clearTimeout(retryTimeout);
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-    };
-  }, [pathname]);
-}
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -108,7 +42,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   const screenSize = useScreenSize();
   const cookieVariant = getCookieConsentVariant(screenSize);
 
-  useLayoutThemeColor();
+
 
   const isHome = pathname === "/";
   const isToolsPage = pathname.startsWith("/Tools");
@@ -199,21 +133,3 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
   );
 }
 
-function hslToHex(h: number, s: number, l: number): string {
-  s /= 100; l /= 100;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-  const m = l - c / 2;
-  let r = 0, g = 0, b = 0;
-  if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; }
-  else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; }
-  else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
-  r = Math.round((r + m) * 255); g = Math.round((g + m) * 255); b = Math.round((b + m) * 255);
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-}
-
-function rgbToHex(rgb: string): string {
-  const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (match) return `#${parseInt(match[1]).toString(16).padStart(2, "0")}${parseInt(match[2]).toString(16).padStart(2, "0")}${parseInt(match[3]).toString(16).padStart(2, "0")}`;
-  return rgb;
-}

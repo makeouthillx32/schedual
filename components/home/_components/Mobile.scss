@@ -21,7 +21,8 @@
   visibility: hidden;
 
   /* Ensure smooth transitions */
-  transition: none; /* Let animations handle this */
+  transition: none;
+  /* Let animations handle this */
 }
 
 /* Mobile menu container structure */
@@ -137,11 +138,7 @@
 
 /* ONLY target the home page header with .header-container class */
 .header-container {
-  /* ✅ FIXED: Use layout token instead of hardcoded hsl(var(--background))
-   * This ensures the iOS status bar color matches whatever layout-tokens.css
-   * has set for --lt-bg on this element's [data-layout] ancestor.
-   * Falls back to --gp-bg (which equals background) if no layout token set. */
-  background: var(--lt-bg, var(--gp-bg, hsl(var(--background)))) !important;
+
 
   /* Prevent any backdrop effects */
   backdrop-filter: none !important;
@@ -191,10 +188,10 @@
 
 /* ========== MOBILE SPECIFIC OVERRIDES - HOME PAGE ONLY ========== */
 @media (max-width: 768px) {
+
   /* ONLY protect home page header - be very specific */
   .header-container {
-    /* ✅ FIXED: Use layout token instead of hardcoded background */
-    background: var(--lt-bg, var(--gp-bg, hsl(var(--background)))) !important;
+
 
     /* No backdrop effects whatsoever */
     backdrop-filter: none !important;

@@ -129,9 +129,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
     setIsFirstLoad(false);
     const pageCategory = isHome ? "home" : isDashboardPage ? "dashboard" : isToolsPage ? "tools" : "app";
     setTimeout(() => {
-      analytics.trackPageView(pathname, {
-        metadata: { pathname, from: document.referrer || "direct", pageType: pageCategory, timestamp: Date.now() },
-      });
+      analytics.trackPageView(pathname);
     }, 100);
   }, [pathname, isHome, isToolsPage, isDashboardPage, isFirstLoad]);
 
@@ -215,7 +213,7 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 function rgbToHex(rgb: string): string {
-  const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (match) return `#${parseInt(match[1]).toString(16).padStart(2, "0")}${parseInt(match[2]).toString(16).padStart(2, "0")}${parseInt(match[3]).toString(16).padStart(2, "0")}`;
   return rgb;
 }

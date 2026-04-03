@@ -33,11 +33,13 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
       const selector = type === "app" ? '[data-layout="app"]' : '[data-layout="shop"]';
       const layoutEl = document.querySelector(selector);
 
-      let color = "";
-
-      if (layoutEl) {
-        color = resolveVar("--lt-status-bar", layoutEl);
+      // If the layout element isn't in the DOM yet, retry until it is
+      if (!layoutEl) {
+        const id = setTimeout(run, 50);
+        return () => clearTimeout(id);
       }
+
+      let color = resolveVar("--lt-status-bar", layoutEl);
 
       if (!color || color === "rgba(0, 0, 0, 0)") {
         color = resolveVar("--background");

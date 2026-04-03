@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   // Must match --gp-bg in layout-tokens.css (hsl(var(--destructive)) = terracotta red).
   // JS in ClientLayout.tsx overrides this at runtime for theme changes.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f25a5a" },
-    { media: "(prefers-color-scheme: dark)", color: "#f25a5a" },
+    { media: "(prefers-color-scheme: light)", color: "#ef4444" },
+    { media: "(prefers-color-scheme: dark)", color: "#ef4444" },
   ],
   title: {
     template: '%s | Desert Area Resources and Training',

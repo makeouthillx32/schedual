@@ -1,53 +1,107 @@
 "use client";
 
-import Link from "next/link";
+import React, { useState } from "react";
+import { Menu, X } from "lucide-react";
 import { useTheme } from "@/app/provider";
 import SwitchtoDarkMode from "@/components/SwitchtoDarkMode";
-import { CustomDropdown } from "@/components/CustomDropdown";
-import { Notification } from "@/components/Layouts/header/notification";
-import PushPermissionBanner from "@/components/PushPermissionBanner";
+import useLoginSession from "@/lib/useLoginSession";
+import MobileDrawer from "@/components/home/MobileDrawer";
+import DesktopNav from "@/components/home/DesktopNav";
 
-interface NavProps {
-  pageTitle?: string;
+interface HeaderProps {
+  theme: string;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  navigateTo: (key: string) => (e?: React.MouseEvent) => void;
 }
 
-const Nav: React.FC<NavProps> = ({ pageTitle }) => {
+const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
+  const session = useLoginSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { themeType } = useTheme();
 
   return (
-    <nav
-      data-layout="app"
-      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[var(--lt-bg)] text-[var(--lt-fg)] shadow-[var(--lt-shadow)]"
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">
-          <img
-            src={
-              themeType === "dark"
-                ? "/images/home/dartlogowhite.svg"
-                : "/images/home/dartlogo.svg"
-            }
-            alt="DART Logo"
-            className="h-10 w-auto cursor-pointer"
-          />
-        </Link>
-        {pageTitle && (
-          <h1 className="text-lg font-medium font-[var(--font-sans)] truncate">
-            {pageTitle}
-          </h1>
-        )}
-      </div>
+    <div className="relative"> {/* Add relative positioning container */}
+      <header data-layout="shop" className="header-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-[var(--lt-border)]">
+        <div className="header-content">
+          {/* Left: Logo */}
+          <div className="header-logo">
+            <a 
+              href="#" 
+              onClick={navigateTo("home")} 
+              className="logo-link focus:ring-primary"
+            >
+              <img
+                src={
+                  themeType === "dark"
+                    ? "/images/home/dartlogowhite.svg"
+                    : "/images/home/dartlogo.svg"
+                }
+                alt="DART Logo"
+                className="logo-image"
+              />
+            </a>
+          </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <PushPermissionBanner />
-        <Notification messagesOnly />
-        <SwitchtoDarkMode />
-        <div className="relative z-10">
-          <CustomDropdown />
+          {/* Center: Desktop Nav */}
+          <div className="header-nav">
+            <DesktopNav navigateTo={navigateTo} />
+          </div>
+
+          {/* Right: Auth + Dark mode + Hamburger */}
+          <div className="header-actions">
+            {/* Desktop Auth */}
+            <div className="header-auth">
+              {!session ? (
+                <a
+                  href="/sign-in"
+                  className="auth-button text-accent hover:text-accent focus:ring-accent"
+                >
+                  Sign In
+                </a>
+              ) : (
+                <button
+                  onClick={() => (window.location.href = "/auth/logout")}
+                  className="auth-button text-destructive hover:text-destructive focus:ring-destructive"
+                >
+                  Log Out
+                </button>
+              )}
+            </div>
+
+            {/* Theme Switcher */}
+            <div className="theme-switcher">
+              <SwitchtoDarkMode />
+            </div>
+
+            {/* Mobile Hamburger */}
+            <button
+              className={`mobile-hamburger text-foreground focus:ring-primary ${
+                mobileMenuOpen ? "menu-open" : ""
+              }`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? (
+                <X className="hamburger-icon" />
+              ) : (
+                <Menu className="hamburger-icon" />
+              )}
+            </button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </header>
+
+      {/* Mobile Drawer - positioned relative to this container */}
+      {mobileMenuOpen && (
+        <MobileDrawer
+          navigateTo={navigateTo}
+          session={session}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      )}
+    </div>
   );
 };
 
-export default Nav;
+export default Header;

@@ -1,10 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/app/provider";
+
+/** rgb(r, g, b) → #rrggbb — iOS Safari needs hex for theme-color */
+function rgbToHex(rgb: string): string {
+  const m = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (!m) return rgb;
+  return (
+    "#" +
+    [m[1], m[2], m[3]]
+      .map((v) => parseInt(v).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
 
 export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
   const { themeType } = useTheme();
+  const pathname = usePathname();
 
   useEffect(() => {
     const setMetaColor = (color: string) => {
@@ -20,9 +34,11 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
     };
 
     const run = () => {
-      const selector =
-        type === "app" ? '[data-layout="app"]' : '[data-layout="shop"]';
-      const layoutEl = document.querySelector(selector);
+      // Try all layout types so this works regardless of which header is present
+      const layoutEl =
+        document.querySelector('[data-layout="app"]') ||
+        document.querySelector('[data-layout="shop"]') ||
+        document.querySelector('[data-layout="dashboard"]');
 
       if (!layoutEl) {
         // Element not mounted yet — retry in 50ms
@@ -36,25 +52,26 @@ export default function MetaThemeColor({ type }: { type: "home" | "app" }) {
       const bg = getComputedStyle(layoutEl).backgroundColor;
 
       if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") {
-        setMetaColor(bg);
+        // iOS Safari requires hex format — rgb() is not reliably honored
+        setMetaColor(rgbToHex(bg));
         return;
       }
 
       // Element has transparent bg — fall back to body
       const bodyBg = getComputedStyle(document.body).backgroundColor;
       if (bodyBg && bodyBg !== "rgba(0, 0, 0, 0)") {
-        setMetaColor(bodyBg);
+        setMetaColor(rgbToHex(bodyBg));
         return;
       }
 
-      // Final fallback
-      setMetaColor(themeType === "dark" ? "#111827" : "#ffffff");
+      // Final fallback — use the known brand color
+      setMetaColor(themeType === "dark" ? "#ef4444" : "#ef4444");
     };
 
     // rAF ensures the DOM has painted before we read computed styles
     const raf = requestAnimationFrame(run);
     return () => cancelAnimationFrame(raf);
-  }, [themeType, type]);
+  }, [themeType, type, pathname]);
 
   return null;
 }

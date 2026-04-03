@@ -1,5 +1,6 @@
 // app/page.tsx
 import Home from "@/components/home/Home";
+import MetaThemeColor from "@/components/MetaThemeColor";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <div>
+      <MetaThemeColor type="home" />
       <Home />
     </div>
   );

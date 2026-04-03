@@ -1,5 +1,5 @@
 // This script runs outside of React to fix iOS Chromium status bar issues
-;(() => {
+; (() => {
   // Only run in browsers
   if (typeof window === "undefined" || typeof document === "undefined") return
 
@@ -31,7 +31,7 @@
     const appleMeta =
       document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]') || document.createElement("meta")
     appleMeta.name = "apple-mobile-web-app-status-bar-style"
-    appleMeta.content = "black-translucent" // This forces iOS to use our color
+    appleMeta.content = "default" // "default" lets iOS honor the theme-color meta tag. "black-translucent" overrides it entirely.
 
     if (!appleMeta.parentNode) {
       document.head.appendChild(appleMeta)

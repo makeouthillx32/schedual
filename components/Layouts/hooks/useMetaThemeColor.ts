@@ -67,7 +67,7 @@ export function useMetaThemeColor(layout: MetaLayout, themeType: "light" | "dark
 
         observer.observe(document.documentElement, {
             attributes: true,
-            attributeFilter: ["class"],
+            attributeFilter: ["class", "style"],
         });
 
         return () => {

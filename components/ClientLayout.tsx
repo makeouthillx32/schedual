@@ -9,7 +9,8 @@ import { Header } from "@/components/Layouts/header";
 import AccessibilityOverlay from "@/components/theme/accessibility";
 import { CookieConsent } from "@/components/CookieConsent";
 import analytics from "@/lib/analytics";
-import { setCookie } from "@/lib/cookieUtils";
+import { useTheme } from "@/app/provider";
+import { useMetaThemeColor } from "@/components/Layouts/hooks/useMetaThemeColor";
 
 function useScreenSize() {
   const [screenSize, setScreenSize] = useState<"mobile" | "tablet" | "desktop">("desktop");
@@ -33,16 +34,12 @@ function getCookieConsentVariant(s: "mobile" | "tablet" | "desktop") {
   return "default";
 }
 
-
-
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { themeType } = useTheme();
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const screenSize = useScreenSize();
   const cookieVariant = getCookieConsentVariant(screenSize);
-
-
 
   const isHome = pathname === "/";
   const isToolsPage = pathname.startsWith("/Tools");
@@ -52,11 +49,11 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
     pathname === "/sign-in" ||
     pathname === "/sign-up";
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsDarkMode(localStorage.getItem("theme") === "dark");
-    }
-  }, []);
+  // Determine which layout's header is visible so the hook targets the right element
+  const metaLayout = isDashboardPage ? "dashboard" : isHome ? "shop" : "app";
+
+  // Single source of truth for iOS status bar — matches DCG architecture
+  useMetaThemeColor(metaLayout, themeType);
 
   useEffect(() => {
     if (!isFirstLoad) return;
@@ -76,15 +73,6 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
       };
     }
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.body.className = `min-h-screen font-[var(--font-sans)] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]`;
-      const html = document.documentElement;
-      if (isDarkMode) html.classList.add("dark");
-      else html.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   if (isDashboardPage) {
     return (
@@ -132,4 +120,3 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
     </>
   );
 }
-

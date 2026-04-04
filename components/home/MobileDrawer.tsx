@@ -71,21 +71,21 @@ export default function MobileDrawer({
         WebkitBackdropFilter: 'none'
       }}
     >
-      <div className="mobile-menu-container bg-background border-b border-border shadow-lg rounded-b-xl">
+      <div className="mobile-menu-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-b border-[var(--lt-border)] shadow-lg rounded-b-xl">
         {navTree.map((node) => (
           <div key={node.key}>
-            <div className="mobile-menu-item text-foreground hover:bg-secondary">
+            <div className="mobile-menu-item text-[var(--lt-fg)] hover:bg-secondary">
               <a
                 href="#"
                 onClick={handleClickAndClose(node.key)}
-                className="menu-link focus:outline-none text-foreground no-underline"
+                className="menu-link focus:outline-none text-[var(--lt-fg)] no-underline"
               >
                 {node.label}
               </a>
               {node.children ? (
                 <button
                   onClick={() => toggleExpand(node.key)}
-                  className="menu-toggle text-foreground"
+                  className="menu-toggle text-[var(--lt-fg)]"
                   aria-label={`Toggle ${node.label}`}
                 >
                   {expanded === node.key ? (
@@ -103,13 +103,13 @@ export default function MobileDrawer({
             </div>
 
             {node.children && expanded === node.key && (
-              <div className="mobile-submenu bg-background">
+              <div className="mobile-submenu bg-[var(--lt-bg)]">
                 {node.children.map((child) => (
                   <a
                     key={child.key}
                     href="#"
                     onClick={handleClickAndClose(child.key)}
-                    className="submenu-link text-foreground hover:bg-secondary no-underline"
+                    className="submenu-link text-[var(--lt-fg)] hover:bg-secondary no-underline"
                   >
                     {child.label}
                   </a>
@@ -119,7 +119,7 @@ export default function MobileDrawer({
           </div>
         ))}
 
-        <div className="mobile-auth-section border-t border-border bg-background">
+        <div className="mobile-auth-section border-t border-[var(--lt-border)] bg-[var(--lt-bg)]">
           {!session ? (
             <a
               href="/sign-in"

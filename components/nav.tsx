@@ -18,7 +18,7 @@ const Nav: React.FC<NavProps> = ({ pageTitle }) => {
   return (
     <nav
       data-layout="app"
-      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[var(--lt-bg)] text-[var(--lt-fg)] shadow-[var(--lt-shadow)]"
+      className="flex justify-between items-center px-4 py-3 transition-colors gap-2 bg-[var(--lt-bg)] text-[var(--lt-fg)] shadow-[var(--lt-shadow)] border-b border-[var(--lt-border)]"
     >
       <div className="flex items-center gap-3 min-w-0">
         <Link href="/" className="flex-shrink-0 hover:opacity-80 transition-opacity">

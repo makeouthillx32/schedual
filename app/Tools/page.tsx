@@ -1,6 +1,5 @@
 "use client";
 
-import MetaThemeColor from "@/components/MetaThemeColor";
 import Nav from "@/components/nav";
 import { tools } from "@/lib/toolsConfig";
 import Link from "next/link";
@@ -12,16 +11,14 @@ export default function ToolsPage() {
 
   return (
     <>
-      <MetaThemeColor type="app" />
       <Nav pageTitle="Tools" />
       <div className="min-h-screen bg-[hsl(var(--background))]">
         <div className="max-w-2xl mx-auto px-3 pt-5 pb-16 space-y-3">
           {tools.map((tool) => (
             <Link key={tool.path} href={tool.path} className="block">
               <div
-                className={`p-4 rounded-[var(--radius)] border transition-colors hover:border-[hsl(var(--sidebar-primary))] ${
-                  isDark ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--background))]"
-                } border-[hsl(var(--border))]`}
+                className={`p-4 rounded-[var(--radius)] border transition-colors hover:border-[hsl(var(--sidebar-primary))] ${isDark ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--background))]"
+                  } border-[hsl(var(--border))]`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{tool.icon}</span>

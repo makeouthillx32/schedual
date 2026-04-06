@@ -2,7 +2,7 @@
 //
 // Called by pg_cron every 15 minutes.
 // For each pending order scheduled within the next 2 hours:
-//   1. Calls Mapbox Directions API to get live drive time from thrift shop
+//   1. Calls Mapbox Directions API to get live drive time from thrift home
 //   2. Calculates notify_at = scheduled_time - drive_minutes - buffer
 //   3. If it's time to notify, inserts into notifications table + marks notified
 //

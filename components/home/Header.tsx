@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
   return (
     <div className="relative">
       <header
-        data-layout="shop"
+        data-layout="home"
         className="header-container bg-[var(--lt-bg)] text-[var(--lt-fg)] border-[var(--lt-border)]"
       >
         <div className="header-content">

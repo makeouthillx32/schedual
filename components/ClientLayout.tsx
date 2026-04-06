@@ -50,7 +50,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
     pathname === "/sign-up";
 
   // Determine which layout's header is visible so the hook targets the right element
-  const metaLayout = isDashboardPage ? "dashboard" : isHome ? "shop" : "app";
+  const metaLayout = isDashboardPage ? "dashboard" : isHome ? "home" : "app";
 
   // Single source of truth for iOS status bar — matches DCG architecture
   useMetaThemeColor(metaLayout, themeType);

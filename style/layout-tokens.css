@@ -26,8 +26,8 @@
 }
 
 /* ─── SHOP HEADER ─────────────────────────────────────── */
-[data-layout="shop"],
-:is([data-layout]) [data-layout="shop"] {
+[data-layout="home"],
+:is([data-layout]) [data-layout="home"] {
   --lt-bg:         var(--gp-bg);
   --lt-fg:         var(--gp-fg);
   --lt-border:     var(--gp-border);
@@ -35,8 +35,8 @@
   --lt-status-bar: var(--gp-bg); /* ✅ ALWAYS matches background */
 }
 
-.dark [data-layout="shop"],
-.dark :is([data-layout]) [data-layout="shop"] {
+.dark [data-layout="home"],
+.dark :is([data-layout]) [data-layout="home"] {
   --lt-bg:         var(--gp-bg);
   --lt-fg:         var(--gp-fg);
   --lt-border:     var(--gp-border);

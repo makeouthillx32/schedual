@@ -2,7 +2,7 @@
 
 import { useLayoutEffect } from "react";
 
-export type MetaLayout = "shop" | "dashboard" | "app";
+export type MetaLayout = "home" | "dashboard" | "app";
 
 export function useMetaThemeColor(layout: MetaLayout, themeType: "light" | "dark") {
     useLayoutEffect(() => {

@@ -1,18 +1,11 @@
 // app/layout.tsx
 import { Providers } from "./provider";
-import Nav from "@/components/nav";
-import Footer from "@/components/footer";
-import AccessibilityOverlay from "@/components/theme/accessibility";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 import type { Metadata } from "next";
 import ClientLayoutWrapper from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
   title: {
     template: '%s | Desert Area Resources and Training',
     default: 'Desert Area Resources and Training - Disability Services & Support Organization in Ridgecrest California, 93555',
@@ -73,11 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* theme-color is set via metadata.themeColor above — no manual tag needed */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="format-detection" content="telephone=no" />
 
-        {/* Favicon — NO manifest link here. Each mini-app layout declares its own. */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
@@ -119,7 +110,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen font-[var(--font-sans)]">
-        {/* Registers /sw.js on every page so push subscriptions work app-wide */}
         <ServiceWorkerRegistration />
         <Providers>
           <ClientLayoutWrapper>

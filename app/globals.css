@@ -148,10 +148,9 @@
 }
 
 /* ── Base body styles ────────────────────────────────────────
- * NOTE: Do NOT use !important here.
- * layout-tokens.css scoped to [data-layout] elements overrides
- * these for headers/sidebars/footers via higher specificity.
- * The body background is intentionally a low-specificity fallback.
+ * html and body background use --gp-bg so the iOS overscroll
+ * rubber-band area matches the header color, not --background.
+ * This is what makes the iOS status bar read the correct color.
  * ──────────────────────────────────────────────────────────── */
 html,
 body {
@@ -161,10 +160,11 @@ body {
   height: 100%;
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
+  background-color: hsl(var(--gp-bg));
 }
 
 body {
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--gp-bg));
 }
 
 /* ── Form & input styling ──────────────────────────────────── */

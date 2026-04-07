@@ -10,19 +10,19 @@
  */
 
 :root {
-  --gp-bg:         hsl(var(--destructive));
-  --gp-fg:         hsl(var(--destructive-foreground));
-  --gp-border:     hsl(var(--destructive));
+  --gp-bg:         hsl(var(--muted));
+  --gp-fg:         hsl(var(--foreground));
+  --gp-border:     hsl(var(--border));
   --gp-shadow:     var(--shadow-sm);
-  --gp-status-bar: hsl(var(--destructive));
+  --gp-status-bar: hsl(var(--muted));
 }
 
 .dark {
-  --gp-bg:         hsl(var(--destructive));
-  --gp-fg:         hsl(var(--destructive-foreground));
-  --gp-border:     hsl(var(--destructive));
+  --gp-bg:         hsl(var(--card));
+  --gp-fg:         hsl(var(--card-foreground));
+  --gp-border:     hsl(var(--border));
   --gp-shadow:     var(--shadow-md);
-  --gp-status-bar: hsl(var(--destructive));
+  --gp-status-bar: hsl(var(--card));
 }
 
 /* ─── SHOP HEADER ─────────────────────────────────────── */

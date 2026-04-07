@@ -16,38 +16,38 @@
 @layer base {
   /* ——— App theme ——— */
   :root {
-    --background: 39.13 55.56% 98.04%;
-    --foreground: 27.27 19.05% 16.47%;
+    --background: 240 9.09% 97.84%;
+    --foreground: 0 0% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 27.27 19.05% 16.47%;
+    --card-foreground: 0 0% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 27.27 19.05% 16.47%;
-    --primary: 27.27 96.97% 61.18%;
+    --popover-foreground: 0 0% 20%;
+    --primary: 139.66 52.73% 43.14%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 100% 90%;
-    --secondary-foreground: 27.27 19.05% 16.47%;
-    --muted: 39.13 33.33% 93.73%;
-    --muted-foreground: 0 0% 45.49%;
-    --accent: 30 100% 95%;
-    --accent-foreground: 27.27 19.05% 16.47%;
+    --secondary: 218.54 79.19% 66.08%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 50.40 26.88% 81.76%;
+    --muted-foreground: 0 0% 43.14%;
+    --accent: 189.64 81.07% 66.86%;
+    --accent-foreground: 0 0% 20%;
     --destructive: 0 84.24% 60.20%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 20% 88.24%;
-    --input: 30 20% 88.24%;
-    --ring: 27.27 96.97% 61.18%;
-    --chart-1: 27.27 96.97% 61.18%;
-    --chart-2: 30 100% 70%;
-    --chart-3: 20 100% 70%;
-    --chart-4: 35 100% 65%;
-    --chart-5: 15 90% 60%;
-    --sidebar: 39.13 55.56% 98.04%;
-    --sidebar-foreground: 27.27 19.05% 16.47%;
-    --sidebar-primary: 27.27 96.97% 61.18%;
+    --border: 0 0% 83.14%;
+    --input: 0 0% 83.14%;
+    --ring: 139.66 52.73% 43.14%;
+    --chart-1: 139.66 52.73% 43.14%;
+    --chart-2: 218.54 79.19% 66.08%;
+    --chart-3: 189.64 81.07% 66.86%;
+    --chart-4: 207.27 44% 49.02%;
+    --chart-5: 138.87 70.45% 34.51%;
+    --sidebar: 240 9.09% 97.84%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 139.66 52.73% 43.14%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 100% 95%;
-    --sidebar-accent-foreground: 27.27 19.05% 16.47%;
-    --sidebar-border: 30 20% 88.24%;
-    --sidebar-ring: 27.27 96.97% 61.18%;
+    --sidebar-accent: 189.64 81.07% 66.86%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 83.14%;
+    --sidebar-ring: 139.66 52.73% 43.14%;
     --font-sans: Plus Jakarta Sans, sans-serif;
     --font-serif: Source Serif 4, serif;
     --font-mono: JetBrains Mono, monospace;
@@ -67,38 +67,38 @@
   }
 
   .dark {
-    --background: 20 14.29% 10.20%;
-    --foreground: 30 20% 90%;
-    --card: 20 14.29% 15%;
-    --card-foreground: 30 20% 90%;
-    --popover: 20 14.29% 15%;
-    --popover-foreground: 30 20% 90%;
-    --primary: 27.27 96.97% 61.18%;
+    --background: 220.00 14.75% 11.96%;
+    --foreground: 0 0% 89.80%;
+    --card: 197.14 6.93% 19.80%;
+    --card-foreground: 0 0% 89.80%;
+    --popover: 197.14 6.93% 19.80%;
+    --popover-foreground: 0 0% 89.80%;
+    --primary: 139.66 52.73% 43.14%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 20 20% 20%;
-    --secondary-foreground: 30 20% 90%;
-    --muted: 20 14.29% 20%;
-    --muted-foreground: 30 10% 60%;
-    --accent: 20 20% 25%;
-    --accent-foreground: 30 20% 90%;
+    --secondary: 207.27 44% 49.02%;
+    --secondary-foreground: 0 0% 89.80%;
+    --muted: 0 0% 26.67%;
+    --muted-foreground: 0 0% 63.92%;
+    --accent: 218.54 79.19% 66.08%;
+    --accent-foreground: 0 0% 89.80%;
     --destructive: 0 84.24% 60.20%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 14.29% 25%;
-    --input: 20 14.29% 25%;
-    --ring: 27.27 96.97% 61.18%;
-    --chart-1: 27.27 96.97% 61.18%;
-    --chart-2: 30 100% 70%;
-    --chart-3: 20 100% 70%;
-    --chart-4: 35 100% 65%;
-    --chart-5: 15 90% 60%;
-    --sidebar: 20 14.29% 10.20%;
-    --sidebar-foreground: 30 20% 90%;
-    --sidebar-primary: 27.27 96.97% 61.18%;
+    --border: 0 0% 26.67%;
+    --input: 0 0% 26.67%;
+    --ring: 139.66 52.73% 43.14%;
+    --chart-1: 139.66 52.73% 43.14%;
+    --chart-2: 207.27 44% 49.02%;
+    --chart-3: 218.54 79.19% 66.08%;
+    --chart-4: 189.64 81.07% 66.86%;
+    --chart-5: 138.87 70.45% 34.51%;
+    --sidebar: 220.00 14.75% 11.96%;
+    --sidebar-foreground: 0 0% 89.80%;
+    --sidebar-primary: 139.66 52.73% 43.14%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 20 20% 25%;
-    --sidebar-accent-foreground: 30 20% 90%;
-    --sidebar-border: 20 14.29% 25%;
-    --sidebar-ring: 27.27 96.97% 61.18%;
+    --sidebar-accent: 218.54 79.19% 66.08%;
+    --sidebar-accent-foreground: 0 0% 89.80%;
+    --sidebar-border: 0 0% 26.67%;
+    --sidebar-ring: 139.66 52.73% 43.14%;
     --font-sans: Plus Jakarta Sans, sans-serif;
     --font-serif: Source Serif 4, serif;
     --font-mono: JetBrains Mono, monospace;
@@ -148,9 +148,10 @@
 }
 
 /* ── Base body styles ────────────────────────────────────────
- * html and body background use --gp-bg so the iOS overscroll
- * rubber-band area matches the header color, not --background.
- * This is what makes the iOS status bar read the correct color.
+ * NOTE: Do NOT use !important here.
+ * layout-tokens.css scoped to [data-layout] elements overrides
+ * these for headers/sidebars/footers via higher specificity.
+ * The body background is intentionally a low-specificity fallback.
  * ──────────────────────────────────────────────────────────── */
 html,
 body {
@@ -160,11 +161,10 @@ body {
   height: 100%;
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
-  background-color: hsl(var(--gp-bg));
 }
 
 body {
-  background-color: hsl(var(--gp-bg));
+  background-color: hsl(var(--background));
 }
 
 /* ── Form & input styling ──────────────────────────────────── */

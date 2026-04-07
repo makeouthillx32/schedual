@@ -245,4 +245,6 @@ select:focus {
 .login-with-google-btn:disabled {
   filter: grayscale(100%);
   background-color: #ebebeb;
-  box-shadow: 0 -1px 0 
+  box-shadow: 0 -1px 0 rgba(0,0,0,.04), 0 2px 4px rgba(0,0,0,.25);
+  cursor: not-allowed;
+}

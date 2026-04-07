@@ -26,7 +26,7 @@ export default function DeliveryIndex() {
   return (
     <div
       className="min-h-screen w-full overflow-x-hidden"
-      style={{ background: "hsl(var(--background))" }}
+      style={{ background: "hsl(var(--gp-bg))" }}
     >
       {/* Header */}
       <div

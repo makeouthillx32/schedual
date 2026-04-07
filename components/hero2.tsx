@@ -58,11 +58,7 @@ const Hero2: React.FC = () => {
   }, [week]);
 
   return (
-    <div className={`p-5 ${
-      isDark 
-        ? "bg-[hsl(var(--background))] text-[hsl(var(--foreground))]" 
-        : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]"
-    }`}>
+    <div className="p-5 bg-[hsl(var(--gp-bg))] text-[hsl(var(--foreground))]">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Weekly Cleaning Schedule</h2>

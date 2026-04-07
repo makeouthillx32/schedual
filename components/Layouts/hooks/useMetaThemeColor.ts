@@ -62,7 +62,10 @@ export function useMetaThemeColor(layout: MetaLayout, themeType: "light" | "dark
         const observer = new MutationObserver((mutations) => {
             if (cancelled) return;
             const hasClassChange = mutations.some((m) => m.attributeName === "class");
-            if (hasClassChange) updateStatusBar();
+            if (!hasClassChange) return;
+            // Delay past the theme-transition-fallback duration (0.4s) so
+            // getComputedStyle reads the final settled color, not a mid-transition frame.
+            setTimeout(updateStatusBar, 420);
         });
 
         observer.observe(document.documentElement, {

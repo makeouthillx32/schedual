@@ -18,14 +18,11 @@
 }
 
 .dark {
-  /* Dark-mode header uses a noticeably darker red so the hook can
-   * detect the light→dark transition via getComputedStyle().
-   * Adjust this hue/sat/lightness to match your dark-mode design. */
-  --gp-bg:         hsl(0 65% 35%);
+  --gp-bg:         hsl(var(--destructive));
   --gp-fg:         hsl(var(--destructive-foreground));
-  --gp-border:     hsl(0 65% 35%);
+  --gp-border:     hsl(var(--destructive));
   --gp-shadow:     var(--shadow-md);
-  --gp-status-bar: hsl(0 65% 35%);
+  --gp-status-bar: hsl(var(--destructive));
 }
 
 /* ─── SHOP HEADER ─────────────────────────────────────── */

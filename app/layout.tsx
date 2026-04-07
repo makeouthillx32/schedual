@@ -68,6 +68,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="format-detection" content="telephone=no" />
+        {/* Fallback theme-color before React hydrates — provider.tsx overwrites
+            this with the exact theme value once the theme is applied.
+            Uses the default --destructive value from globals.css. */}
+        <meta name="theme-color" content="hsl(0 84.24% 60.20%)" />
 
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

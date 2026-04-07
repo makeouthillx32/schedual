@@ -222,6 +222,26 @@ export const Providers: React.FC<{
           html.style.setProperty(key, value);
         }
 
+        // ─── iOS status bar / theme-color ─────────────────────────────
+        // Set theme-color directly from the theme's --destructive value
+        // (layout-tokens.css defines --gp-bg = hsl(var(--destructive)),
+        //  which is the header background color). Doing this here — rather
+        // than reading from a DOM element in the hook — guarantees the
+        // correct color is set the instant the theme finishes applying,
+        // regardless of which route/layout is active.
+        const destructive = (variables as Record<string, string>)["--destructive"];
+        if (destructive) {
+          const statusBarColor = `hsl(${destructive})`;
+          let themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+          if (!themeColorMeta) {
+            themeColorMeta = document.createElement("meta");
+            themeColorMeta.name = "theme-color";
+            document.head.appendChild(themeColorMeta);
+          }
+          themeColorMeta.content = statusBarColor;
+        }
+        // ──────────────────────────────────────────────────────────────
+
         try {
           await dynamicFontManager.autoLoadFontsFromCSS();
         } catch (error) {

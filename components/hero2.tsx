@@ -58,7 +58,7 @@ const Hero2: React.FC = () => {
   }, [week]);
 
   return (
-    <div className="p-5 bg-[var(--gp-bg)] text-[hsl(var(--foreground))]">
+    <div className="p-5 bg-background text-[hsl(var(--foreground))]">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Weekly Cleaning Schedule</h2>

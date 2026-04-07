@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[hsl(var(--gp-bg))] text-foreground px-4 sm:px-6 lg:px-10 py-6">
+    <div className="min-h-screen bg-[var(--gp-bg)] text-foreground px-4 sm:px-6 lg:px-10 py-6">
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-12 mb-16 max-w-7xl mx-auto">
         {/* Dartboard SVG */}

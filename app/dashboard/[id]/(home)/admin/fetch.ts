@@ -140,10 +140,23 @@ async function getViewsData() {
   try {
     const supabase = await createClient();
     
-    // Get total page views
+    // Fetch non-bot user IDs
+    const { data: users } = await supabase
+      .from('analytics_users')
+      .select('id')
+      .eq('is_bot', false);
+
+    const userIds = users?.map(u => u.id) || [];
+
+    if (userIds.length === 0) {
+      return { value: 0, growthRate: 0 };
+    }
+
+    // Get total page views (exclude bots)
     const { count: totalViews, error: countError } = await supabase
       .from('analytics_page_views')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .in('user_id', userIds);
 
     if (countError) {
       console.error('Error fetching page views count:', countError);
@@ -158,14 +171,16 @@ async function getViewsData() {
     const { count: thisMonthViews } = await supabase
       .from('analytics_page_views')
       .select('*', { count: 'exact', head: true })
-      .gte('created_at', firstDayThisMonth.toISOString());
+      .gte('created_at', firstDayThisMonth.toISOString())
+      .in('user_id', userIds);
 
     // Last month's page views
     const { count: lastMonthViews } = await supabase
       .from('analytics_page_views')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', firstDayLastMonth.toISOString())
-      .lt('created_at', firstDayThisMonth.toISOString());
+      .lt('created_at', firstDayThisMonth.toISOString())
+      .in('user_id', userIds);
 
     let growthRate = 0;
     if (lastMonthViews && lastMonthViews > 0) {

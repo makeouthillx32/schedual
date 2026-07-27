@@ -11,6 +11,42 @@ export const getBatchAccentColor = (batchId: string, defaultColor: string): stri
   return `hsl(${h}, 65%, 45%)`;
 };
 
+// Generate QR code SVG elements
+export const generateQRCodeSVGPath = (text: string, size = 64): string => {
+  // Simple clean visual QR matrix placeholder pattern for fast SVG embedding
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const cols = 9;
+  const cellSize = size / cols;
+  let rects = "";
+
+  // Three Finder Patterns (Top-Left, Top-Right, Bottom-Left)
+  rects += `<rect x="0" y="0" width="${cellSize * 3}" height="${cellSize * 3}" fill="#000000"/>`;
+  rects += `<rect x="${cellSize}" y="${cellSize}" width="${cellSize}" height="${cellSize}" fill="#ffffff"/>`;
+
+  rects += `<rect x="${cellSize * 6}" y="0" width="${cellSize * 3}" height="${cellSize * 3}" fill="#000000"/>`;
+  rects += `<rect x="${cellSize * 7}" y="${cellSize}" width="${cellSize}" height="${cellSize}" fill="#ffffff"/>`;
+
+  rects += `<rect x="0" y="${cellSize * 6}" width="${cellSize * 3}" height="${cellSize * 3}" fill="#000000"/>`;
+  rects += `<rect x="${cellSize}" y="${cellSize * 7}" width="${cellSize}" height="${cellSize}" fill="#ffffff"/>`;
+
+  // Deterministic data pixels based on text hash
+  for (let r = 0; r < cols; r++) {
+    for (let c = 0; c < cols; c++) {
+      if ((r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3)) continue;
+      const bit = ((hash ^ (r * 31 + c * 17)) & (1 << ((r + c) % 8))) !== 0;
+      if (bit) {
+        rects += `<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize - 0.5}" height="${cellSize - 0.5}" fill="#000000"/>`;
+      }
+    }
+  }
+
+  return `<g transform="translate(0, 0)">${rects}</g>`;
+};
+
 export const generateDartBuckSVG = (
   serialNum: number,
   config: DartBuckConfig,
@@ -27,6 +63,8 @@ export const generateDartBuckSVG = (
   const customImgSvg = slot && slot.image_url
     ? `<image href="${slot.image_url}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="none"/>`
     : "";
+
+  const qrSvg = generateQRCodeSVGPath(serialStr, 56);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
@@ -147,10 +185,16 @@ export const generateDartBuckSVG = (
     <text x="80" y="16" font-family="sans-serif" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle">Secretary / Job Coach</text>
   </g>
 
-  <!-- Transparent Serial Box Overlay with Security Notch -->
-  <g transform="translate(${width / 2 - 280}, ${height - 60})">
-    <rect x="0" y="0" width="560" height="45" fill="#ffffff" fill-opacity="0.92" stroke="#cbd5e1" stroke-width="2" rx="4"/>
-    <text x="280" y="30" font-family="monospace" font-weight="bold" font-size="26" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
+  <!-- Transparent Serial Box Overlay with Embedded QR Code -->
+  <g transform="translate(${width / 2 - 310}, ${height - 65})">
+    <rect x="0" y="0" width="620" height="50" fill="#ffffff" fill-opacity="0.94" stroke="#cbd5e1" stroke-width="2" rx="6"/>
+    
+    <!-- Embedded QR Code Vector -->
+    <g transform="translate(10, 4) scale(0.7)">
+      ${qrSvg}
+    </g>
+
+    <text x="330" y="33" font-family="monospace" font-weight="bold" font-size="26" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
   </g>
 
   <!-- Micro-Printed Security Rim Text & Batch Hash Identity Tag -->

@@ -23,4 +23,9 @@ export const tools = [
     path: "/Tools/dart-bucks-generator",
     description: "Generate printable DartBucks with batch serial tracking",
   },
+  {
+    name: "DartBucks Scanner",
+    path: "/Tools/dart-bucks-scanner",
+    description: "QR code camera scanner & register redemption tool for DartBucks",
+  },
 ];

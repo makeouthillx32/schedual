@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Trophy, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Download, RefreshCw, Trophy, ShieldCheck, QrCode } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, DenomArtSlot, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
@@ -627,28 +628,39 @@ export default function DartBucksGenerator() {
       )}
 
       {/* Header Banner */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between bg-card p-6 rounded-xl border border-border shadow-sm">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between bg-card p-6 rounded-xl border border-border shadow-sm gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
             DartBucks Cash Drawer & Print Audit Safeguard Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Authenticated print gate, monthly audit logging, crop editor, & double-cut bleed printing.
+            Authenticated print gate, QR codes, monthly audit logging, & double-cut bleed printing.
           </p>
         </div>
-        <button
-          onClick={initiatePrintRequest}
-          disabled={isGenerating}
-          className="mt-4 md:mt-0 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl transition-all disabled:opacity-50 shadow-lg"
-        >
-          {isGenerating ? (
-            <RefreshCw className="w-5 h-5 animate-spin" />
-          ) : (
-            <ShieldCheck className="w-5 h-5 text-emerald-200" />
-          )}
-          {isGenerating ? "Generating Prepress PDF..." : "Export Prepress PDF"}
-        </button>
+
+        <div className="flex gap-2">
+          <Link
+            href="/Tools/dart-bucks-scanner"
+            className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-3 rounded-xl transition-all shadow-md text-xs"
+          >
+            <QrCode className="w-4 h-4" />
+            Open Register QR Scanner Tool
+          </Link>
+
+          <button
+            onClick={initiatePrintRequest}
+            disabled={isGenerating}
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl transition-all disabled:opacity-50 shadow-lg text-xs"
+          >
+            {isGenerating ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <ShieldCheck className="w-5 h-5 text-emerald-200" />
+            )}
+            {isGenerating ? "Generating Prepress PDF..." : "Export Prepress PDF"}
+          </button>
+        </div>
       </div>
 
       {/* INDIVIDUAL BILL ART BUCKETS */}

@@ -15,6 +15,9 @@ const toolsMap: Record<string, React.ComponentType> = {
   "punch-card-maker": dynamic(() =>
     import("@/components/tools/PunchCardMaker")
   ),
+  "dart-bucks-generator": dynamic(() =>
+    import("@/components/tools/DartBucksGenerator")
+  ),
 };
 
 const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {

@@ -1,5 +1,7 @@
 "use client";
+// the component literally lists every section of the site organized by category (Tools, Resources, role links) — that's a directory. Anyone reading that filename knows exactly what it does without needing "footer" in the name.
 
+// Want me to move it to a new file with that name and update the imports?
 import useLoginSession from "@/lib/useLoginSession";
 import Link from "next/link";
 import { FaInstagram, FaTiktok, FaYoutube, FaLinkedinIn } from "react-icons/fa";
@@ -18,20 +20,20 @@ const socialLinks = [
 const Footer: React.FC = () => {
   const session = useLoginSession();
   const { themeType } = useTheme();
-  
+
   // ✅ Use the simpler useUserRole hook instead of useHallMonitor
   // This avoids the database schema issues in HallMonitorFactory
   const { role, isLoading, error } = useUserRole(session?.user?.id);
 
-  console.log('[Footer] Session state:', { 
+  console.log('[Footer] Session state:', {
     hasSession: !!session,
     hasUser: !!session?.user,
-    userId: session?.user?.id 
+    userId: session?.user?.id
   });
 
-  console.log('[Footer] UserRole state:', { 
-    role, 
-    isLoading, 
+  console.log('[Footer] UserRole state:', {
+    role,
+    isLoading,
     error
   });
 
@@ -75,14 +77,14 @@ const Footer: React.FC = () => {
         };
       case 'jobcoach':
         return {
-          sectionTitle: "For Job Coaches", 
+          sectionTitle: "For Job Coaches",
           dashboardText: "Coach Dashboard",
           dashboardHref: "/dashboard/me"
         };
       case 'client':
         return {
           sectionTitle: "For Clients",
-          dashboardText: "Client Dashboard", 
+          dashboardText: "Client Dashboard",
           dashboardHref: "/dashboard/me"
         };
       case 'user':
@@ -122,7 +124,7 @@ const Footer: React.FC = () => {
     // ✅ Only show user sections when logged in AND we have role data
     if (session?.user?.id && userSectionData && userSectionData.sectionTitle !== "Loading...") {
       console.log('[Footer] Building sections with user data:', userSectionData);
-      
+
       return [
         {
           title: userSectionData.sectionTitle,
@@ -131,7 +133,7 @@ const Footer: React.FC = () => {
             { name: userSectionData.dashboardText, href: userSectionData.dashboardHref },
           ],
         },
-        
+
         ...baseSections,
       ];
     }
@@ -143,15 +145,15 @@ const Footer: React.FC = () => {
   // ✅ Custom navigation function for hash-based routing
   const handleHashNavigation = (href: string) => (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     // Check if it's a hash-based route
     if (href.startsWith('/#')) {
       const hash = href.replace('/#', '');
       console.log('🔗 Footer navigation to hash:', hash);
-      
+
       // Update URL
       window.history.pushState(null, '', href);
-      
+
       // Trigger hash change event manually to ensure the routing system picks it up
       window.dispatchEvent(new HashChangeEvent('hashchange'));
     } else {
@@ -194,18 +196,18 @@ const Footer: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             {/* Description */}
             <p className="max-w-[70%] text-sm text-muted-foreground">
               Desert Area Resources and Training - Empowering individuals through comprehensive career services and job training programs.
             </p>
-            
+
             {/* Social Links */}
             <ul className="flex items-center space-x-6 text-muted-foreground">
               {socialLinks.map((social, idx) => (
                 <li key={idx} className="font-medium hover:text-primary transition-colors">
-                  <a 
-                    href={social.href} 
+                  <a
+                    href={social.href}
                     aria-label={social.label}
                     target="_blank"
                     rel="noopener noreferrer"

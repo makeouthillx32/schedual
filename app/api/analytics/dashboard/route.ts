@@ -1,6 +1,7 @@
 // app/api/analytics/dashboard/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { getNonBotUserIds } from '@/utils/analytics';
 
 interface DeviceAnalytics {
   name: string;
@@ -47,6 +48,9 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
+
+    // Retrieve non-bot user IDs for filtering
+    const userIds = await getNonBotUserIds(supabase);
     
     // Default to last 30 days
     const endDate = new Date();
@@ -76,6 +80,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_users')
         .select('id')
+        .eq('is_bot', false)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -83,6 +88,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('id, is_bounce, duration')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -90,6 +96,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_page_views')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -97,6 +104,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('is_bounce')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString()),
       
@@ -104,6 +112,7 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_sessions')
         .select('duration')
+        .in('user_id', userIds)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .not('duration', 'is', null)
@@ -118,18 +127,21 @@ export async function GET(request: NextRequest) {
       supabase
         .from('analytics_users')
         .select('id')
+        .eq('is_bot', false)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString()),
       
       supabase
         .from('analytics_sessions')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString()),
       
       supabase
         .from('analytics_page_views')
         .select('id')
+        .in('user_id', userIds)
         .gte('created_at', prevStartDate.toISOString())
         .lte('created_at', prevEndDate.toISOString())
     ]);
@@ -139,13 +151,8 @@ export async function GET(request: NextRequest) {
     const totalSessions = totalSessionsResult.data?.length || 0;
     const totalPageViews = totalPageViewsResult.data?.length || 0;
     
-    const bounceCount = avgBounceRateResult.data?.filter(s => s.is_bounce).length || 0;
-    const bounceRate = totalSessions > 0 ? Math.round((bounceCount / totalSessions) * 100) : 0;
-    
-    const durations = avgSessionDurationResult.data?.map(s => s.duration).filter(d => d != null) || [];
-    const avgSessionDuration = durations.length > 0 
-      ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length) 
-      : 0;
+    let bounceRate = 0;
+    let avgSessionDuration = 0;
 
     // Previous period totals
     const prevUsers = prevUsersResult.data?.length || 0;
@@ -155,7 +162,7 @@ export async function GET(request: NextRequest) {
     // Get device analytics
     const { data: deviceStats } = await supabase
       .from('analytics_device_stats')
-      .select('device_type, sessions_count, users_count, bounce_rate')
+      .select('device_type, sessions_count, users_count, bounce_rate, avg_session_duration')
       .gte('date', startDate.toISOString().split('T')[0])
       .lte('date', endDate.toISOString().split('T')[0]);
 
@@ -163,30 +170,51 @@ export async function GET(request: NextRequest) {
     const deviceTotals = new Map<string, {
       sessions: number;
       users: number;
-      bounceRate: number;
-      count: number;
+      bounceWeighted: number;
+      durationWeighted: number;
     }>();
 
     deviceStats?.forEach(stat => {
       const existing = deviceTotals.get(stat.device_type) || {
-        sessions: 0, users: 0, bounceRate: 0, count: 0
+        sessions: 0,
+        users: 0,
+        bounceWeighted: 0,
+        durationWeighted: 0,
       };
-      existing.sessions += stat.sessions_count || 0;
+      const sessions = stat.sessions_count || 0;
+      existing.sessions += sessions;
       existing.users += stat.users_count || 0;
-      existing.bounceRate += stat.bounce_rate || 0;
-      existing.count += 1;
+      existing.bounceWeighted += (stat.bounce_rate || 0) * sessions;
+      existing.durationWeighted += (stat.avg_session_duration || 0) * sessions;
       deviceTotals.set(stat.device_type, existing);
     });
 
     const totalDeviceSessions = Array.from(deviceTotals.values())
       .reduce((sum, device) => sum + device.sessions, 0);
+    if (totalDeviceSessions > 0) {
+      bounceRate = Math.round(
+        Array.from(deviceTotals.values()).reduce((sum, d) => sum + d.bounceWeighted, 0) /
+          totalDeviceSessions
+      );
+      avgSessionDuration = Math.round(
+        Array.from(deviceTotals.values()).reduce((sum, d) => sum + d.durationWeighted, 0) /
+          totalDeviceSessions
+      );
+    } else {
+      const bounceCount = avgBounceRateResult.data?.filter(s => s.is_bounce).length || 0;
+      bounceRate = totalSessions > 0 ? Math.round((bounceCount / totalSessions) * 100) : 0;
+      const durations = avgSessionDurationResult.data?.map(s => s.duration).filter(d => d != null) || [];
+      avgSessionDuration = durations.length > 0
+        ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+        : 0;
+    }
 
     const devices: DeviceAnalytics[] = Array.from(deviceTotals.entries()).map(([type, data]) => ({
       name: capitalizeDeviceType(type),
       percentage: totalDeviceSessions > 0 ? data.sessions / totalDeviceSessions : 0,
       amount: data.users,
       sessions: data.sessions,
-      bounceRate: data.count > 0 ? Math.round(data.bounceRate / data.count) : 0
+      bounceRate: data.sessions > 0 ? Math.round(data.bounceWeighted / data.sessions) : 0
     }));
 
     // Get visitor timeline (last 7 days for dashboard)
@@ -218,6 +246,7 @@ export async function GET(request: NextRequest) {
     const { data: pageViews } = await supabase
       .from('analytics_page_views')
       .select('page_url, user_id')
+      .in('user_id', userIds)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
@@ -245,6 +274,7 @@ export async function GET(request: NextRequest) {
     const { data: realtimeData } = await supabase
       .from('analytics_page_views')
       .select('user_id')
+      .in('user_id', userIds)
       .gte('created_at', fiveMinutesAgo.toISOString());
 
     const realtimeUsers = new Set(realtimeData?.map(r => r.user_id) || []).size;

@@ -18,4 +18,9 @@ export const tools = [
     path: "/Tools/punch-card-maker",
     description: "Generate printable punch cards",
   },
+  {
+    name: "DartBucks Generator",
+    path: "/Tools/dart-bucks-generator",
+    description: "Generate printable DartBucks with batch serial tracking",
+  },
 ];

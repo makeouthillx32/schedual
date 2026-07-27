@@ -36,13 +36,55 @@ export interface PaperSpec {
   cols: number;
   rows: number;
   billsPerSheet: number;
+  defaultCardWidthMm: number;
+  defaultCardHeightMm: number;
 }
 
 export const PAPER_SPECS: Record<PaperSizePreset, PaperSpec> = {
-  "letter": { id: "letter", label: 'US Letter (8.5" × 11")', widthMm: 215.9, heightMm: 279.4, cols: 2, rows: 5, billsPerSheet: 10 },
-  "a4": { id: "a4", label: "A4 Sheet (210 × 297 mm)", widthMm: 210.0, heightMm: 297.0, cols: 2, rows: 5, billsPerSheet: 10 },
-  "11x12-14": { id: "11x12-14", label: 'Custom 11" × 12" (10 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 5, billsPerSheet: 10 },
-  "11x12-21": { id: "11x12-21", label: 'Custom 11" × 12" (15 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 5, billsPerSheet: 10 },
+  "letter": {
+    id: "letter",
+    label: 'US Letter (8.5" × 11")',
+    widthMm: 215.9,
+    heightMm: 279.4,
+    cols: 2,
+    rows: 4,
+    billsPerSheet: 8,
+    defaultCardWidthMm: 98.5,
+    defaultCardHeightMm: 61.5,
+  },
+  "a4": {
+    id: "a4",
+    label: "A4 Sheet (210 × 297 mm)",
+    widthMm: 210.0,
+    heightMm: 297.0,
+    cols: 2,
+    rows: 4,
+    billsPerSheet: 8,
+    defaultCardWidthMm: 95.0,
+    defaultCardHeightMm: 65.0,
+  },
+  "11x12-14": {
+    id: "11x12-14",
+    label: 'Custom 11" × 12" (Large 10 Bills)',
+    widthMm: 279.4,
+    heightMm: 304.8,
+    cols: 2,
+    rows: 5,
+    billsPerSheet: 10,
+    defaultCardWidthMm: 122.0,
+    defaultCardHeightMm: 56.0,
+  },
+  "11x12-21": {
+    id: "11x12-21",
+    label: 'Custom 11" × 12" (Standard 10 Bills)',
+    widthMm: 279.4,
+    heightMm: 304.8,
+    cols: 2,
+    rows: 5,
+    billsPerSheet: 10,
+    defaultCardWidthMm: 101.6,
+    defaultCardHeightMm: 50.8,
+  },
 };
 
 export interface BatchLogItem {
@@ -65,6 +107,8 @@ export interface BatchLogItem {
   shredded_at?: string;
 }
 
+export type BillScalePreset = "large" | "standard" | "jumbo";
+
 export interface DartBuckConfig {
   mode: "single" | "drawer";
   drawerAmount: number;
@@ -84,6 +128,7 @@ export interface DartBuckConfig {
   showWatermark: boolean;
   includeDuplexBacks: boolean;
   paperSize: PaperSizePreset;
+  billScale: BillScalePreset;
   includeCropMarks: boolean;
   bleedMm: number;
   gutterMm: number;

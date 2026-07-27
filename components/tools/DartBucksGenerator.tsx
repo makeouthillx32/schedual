@@ -5,7 +5,7 @@ import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } fro
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
-import { renderDartBuckOnCanvas, renderDartBuckOnCanvasDirect, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync } from "./dart-bucks/utils/canvasRenderer";
+import { renderDartBuckOnCanvas, renderDartBuckOnCanvasDirect, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync, getCardDimensionsMm } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
@@ -30,7 +30,8 @@ export default function DartBucksGenerator() {
     showPresetText: true,
     showWatermark: true,
     includeDuplexBacks: true,
-    paperSize: "11x12-14",
+    paperSize: "letter",
+    billScale: "large",
     includeCropMarks: true,
     bleedMm: 3,
     gutterMm: 6,
@@ -280,7 +281,7 @@ export default function DartBucksGenerator() {
 
       // Execute Vector PDF Creation
       const { jsPDF } = await import("jspdf");
-      const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+      const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
 
       const doc = new jsPDF({
         orientation: "portrait",
@@ -290,13 +291,19 @@ export default function DartBucksGenerator() {
 
       const cols = paperSpec.cols;
       const rows = paperSpec.rows;
-      const cardWidthMm = 101.6;
-      const cardHeightMm = 50.8;
+
+      const cardDims = getCardDimensionsMm(paperSpec, config.billScale);
+      const cardWidthMm = cardDims.w;
+      const cardHeightMm = cardDims.h;
+
       const gapX = config.gutterMm;
       const gapY = config.gutterMm;
 
-      const marginX = (paperSpec.widthMm - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
-      const marginY = (paperSpec.heightMm - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
+      const gridWidthMm = cols * cardWidthMm + (cols - 1) * gapX;
+      const gridHeightMm = rows * cardHeightMm + (rows - 1) * gapY;
+
+      const marginX = Math.max(4, (paperSpec.widthMm - gridWidthMm) / 2);
+      const marginY = Math.max(4, (paperSpec.heightMm - gridHeightMm) / 2);
 
       // PAGE 1: CASH DRAWER AUDIT SLIP (FRONT)
       if (config.mode === "drawer") {
@@ -402,7 +409,7 @@ export default function DartBucksGenerator() {
     ? config.drawerAmount
     : config.cardCount * (parseFloat(config.denomination) || 1);
 
-  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
   const calculatedTotalPages = Math.ceil(totalCalculatedBills / paperSpec.billsPerSheet) || 1;
 
   return (
@@ -427,7 +434,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Pure synchronous 2D canvas PDF export, duplex page alignment, itemized bill dispersion, 4.0"×2.0" Monopoly size, & prepress crop marks.
+            Scaled full paper bill coverage, pure synchronous 2D canvas, duplex page alignment, 4.0"×2.0" Monopoly size, & prepress crop marks.
           </p>
         </div>
 
@@ -450,10 +457,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Pure Synchronous 2D Prepress Canvas Engine Active (${config.drawerAmount} Allotment)
+            Large Full Paper Coverage Active (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Synchronous 2D canvas rendering guarantees zero blank pages across all mobile and desktop devices.
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Bills now scale up to fill paper sheet bounds cleanly with 0.3" margins.
           </span>
         </div>
       </div>

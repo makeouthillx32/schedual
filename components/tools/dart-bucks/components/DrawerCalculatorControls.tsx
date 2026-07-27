@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2, Palette } from "lucide-react";
+import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2, Palette, Maximize2 } from "lucide-react";
 import { DartBuckConfig, PAPER_SPECS, PaperSizePreset, MONTHS } from "../types";
 import { MONTHLY_PALETTES } from "../utils/svgGenerator";
 
@@ -118,10 +118,39 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
       <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
           <Printer className="w-5 h-5 text-indigo-500" />
-          Paper Stock & Cutting Prepress Specs
+          Paper Stock & Bill Scaling Prepress Specs
         </h2>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+              Bill Dimension & Full Paper Scale
+            </label>
+            <div className="grid grid-cols-3 gap-1.5 text-xs">
+              {[
+                { id: "large", label: "Large Full Coverage", sub: "Recommended (+20% Fill)" },
+                { id: "standard", label: "Standard Monopoly", sub: "4.0\" × 2.0\" Size" },
+                { id: "jumbo", label: "Jumbo Max Coverage", sub: "+32% Maximum Size" },
+              ].map((scale) => {
+                const isSelected = config.billScale === scale.id;
+                return (
+                  <button
+                    key={scale.id}
+                    onClick={() => setConfig((prev) => ({ ...prev, billScale: scale.id as any }))}
+                    className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
+                        : "border-input bg-background hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-bold truncate">{scale.label}</span>
+                    <span className="text-[9px] opacity-80 mt-0.5">{scale.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">
               Target Paper Sheet Size

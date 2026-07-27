@@ -1,4 +1,4 @@
-import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec } from "../types";
+import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec, BillScalePreset } from "../types";
 import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
 import { generateDartBuckSVG, MONTHLY_PALETTES, DESTRUCTIVE_SHRED_COLORS } from "./svgGenerator";
 
@@ -13,6 +13,25 @@ export const getContrastWatermark = (
   if (mode === "light") return lightImg;
   if (mode === "dark") return darkImg;
   return isLightBg(bgColorHex) ? darkImg : lightImg;
+};
+
+export const getCardDimensionsMm = (paperSpec: PaperSpec, billScale: BillScalePreset = "large") => {
+  let mult = 1.0;
+  if (billScale === "large") mult = 1.20; // Large Full Paper Coverage (+20%)
+  if (billScale === "jumbo") mult = 1.32; // Jumbo Maximum Coverage (+32%)
+
+  if (billScale === "standard") {
+    return { w: 101.6, h: 50.8 };
+  }
+
+  const baseW = paperSpec.defaultCardWidthMm;
+  const baseH = paperSpec.defaultCardHeightMm;
+
+  if (billScale === "large") {
+    return { w: baseW, h: baseH };
+  }
+
+  return { w: baseW * mult, h: baseH * mult };
 };
 
 // Pure Synchronous 2D Canvas Front Bill Renderer (100% Bulletproof for PDF & Canvas Exports)
@@ -281,7 +300,7 @@ export const renderDartBuckBackOnCanvas = (
   ctx.fillText(serialStr, width - 50, height - 45);
 };
 
-// Async Prepress Sheet Grid Preview Renderer with Perfect Aspect-Ratio Centering & Strict Page Bounds
+// Async Prepress Sheet Grid Preview Renderer with Scaled Full-Paper Coverage & Centered Margins
 export const renderSheetPreviewAsync = async (
   canvas: HTMLCanvasElement,
   isBack: boolean,
@@ -294,7 +313,7 @@ export const renderSheetPreviewAsync = async (
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
   const scaleFactor = 4; // High DPI preview resolution
 
   const paperWidthPx = Math.round(paperSpec.widthMm * scaleFactor);
@@ -316,8 +335,10 @@ export const renderSheetPreviewAsync = async (
   const rows = paperSpec.rows;
   const billsPerPage = cols * rows;
 
-  const cardWidthMm = 101.6;
-  const cardHeightMm = 50.8;
+  const cardDims = getCardDimensionsMm(paperSpec, config.billScale);
+  const cardWidthMm = cardDims.w;
+  const cardHeightMm = cardDims.h;
+
   const gapXmm = config.gutterMm;
   const gapYmm = config.gutterMm;
 

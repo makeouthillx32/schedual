@@ -1,6 +1,7 @@
 import React from "react";
-import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2 } from "lucide-react";
-import { DartBuckConfig, PAPER_SPECS, PaperSizePreset } from "../types";
+import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2, Palette } from "lucide-react";
+import { DartBuckConfig, PAPER_SPECS, PaperSizePreset, MONTHS } from "../types";
+import { MONTHLY_PALETTES } from "../utils/svgGenerator";
 
 interface DrawerCalculatorControlsProps {
   config: DartBuckConfig;
@@ -17,8 +18,68 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
   onWeightingChange,
   onRegenerateBatchId,
 }) => {
+  const currentMonthIdx = new Date().getMonth();
+  const activeMonthIdx = typeof config.monthOverride === "number" ? config.monthOverride : currentMonthIdx;
+  const activePalette = MONTHLY_PALETTES[activeMonthIdx];
+
   return (
     <div className="space-y-6">
+      {/* 12-Month Color Palette Engine Selector */}
+      <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+          <Palette className="w-5 h-5 text-purple-500" />
+          12-Month Monopoly Color Palette Engine
+        </h2>
+
+        <div>
+          <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+            Select Active Issue Month & Palette Theme
+          </label>
+          <select
+            value={typeof config.monthOverride === "number" ? config.monthOverride : "auto"}
+            onChange={(e) => {
+              const val = e.target.value;
+              setConfig((prev) => ({
+                ...prev,
+                monthOverride: val === "auto" ? undefined : parseInt(val, 10),
+              }));
+            }}
+            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg font-bold text-xs"
+          >
+            <option value="auto">
+              Auto System Date ({MONTHS[currentMonthIdx]} - {MONTHLY_PALETTES[currentMonthIdx].name})
+            </option>
+            {MONTHS.map((m, idx) => (
+              <option key={m} value={idx}>
+                {m} Edition — {MONTHLY_PALETTES[idx].name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Color Palette Preview Swatches */}
+        <div className="p-3 bg-muted/50 rounded-lg border border-border space-y-2 text-xs">
+          <div className="flex justify-between items-center font-bold text-foreground">
+            <span>{activePalette.name} Color Swatches</span>
+            <span className="text-[10px] text-muted-foreground font-mono">
+              {typeof config.monthOverride === "number" ? "Custom Month Override" : "Auto Live System Month"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold">
+            {["1", "5", "10", "20"].map((denom) => {
+              const colors = activePalette.denoms[denom];
+              return (
+                <div key={denom} className="p-1.5 rounded-md border flex flex-col items-center gap-1 shadow-xs" style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
+                  <span style={{ color: colors.text }}>${denom}</span>
+                  <div className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: colors.circleBg }} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Mode Selector */}
       <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">

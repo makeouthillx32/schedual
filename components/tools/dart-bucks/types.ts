@@ -38,7 +38,6 @@ export interface PaperSpec {
   billsPerSheet: number;
 }
 
-// Exact Classic Monopoly Bill Dimensions: 101.6 mm x 50.8 mm (4.0" x 2.0")
 export const PAPER_SPECS: Record<PaperSizePreset, PaperSpec> = {
   "letter": { id: "letter", label: 'US Letter (8.5" × 11")', widthMm: 215.9, heightMm: 279.4, cols: 2, rows: 5, billsPerSheet: 10 },
   "a4": { id: "a4", label: "A4 Sheet (210 × 297 mm)", widthMm: 210.0, heightMm: 297.0, cols: 2, rows: 5, billsPerSheet: 10 },
@@ -92,4 +91,5 @@ export interface DartBuckConfig {
   serialPosition: "bottom" | "top" | "bottom-right";
   validityMode: "forever" | "expires";
   expirationDate: string;
+  monthOverride?: number; // 0 = Jan, 1 = Feb, ... 11 = Dec, undefined = current month
 }

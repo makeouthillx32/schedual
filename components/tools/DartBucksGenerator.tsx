@@ -192,6 +192,40 @@ export default function DartBucksGenerator() {
     }
   };
 
+  const toggleBatchCycleComplete = async (logId: string) => {
+    const updated = batchLogs.map((log) => {
+      if (log.id === logId) {
+        const isNowCompleted = log.status !== "completed";
+        return {
+          ...log,
+          status: isNowCompleted ? ("completed" as const) : ("active" as const),
+          completed_at: isNowCompleted ? new Date().toISOString() : undefined,
+        };
+      }
+      return log;
+    });
+
+    setBatchLogs(updated);
+    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+
+    try {
+      if (supabase) {
+        const target = updated.find((l) => l.id === logId);
+        if (target) {
+          await supabase
+            .from("dartbuck_batch_logs")
+            .update({
+              status: target.status,
+              completed_at: target.completed_at || null,
+            })
+            .eq("id", logId);
+        }
+      }
+    } catch (e) {
+      console.warn("Supabase batch status update fallback");
+    }
+  };
+
   const handleDrawerAmountChange = (amount: number) => {
     const validAmount = Math.max(0, amount);
     const breakdown = computeBreakdown(validAmount, config.drawerWeighting === "custom" ? "balanced" : config.drawerWeighting);
@@ -361,12 +395,10 @@ export default function DartBucksGenerator() {
     );
   };
 
-  // Trigger Print Authorization Safeguard Modal
   const initiatePrintRequest = () => {
     setShowAuthModal(true);
   };
 
-  // Execute PDF generation and log batch to DB once authorized
   const executeAuthorizedPrint = async (authData: {
     issuerName: string;
     department: string;
@@ -408,6 +440,7 @@ export default function DartBucksGenerator() {
         serial_end: endStr,
         issue_reason: authData.issueReason,
         printed_at: new Date().toISOString(),
+        status: "active",
       };
 
       await saveBatchLog(logItem);
@@ -653,7 +686,7 @@ export default function DartBucksGenerator() {
       </div>
 
       {/* MONTHLY BATCH AUDIT LEDGER TABLE */}
-      <BatchAuditLedger logs={batchLogs} />
+      <BatchAuditLedger logs={batchLogs} onToggleComplete={toggleBatchCycleComplete} />
     </div>
   );
 }

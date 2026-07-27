@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, ShieldCheck, Search, Calendar, User, DollarSign } from "lucide-react";
+import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check } from "lucide-react";
 import { BatchLogItem } from "../types";
 
 interface BatchAuditLedgerProps {
   logs: BatchLogItem[];
+  onToggleComplete: (logId: string) => void;
 }
 
-export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
+export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onToggleComplete }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
@@ -17,13 +19,21 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
       log.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.station_prefix.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (selectedMonth === "all") return matchesSearch;
-    const logMonth = new Date(log.printed_at).toISOString().substring(0, 7); // e.g. "2026-07"
-    return matchesSearch && logMonth === selectedMonth;
+    const matchesStatus =
+      statusFilter === "all"
+        ? true
+        : statusFilter === "active"
+        ? log.status !== "completed"
+        : log.status === "completed";
+
+    if (selectedMonth === "all") return matchesSearch && matchesStatus;
+    const logMonth = new Date(log.printed_at).toISOString().substring(0, 7);
+    return matchesSearch && matchesStatus && logMonth === selectedMonth;
   });
 
   const totalValueIssued = filteredLogs.reduce((sum, item) => sum + item.drawer_amount, 0);
   const totalBillsIssued = filteredLogs.reduce((sum, item) => sum + item.total_bills_count, 0);
+  const completedBatchesCount = logs.filter((l) => l.status === "completed").length;
 
   const exportMonthlyCSV = () => {
     if (filteredLogs.length === 0) {
@@ -34,6 +44,8 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
     const headers = [
       "Log ID",
       "Timestamp",
+      "Cycle Status",
+      "Completed Date",
       "Batch ID",
       "Station",
       "Issuer Name",
@@ -53,6 +65,8 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
     const rows = filteredLogs.map((log) => [
       `"${log.id}"`,
       `"${new Date(log.printed_at).toLocaleString()}"`,
+      `"${log.status === "completed" ? "Completed & Collected" : "Active in Circulation"}"`,
+      `"${log.completed_at ? new Date(log.completed_at).toLocaleString() : "N/A"}"`,
       `"${log.batch_id}"`,
       `"${log.station_prefix}"`,
       `"${log.issuer_name}"`,
@@ -87,10 +101,10 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-emerald-500" />
-            Monthly Batch Audit & Issued Currency Ledger
+            Monthly Batch Audit & Collection Cycle Ledger
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Every printed batch is authenticated, logged, and tracked for administrative auditing.
+            Track active circulation and check batches as complete when all bills are collected!
           </p>
         </div>
 
@@ -126,89 +140,151 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs }) => {
         </div>
 
         <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl flex items-center gap-3">
-          <ShieldCheck className="w-8 h-8 text-purple-600 shrink-0" />
+          <CheckCircle2 className="w-8 h-8 text-purple-600 shrink-0" />
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Authenticated Batches</span>
+            <span className="text-xs text-muted-foreground block font-medium">Cycles Completed & Collected</span>
             <span className="text-2xl font-black text-purple-600 dark:text-purple-400">
-              {filteredLogs.length} Batches
+              {completedBatchesCount} / {logs.length} Batches
             </span>
           </div>
         </div>
       </div>
 
-      {/* Filter Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by Issuer, Manager, Batch ID, or Department..."
-            className="w-full pl-9 pr-3 py-2 text-xs bg-background border border-input rounded-lg"
-          />
+      {/* Filter Controls & Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+        <div className="flex gap-1 bg-muted p-1 rounded-lg text-xs font-bold w-fit">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-3 py-1.5 rounded-md transition-all ${
+              statusFilter === "all"
+                ? "bg-background text-foreground shadow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All Batches ({logs.length})
+          </button>
+          <button
+            onClick={() => setStatusFilter("active")}
+            className={`px-3 py-1.5 rounded-md transition-all ${
+              statusFilter === "active"
+                ? "bg-background text-foreground shadow text-amber-600 dark:text-amber-400"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Active In Circulation ({logs.filter((l) => l.status !== "completed").length})
+          </button>
+          <button
+            onClick={() => setStatusFilter("completed")}
+            className={`px-3 py-1.5 rounded-md transition-all ${
+              statusFilter === "completed"
+                ? "bg-background text-foreground shadow text-emerald-600 dark:text-emerald-400"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Completed & Collected ({completedBatchesCount})
+          </button>
         </div>
 
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="px-3 py-2 text-xs bg-background border border-input rounded-lg font-semibold"
-        >
-          <option value="all">All Months</option>
-          <option value="2026-07">July 2026</option>
-          <option value="2026-06">June 2026</option>
-          <option value="2026-05">May 2026</option>
-        </select>
+        <div className="flex gap-2">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search Issuer, Batch ID..."
+              className="w-full pl-9 pr-3 py-2 text-xs bg-background border border-input rounded-lg"
+            />
+          </div>
+
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="px-3 py-2 text-xs bg-background border border-input rounded-lg font-semibold"
+          >
+            <option value="all">All Months</option>
+            <option value="2026-07">July 2026</option>
+            <option value="2026-06">June 2026</option>
+            <option value="2026-05">May 2026</option>
+          </select>
+        </div>
       </div>
 
-      {/* Log Table */}
+      {/* Log Table with Check as Complete Action */}
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-left text-xs">
           <thead className="bg-muted text-muted-foreground font-bold border-b border-border">
             <tr>
+              <th className="p-3">Cycle Status</th>
               <th className="p-3">Timestamp</th>
               <th className="p-3">Batch ID</th>
               <th className="p-3">Authorized Issuer</th>
               <th className="p-3">Department</th>
               <th className="p-3">Drawer Value</th>
               <th className="p-3">Bills Breakdown</th>
-              <th className="p-3">Reason</th>
+              <th className="p-3 text-right">Cycle Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-card">
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-muted-foreground italic">
+                <td colSpan={8} className="p-6 text-center text-muted-foreground italic">
                   No print batch logs found matching your filters.
                 </td>
               </tr>
             ) : (
-              filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-muted/50 transition-colors">
-                  <td className="p-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                    {new Date(log.printed_at).toLocaleDateString()} {new Date(log.printed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </td>
-                  <td className="p-3 font-mono font-bold text-primary">
-                    {log.batch_id}
-                  </td>
-                  <td className="p-3">
-                    <span className="font-bold text-foreground">{log.issuer_name}</span>
-                    <span className="block text-[10px] text-muted-foreground">{log.issuer_role}</span>
-                  </td>
-                  <td className="p-3 font-medium text-foreground">
-                    {log.department}
-                  </td>
-                  <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
-                    ${log.drawer_amount.toFixed(2)}
-                  </td>
-                  <td className="p-3 font-mono text-[11px]">
-                    20s:{log.itemized_breakdown.bill20} | 10s:{log.itemized_breakdown.bill10} | 5s:{log.itemized_breakdown.bill5} | 1s:{log.itemized_breakdown.bill1}
-                  </td>
-                  <td className="p-3 text-muted-foreground truncate max-w-[180px]" title={log.issue_reason}>
-                    {log.issue_reason}
-                  </td>
-                </tr>
-              ))
+              filteredLogs.map((log) => {
+                const isCompleted = log.status === "completed";
+                return (
+                  <tr key={log.id} className={`hover:bg-muted/50 transition-colors ${isCompleted ? "bg-emerald-500/5" : ""}`}>
+                    <td className="p-3 whitespace-nowrap">
+                      {isCompleted ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/30">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Cycle Completed
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/30">
+                          <Clock className="w-3.5 h-3.5" />
+                          In Circulation
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                      {new Date(log.printed_at).toLocaleDateString()} {new Date(log.printed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="p-3 font-mono font-bold text-primary">
+                      {log.batch_id}
+                    </td>
+                    <td className="p-3">
+                      <span className="font-bold text-foreground">{log.issuer_name}</span>
+                      <span className="block text-[10px] text-muted-foreground">{log.issuer_role}</span>
+                    </td>
+                    <td className="p-3 font-medium text-foreground">
+                      {log.department}
+                    </td>
+                    <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                      ${log.drawer_amount.toFixed(2)}
+                    </td>
+                    <td className="p-3 font-mono text-[11px]">
+                      20s:{log.itemized_breakdown.bill20} | 10s:{log.itemized_breakdown.bill10} | 5s:{log.itemized_breakdown.bill5} | 1s:{log.itemized_breakdown.bill1}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => onToggleComplete(log.id)}
+                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ml-auto ${
+                          isCompleted
+                            ? "bg-muted text-muted-foreground border border-input hover:bg-background"
+                            : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        {isCompleted ? "Reopen Batch" : "Check as Complete & Collected"}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

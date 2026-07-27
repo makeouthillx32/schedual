@@ -60,6 +60,9 @@ export interface BatchLogItem {
   serial_end: string;
   issue_reason: string;
   printed_at: string;
+  status: "active" | "completed";
+  completed_at?: string;
+  completed_by?: string;
 }
 
 export interface DartBuckConfig {

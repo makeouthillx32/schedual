@@ -257,6 +257,7 @@ export const drawPdfCropMarks = (
   doc.line(x + w, y + h + bleedOffset, x + w, y + h + bleedOffset + markLength);
 };
 
+// Draw Drawer Audit Slip Page 1 (Front Receipt)
 export const drawDrawerAuditSlip = (
   canvas: HTMLCanvasElement,
   totalValue: number,
@@ -378,4 +379,39 @@ export const drawDrawerAuditSlip = (
   ctx.moveTo(830, sigY);
   ctx.lineTo(1050, sigY);
   ctx.stroke();
+};
+
+// Draw Drawer Audit Slip Page 2 (Back Verso Page for Perfect Duplex Sheet Alignment)
+export const drawDrawerAuditSlipBack = (
+  canvas: HTMLCanvasElement,
+  batchId: string
+) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  canvas.width = 1200;
+  canvas.height = 1697;
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "bold 32px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("DESERT AREA RESOURCES & TRAINING", canvas.width / 2, canvas.height / 2 - 80);
+
+  ctx.font = "bold 24px sans-serif";
+  ctx.fillStyle = "#94a3b8";
+  ctx.fillText("OFFICIAL CASH DRAWER AUDIT SLIP (VERSO COVER)", canvas.width / 2, canvas.height / 2 - 30);
+
+  ctx.font = "bold 18px monospace";
+  ctx.fillStyle = "#cbd5e1";
+  ctx.fillText(`BATCH AUDIT ID: ${batchId} • DUPLEX PAGE PAIR 1 (AUDIT ONLY)`, canvas.width / 2, canvas.height / 2 + 30);
+
+  ctx.font = "italic 16px sans-serif";
+  ctx.fillText("This side intentionally serves as the back cover of the audit slip for two-sided duplex printing alignment.", canvas.width / 2, canvas.height / 2 + 80);
 };

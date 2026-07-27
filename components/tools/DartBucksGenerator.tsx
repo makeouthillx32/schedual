@@ -5,7 +5,7 @@ import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } fro
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
-import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks, renderSheetPreviewAsync } from "./dart-bucks/utils/canvasRenderer";
+import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
@@ -298,12 +298,21 @@ export default function DartBucksGenerator() {
       const marginX = (paperSpec.widthMm - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
       const marginY = (paperSpec.heightMm - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
+      // PAGE 1: CASH DRAWER AUDIT SLIP (FRONT)
       if (config.mode === "drawer") {
         const auditCanvas = document.createElement("canvas");
         drawDrawerAuditSlip(auditCanvas, config.drawerAmount, config.drawerBreakdown, config.batchId, config.stationPrefix);
         const auditImg = auditCanvas.toDataURL("image/png");
         doc.addImage(auditImg, "PNG", 0, 0, paperSpec.widthMm, paperSpec.heightMm);
-        doc.addPage();
+
+        // PAGE 2: AUDIT SLIP VERSO BACK PAGE (Guarantees duplex page alignment pairing)
+        if (config.includeDuplexBacks) {
+          doc.addPage();
+          const auditBackCanvas = document.createElement("canvas");
+          drawDrawerAuditSlipBack(auditBackCanvas, config.batchId);
+          const auditBackImg = auditBackCanvas.toDataURL("image/png");
+          doc.addImage(auditBackImg, "PNG", 0, 0, paperSpec.widthMm, paperSpec.heightMm);
+        }
       }
 
       const billQueue = getDrawerBillQueue();
@@ -319,11 +328,10 @@ export default function DartBucksGenerator() {
       const totalPages = Math.ceil(billQueue.length / (cols * rows));
 
       for (let p = 0; p < totalPages; p++) {
-        if (p > 0 || config.mode === "drawer") {
-          doc.addPage();
-        }
+        // Add new page for bill sheet
+        doc.addPage();
 
-        // FRONT PAGE
+        // FRONT BILL SHEET PAGE
         for (let i = 0; i < cols * rows; i++) {
           const queueIndex = p * (cols * rows) + i;
           if (queueIndex >= billQueue.length) break;
@@ -345,7 +353,7 @@ export default function DartBucksGenerator() {
           }
         }
 
-        // DUPLEX BACK PAGE
+        // BACK DUPLEX MIRRORED BILL SHEET PAGE
         if (config.includeDuplexBacks) {
           doc.addPage();
           for (let i = 0; i < cols * rows; i++) {
@@ -419,7 +427,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Async front sheet grid preview, itemized bill dispersion ($20s, $10s, $5s, $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
+            Exact duplex page alignment (Audit Verso Cover), itemized bill dispersion, 4.0"×2.0" Monopoly size, & prepress crop marks.
           </p>
         </div>
 
@@ -442,10 +450,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Front & Back Sheet Grid Live Preview Active (${config.drawerAmount} Allotment)
+            Duplex Sheet Page Pairing Active (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Live preview renders all 10 bills per prepress sheet via Promise.all vector rendering.
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). PDF pair indexing: Page 1 (Audit Front) + Page 2 (Audit Back), Page 3 (Bill Sheet 1 Front) + Page 4 (Bill Sheet 1 Back Mirrored).
           </span>
         </div>
       </div>

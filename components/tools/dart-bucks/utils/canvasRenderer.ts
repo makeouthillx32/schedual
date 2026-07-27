@@ -15,15 +15,15 @@ export const getContrastWatermark = (
   return isLightBg(bgColorHex) ? darkImg : lightImg;
 };
 
-// Render Dynamic Pure SVG Vector onto HTML5 Canvas (1200 x 600 px - 4.0" x 2.0" Monopoly Size)
+// Render Dynamic Pure SVG Vector onto HTML5 Canvas
 export const renderDartBuckOnCanvas = (
   canvas: HTMLCanvasElement,
   serialNum: number,
   config: DartBuckConfig,
-  denomSlots: Record<string, DenomArtSlot>,
-  loadedSlotImages: Record<string, HTMLImageElement>,
-  watermarkLightImg: HTMLImageElement | null,
-  watermarkDarkImg: HTMLImageElement | null,
+  denomSlots: Record<string, DenomArtSlot> = {},
+  loadedSlotImages: Record<string, HTMLImageElement> = {},
+  watermarkLightImg: HTMLImageElement | null = null,
+  watermarkDarkImg: HTMLImageElement | null = null,
   denomValue = config.denomination,
   width = 1200,
   height = 600
@@ -103,7 +103,111 @@ export const renderDartBuckBackOnCanvas = (
   ctx.fillText(serialStr, width - 50, height - 45);
 };
 
-// Draw Hairline Vector Crop Marks (Registration Black K=100%) in jsPDF
+// Async Prepress Sheet Grid Preview Renderer (Renders Front & Back Grids Cleanly via Promise.all)
+export const renderSheetPreviewAsync = async (
+  canvas: HTMLCanvasElement,
+  isBack: boolean,
+  pageIdx = 0,
+  config: DartBuckConfig,
+  getDrawerBillQueue: () => { denom: string; serial: number }[],
+  watermarkLightImg: HTMLImageElement | null,
+  watermarkDarkImg: HTMLImageElement | null
+) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+  canvas.width = Math.round(paperSpec.widthMm * 5.5);
+  canvas.height = Math.round(paperSpec.heightMm * 5.5);
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+  const cols = paperSpec.cols;
+  const rows = paperSpec.rows;
+  const billsPerPage = cols * rows;
+
+  const cardW = Math.round(5.5 * 101.6);
+  const cardH = Math.round(5.5 * 50.8);
+  const gapX = Math.round(5.5 * config.gutterMm);
+  const gapY = Math.round(5.5 * config.gutterMm);
+
+  const marginX = (paperSpec.widthMm - (cols * cardW + (cols - 1) * gapX)) / 2;
+  const marginY = (paperSpec.heightMm - (rows * cardH + (rows - 1) * gapY)) / 2;
+
+  const billQueue = getDrawerBillQueue();
+  const startIndex = pageIdx * billsPerPage;
+
+  const drawPromises: Promise<void>[] = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const gridIndex = r * cols + c;
+      const queueIdx = startIndex + gridIndex;
+      if (queueIdx >= billQueue.length) break;
+
+      const item = billQueue[queueIdx];
+      const colToDraw = isBack ? cols - 1 - c : c;
+      const x = marginX + colToDraw * (cardW + gapX);
+      const y = marginY + r * (cardH + gapY);
+
+      if (isBack) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = 1200;
+        tempCanvas.height = 600;
+        renderDartBuckBackOnCanvas(tempCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
+        ctx.drawImage(tempCanvas, x, y, cardW, cardH);
+      } else {
+        const svgString = generateDartBuckSVG(item.serial, config, {}, item.denom, 1200, 600);
+        const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+
+        const p = new Promise<void>((resolve) => {
+          img.onload = () => {
+            ctx.drawImage(img, x, y, cardW, cardH);
+            URL.revokeObjectURL(url);
+            resolve();
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve();
+          };
+        });
+        img.src = url;
+        drawPromises.push(p);
+      }
+
+      if (config.includeCropMarks) {
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - 2, y - 2, cardW + 4, cardH + 4);
+      }
+    }
+  }
+
+  await Promise.all(drawPromises);
+
+  const totalPages = Math.ceil(billQueue.length / billsPerPage) || 1;
+
+  ctx.fillStyle = isBack ? "#1e1b4b" : "#064e3b";
+  ctx.fillRect(marginX, 15, cols * cardW + (cols - 1) * gapX, 36);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 16px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(
+    `${paperSpec.label.toUpperCase()} - SHEET ${pageIdx + 1} OF ${totalPages} (${config.drawerWeighting.toUpperCase()} WEIGHTING) - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
+    canvas.width / 2,
+    38
+  );
+};
+
+// Draw Hairline Vector Crop Marks
 export const drawPdfCropMarks = (
   doc: any,
   x: number,

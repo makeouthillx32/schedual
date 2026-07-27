@@ -5,7 +5,7 @@ import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } fro
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
-import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks } from "./dart-bucks/utils/canvasRenderer";
+import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks, renderSheetPreviewAsync } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
@@ -193,7 +193,6 @@ export default function DartBucksGenerator() {
     setCurrentPageIndex(0);
   };
 
-  // Helper to construct the exact bill queue for the drawer allotment
   const getDrawerBillQueue = () => {
     const queue: { denom: string; serial: number }[] = [];
     let currentSerial = config.startSerial;
@@ -223,87 +222,11 @@ export default function DartBucksGenerator() {
     if (config.previewView === "card" && previewCanvasRef.current) {
       renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
     } else if (config.previewView === "sheet-front" && sheetCanvasRef.current) {
-      renderSheetPreview(sheetCanvasRef.current, false, currentPageIndex);
+      renderSheetPreviewAsync(sheetCanvasRef.current, false, currentPageIndex, config, getDrawerBillQueue, watermarkLightImg, watermarkDarkImg);
     } else if (config.previewView === "sheet-back" && sheetCanvasRef.current) {
-      renderSheetPreview(sheetCanvasRef.current, true, currentPageIndex);
+      renderSheetPreviewAsync(sheetCanvasRef.current, true, currentPageIndex, config, getDrawerBillQueue, watermarkLightImg, watermarkDarkImg);
     }
   }, [config, watermarkLightImg, watermarkDarkImg, currentPageIndex]);
-
-  const renderSheetPreview = (canvas: HTMLCanvasElement, isBack: boolean, pageIdx = 0) => {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
-    canvas.width = Math.round(paperSpec.widthMm * 5.5);
-    canvas.height = Math.round(paperSpec.heightMm * 5.5);
-
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = "#cbd5e1";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
-
-    const cols = paperSpec.cols;
-    const rows = paperSpec.rows;
-    const billsPerPage = cols * rows;
-
-    const cardW = Math.round(5.5 * 101.6);
-    const cardH = Math.round(5.5 * 50.8);
-    const gapX = Math.round(5.5 * config.gutterMm);
-    const gapY = Math.round(5.5 * config.gutterMm);
-
-    const marginX = (canvas.width - (cols * cardW + (cols - 1) * gapX)) / 2;
-    const marginY = (canvas.height - (rows * cardH + (rows - 1) * gapY)) / 2;
-
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = 1200;
-    tempCanvas.height = 600;
-
-    const billQueue = getDrawerBillQueue();
-    const startIndex = pageIdx * billsPerPage;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const gridIndex = r * cols + c;
-        const queueIdx = startIndex + gridIndex;
-        if (queueIdx >= billQueue.length) break;
-
-        const item = billQueue[queueIdx];
-        const colToDraw = isBack ? cols - 1 - c : c;
-        const x = marginX + colToDraw * (cardW + gapX);
-        const y = marginY + r * (cardH + gapY);
-
-        if (isBack) {
-          renderDartBuckBackOnCanvas(tempCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
-        } else {
-          renderDartBuckOnCanvas(tempCanvas, item.serial, config, {}, {}, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
-        }
-
-        ctx.drawImage(tempCanvas, x, y, cardW, cardH);
-
-        if (config.includeCropMarks) {
-          ctx.strokeStyle = "#ef4444";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x - 2, y - 2, cardW + 4, cardH + 4);
-        }
-      }
-    }
-
-    const totalPages = Math.ceil(billQueue.length / billsPerPage) || 1;
-
-    ctx.fillStyle = isBack ? "#1e1b4b" : "#064e3b";
-    ctx.fillRect(marginX, 15, cols * cardW + (cols - 1) * gapX, 36);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      `${paperSpec.label.toUpperCase()} - SHEET ${pageIdx + 1} OF ${totalPages} (${config.drawerWeighting.toUpperCase()} WEIGHTING) - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
-      canvas.width / 2,
-      38
-    );
-  };
 
   const initiatePrintRequest = () => {
     setShowAuthModal(true);
@@ -496,7 +419,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Real-time weight reflection (Balanced, Heavy $20s, Light $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
+            Async front sheet grid preview, itemized bill dispersion ($20s, $10s, $5s, $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
           </p>
         </div>
 
@@ -519,10 +442,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Live Preview Synchronized to {config.drawerWeighting.toUpperCase()} Drawer Weighting (${config.drawerAmount} Allotment)
+            Front & Back Sheet Grid Live Preview Active (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Live preview immediately re-renders all {totalCalculatedBills} bills across {calculatedTotalPages} sheet page(s).
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Live preview renders all 10 bills per prepress sheet via Promise.all vector rendering.
           </span>
         </div>
       </div>

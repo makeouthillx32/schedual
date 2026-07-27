@@ -15,23 +15,27 @@ export const getContrastWatermark = (
   return isLightBg(bgColorHex) ? darkImg : lightImg;
 };
 
+// Calculate exact non-cut-off card dimensions respecting printable margin safety boundaries
 export const getCardDimensionsMm = (paperSpec: PaperSpec, billScale: BillScalePreset = "large") => {
-  let mult = 1.0;
-  if (billScale === "large") mult = 1.20; // Large Full Paper Coverage (+20%)
-  if (billScale === "jumbo") mult = 1.32; // Jumbo Maximum Coverage (+32%)
-
   if (billScale === "standard") {
     return { w: 101.6, h: 50.8 };
   }
 
-  const baseW = paperSpec.defaultCardWidthMm;
-  const baseH = paperSpec.defaultCardHeightMm;
-
   if (billScale === "large") {
-    return { w: baseW, h: baseH };
+    return { w: paperSpec.defaultCardWidthMm, h: paperSpec.defaultCardHeightMm };
   }
 
-  return { w: baseW * mult, h: baseH * mult };
+  // Size 3 (Jumbo Max Coverage): Maximize bill dimensions to physical margin safety boundary (6mm margins)
+  const safeMarginMm = 6.0;
+  const gutterMm = 6.0;
+
+  const availWidthMm = paperSpec.widthMm - (2 * safeMarginMm) - ((paperSpec.cols - 1) * gutterMm);
+  const availHeightMm = paperSpec.heightMm - (2 * safeMarginMm) - ((paperSpec.rows - 1) * gutterMm);
+
+  const maxW = Math.floor((availWidthMm / paperSpec.cols) * 10) / 10;
+  const maxH = Math.floor((availHeightMm / paperSpec.rows) * 10) / 10;
+
+  return { w: Math.max(90, maxW), h: Math.max(50, maxH) };
 };
 
 // Pure Synchronous 2D Canvas Front Bill Renderer (100% Bulletproof for PDF & Canvas Exports)

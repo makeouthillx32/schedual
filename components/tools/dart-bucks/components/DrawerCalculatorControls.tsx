@@ -124,13 +124,13 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-              Bill Dimension & Full Paper Scale
+              Bill Dimension & Paper Fill Scale
             </label>
             <div className="grid grid-cols-3 gap-1.5 text-xs">
               {[
-                { id: "large", label: "Large Full Coverage", sub: "Recommended (+20% Fill)" },
-                { id: "standard", label: "Standard Monopoly", sub: "4.0\" × 2.0\" Size" },
-                { id: "jumbo", label: "Jumbo Max Coverage", sub: "+32% Maximum Size" },
+                { id: "large", label: "Size 2: Large Full", sub: "Recommended (Full Fill)" },
+                { id: "standard", label: "Size 1: Standard", sub: "4.0\" × 2.0\" Size" },
+                { id: "jumbo", label: "Size 3: Jumbo Safe", sub: "Max Printable (No Cut-Off)" },
               ].map((scale) => {
                 const isSelected = config.billScale === scale.id;
                 return (

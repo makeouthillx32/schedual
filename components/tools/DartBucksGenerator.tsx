@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Trophy, ShieldCheck } from "lucide-react";
+import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { DartBuckConfig, DenomArtSlot, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
+import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
 import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks } from "./dart-bucks/utils/canvasRenderer";
-import { DenomArtBuckets } from "./dart-bucks/components/DenomArtBuckets";
-import { CropEditorModal } from "./dart-bucks/components/CropEditorModal";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
@@ -42,35 +40,15 @@ export default function DartBucksGenerator() {
     expirationDate: "2026-12-31",
   });
 
-  const [denomSlots, setDenomSlots] = useState<Record<string, DenomArtSlot>>({
-    "1": { denom: "1", title: "$1 Bill Artwork", artist_name: "Client Submission", image_url: null },
-    "5": { denom: "5", title: "$5 Bill Artwork", artist_name: "Client Submission", image_url: null },
-    "10": { denom: "10", title: "$10 Bill Artwork", artist_name: "Client Submission", image_url: null },
-    "20": { denom: "20", title: "$20 Bill Artwork", artist_name: "Client Submission", image_url: null },
-  });
-
   const [batchLogs, setBatchLogs] = useState<BatchLogItem[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
-
-  const [activeEditingDenom, setActiveEditingDenom] = useState<"1" | "5" | "10" | "20" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // Crop Editor State
-  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-  const [cropZoom, setCropZoom] = useState(1.0);
-  const [cropOffsetX, setCropOffsetX] = useState(0);
-  const [cropOffsetY, setCropOffsetY] = useState(0);
-  const [cropFitMode, setCropFitMode] = useState<"cover" | "contain" | "stretch">("cover");
 
   const [watermarkLightImg, setWatermarkLightImg] = useState<HTMLImageElement | null>(null);
   const [watermarkDarkImg, setWatermarkDarkImg] = useState<HTMLImageElement | null>(null);
-  const [loadedSlotImages, setLoadedSlotImages] = useState<Record<string, HTMLImageElement>>({});
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const sheetCanvasRef = useRef<HTMLCanvasElement>(null);
-  const cropCanvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const activeSlotInputRef = useRef<"1" | "5" | "10" | "20" | null>(null);
 
   useEffect(() => {
     const imgL = new Image();
@@ -81,23 +59,8 @@ export default function DartBucksGenerator() {
     imgD.src = "/images/watermarks/watermark-dark.svg";
     imgD.onload = () => setWatermarkDarkImg(imgD);
 
-    fetchDenomSlots();
     fetchBatchLogs();
   }, []);
-
-  useEffect(() => {
-    Object.keys(denomSlots).forEach((denom) => {
-      const slot = denomSlots[denom];
-      if (slot.image_url) {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = slot.image_url;
-        img.onload = () => {
-          setLoadedSlotImages((prev) => ({ ...prev, [denom]: img }));
-        };
-      }
-    });
-  }, [denomSlots]);
 
   const fetchBatchLogs = async () => {
     const local = localStorage.getItem("dartbuck_batch_logs");
@@ -123,60 +86,6 @@ export default function DartBucksGenerator() {
       }
     } catch (e) {
       console.warn("Supabase batch logs fetch fallback");
-    }
-  };
-
-  const fetchDenomSlots = async () => {
-    const local = localStorage.getItem("dartbuck_denom_slots");
-    if (local) {
-      try {
-        setDenomSlots(JSON.parse(local));
-      } catch (err) {
-        console.error("Failed to parse local denom slots", err);
-      }
-    }
-
-    try {
-      if (supabase) {
-        const { data, error } = await supabase.from("dartbuck_denom_slots").select("*");
-        if (!error && data && data.length > 0) {
-          const merged = { ...denomSlots };
-          data.forEach((item: any) => {
-            if (item.denom && merged[item.denom]) {
-              merged[item.denom] = {
-                denom: item.denom,
-                title: item.title || `$${item.denom} Bill Artwork`,
-                artist_name: item.artist_name || "Client Submission",
-                image_url: item.image_url,
-              };
-            }
-          });
-          setDenomSlots(merged);
-          localStorage.setItem("dartbuck_denom_slots", JSON.stringify(merged));
-        }
-      }
-    } catch (e) {
-      console.warn("Supabase denom slots fetch fallback");
-    }
-  };
-
-  const saveSlotData = async (updatedSlots: Record<string, DenomArtSlot>) => {
-    setDenomSlots(updatedSlots);
-    localStorage.setItem("dartbuck_denom_slots", JSON.stringify(updatedSlots));
-
-    try {
-      if (supabase) {
-        const upsertData = Object.values(updatedSlots).map((slot) => ({
-          denom: slot.denom,
-          title: slot.title,
-          artist_name: slot.artist_name,
-          image_url: slot.image_url,
-          updated_at: new Date().toISOString(),
-        }));
-        await supabase.from("dartbuck_denom_slots").upsert(upsertData, { onConflict: "denom" });
-      }
-    } catch (e) {
-      console.warn("Supabase slot upsert fallback");
     }
   };
 
@@ -281,87 +190,15 @@ export default function DartBucksGenerator() {
     }));
   };
 
-  const handleSlotFileUpload = (denom: "1" | "5" | "10" | "20", file: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setActiveEditingDenom(denom);
-      setCropImageSrc(dataUrl);
-      setCropZoom(1.0);
-      setCropOffsetX(0);
-      setCropOffsetY(0);
-      setCropFitMode("cover");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && activeSlotInputRef.current) {
-      handleSlotFileUpload(activeSlotInputRef.current, file);
-    }
-  };
-
-  const triggerUploadForDenom = (denom: "1" | "5" | "10" | "20") => {
-    activeSlotInputRef.current = denom;
-    fileInputRef.current?.click();
-  };
-
-  const triggerEditForDenom = (denom: "1" | "5" | "10" | "20") => {
-    const slot = denomSlots[denom];
-    if (!slot || !slot.image_url) {
-      triggerUploadForDenom(denom);
-      return;
-    }
-    setActiveEditingDenom(denom);
-    setCropImageSrc(slot.image_url);
-    setCropZoom(1.0);
-    setCropOffsetX(0);
-    setCropOffsetY(0);
-    setCropFitMode("cover");
-  };
-
-  const applyCropAndSaveSlot = async () => {
-    if (!activeEditingDenom || !cropCanvasRef.current) return;
-    const canvas = cropCanvasRef.current;
-    const croppedDataUrl = canvas.toDataURL("image/png");
-
-    const updated = {
-      ...denomSlots,
-      [activeEditingDenom]: {
-        ...denomSlots[activeEditingDenom],
-        image_url: croppedDataUrl,
-      },
-    };
-
-    await saveSlotData(updated);
-
-    setActiveEditingDenom(null);
-    setCropImageSrc(null);
-  };
-
-  const clearSlotArt = async (denom: "1" | "5" | "10" | "20", e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updated = {
-      ...denomSlots,
-      [denom]: {
-        ...denomSlots[denom],
-        image_url: null,
-      },
-    };
-    await saveSlotData(updated);
-  };
-
   useEffect(() => {
     if (config.previewView === "card" && previewCanvasRef.current) {
-      renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
+      renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
     } else if (config.previewView === "sheet-front" && sheetCanvasRef.current) {
       renderSheetPreview(sheetCanvasRef.current, false);
     } else if (config.previewView === "sheet-back" && sheetCanvasRef.current) {
       renderSheetPreview(sheetCanvasRef.current, true);
     }
-  }, [config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg]);
+  }, [config, watermarkLightImg, watermarkDarkImg]);
 
   const renderSheetPreview = (canvas: HTMLCanvasElement, isBack: boolean) => {
     const ctx = canvas.getContext("2d");
@@ -380,7 +217,7 @@ export default function DartBucksGenerator() {
 
     const cols = paperSpec.cols;
     const rows = paperSpec.rows;
-    // Exact Monopoly Bill Size: 101.6 mm x 50.8 mm (4.0" x 2.0")
+
     const cardW = Math.round(5.5 * 101.6);
     const cardH = Math.round(5.5 * 50.8);
     const gapX = Math.round(5.5 * config.gutterMm);
@@ -404,7 +241,7 @@ export default function DartBucksGenerator() {
         if (isBack) {
           renderDartBuckBackOnCanvas(tempCanvas, serialIdx, config, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
         } else {
-          renderDartBuckOnCanvas(tempCanvas, serialIdx, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
+          renderDartBuckOnCanvas(tempCanvas, serialIdx, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
         }
 
         ctx.drawImage(tempCanvas, x, y, cardW, cardH);
@@ -426,7 +263,7 @@ export default function DartBucksGenerator() {
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `${paperSpec.label.toUpperCase()} - MONOPOLY SIZE (4.0" × 2.0") - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
+      `${paperSpec.label.toUpperCase()} - MONOPOLY SIZE (4.0" × 2.0") - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
       canvas.width / 2,
       38
     );
@@ -482,7 +319,7 @@ export default function DartBucksGenerator() {
 
       await saveBatchLog(logItem);
 
-      // Execute PDF Creation with exact 4.0" x 2.0" (101.6 mm x 50.8 mm) Monopoly bill size
+      // Execute Vector PDF Creation
       const { jsPDF } = await import("jspdf");
       const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
 
@@ -553,7 +390,7 @@ export default function DartBucksGenerator() {
           if (queueIndex >= billQueue.length) break;
 
           const item = billQueue[queueIndex];
-          renderDartBuckOnCanvas(frontCanvas, item.serial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
+          renderDartBuckOnCanvas(frontCanvas, item.serial, config, {}, {}, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
           const imgData = frontCanvas.toDataURL("image/png");
 
           const col = i % cols;
@@ -620,14 +457,6 @@ export default function DartBucksGenerator() {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        onChange={handleFileInputChange}
-        className="hidden"
-      />
-
       {/* Print Authorization Safeguard Modal */}
       {showAuthModal && (
         <PrintAuthModal
@@ -640,37 +469,15 @@ export default function DartBucksGenerator() {
         />
       )}
 
-      {/* Crop Editor Modal */}
-      {activeEditingDenom && cropImageSrc && (
-        <CropEditorModal
-          denom={activeEditingDenom}
-          imageSrc={cropImageSrc}
-          zoom={cropZoom}
-          offsetX={cropOffsetX}
-          offsetY={cropOffsetY}
-          fitMode={cropFitMode}
-          onZoomChange={setCropZoom}
-          onOffsetXChange={setCropOffsetX}
-          onOffsetYChange={setCropOffsetY}
-          onFitModeChange={setCropFitMode}
-          onClose={() => {
-            setActiveEditingDenom(null);
-            setCropImageSrc(null);
-          }}
-          onSave={applyCropAndSaveSlot}
-          cropCanvasRef={cropCanvasRef}
-        />
-      )}
-
       {/* Header Banner */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between bg-card p-6 rounded-xl border border-border shadow-sm gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            DartBucks Cash Drawer & Monopoly Prepress Tool
+            DartBucks Monopoly Cash Drawer & Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Exact 4.0"×2.0" Monopoly bill dimensions, multiple inner borders, background paper shine, & prepress PDF crop marks.
+            Pure vector SVG currency engine, exact 4.0"×2.0" Monopoly dimensions, date-stamped batch IDs, & prepress PDF crop marks.
           </p>
         </div>
 
@@ -688,15 +495,18 @@ export default function DartBucksGenerator() {
         </button>
       </div>
 
-      {/* INDIVIDUAL BILL ART BUCKETS */}
-      <DenomArtBuckets
-        denomSlots={denomSlots}
-        selectedDenom={config.denomination}
-        onSelectDenom={(denom) => setConfig((prev) => ({ ...prev, denomination: denom }))}
-        onUpload={triggerUploadForDenom}
-        onEdit={triggerEditForDenom}
-        onClear={clearSlotArt}
-      />
+      {/* Pure Vector Generation Status Notice */}
+      <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-xs">
+        <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="flex-1">
+          <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
+            Pure Vector SVG Generation Engine Active
+          </span>
+          <span className="text-muted-foreground">
+            All Monopoly bills are dynamically rendered as resolution-independent vector graphics featuring concentric borders, background paper shine, intaglio cross-hatching, and date-stamped security seals directly onto PDF prepress sheets.
+          </span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Controls */}
@@ -715,7 +525,7 @@ export default function DartBucksGenerator() {
           <PreviewPanel
             config={config}
             setConfig={setConfig}
-            denomSlots={denomSlots}
+            denomSlots={{}}
             previewCanvasRef={previewCanvasRef}
             sheetCanvasRef={sheetCanvasRef}
           />

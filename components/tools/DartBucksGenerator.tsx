@@ -3,9 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Download, RefreshCw, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { DartBuckConfig, DenomArtSlot } from "./dart-bucks/types";
+import { DartBuckConfig, DenomArtSlot, PAPER_SPECS } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown } from "./dart-bucks/utils/security";
-import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip } from "./dart-bucks/utils/canvasRenderer";
+import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks } from "./dart-bucks/utils/canvasRenderer";
 import { DenomArtBuckets } from "./dart-bucks/components/DenomArtBuckets";
 import { CropEditorModal } from "./dart-bucks/components/CropEditorModal";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
@@ -30,6 +30,10 @@ export default function DartBucksGenerator() {
     showPresetText: true,
     showWatermark: true,
     includeDuplexBacks: true,
+    paperSize: "11x12-14",
+    includeCropMarks: true,
+    bleedMm: 3,
+    gutterMm: 6,
     previewView: "card",
     serialPosition: "bottom",
   });
@@ -246,22 +250,23 @@ export default function DartBucksGenerator() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = 1240;
-    canvas.height = 1754;
+    const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+    canvas.width = Math.round(paperSpec.widthMm * 5.5);
+    canvas.height = Math.round(paperSpec.heightMm * 5.5);
 
     ctx.fillStyle = "#f8fafc";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 4;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
 
-    const cols = 2;
-    const rows = 7;
-    const cardW = 550;
-    const cardH = 215;
-    const gapX = 24;
-    const gapY = 20;
+    const cols = paperSpec.cols;
+    const rows = paperSpec.rows;
+    const cardW = Math.round(5.5 * 95);
+    const cardH = Math.round(5.5 * 37.1);
+    const gapX = Math.round(5.5 * config.gutterMm);
+    const gapY = Math.round(5.5 * config.gutterMm);
 
     const marginX = (canvas.width - (cols * cardW + (cols - 1) * gapX)) / 2;
     const marginY = (canvas.height - (rows * cardH + (rows - 1) * gapY)) / 2;
@@ -285,22 +290,28 @@ export default function DartBucksGenerator() {
         }
 
         ctx.drawImage(tempCanvas, x, y, cardW, cardH);
+
+        // Draw visual cut guidelines in preview
+        if (config.includeCropMarks) {
+          ctx.strokeStyle = "#ef4444";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x - 2, y - 2, cardW + 4, cardH + 4);
+        }
+
         serialIdx++;
       }
     }
 
     ctx.fillStyle = isBack ? "#1e1b4b" : "#064e3b";
-    ctx.fillRect(marginX, 30, cols * cardW + (cols - 1) * gapX, 40);
+    ctx.fillRect(marginX, 15, cols * cardW + (cols - 1) * gapX, 36);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px sans-serif";
+    ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      isBack
-        ? "PRINTABLE A4 SHEET - BACK SIDE (DUPLEX MIRRORED FOR PERFECT ALIGNMENT)"
-        : "PRINTABLE A4 SHEET - FRONT SIDE (2×7 GRID)",
+      `${paperSpec.label.toUpperCase()} - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
       canvas.width / 2,
-      56
+      38
     );
   };
 
@@ -308,28 +319,30 @@ export default function DartBucksGenerator() {
     setIsGenerating(true);
     try {
       const { jsPDF } = await import("jspdf");
+      const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
 
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
-        format: "a4",
+        format: [paperSpec.widthMm, paperSpec.heightMm],
       });
 
-      const cols = 2;
-      const rows = 7;
+      const cols = paperSpec.cols;
+      const rows = paperSpec.rows;
       const cardWidthMm = 95;
       const cardHeightMm = 37.1;
-      const gapX = 4;
-      const gapY = 3.5;
+      const gapX = config.gutterMm;
+      const gapY = config.gutterMm;
 
-      const marginX = (210 - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
-      const marginY = (297 - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
+      const marginX = (paperSpec.widthMm - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
+      const marginY = (paperSpec.heightMm - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
+      // PAGE 1: Cash Drawer Audit Slip (If in Drawer mode)
       if (config.mode === "drawer") {
         const auditCanvas = document.createElement("canvas");
         drawDrawerAuditSlip(auditCanvas, config.drawerAmount, config.drawerBreakdown, config.batchId, config.stationPrefix);
         const auditImg = auditCanvas.toDataURL("image/png");
-        doc.addImage(auditImg, "PNG", 0, 0, 210, 297);
+        doc.addImage(auditImg, "PNG", 0, 0, paperSpec.widthMm, paperSpec.heightMm);
         doc.addPage();
       }
 
@@ -370,6 +383,7 @@ export default function DartBucksGenerator() {
           doc.addPage();
         }
 
+        // FRONT PAGE
         for (let i = 0; i < cols * rows; i++) {
           const queueIndex = p * (cols * rows) + i;
           if (queueIndex >= billQueue.length) break;
@@ -385,8 +399,13 @@ export default function DartBucksGenerator() {
           const y = marginY + row * (cardHeightMm + gapY);
 
           doc.addImage(imgData, "PNG", x, y, cardWidthMm, cardHeightMm);
+
+          if (config.includeCropMarks) {
+            drawPdfCropMarks(doc, x, y, cardWidthMm, cardHeightMm, config.bleedMm, 4);
+          }
         }
 
+        // DUPLEX BACK PAGE
         if (config.includeDuplexBacks) {
           doc.addPage();
           for (let i = 0; i < cols * rows; i++) {
@@ -406,6 +425,10 @@ export default function DartBucksGenerator() {
             const y = marginY + row * (cardHeightMm + gapY);
 
             doc.addImage(imgDataBack, "PNG", x, y, cardWidthMm, cardHeightMm);
+
+            if (config.includeCropMarks) {
+              drawPdfCropMarks(doc, x, y, cardWidthMm, cardHeightMm, config.bleedMm, 4);
+            }
           }
         }
       }
@@ -459,10 +482,10 @@ export default function DartBucksGenerator() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            DartBucks Cash Drawer & Individual Bill Art Tool
+            DartBucks Cash Drawer & Vector Bleed Print Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Assign custom client artwork to individual $20, $10, $5, and $1 bill slots with crop & stretch editor.
+            Print 11"×12", Letter, or A4 sheets with 3mm bleeds, 6mm double-cut gutters, & hairline guillotine crop marks.
           </p>
         </div>
         <button
@@ -475,7 +498,7 @@ export default function DartBucksGenerator() {
           ) : (
             <Download className="w-5 h-5" />
           )}
-          {isGenerating ? "Generating Allotment PDF..." : "Export Allotment PDF"}
+          {isGenerating ? "Generating Prepress PDF..." : "Export Prepress PDF"}
         </button>
       </div>
 

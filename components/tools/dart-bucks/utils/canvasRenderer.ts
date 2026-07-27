@@ -1,4 +1,4 @@
-import { DartBuckConfig, DENOMINATIONS, DenomArtSlot } from "../types";
+import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec } from "../types";
 import { getSerialString, isLightBg } from "./security";
 
 export const getContrastWatermark = (
@@ -113,6 +113,7 @@ export const drawTextOverlay = (
   ctx.fillText(serialStr, boxX + 280, boxY + 23);
 };
 
+// Render DartBuck FRONT side
 export const renderDartBuckOnCanvas = (
   canvas: HTMLCanvasElement,
   serialNum: number,
@@ -249,6 +250,7 @@ export const renderDartBuckOnCanvas = (
   drawTextOverlay(ctx, serialStr, width, height, config.serialPosition);
 };
 
+// Render DartBuck BACK side
 export const renderDartBuckBackOnCanvas = (
   canvas: HTMLCanvasElement,
   serialNum: number,
@@ -302,6 +304,36 @@ export const renderDartBuckBackOnCanvas = (
   ctx.fillStyle = "#0f172a";
   ctx.textAlign = "right";
   ctx.fillText(serialStr, width - 45, height - 40);
+};
+
+// Draw Hairline Vector Crop Marks (Registration Black K=100%) in jsPDF
+export const drawPdfCropMarks = (
+  doc: any,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  bleedOffset = 3,
+  markLength = 4
+) => {
+  doc.setDrawColor(0, 0, 0); // Registration Black
+  doc.setLineWidth(0.1);     // Hairline ~0.25 pt
+
+  // Top-Left Corner
+  doc.line(x - bleedOffset - markLength, y, x - bleedOffset, y);
+  doc.line(x, y - bleedOffset - markLength, x, y - bleedOffset);
+
+  // Top-Right Corner
+  doc.line(x + w + bleedOffset, y, x + w + bleedOffset + markLength, y);
+  doc.line(x + w, y - bleedOffset - markLength, x + w, y - bleedOffset);
+
+  // Bottom-Left Corner
+  doc.line(x - bleedOffset - markLength, y + h, x - bleedOffset, y + h);
+  doc.line(x, y + h + bleedOffset, x, y + h + bleedOffset + markLength);
+
+  // Bottom-Right Corner
+  doc.line(x + w + bleedOffset, y + h, x + w + bleedOffset + markLength, y + h);
+  doc.line(x + w, y + h + bleedOffset, x + w, y + h + bleedOffset + markLength);
 };
 
 export const drawDrawerAuditSlip = (

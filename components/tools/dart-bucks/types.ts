@@ -26,6 +26,25 @@ export const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
+export type PaperSizePreset = "letter" | "a4" | "11x12-14" | "11x12-21";
+
+export interface PaperSpec {
+  id: PaperSizePreset;
+  label: string;
+  widthMm: number;
+  heightMm: number;
+  cols: number;
+  rows: number;
+  billsPerSheet: number;
+}
+
+export const PAPER_SPECS: Record<PaperSizePreset, PaperSpec> = {
+  "letter": { id: "letter", label: 'US Letter (8.5" × 11")', widthMm: 215.9, heightMm: 279.4, cols: 2, rows: 6, billsPerSheet: 12 },
+  "a4": { id: "a4", label: "A4 Sheet (210 × 297 mm)", widthMm: 210.0, heightMm: 297.0, cols: 2, rows: 6, billsPerSheet: 12 },
+  "11x12-14": { id: "11x12-14", label: 'Custom 11" × 12" (14 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 7, billsPerSheet: 14 },
+  "11x12-21": { id: "11x12-21", label: 'Custom 11" × 12" (21 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 3, rows: 7, billsPerSheet: 21 },
+};
+
 export interface DartBuckConfig {
   mode: "single" | "drawer";
   drawerAmount: number;
@@ -44,6 +63,10 @@ export interface DartBuckConfig {
   showPresetText: boolean;
   showWatermark: boolean;
   includeDuplexBacks: boolean;
+  paperSize: PaperSizePreset;
+  includeCropMarks: boolean;
+  bleedMm: number;
+  gutterMm: number;
   previewView: "card" | "sheet-front" | "sheet-back";
   serialPosition: "bottom" | "top" | "bottom-right";
 }

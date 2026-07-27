@@ -1,6 +1,6 @@
 import React from "react";
-import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw } from "lucide-react";
-import { DartBuckConfig } from "../types";
+import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop } from "lucide-react";
+import { DartBuckConfig, PAPER_SPECS, PaperSizePreset } from "../types";
 
 interface DrawerCalculatorControlsProps {
   config: DartBuckConfig;
@@ -50,6 +50,62 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
             <DollarSign className="w-4 h-4" />
             Single Denomination Batch
           </button>
+        </div>
+      </div>
+
+      {/* PAPER SIZE & PREPRESS PRINT SETTINGS */}
+      <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+        <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+          <Printer className="w-5 h-5 text-indigo-500" />
+          Paper Stock & Cutting Prepress Specs
+        </h2>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Target Paper Sheet Size
+            </label>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {(Object.keys(PAPER_SPECS) as PaperSizePreset[]).map((key) => {
+                const spec = PAPER_SPECS[key];
+                const isSelected = config.paperSize === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setConfig((prev) => ({ ...prev, paperSize: key }))}
+                    className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary font-bold shadow-sm"
+                        : "border-input bg-background hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-bold truncate">{spec.label}</span>
+                    <span className="text-[10px] opacity-80 mt-1">
+                      {spec.billsPerSheet} Bills ({spec.cols}×{spec.rows} Grid)
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-border space-y-2 text-xs">
+            <label className="flex items-center gap-2 cursor-pointer font-semibold text-foreground">
+              <input
+                type="checkbox"
+                checked={config.includeCropMarks}
+                onChange={(e) => setConfig((prev) => ({ ...prev, includeCropMarks: e.target.checked }))}
+                className="rounded border-input text-primary focus:ring-primary h-4 w-4"
+              />
+              <Crop className="w-4 h-4 text-emerald-600" />
+              Draw Vector Crop Marks (Cut Marks for Stack Cutter)
+            </label>
+
+            <div className="p-2.5 bg-muted/60 rounded-md text-[11px] text-muted-foreground flex justify-between">
+              <span>Bleed Extension: <strong>3.0 mm (0.125")</strong></span>
+              <span>Double-Cut Gutter: <strong>6.0 mm (0.25")</strong></span>
+            </div>
+          </div>
         </div>
       </div>
 

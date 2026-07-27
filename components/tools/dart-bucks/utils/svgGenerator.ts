@@ -6,114 +6,114 @@ export interface MonthPalette {
   denoms: Record<string, { bg: string; border: string; circleBg: string; text: string; innerTint: string }>;
 }
 
-// Matte Intaglio Print Color Palettes (Flat Matte Inks for White Paper Stock)
+// 12-Month Matte Monopoly Color Palettes (Vibrant, Distinct Color Themes for White Matte Paper Stock)
 export const MONTHLY_PALETTES: Record<number, MonthPalette> = {
-  0: { // January - Matte Navy & Ice
-    name: "January Matte Navy",
+  0: { // January - Matte Navy & Ice Blue
+    name: "January Ice Navy",
     denoms: {
-      "1": { bg: "#ffffff", border: "#1e293b", circleBg: "#ffffff", text: "#0f172a", innerTint: "rgba(30, 41, 59, 0.08)" },
-      "5": { bg: "#ffffff", border: "#0369a1", circleBg: "#f0f9ff", text: "#0c4a6e", innerTint: "rgba(3, 105, 161, 0.10)" },
-      "10": { bg: "#ffffff", border: "#0f172a", circleBg: "#e0f2fe", text: "#0369a1", innerTint: "rgba(15, 23, 42, 0.12)" },
-      "20": { bg: "#ffffff", border: "#064e3b", circleBg: "#ecfdf5", text: "#022c22", innerTint: "rgba(6, 78, 59, 0.10)" },
+      "1": { bg: "#ffffff", border: "#1e293b", circleBg: "#f1f5f9", text: "#0f172a", innerTint: "rgba(30, 41, 59, 0.12)" },
+      "5": { bg: "#ffffff", border: "#0284c7", circleBg: "#e0f2fe", text: "#0369a1", innerTint: "rgba(2, 132, 199, 0.14)" },
+      "10": { bg: "#ffffff", border: "#2563eb", circleBg: "#dbeafe", text: "#1d4ed8", innerTint: "rgba(37, 99, 235, 0.14)" },
+      "20": { bg: "#ffffff", border: "#0d9488", circleBg: "#ccfbf1", text: "#0f766e", innerTint: "rgba(13, 148, 136, 0.14)" },
     },
   },
-  1: { // February - Matte Rose
-    name: "February Matte Rose",
+  1: { // February - Matte Rose & Magenta
+    name: "February Rose Magenta",
     denoms: {
-      "1": { bg: "#ffffff", border: "#4c0519", circleBg: "#ffffff", text: "#4c0519", innerTint: "rgba(76, 5, 25, 0.08)" },
-      "5": { bg: "#ffffff", border: "#831843", circleBg: "#fdf2f8", text: "#500724", innerTint: "rgba(131, 24, 67, 0.10)" },
-      "10": { bg: "#ffffff", border: "#881337", circleBg: "#fff1f2", text: "#4c0519", innerTint: "rgba(136, 19, 55, 0.12)" },
-      "20": { bg: "#ffffff", border: "#581c87", circleBg: "#faf5ff", text: "#3b0764", innerTint: "rgba(88, 28, 135, 0.10)" },
+      "1": { bg: "#ffffff", border: "#4c0519", circleBg: "#ffe4e6", text: "#881337", innerTint: "rgba(76, 5, 25, 0.12)" },
+      "5": { bg: "#ffffff", border: "#be185d", circleBg: "#fce7f3", text: "#9d174d", innerTint: "rgba(190, 24, 93, 0.14)" },
+      "10": { bg: "#ffffff", border: "#e11d48", circleBg: "#ffe4e6", text: "#be123c", innerTint: "rgba(225, 29, 72, 0.14)" },
+      "20": { bg: "#ffffff", border: "#7e22ce", circleBg: "#f3e8ff", text: "#6b21a8", innerTint: "rgba(126, 34, 206, 0.14)" },
     },
   },
-  2: { // March - Matte Shamrock
-    name: "March Matte Shamrock",
+  2: { // March - Matte Shamrock & Mint Green
+    name: "March Shamrock Mint",
     denoms: {
-      "1": { bg: "#ffffff", border: "#14532d", circleBg: "#ffffff", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.08)" },
-      "5": { bg: "#ffffff", border: "#3f6212", circleBg: "#f7fee7", text: "#1a2e05", innerTint: "rgba(63, 98, 18, 0.10)" },
-      "10": { bg: "#ffffff", border: "#78350f", circleBg: "#fffbeb", text: "#451a03", innerTint: "rgba(120, 53, 15, 0.12)" },
-      "20": { bg: "#ffffff", border: "#064e3b", circleBg: "#ecfdf5", text: "#022c22", innerTint: "rgba(6, 78, 59, 0.10)" },
+      "1": { bg: "#ffffff", border: "#14532d", circleBg: "#dcfce7", text: "#15803d", innerTint: "rgba(20, 83, 45, 0.12)" },
+      "5": { bg: "#ffffff", border: "#4d7c0f", circleBg: "#ecfccb", text: "#3f6212", innerTint: "rgba(77, 124, 15, 0.14)" },
+      "10": { bg: "#ffffff", border: "#b45309", circleBg: "#fef3c7", text: "#78350f", innerTint: "rgba(180, 83, 9, 0.14)" },
+      "20": { bg: "#ffffff", border: "#047857", circleBg: "#d1fae5", text: "#065f46", innerTint: "rgba(4, 120, 87, 0.14)" },
     },
   },
-  3: { // April - Matte Pastel
-    name: "April Matte Pastel",
+  3: { // April - Matte Lavender & Pastel Spring
+    name: "April Pastel Spring",
     denoms: {
-      "1": { bg: "#ffffff", border: "#334155", circleBg: "#ffffff", text: "#0f172a", innerTint: "rgba(51, 65, 85, 0.08)" },
-      "5": { bg: "#ffffff", border: "#701a75", circleBg: "#fdf2f8", text: "#4a044e", innerTint: "rgba(112, 26, 117, 0.10)" },
-      "10": { bg: "#ffffff", border: "#713f12", circleBg: "#fefce8", text: "#365314", innerTint: "rgba(113, 63, 18, 0.12)" },
-      "20": { bg: "#ffffff", border: "#14532d", circleBg: "#f0fdf4", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.10)" },
+      "1": { bg: "#ffffff", border: "#475569", circleBg: "#f1f5f9", text: "#334155", innerTint: "rgba(71, 85, 105, 0.12)" },
+      "5": { bg: "#ffffff", border: "#a21caf", circleBg: "#fae8ff", text: "#86198f", innerTint: "rgba(162, 28, 175, 0.14)" },
+      "10": { bg: "#ffffff", border: "#c2410c", circleBg: "#ffedd5", text: "#9a3412", innerTint: "rgba(194, 65, 12, 0.14)" },
+      "20": { bg: "#ffffff", border: "#15803d", circleBg: "#dcfce7", text: "#166534", innerTint: "rgba(21, 128, 61, 0.14)" },
     },
   },
-  4: { // May - Matte Solar Gold
-    name: "May Matte Solar Gold",
+  4: { // May - Matte Solar Gold & Amber
+    name: "May Solar Gold",
     denoms: {
-      "1": { bg: "#ffffff", border: "#78350f", circleBg: "#ffffff", text: "#451a03", innerTint: "rgba(120, 53, 15, 0.08)" },
-      "5": { bg: "#ffffff", border: "#7c2d12", circleBg: "#fff7ed", text: "#431407", innerTint: "rgba(124, 45, 18, 0.10)" },
-      "10": { bg: "#ffffff", border: "#451a03", circleBg: "#fefce8", text: "#3b1e06", innerTint: "rgba(69, 26, 3, 0.12)" },
-      "20": { bg: "#ffffff", border: "#064e3b", circleBg: "#f0fdf4", text: "#022c22", innerTint: "rgba(6, 78, 59, 0.10)" },
+      "1": { bg: "#ffffff", border: "#78350f", circleBg: "#fef3c7", text: "#451a03", innerTint: "rgba(120, 53, 15, 0.12)" },
+      "5": { bg: "#ffffff", border: "#c2410c", circleBg: "#ffedd5", text: "#9a3412", innerTint: "rgba(194, 65, 12, 0.14)" },
+      "10": { bg: "#ffffff", border: "#d97706", circleBg: "#fef3c7", text: "#b45309", innerTint: "rgba(217, 119, 6, 0.14)" },
+      "20": { bg: "#ffffff", border: "#047857", circleBg: "#d1fae5", text: "#065f46", innerTint: "rgba(4, 120, 87, 0.14)" },
     },
   },
-  5: { // June - Matte Cyan Breeze
-    name: "June Matte Cyan Breeze",
+  5: { // June - Matte Cyan & Marine Teal
+    name: "June Marine Cyan",
     denoms: {
-      "1": { bg: "#ffffff", border: "#0f172a", circleBg: "#ffffff", text: "#0c4a6e", innerTint: "rgba(15, 23, 42, 0.08)" },
-      "5": { bg: "#ffffff", border: "#881337", circleBg: "#fff1f2", text: "#4c0519", innerTint: "rgba(136, 19, 55, 0.10)" },
-      "10": { bg: "#ffffff", border: "#164e63", circleBg: "#ecfeff", text: "#083344", innerTint: "rgba(22, 78, 99, 0.12)" },
-      "20": { bg: "#ffffff", border: "#115e59", circleBg: "#f0fdf4", text: "#042f2e", innerTint: "rgba(17, 94, 89, 0.10)" },
+      "1": { bg: "#ffffff", border: "#0f172a", circleBg: "#f1f5f9", text: "#0f172a", innerTint: "rgba(15, 23, 42, 0.12)" },
+      "5": { bg: "#ffffff", border: "#be185d", circleBg: "#fce7f3", text: "#831843", innerTint: "rgba(190, 24, 93, 0.14)" },
+      "10": { bg: "#ffffff", border: "#0891b2", circleBg: "#cffafe", text: "#0e7490", innerTint: "rgba(8, 145, 178, 0.14)" },
+      "20": { bg: "#ffffff", border: "#0f766e", circleBg: "#ccfbf1", text: "#115e59", innerTint: "rgba(15, 118, 110, 0.14)" },
     },
   },
   6: { // July - Classic Matte Monopoly Ink (Default)
-    name: "July Classic Matte Monopoly",
+    name: "July Classic Monopoly",
     denoms: {
-      "1": { bg: "#ffffff", border: "#27272a", circleBg: "#ffffff", text: "#09090b", innerTint: "rgba(39, 39, 42, 0.08)" },
-      "5": { bg: "#ffffff", border: "#831843", circleBg: "#fdf2f8", text: "#500724", innerTint: "rgba(131, 24, 67, 0.10)" },
-      "10": { bg: "#ffffff", border: "#713f12", circleBg: "#fefce8", text: "#365314", innerTint: "rgba(113, 63, 18, 0.12)" },
-      "20": { bg: "#ffffff", border: "#064e3b", circleBg: "#f0fdf4", text: "#022c22", innerTint: "rgba(6, 78, 59, 0.10)" },
+      "1": { bg: "#ffffff", border: "#18181b", circleBg: "#f4f4f5", text: "#09090b", innerTint: "rgba(24, 24, 27, 0.12)" },
+      "5": { bg: "#ffffff", border: "#be185d", circleBg: "#fce7f3", text: "#831843", innerTint: "rgba(190, 24, 93, 0.14)" },
+      "10": { bg: "#ffffff", border: "#b45309", circleBg: "#fef3c7", text: "#78350f", innerTint: "rgba(180, 83, 9, 0.14)" },
+      "20": { bg: "#ffffff", border: "#047857", circleBg: "#d1fae5", text: "#064e3b", innerTint: "rgba(4, 120, 87, 0.14)" },
     },
   },
-  7: { // August - Matte Solar Blaze
-    name: "August Matte Solar Blaze",
+  7: { // August - Matte Solar Blaze & Coral
+    name: "August Solar Blaze",
     denoms: {
-      "1": { bg: "#ffffff", border: "#713f12", circleBg: "#ffffff", text: "#451a03", innerTint: "rgba(113, 63, 18, 0.08)" },
-      "5": { bg: "#ffffff", border: "#7c2d12", circleBg: "#fff7ed", text: "#431407", innerTint: "rgba(124, 45, 18, 0.10)" },
-      "10": { bg: "#ffffff", border: "#713f12", circleBg: "#fefce8", text: "#3b1e06", innerTint: "rgba(113, 63, 18, 0.12)" },
-      "20": { bg: "#ffffff", border: "#14532d", circleBg: "#f0fdf4", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.10)" },
+      "1": { bg: "#ffffff", border: "#78350f", circleBg: "#fef3c7", text: "#451a03", innerTint: "rgba(120, 53, 15, 0.12)" },
+      "5": { bg: "#ffffff", border: "#ea580c", circleBg: "#ffedd5", text: "#c2410c", innerTint: "rgba(234, 88, 12, 0.14)" },
+      "10": { bg: "#ffffff", border: "#d97706", circleBg: "#fef3c7", text: "#b45309", innerTint: "rgba(217, 119, 6, 0.14)" },
+      "20": { bg: "#ffffff", border: "#15803d", circleBg: "#dcfce7", text: "#166534", innerTint: "rgba(21, 128, 61, 0.14)" },
     },
   },
-  8: { // September - Matte Autumn Copper
-    name: "September Matte Autumn Copper",
+  8: { // September - Matte Autumn Copper & Amber
+    name: "September Autumn Copper",
     denoms: {
-      "1": { bg: "#ffffff", border: "#7c2d12", circleBg: "#ffffff", text: "#431407", innerTint: "rgba(124, 45, 18, 0.08)" },
-      "5": { bg: "#ffffff", border: "#881337", circleBg: "#fff1f2", text: "#4c0519", innerTint: "rgba(136, 19, 55, 0.10)" },
-      "10": { bg: "#ffffff", border: "#7c2d12", circleBg: "#fff7ed", text: "#431407", innerTint: "rgba(124, 45, 18, 0.12)" },
-      "20": { bg: "#ffffff", border: "#365314", circleBg: "#f7fee7", text: "#1a2e05", innerTint: "rgba(54, 83, 20, 0.10)" },
+      "1": { bg: "#ffffff", border: "#9a3412", circleBg: "#ffedd5", text: "#7c2d12", innerTint: "rgba(154, 52, 18, 0.12)" },
+      "5": { bg: "#ffffff", border: "#9f1239", circleBg: "#ffe4e6", text: "#881337", innerTint: "rgba(159, 18, 57, 0.14)" },
+      "10": { bg: "#ffffff", border: "#c2410c", circleBg: "#ffedd5", text: "#9a3412", innerTint: "rgba(194, 65, 12, 0.14)" },
+      "20": { bg: "#ffffff", border: "#4d7c0f", circleBg: "#ecfccb", text: "#3f6212", innerTint: "rgba(77, 124, 15, 0.14)" },
     },
   },
   9: { // October - Matte Pumpkin & Plum
-    name: "October Matte Pumpkin & Plum",
+    name: "October Pumpkin Plum",
     denoms: {
-      "1": { bg: "#ffffff", border: "#18181b", circleBg: "#ffffff", text: "#09090b", innerTint: "rgba(24, 24, 27, 0.08)" },
-      "5": { bg: "#ffffff", border: "#581c87", circleBg: "#faf5ff", text: "#3b0764", innerTint: "rgba(88, 28, 135, 0.10)" },
-      "10": { bg: "#ffffff", border: "#1c1917", circleBg: "#fff7ed", text: "#431407", innerTint: "rgba(28, 25, 23, 0.12)" },
-      "20": { bg: "#ffffff", border: "#052e16", circleBg: "#f0fdf4", text: "#022c22", innerTint: "rgba(5, 46, 22, 0.10)" },
+      "1": { bg: "#ffffff", border: "#18181b", circleBg: "#f4f4f5", text: "#09090b", innerTint: "rgba(24, 24, 27, 0.12)" },
+      "5": { bg: "#ffffff", border: "#6b21a8", circleBg: "#f3e8ff", text: "#581c87", innerTint: "rgba(107, 33, 168, 0.14)" },
+      "10": { bg: "#ffffff", border: "#ea580c", circleBg: "#ffedd5", text: "#c2410c", innerTint: "rgba(234, 88, 12, 0.14)" },
+      "20": { bg: "#ffffff", border: "#14532d", circleBg: "#dcfce7", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.14)" },
     },
   },
   10: { // November - Matte Wine & Walnut
-    name: "November Matte Wine & Walnut",
+    name: "November Wine Walnut",
     denoms: {
-      "1": { bg: "#ffffff", border: "#451a03", circleBg: "#ffffff", text: "#431407", innerTint: "rgba(69, 26, 3, 0.08)" },
-      "5": { bg: "#ffffff", border: "#4c0519", circleBg: "#fff1f2", text: "#4c0519", innerTint: "rgba(76, 5, 25, 0.10)" },
-      "10": { bg: "#ffffff", border: "#451a03", circleBg: "#fffbeb", text: "#451a03", innerTint: "rgba(69, 26, 3, 0.12)" },
-      "20": { bg: "#ffffff", border: "#052e16", circleBg: "#f0fdf4", text: "#022c22", innerTint: "rgba(5, 46, 22, 0.10)" },
+      "1": { bg: "#ffffff", border: "#78350f", circleBg: "#fef3c7", text: "#451a03", innerTint: "rgba(120, 53, 15, 0.12)" },
+      "5": { bg: "#ffffff", border: "#881337", circleBg: "#ffe4e6", text: "#4c0519", innerTint: "rgba(136, 19, 55, 0.14)" },
+      "10": { bg: "#ffffff", border: "#92400e", circleBg: "#fef3c7", text: "#78350f", innerTint: "rgba(146, 64, 14, 0.14)" },
+      "20": { bg: "#ffffff", border: "#14532d", circleBg: "#dcfce7", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.14)" },
     },
   },
   11: { // December - Matte Holly & Evergreen
-    name: "December Matte Holly & Evergreen",
+    name: "December Holly Evergreen",
     denoms: {
-      "1": { bg: "#ffffff", border: "#166534", circleBg: "#ffffff", text: "#052e16", innerTint: "rgba(22, 101, 52, 0.08)" },
-      "5": { bg: "#ffffff", border: "#7f1d1d", circleBg: "#fff1f2", text: "#450a0a", innerTint: "rgba(127, 29, 29, 0.10)" },
-      "10": { bg: "#ffffff", border: "#713f12", circleBg: "#fefce8", text: "#365314", innerTint: "rgba(113, 63, 18, 0.12)" },
-      "20": { bg: "#ffffff", border: "#052e16", circleBg: "#f0fdf4", text: "#022c22", innerTint: "rgba(5, 46, 22, 0.10)" },
+      "1": { bg: "#ffffff", border: "#166534", circleBg: "#dcfce7", text: "#14532d", innerTint: "rgba(22, 101, 52, 0.12)" },
+      "5": { bg: "#ffffff", border: "#991b1b", circleBg: "#fee2e2", text: "#7f1d1d", innerTint: "rgba(153, 27, 27, 0.14)" },
+      "10": { bg: "#ffffff", border: "#b45309", circleBg: "#fef3c7", text: "#78350f", innerTint: "rgba(180, 83, 9, 0.14)" },
+      "20": { bg: "#ffffff", border: "#14532d", circleBg: "#dcfce7", text: "#052e16", innerTint: "rgba(20, 83, 45, 0.14)" },
     },
   },
 };
@@ -153,7 +153,7 @@ export const generateDartBuckSVG = (
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
-    <!-- Matte Print Solid Text Shadow (No Reflective Computer Glows) -->
+    <!-- Matte Print Solid Text Shadow -->
     <filter id="matte-text-shadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="2" dy="2" stdDeviation="0.5" flood-color="#000000" flood-opacity="0.35"/>
     </filter>

@@ -461,7 +461,7 @@ export const drawDrawerAuditSlip = (
   ctx.fillStyle = "#0f172a";
   ctx.font = "bold 44px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("DESERT AREA RESOURCES & TRAINING", canvas.width / 2, 130);
+  ctx.fillText("DART COMMERCIAL SERVICES", canvas.width / 2, 130);
 
   ctx.font = "bold 32px sans-serif";
   ctx.fillStyle = "#2563eb";

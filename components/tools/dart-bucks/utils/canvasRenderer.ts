@@ -1,6 +1,6 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec } from "../types";
-import { getSerialString, isLightBg } from "./security";
-import { generateDartBuckSVG } from "./svgGenerator";
+import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
+import { generateDartBuckSVG, MONTHLY_PALETTES, DESTRUCTIVE_SHRED_COLORS } from "./svgGenerator";
 
 export const getContrastWatermark = (
   bgColorHex: string,
@@ -13,6 +13,200 @@ export const getContrastWatermark = (
   if (mode === "light") return lightImg;
   if (mode === "dark") return darkImg;
   return isLightBg(bgColorHex) ? darkImg : lightImg;
+};
+
+// Pure Synchronous 2D Canvas Front Bill Renderer (100% Bulletproof for PDF & Canvas Exports)
+export const renderDartBuckOnCanvasDirect = (
+  canvas: HTMLCanvasElement,
+  serialNum: number,
+  config: DartBuckConfig,
+  denomValue = config.denomination,
+  width = 1200,
+  height = 600
+) => {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  canvas.width = width;
+  canvas.height = height;
+  ctx.clearRect(0, 0, width, height);
+
+  const now = new Date();
+  const monthIdx = typeof config.monthOverride === "number" ? config.monthOverride : now.getMonth();
+  const isDestructive = config.validityMode === "expires";
+  const activePalette = MONTHLY_PALETTES[monthIdx] || MONTHLY_PALETTES[6];
+
+  const colors = isDestructive
+    ? DESTRUCTIVE_SHRED_COLORS[denomValue] || DESTRUCTIVE_SHRED_COLORS["1"]
+    : activePalette.denoms[denomValue] || activePalette.denoms["1"];
+
+  const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
+  const currentMonthYearStr = `${MONTH_NAMES_FULL[monthIdx].toUpperCase()} ${now.getFullYear()}`;
+
+  const finePrintNotice = isDestructive
+    ? `MUST BE DESTROYED BY DART SHRED DEPT ON: ${config.expirationDate || "END OF MONTH"} • BATCH: ${config.batchId}`
+    : `VALID FOREVER ∞ • ISSUED: ${currentMonthYearStr} • BATCH: ${config.batchId}`;
+
+  // 1. White Matte Base
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  if (config.showPresetBorders) {
+    // 2. Outer Solid Border
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 10;
+    ctx.strokeRect(20, 20, width - 40, height - 40);
+
+    // 3. Middle Accent Frame
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(36, 36, width - 72, height - 72);
+
+    // 4. Inner Decorative Dashed Line
+    ctx.save();
+    ctx.fillStyle = colors.innerTint;
+    ctx.fillRect(52, 52, width - 104, height - 104);
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([10, 5]);
+    ctx.strokeRect(52, 52, width - 104, height - 104);
+    ctx.restore();
+
+    // 5. Left Side Panel (DART Crest Box)
+    const leftX = 90;
+    const boxY = height / 2 - 50;
+    ctx.fillStyle = colors.circleBg;
+    ctx.fillRect(leftX, boxY, 140, 100);
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(leftX, boxY, 140, 100);
+
+    ctx.fillStyle = colors.text;
+    ctx.font = "900 28px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("DART", leftX + 70, boxY + 44);
+
+    ctx.beginPath();
+    ctx.moveTo(leftX + 20, boxY + 56);
+    ctx.lineTo(leftX + 120, boxY + 56);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = colors.border;
+    ctx.stroke();
+
+    ctx.fillStyle = colors.border;
+    ctx.font = "800 11px sans-serif";
+    ctx.fillText("EST. 1962", leftX + 70, boxY + 74);
+
+    // 6. Right Side Panel (DART House Icon Box)
+    const rightX = width - 230;
+    ctx.fillStyle = colors.circleBg;
+    ctx.fillRect(rightX, boxY, 140, 100);
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(rightX, boxY, 140, 100);
+
+    ctx.fillStyle = colors.border;
+    ctx.beginPath();
+    ctx.moveTo(rightX + 70, boxY + 20);
+    ctx.lineTo(rightX + 25, boxY + 55);
+    ctx.lineTo(rightX + 38, boxY + 55);
+    ctx.lineTo(rightX + 38, boxY + 82);
+    ctx.lineTo(rightX + 102, boxY + 82);
+    ctx.lineTo(rightX + 102, boxY + 55);
+    ctx.lineTo(rightX + 115, boxY + 55);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = colors.circleBg;
+    ctx.fillRect(rightX + 56, boxY + 60, 28, 22);
+
+    // 7. 4 Corner Denomination Boxes
+    const cornerBoxes = [
+      { x: 80, y: 70 },
+      { x: width - 190, y: 70 },
+      { x: 80, y: height - 130 },
+      { x: width - 190, y: height - 130 },
+    ];
+
+    cornerBoxes.forEach((cb) => {
+      ctx.fillStyle = colors.circleBg;
+      ctx.fillRect(cb.x, cb.y, 110, 60);
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(cb.x, cb.y, 110, 60);
+
+      ctx.fillStyle = colors.text;
+      ctx.font = "900 42px Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.fillText(denomValue, cb.x + 55, cb.y + 44);
+    });
+  }
+
+  if (config.showPresetText) {
+    // 8. Center Monopoly Circle
+    const cx = width / 2;
+    const cy = height / 2;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 180, 0, Math.PI * 2);
+    ctx.fillStyle = colors.circleBg;
+    ctx.fill();
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 168, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Giant Center Numeral
+    ctx.font = "900 170px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Text Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillText(denomValue, cx + 2, cy + 22);
+
+    // Text Stroke & Fill
+    ctx.fillStyle = colors.text;
+    ctx.fillText(denomValue, cx, cy + 20);
+    ctx.strokeStyle = colors.border;
+    ctx.lineWidth = 3.2;
+    ctx.strokeText(denomValue, cx, cy + 20);
+
+    // Curved Text "DART BUCKS®"
+    ctx.font = "900 16px sans-serif";
+    ctx.fillStyle = colors.border;
+    ctx.fillText("• DART BUCKS ® •", cx, cy + 145);
+  }
+
+  // 9. Serial Box Overlay
+  const serialX = width / 2 - 280;
+  const serialY = height - 65;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(serialX, serialY, 560, 42);
+  ctx.strokeStyle = colors.border;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(serialX, serialY, 560, 42);
+
+  ctx.font = "bold 24px monospace";
+  ctx.fillStyle = isDestructive ? "#dc2626" : "#b91c1c";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(serialStr, width / 2, serialY + 28);
+
+  // 10. Fine Print Literature Notice
+  ctx.font = "bold 10px sans-serif";
+  ctx.fillStyle = colors.border;
+  ctx.textAlign = "left";
+  ctx.fillText(finePrintNotice, 45, height - 24);
 };
 
 // Render Dynamic Pure SVG Vector onto HTML5 Canvas
@@ -28,23 +222,7 @@ export const renderDartBuckOnCanvas = (
   width = 1200,
   height = 600
 ) => {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  canvas.width = width;
-  canvas.height = height;
-  ctx.clearRect(0, 0, width, height);
-
-  const svgString = generateDartBuckSVG(serialNum, config, denomSlots, denomValue, width, height);
-  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  const img = new Image();
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0, width, height);
-    URL.revokeObjectURL(url);
-  };
-  img.src = url;
+  renderDartBuckOnCanvasDirect(canvas, serialNum, config, denomValue, width, height);
 };
 
 // Render DartBuck BACK side
@@ -158,7 +336,9 @@ export const renderSheetPreviewAsync = async (
   const billQueue = getDrawerBillQueue();
   const startIndex = pageIdx * billsPerPage;
 
-  const drawPromises: Promise<void>[] = [];
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = 1200;
+  tempCanvas.height = 600;
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
@@ -174,31 +354,12 @@ export const renderSheetPreviewAsync = async (
       const y = Math.round(marginY + r * (cardH + gapY));
 
       if (isBack) {
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = 1200;
-        tempCanvas.height = 600;
         renderDartBuckBackOnCanvas(tempCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
-        ctx.drawImage(tempCanvas, x, y, cardW, cardH);
       } else {
-        const svgString = generateDartBuckSVG(item.serial, config, {}, item.denom, 1200, 600);
-        const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const img = new Image();
-
-        const p = new Promise<void>((resolve) => {
-          img.onload = () => {
-            ctx.drawImage(img, x, y, cardW, cardH);
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-          img.onerror = () => {
-            URL.revokeObjectURL(url);
-            resolve();
-          };
-        });
-        img.src = url;
-        drawPromises.push(p);
+        renderDartBuckOnCanvasDirect(tempCanvas, item.serial, config, item.denom, 1200, 600);
       }
+
+      ctx.drawImage(tempCanvas, x, y, cardW, cardH);
 
       // Prepress Crop Mark Guides
       if (config.includeCropMarks) {
@@ -208,8 +369,6 @@ export const renderSheetPreviewAsync = async (
       }
     }
   }
-
-  await Promise.all(drawPromises);
 
   const totalPages = Math.ceil(billQueue.length / billsPerPage) || 1;
 

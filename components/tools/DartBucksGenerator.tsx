@@ -16,7 +16,7 @@ export default function DartBucksGenerator() {
     mode: "drawer",
     drawerAmount: 200,
     drawerWeighting: "balanced",
-    drawerBreakdown: { bill20: 7, bill10: 4, bill5: 3, bill1: 5 },
+    drawerBreakdown: { bill20: 6, bill10: 4, bill5: 4, bill1: 20 },
     stationPrefix: "COACH",
     batchId: generateBatchId(),
     startSerial: 1,
@@ -31,7 +31,7 @@ export default function DartBucksGenerator() {
     showWatermark: true,
     includeDuplexBacks: true,
     paperSize: "letter",
-    billScale: "large",
+    billScale: "medium",
     includeCropMarks: true,
     bleedMm: 3,
     gutterMm: 6,
@@ -84,7 +84,6 @@ export default function DartBucksGenerator() {
         if (!error && data && data.length > 0) {
           setBatchLogs(data);
           try {
-            // Strip heavy PDF data before LocalStorage caching
             const cleanData = data.map((d) => ({ ...d, pdf_data_url: undefined }));
             localStorage.setItem("dartbuck_batch_logs", JSON.stringify(cleanData));
           } catch (e) {
@@ -100,7 +99,6 @@ export default function DartBucksGenerator() {
   const saveBatchLog = async (logItem: BatchLogItem) => {
     setBatchLogs((prev) => [logItem, ...prev]);
 
-    // LocalStorage quota protection: strip heavy Base64 PDF string for local cache
     try {
       const cleanLogs = [logItem, ...batchLogs].map((l) => ({ ...l, pdf_data_url: undefined }));
       localStorage.setItem("dartbuck_batch_logs", JSON.stringify(cleanLogs));
@@ -315,7 +313,7 @@ export default function DartBucksGenerator() {
       // Execute Vector PDF Creation
       const { jsPDF } = await import("jspdf");
       const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
-      const gridSpec = getGridSpec(paperSpec, config.billScale);
+      const gridSpec = getGridSpec(paperSpec);
 
       const doc = new jsPDF({
         orientation: "portrait",
@@ -421,7 +419,6 @@ export default function DartBucksGenerator() {
         }
       }
 
-      // Safely capture generated PDF Data URI string without causing browser quota exceptions
       let pdfDataUrl: string | undefined = undefined;
       try {
         pdfDataUrl = doc.output("datauristring");
@@ -477,7 +474,7 @@ export default function DartBucksGenerator() {
     : config.cardCount * (parseFloat(config.denomination) || 1);
 
   const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
-  const gridSpec = getGridSpec(paperSpec, config.billScale);
+  const gridSpec = getGridSpec(paperSpec);
   const calculatedTotalPages = Math.ceil(totalCalculatedBills / gridSpec.billsPerSheet) || 1;
 
   return (
@@ -502,7 +499,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Database PDF storage, flexible bill scaling (Size 1 Standard, Size 2 Large, Size 3 Jumbo Oversized), duplex alignment, & prepress crop marks.
+            Standard Medium Full Coverage bill scale, harmonized drawer allotments, duplex alignment, & prepress crop marks.
           </p>
         </div>
 
@@ -525,10 +522,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            {config.billScale === "jumbo" ? "Size 3: Jumbo Oversized 1-Col Layout Active (3 Bills/Sheet)" : config.billScale === "standard" ? "Size 1: Standard Monopoly Active (8 Bills/Sheet)" : "Size 2: Large Full Coverage Active (8 Bills/Sheet)"} (${config.drawerAmount} Allotment)
+            Standard Medium Full Coverage Scale Active (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Generated PDFs are stored in the database ledger until removed or destroyed.
+            Harmonized Allotment: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Total Sheets Required: {calculatedTotalPages} Sheet(s).
           </span>
         </div>
       </div>

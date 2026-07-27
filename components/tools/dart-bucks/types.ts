@@ -108,7 +108,7 @@ export interface BatchLogItem {
   pdf_data_url?: string;
 }
 
-export type BillScalePreset = "large" | "standard" | "jumbo";
+export type BillScalePreset = "medium";
 
 export interface DartBuckConfig {
   mode: "single" | "drawer";

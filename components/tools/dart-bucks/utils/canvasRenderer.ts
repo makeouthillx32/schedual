@@ -1,4 +1,4 @@
-import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec, BillScalePreset } from "../types";
+import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec } from "../types";
 import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
 import { generateDartBuckSVG, MONTHLY_PALETTES, DESTRUCTIVE_SHRED_COLORS } from "./svgGenerator";
 
@@ -15,32 +15,9 @@ export const getContrastWatermark = (
   return isLightBg(bgColorHex) ? darkImg : lightImg;
 };
 
-// Calculate exact non-cut-off grid specification preserving Size 1 & Size 2 and scaling Size 3 into 1-col layout
-export const getGridSpec = (paperSpec: PaperSpec, billScale: BillScalePreset = "large") => {
-  if (billScale === "jumbo") {
-    // Size 3 Jumbo Oversized Bill Layout: 1 Column × 3 Rows (145.0mm × 72.5mm = 5.71" × 2.85")
-    // 3 Jumbo Bills per sheet with safe 35.4mm side margins on US Letter paper (215.9mm wide) - 100% immune to cut-offs!
-    return {
-      cols: 1,
-      rows: 3,
-      billsPerSheet: 3,
-      cardWidthMm: 145.0,
-      cardHeightMm: 72.5,
-    };
-  }
-
-  if (billScale === "standard") {
-    // Size 1 Standard Monopoly: 2 Columns × 4 Rows (101.6mm × 50.8mm = 4.0" × 2.0")
-    return {
-      cols: paperSpec.cols,
-      rows: paperSpec.rows,
-      billsPerSheet: paperSpec.cols * paperSpec.rows,
-      cardWidthMm: 101.6,
-      cardHeightMm: 50.8,
-    };
-  }
-
-  // Size 2 (Large Full Coverage - Default): 2 Columns × 4 Rows (98.5mm × 61.5mm)
+// Calculate exact Medium Full Coverage card dimensions (Standardized Single Bill Scale)
+export const getGridSpec = (paperSpec: PaperSpec) => {
+  // Medium Full Coverage Scale: 2 Columns × 4 Rows (98.5mm × 61.5mm) on US Letter (215.9mm × 279.4mm)
   return {
     cols: paperSpec.cols,
     rows: paperSpec.rows,
@@ -50,8 +27,8 @@ export const getGridSpec = (paperSpec: PaperSpec, billScale: BillScalePreset = "
   };
 };
 
-export const getCardDimensionsMm = (paperSpec: PaperSpec, billScale: BillScalePreset = "large") => {
-  const spec = getGridSpec(paperSpec, billScale);
+export const getCardDimensionsMm = (paperSpec: PaperSpec) => {
+  const spec = getGridSpec(paperSpec);
   return { w: spec.cardWidthMm, h: spec.cardHeightMm };
 };
 
@@ -335,7 +312,7 @@ export const renderSheetPreviewAsync = async (
   if (!ctx) return;
 
   const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
-  const gridSpec = getGridSpec(paperSpec, config.billScale);
+  const gridSpec = getGridSpec(paperSpec);
 
   const scaleFactor = 4; // High DPI preview resolution
 

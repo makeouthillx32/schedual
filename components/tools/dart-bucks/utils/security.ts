@@ -59,6 +59,7 @@ export const isLightBg = (hexColor: string): boolean => {
   return luminance > 140;
 };
 
+// Compute Harmonized, Perfectly Balanced Cash Drawer Allotment Dispersion
 export const computeBreakdown = (
   targetVal: number,
   weighting: "balanced" | "heavy" | "light" | "custom"
@@ -83,37 +84,38 @@ export const computeBreakdown = (
     let b1 = 0;
 
     if (remaining >= 100) {
-      b20 = Math.floor((remaining * 0.4) / 20);
+      b20 = Math.floor((remaining * 0.35) / 20);
       remaining -= b20 * 20;
     }
 
-    b10 = Math.floor((remaining * 0.3) / 10);
+    b10 = Math.floor((remaining * 0.35) / 10);
     remaining -= b10 * 10;
 
-    b5 = Math.floor((remaining * 0.4) / 5);
+    b5 = Math.floor((remaining * 0.45) / 5);
     remaining -= b5 * 5;
 
     b1 = Math.floor(remaining);
     return { bill20: b20, bill10: b10, bill5: b5, bill1: b1 };
   }
 
-  // Balanced default
+  // Perfectly Balanced Register Drawer Allotment Dispersion ($200 -> 6x$20s, 4x$10s, 4x$5s, 20x$1s)
   let b20 = 0;
   let b10 = 0;
   let b5 = 0;
   let b1 = 0;
 
   if (remaining >= 100) {
-    b20 = Math.floor((remaining * 0.6) / 20);
+    b20 = Math.floor((remaining * 0.60) / 20);
     remaining -= b20 * 20;
   }
 
-  b10 = Math.floor((remaining * 0.5) / 10);
+  b10 = Math.floor((remaining * 0.50) / 10);
   remaining -= b10 * 10;
 
-  b5 = Math.floor((remaining * 0.5) / 5);
+  b5 = Math.floor((remaining * 0.50) / 5);
   remaining -= b5 * 5;
 
   b1 = Math.floor(remaining);
+
   return { bill20: b20, bill10: b10, bill5: b5, bill1: b1 };
 };

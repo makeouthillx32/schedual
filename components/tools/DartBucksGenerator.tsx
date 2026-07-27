@@ -5,7 +5,7 @@ import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } fro
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
-import { renderDartBuckOnCanvas, renderDartBuckOnCanvasDirect, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync, getCardDimensionsMm } from "./dart-bucks/utils/canvasRenderer";
+import { renderDartBuckOnCanvas, renderDartBuckOnCanvasDirect, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync, getGridSpec } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
@@ -282,6 +282,7 @@ export default function DartBucksGenerator() {
       // Execute Vector PDF Creation
       const { jsPDF } = await import("jspdf");
       const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
+      const gridSpec = getGridSpec(paperSpec, config.billScale);
 
       const doc = new jsPDF({
         orientation: "portrait",
@@ -289,12 +290,11 @@ export default function DartBucksGenerator() {
         format: [paperSpec.widthMm, paperSpec.heightMm],
       });
 
-      const cols = paperSpec.cols;
-      const rows = paperSpec.rows;
+      const cols = gridSpec.cols;
+      const rows = gridSpec.rows;
 
-      const cardDims = getCardDimensionsMm(paperSpec, config.billScale);
-      const cardWidthMm = cardDims.w;
-      const cardHeightMm = cardDims.h;
+      const cardWidthMm = gridSpec.cardWidthMm;
+      const cardHeightMm = gridSpec.cardHeightMm;
 
       const gapX = config.gutterMm;
       const gapY = config.gutterMm;
@@ -410,7 +410,8 @@ export default function DartBucksGenerator() {
     : config.cardCount * (parseFloat(config.denomination) || 1);
 
   const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["letter"];
-  const calculatedTotalPages = Math.ceil(totalCalculatedBills / paperSpec.billsPerSheet) || 1;
+  const gridSpec = getGridSpec(paperSpec, config.billScale);
+  const calculatedTotalPages = Math.ceil(totalCalculatedBills / gridSpec.billsPerSheet) || 1;
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
@@ -434,7 +435,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Scaled full paper bill coverage, pure synchronous 2D canvas, duplex page alignment, 4.0"×2.0" Monopoly size, & prepress crop marks.
+            Flexible bill scaling (Size 1 Standard, Size 2 Large, Size 3 Jumbo Oversized), duplex alignment, & prepress crop marks.
           </p>
         </div>
 
@@ -457,10 +458,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Large Full Paper Coverage Active (${config.drawerAmount} Allotment)
+            {config.billScale === "jumbo" ? "Size 3: Jumbo Oversized 1-Col Layout Active (3 Bills/Sheet)" : config.billScale === "standard" ? "Size 1: Standard Monopoly Active (8 Bills/Sheet)" : "Size 2: Large Full Coverage Active (8 Bills/Sheet)"} (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Bills now scale up to fill paper sheet bounds cleanly with 0.3" margins.
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Total Sheets Required: {calculatedTotalPages} Sheet(s).
           </span>
         </div>
       </div>

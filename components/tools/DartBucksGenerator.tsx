@@ -173,6 +173,41 @@ export default function DartBucksGenerator() {
     }
   };
 
+  const deleteBatchLog = async (logId: string) => {
+    if (!confirm("Permanently remove this batch audit log entry from the ledger?")) {
+      return;
+    }
+
+    const updated = batchLogs.filter((log) => log.id !== logId);
+    setBatchLogs(updated);
+    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+
+    try {
+      if (supabase) {
+        await supabase.from("dartbuck_batch_logs").delete().eq("id", logId);
+      }
+    } catch (e) {
+      console.warn("Supabase batch log delete fallback");
+    }
+  };
+
+  const clearAllBatchLogs = async () => {
+    if (!confirm("Clear all batch audit log entries from the ledger? This will remove all test records.")) {
+      return;
+    }
+
+    setBatchLogs([]);
+    localStorage.removeItem("dartbuck_batch_logs");
+
+    try {
+      if (supabase) {
+        await supabase.from("dartbuck_batch_logs").delete().neq("id", "");
+      }
+    } catch (e) {
+      console.warn("Supabase clear all logs fallback");
+    }
+  };
+
   const handleDrawerAmountChange = (amount: number) => {
     const validAmount = Math.max(0, amount);
     const breakdown = computeBreakdown(validAmount, config.drawerWeighting === "custom" ? "balanced" : config.drawerWeighting);
@@ -499,6 +534,8 @@ export default function DartBucksGenerator() {
         logs={batchLogs}
         onToggleComplete={toggleBatchCycleComplete}
         onMarkShredded={markBatchAsShredded}
+        onDeleteLog={deleteBatchLog}
+        onClearAllLogs={clearAllBatchLogs}
       />
     </div>
   );

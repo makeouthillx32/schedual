@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2, PieChart } from "lucide-react";
+import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2, PieChart, XCircle } from "lucide-react";
 import { BatchLogItem } from "../types";
 
 interface BatchAuditLedgerProps {
   logs: BatchLogItem[];
   onToggleComplete: (logId: string) => void;
   onMarkShredded?: (logId: string) => void;
+  onDeleteLog?: (logId: string) => void;
+  onClearAllLogs?: () => void;
 }
 
 export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
   logs,
   onToggleComplete,
   onMarkShredded,
+  onDeleteLog,
+  onClearAllLogs,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -38,8 +42,11 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
     return matchesSearch && matchesStatus && logMonth === selectedMonth;
   });
 
-  const totalValueIssued = filteredLogs.reduce((sum, item) => sum + item.drawer_amount, 0);
+  // Calculate Active Total Value (EXCLUDING Destroyed/Shredded Batches)
+  const activeLogs = filteredLogs.filter((item) => item.status !== "shredded");
+  const totalValueActive = activeLogs.reduce((sum, item) => sum + item.drawer_amount, 0);
   const totalBillsIssued = filteredLogs.reduce((sum, item) => sum + item.total_bills_count, 0);
+
   const completedBatchesCount = logs.filter((l) => l.status === "completed").length;
   const shreddedBatchesCount = logs.filter((l) => l.status === "shredded").length;
   const activeBatchesCount = logs.filter((l) => l.status === "active" || !l.status).length;
@@ -122,13 +129,25 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={exportMonthlyCSV}
-          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all shadow-md"
-        >
-          <Download className="w-4 h-4" />
-          Export Monthly Audit Log (.CSV)
-        </button>
+        <div className="flex items-center gap-2">
+          {onClearAllLogs && logs.length > 0 && (
+            <button
+              onClick={onClearAllLogs}
+              className="flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-bold px-3.5 py-2.5 rounded-lg transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear Test Logs
+            </button>
+          )}
+
+          <button
+            onClick={exportMonthlyCSV}
+            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition-all shadow-md"
+          >
+            <Download className="w-4 h-4" />
+            Export Monthly Audit Log (.CSV)
+          </button>
+        </div>
       </div>
 
       {/* Circulation Lifecycle Progress Bar */}
@@ -151,7 +170,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
         <div className="flex justify-between text-[11px] font-semibold pt-1">
           <span className="text-emerald-600 dark:text-emerald-400">● Collected at Register: {completedPct}% ({completedBatchesCount})</span>
           <span className="text-amber-600 dark:text-amber-400">● Active in Field: {activePct}% ({activeBatchesCount})</span>
-          <span className="text-red-600 dark:text-red-400">● Shredded: {shreddedPct}% ({shreddedBatchesCount})</span>
+          <span className="text-red-600 dark:text-red-400">● Shredded / Destroyed: {shreddedPct}% ({shreddedBatchesCount})</span>
         </div>
       </div>
 
@@ -160,9 +179,12 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3">
           <DollarSign className="w-8 h-8 text-emerald-600 shrink-0" />
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Value Issued</span>
+            <span className="text-xs text-muted-foreground block font-medium">Active Value in Circulation</span>
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              ${totalValueIssued.toFixed(2)}
+              ${totalValueActive.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-muted-foreground block">
+              (Excludes Destroyed & Shredded Batches)
             </span>
           </div>
         </div>
@@ -286,7 +308,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
                 const isShredded = log.status === "shredded";
 
                 return (
-                  <tr key={log.id} className={`hover:bg-muted/50 transition-colors ${isCompleted ? "bg-emerald-500/5" : isShredded ? "bg-red-500/5" : ""}`}>
+                  <tr key={log.id} className={`hover:bg-muted/50 transition-colors ${isCompleted ? "bg-emerald-500/5" : isShredded ? "bg-red-500/5 line-through opacity-70" : ""}`}>
                     <td className="p-3 whitespace-nowrap">
                       {isCompleted ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/30">
@@ -349,6 +371,16 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
                           >
                             <Trash2 className="w-3 h-3" />
                             {isShredded ? "Shredded" : "Shred Unused"}
+                          </button>
+                        )}
+
+                        {onDeleteLog && (
+                          <button
+                            onClick={() => onDeleteLog(log.id)}
+                            title="Delete Log Entry"
+                            className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 rounded-lg border border-red-500/30 transition-all"
+                          >
+                            <XCircle className="w-4 h-4" />
                           </button>
                         )}
                       </div>

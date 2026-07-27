@@ -1,5 +1,5 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot } from "../types";
-import { getSerialString, isLightBg } from "./security";
+import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
 
 export const getBatchAccentColor = (batchId: string, defaultColor: string): string => {
   if (!batchId) return defaultColor;
@@ -24,14 +24,17 @@ export const generateDartBuckSVG = (
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
   const slot = denomSlots[denomValue];
 
+  const now = new Date();
+  const currentMonthYearStr = `${MONTH_NAMES_FULL[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
+
   const customImgSvg = slot && slot.image_url
     ? `<image href="${slot.image_url}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="none"/>`
     : "";
 
-  // Fine Print Validity / Destruction Text Notice
+  // Fine Print Validity / Expiration Notice
   const finePrintNotice = config.validityMode === "expires"
     ? `MUST BE DESTROYED BY DART SHRED DEPT ON: ${config.expirationDate || "END OF MONTH"} • BATCH: ${config.batchId}`
-    : `VALID FOREVER ∞ • BATCH: ${config.batchId} • DART INCENTIVE CURRENCY`;
+    : `VALID FOREVER ∞ • ISSUED: ${currentMonthYearStr} • BATCH: ${config.batchId}`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
@@ -136,8 +139,9 @@ export const generateDartBuckSVG = (
     <!-- Giant Center Denomination with Intaglio Cross-Hatch Fill -->
     <text font-family="serif" font-weight="bold" font-size="110" fill="url(#intaglio-hatch)" stroke="#000000" stroke-width="4" text-anchor="middle" y="35">${denomValue}</text>
 
-    <!-- Subtitle Denomination -->
-    <text font-family="sans-serif" font-weight="bold" font-size="13" fill="${batchColor}" text-anchor="middle" y="105">$${denomValue} DENOMINATION</text>
+    <!-- Subtitle Denomination & Current Month/Year Treasury Seal -->
+    <text font-family="sans-serif" font-weight="bold" font-size="12" fill="${batchColor}" text-anchor="middle" y="98">$${denomValue} DENOMINATION</text>
+    <text font-family="monospace" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle" y="114">• ${currentMonthYearStr} ISSUE •</text>
   </g>
   ` : ""}
 

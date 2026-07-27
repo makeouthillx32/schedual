@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar, Trash2, Trophy, Sparkles } from "lucide-react";
+import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar, Trash2, Trophy, Sparkles, DollarSign, Calculator, Eye, Sliders } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface DartBuckTemplateItem {
@@ -13,7 +13,31 @@ interface DartBuckTemplateItem {
   created_at: string;
 }
 
+interface DenominationStyle {
+  value: string;
+  label: string;
+  bg: string;
+  border: string;
+  accent: string;
+  circleBg: string;
+}
+
+const DENOMINATIONS: Record<string, DenominationStyle> = {
+  "1": { value: "1", label: "$1 Bill", bg: "#fef9c3", border: "#db2777", accent: "#db2777", circleBg: "#fffdf0" },
+  "5": { value: "5", label: "$5 Bill", bg: "#fbcfe8", border: "#be185d", accent: "#be185d", circleBg: "#fff0f3" },
+  "10": { value: "10", label: "$10 Bill", bg: "#fef08a", border: "#b45309", accent: "#b45309", circleBg: "#fffde8" },
+  "20": { value: "20", label: "$20 Bill", bg: "#bbf7d0", border: "#15803d", accent: "#15803d", circleBg: "#f0fdf4" },
+};
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 interface DartBuckConfig {
+  mode: "single" | "drawer";
+  drawerAmount: number;
+  drawerBreakdown: { bill20: number; bill10: number; bill5: number; bill1: number };
   stationPrefix: string;
   batchId: string;
   startSerial: number;
@@ -21,40 +45,25 @@ interface DartBuckConfig {
   digits: number;
   includeChecksum: boolean;
   theme: "monopoly" | "custom" | "classic_gold" | "clean_teal" | "vintage_navy";
+  denomination: string;
   selectedMonth: string;
+  watermarkMode: "auto" | "dark" | "light" | "none";
   activeTemplateId: string | null;
   customBgUrl: string | null;
   showPresetBorders: boolean;
   showPresetText: boolean;
+  showWatermark: boolean;
   serialPosition: "bottom" | "top" | "bottom-right";
-  denomination: string;
   title: string;
   subtitle: string;
   textColor: string;
 }
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-
-const MONTH_PALETTES: Record<string, { bg: string; border: string; accent: string; circleBg: string }> = {
-  January: { bg: "#fce3b5", border: "#ff007f", accent: "#ff007f", circleBg: "#fff8eb" },
-  February: { bg: "#ffccd5", border: "#c9184a", accent: "#c9184a", circleBg: "#fff0f3" },
-  March: { bg: "#d8f3dc", border: "#1b4332", accent: "#1b4332", circleBg: "#f7fff7" },
-  April: { bg: "#fff3b0", border: "#e07a5f", accent: "#e07a5f", circleBg: "#fffdf0" },
-  May: { bg: "#ffe5ec", border: "#fb6f92", accent: "#fb6f92", circleBg: "#ffffff" },
-  June: { bg: "#e2afff", border: "#3a0ca3", accent: "#3a0ca3", circleBg: "#f8f0ff" },
-  July: { bg: "#d8e2dc", border: "#1d3557", accent: "#1d3557", circleBg: "#f1faee" },
-  August: { bg: "#cffaff", border: "#006d77", accent: "#006d77", circleBg: "#f0fdfa" },
-  September: { bg: "#ffe5d9", border: "#9a031e", accent: "#9a031e", circleBg: "#fff5f0" },
-  October: { bg: "#ffedd5", border: "#c2410c", accent: "#c2410c", circleBg: "#fff7ed" },
-  November: { bg: "#e0f2fe", border: "#4338ca", accent: "#4338ca", circleBg: "#f0f9ff" },
-  December: { bg: "#e6fffa", border: "#047857", accent: "#047857", circleBg: "#f0fdf4" },
-};
-
 export default function DartBucksGenerator() {
   const [config, setConfig] = useState<DartBuckConfig>({
+    mode: "drawer",
+    drawerAmount: 250,
+    drawerBreakdown: { bill20: 10, bill10: 3, bill5: 3, bill1: 5 },
     stationPrefix: "COACH",
     batchId: Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase(),
     startSerial: 1,
@@ -62,13 +71,15 @@ export default function DartBucksGenerator() {
     digits: 4,
     includeChecksum: true,
     theme: "monopoly",
+    denomination: "20",
     selectedMonth: "January",
+    watermarkMode: "auto",
     activeTemplateId: null,
     customBgUrl: null,
     showPresetBorders: true,
     showPresetText: true,
+    showWatermark: true,
     serialPosition: "bottom",
-    denomination: "1",
     title: "DART BUCKS",
     subtitle: "COMMERCIAL SERVICES INCENTIVE",
     textColor: "#1a4d2e",
@@ -81,13 +92,51 @@ export default function DartBucksGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeSerialPreview, setActiveSerialPreview] = useState(1);
 
+  const [watermarkLightImg, setWatermarkLightImg] = useState<HTMLImageElement | null>(null);
+  const [watermarkDarkImg, setWatermarkDarkImg] = useState<HTMLImageElement | null>(null);
+
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved templates from Supabase or localStorage
+  // Preload Watermark SVGs
   useEffect(() => {
+    const imgL = new Image();
+    imgL.src = "/images/watermarks/watermark-light.svg";
+    imgL.onload = () => setWatermarkLightImg(imgL);
+
+    const imgD = new Image();
+    imgD.src = "/images/watermarks/watermark-dark.svg";
+    imgD.onload = () => setWatermarkDarkImg(imgD);
+
     fetchTemplates();
   }, []);
+
+  // Recalculate bill allotment when drawer target amount changes
+  const calculateDrawerBreakdown = (target: number) => {
+    let remaining = target;
+    const bill20 = Math.floor(remaining / 20);
+    remaining %= 20;
+
+    const bill10 = Math.floor(remaining / 10);
+    remaining %= 10;
+
+    const bill5 = Math.floor(remaining / 5);
+    remaining %= 5;
+
+    const bill1 = remaining;
+
+    return { bill20, bill10, bill5, bill1 };
+  };
+
+  const handleDrawerAmountChange = (amount: number) => {
+    const validAmount = Math.max(0, amount);
+    const breakdown = calculateDrawerBreakdown(validAmount);
+    setConfig((prev) => ({
+      ...prev,
+      drawerAmount: validAmount,
+      drawerBreakdown: breakdown,
+    }));
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -106,7 +155,6 @@ export default function DartBucksGenerator() {
       console.warn("Supabase fetch fallback to local storage");
     }
 
-    // LocalStorage Fallback
     const local = localStorage.getItem("dartbuck_templates");
     if (local) {
       try {
@@ -162,7 +210,6 @@ export default function DartBucksGenerator() {
     }
   };
 
-  // Generate 2-character verification checksum
   const calculateChecksum = (batchStr: string, serialNum: number): string => {
     let sum = 0;
     const combined = `${batchStr}${serialNum}`;
@@ -190,7 +237,6 @@ export default function DartBucksGenerator() {
     setConfig((prev) => ({ ...prev, batchId: newId }));
   };
 
-  // Handle direct file upload / client drawing submission
   const handleFileUpload = (file: File) => {
     if (!file) return;
     setIsUploading(true);
@@ -212,7 +258,6 @@ export default function DartBucksGenerator() {
 
       await saveTemplateItem(newItem);
 
-      // Instantly set as active custom template
       setConfig((prev) => ({
         ...prev,
         theme: "custom",
@@ -233,7 +278,31 @@ export default function DartBucksGenerator() {
     if (file) handleFileUpload(file);
   };
 
-  // Draw DART logo inside canvas circle
+  // Determine if background is light or dark (contrast picker)
+  const isLightBg = (hexColor: string): boolean => {
+    let hex = hexColor.replace("#", "");
+    if (hex.length === 3) {
+      hex = hex.split("").map((c) => c + c).join("");
+    }
+    const r = parseInt(hex.substring(0, 2), 16) || 240;
+    const g = parseInt(hex.substring(2, 4), 16) || 240;
+    const b = parseInt(hex.substring(4, 6), 16) || 240;
+
+    const luminance = (r * 299 + g * 587 + b * 114) / 1000;
+    return luminance > 140;
+  };
+
+  // Select optimal SVG Watermark based on contrast
+  const getContrastWatermark = (bgColorHex: string): HTMLImageElement | null => {
+    if (config.watermarkMode === "none" || !config.showWatermark) return null;
+
+    if (config.watermarkMode === "light") return watermarkLightImg;
+    if (config.watermarkMode === "dark") return watermarkDarkImg;
+
+    // Automatic Contrast Mode
+    return isLightBg(bgColorHex) ? watermarkDarkImg : watermarkLightImg;
+  };
+
   const drawDartLogoInCircle = (
     ctx: CanvasRenderingContext2D,
     cx: number,
@@ -269,7 +338,6 @@ export default function DartBucksGenerator() {
     ctx.restore();
   };
 
-  // Draw curved text along arc
   const drawCurvedText = (
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -307,6 +375,7 @@ export default function DartBucksGenerator() {
   const renderDartBuckOnCanvas = (
     canvas: HTMLCanvasElement,
     serialNum: number,
+    denomValue = config.denomination,
     width = 1200,
     height = 469
   ) => {
@@ -318,6 +387,8 @@ export default function DartBucksGenerator() {
 
     ctx.clearRect(0, 0, width, height);
 
+    const style = DENOMINATIONS[denomValue] || DENOMINATIONS["1"];
+
     // Custom Background (Uploaded Client Design)
     if (config.theme === "custom" && config.customBgUrl) {
       const img = new Image();
@@ -325,6 +396,15 @@ export default function DartBucksGenerator() {
       img.src = config.customBgUrl;
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height);
+
+        // Draw Watermark if enabled
+        const wm = getContrastWatermark("#ffffff");
+        if (wm) {
+          ctx.save();
+          ctx.globalAlpha = 0.2;
+          ctx.drawImage(wm, width / 2 - 250, height / 2 - 250, 500, 500);
+          ctx.restore();
+        }
 
         if (config.showPresetBorders) {
           ctx.strokeStyle = "rgba(0,0,0,0.4)";
@@ -339,14 +419,21 @@ export default function DartBucksGenerator() {
 
     // Monopoly Style Theme
     if (config.theme === "monopoly") {
-      const palette = MONTH_PALETTES[config.selectedMonth] || MONTH_PALETTES["January"];
-
-      ctx.fillStyle = palette.bg;
+      ctx.fillStyle = style.bg;
       ctx.fillRect(0, 0, width, height);
+
+      // Render Contrast SVG Watermark in center background
+      const wm = getContrastWatermark(style.bg);
+      if (wm) {
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.drawImage(wm, width / 2 - 260, height / 2 - 260, 520, 520);
+        ctx.restore();
+      }
 
       if (config.showPresetBorders) {
         const margin = 16;
-        ctx.strokeStyle = palette.border;
+        ctx.strokeStyle = style.border;
         ctx.lineWidth = 4;
         ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
 
@@ -359,12 +446,12 @@ export default function DartBucksGenerator() {
         ];
 
         corners.forEach((c) => {
-          ctx.fillStyle = palette.circleBg;
+          ctx.fillStyle = style.circleBg;
           ctx.beginPath();
           ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.strokeStyle = palette.border;
+          ctx.strokeStyle = style.border;
           ctx.lineWidth = 3;
           ctx.stroke();
 
@@ -372,14 +459,14 @@ export default function DartBucksGenerator() {
             drawDartLogoInCircle(ctx, c.cx, c.cy, "#000000");
           } else {
             ctx.fillStyle = "#000000";
-            ctx.font = "bold 64px serif";
+            ctx.font = "bold 60px serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(config.denomination, c.cx, c.cy);
+            ctx.fillText(denomValue, c.cx, c.cy);
           }
         });
 
-        ctx.fillStyle = palette.accent;
+        ctx.fillStyle = style.accent;
         ctx.font = "bold 96px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -393,12 +480,12 @@ export default function DartBucksGenerator() {
         const ovalRx = 210;
         const ovalRy = 145;
 
-        ctx.fillStyle = palette.circleBg;
+        ctx.fillStyle = style.circleBg;
         ctx.beginPath();
         ctx.ellipse(ovalCx, ovalCy, ovalRx, ovalRy, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = palette.border;
+        ctx.strokeStyle = style.border;
         ctx.lineWidth = 4;
         ctx.stroke();
 
@@ -414,19 +501,19 @@ export default function DartBucksGenerator() {
         );
 
         ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 130px serif";
+        ctx.font = "bold 120px serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(config.denomination, ovalCx, ovalCy + 25);
+        ctx.fillText(denomValue, ovalCx, ovalCy + 25);
 
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 5;
-        ctx.strokeText(config.denomination, ovalCx, ovalCy + 25);
+        ctx.strokeText(denomValue, ovalCx, ovalCy + 25);
 
-        ctx.fillStyle = palette.accent;
+        ctx.fillStyle = style.accent;
         ctx.font = "bold 14px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(config.selectedMonth.toUpperCase(), ovalCx, ovalCy + 105);
+        ctx.fillText(`$${denomValue} DENOMINATION`, ovalCx, ovalCy + 105);
       }
     }
 
@@ -451,7 +538,7 @@ export default function DartBucksGenerator() {
       boxY = height - 60;
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
     ctx.fillRect(boxX, boxY, 560, 45);
 
     ctx.strokeStyle = "#cbd5e1";
@@ -470,6 +557,129 @@ export default function DartBucksGenerator() {
       renderDartBuckOnCanvas(previewCanvasRef.current, activeSerialPreview);
     }
   }, [config, activeSerialPreview]);
+
+  // Generate Drawer Audit Summary Slip (Page 1 of PDF)
+  const drawDrawerAuditSlip = (canvas: HTMLCanvasElement, totalValue: number, breakdown: { bill20: number; bill10: number; bill5: number; bill1: number }) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = 1200;
+    canvas.height = 1697; // A4 aspect high-res
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 44px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("DART COMMERCIAL SERVICES", canvas.width / 2, 130);
+
+    ctx.font = "bold 32px sans-serif";
+    ctx.fillStyle = "#2563eb";
+    ctx.fillText("CASH DRAWER AUDIT SLIP & BATCH ALLOTMENT", canvas.width / 2, 190);
+
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(80, 230);
+    ctx.lineTo(canvas.width - 80, 230);
+    ctx.stroke();
+
+    // Metadata Grid
+    ctx.textAlign = "left";
+    ctx.font = "bold 24px sans-serif";
+    ctx.fillStyle = "#334155";
+
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    ctx.fillText(`DATE & TIME: ${dateStr}`, 100, 300);
+    ctx.fillText(`BATCH AUDIT ID: ${config.batchId}`, 100, 350);
+    ctx.fillText(`ISSUING STATION: ${config.stationPrefix}`, 100, 400);
+
+    ctx.fillStyle = "#047857";
+    ctx.font = "bold 36px sans-serif";
+    ctx.fillText(`TARGET DRAWER TOTAL: $${totalValue.toFixed(2)}`, 100, 480);
+
+    // Table Header
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(100, 540, canvas.width - 200, 60);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 24px sans-serif";
+    ctx.fillText("DENOMINATION", 130, 580);
+    ctx.fillText("BILL COUNT", 500, 580);
+    ctx.fillText("SUBTOTAL VALUE", 850, 580);
+
+    // Table Rows
+    const rows = [
+      { name: "$20 Bills", count: breakdown.bill20, value: breakdown.bill20 * 20 },
+      { name: "$10 Bills", count: breakdown.bill10, value: breakdown.bill10 * 10 },
+      { name: "$5 Bills", count: breakdown.bill5, value: breakdown.bill5 * 5 },
+      { name: "$1 Bills", count: breakdown.bill1, value: breakdown.bill1 * 1 },
+    ];
+
+    let currentY = 640;
+    rows.forEach((r, idx) => {
+      ctx.fillStyle = idx % 2 === 0 ? "#f8fafc" : "#ffffff";
+      ctx.fillRect(100, currentY - 40, canvas.width - 200, 60);
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.strokeRect(100, currentY - 40, canvas.width - 200, 60);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "600 24px sans-serif";
+      ctx.fillText(r.name, 130, currentY);
+      ctx.fillText(`${r.count} Bills`, 500, currentY);
+      ctx.fillText(`$${r.value.toFixed(2)}`, 850, currentY);
+
+      currentY += 60;
+    });
+
+    const totalBills = breakdown.bill20 + breakdown.bill10 + breakdown.bill5 + breakdown.bill1;
+
+    // Total Row
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillRect(100, currentY - 30, canvas.width - 200, 70);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 28px sans-serif";
+    ctx.fillText("TOTAL ALLOTMENT", 130, currentY + 15);
+    ctx.fillText(`${totalBills} Bills Total`, 500, currentY + 15);
+    ctx.fillText(`$${totalValue.toFixed(2)}`, 850, currentY + 15);
+
+    // Signature Section
+    const sigY = currentY + 220;
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillStyle = "#475569";
+
+    ctx.fillText("COACH / MANAGER SIGNATURE:", 100, sigY);
+    ctx.beginPath();
+    ctx.moveTo(440, sigY);
+    ctx.lineTo(700, sigY);
+    ctx.stroke();
+
+    ctx.fillText("CASHIER / RECIPIENT SIGNATURE:", 100, sigY + 100);
+    ctx.beginPath();
+    ctx.moveTo(460, sigY + 100);
+    ctx.lineTo(700, sigY + 100);
+    ctx.stroke();
+
+    ctx.fillText("DATE:", 760, sigY);
+    ctx.beginPath();
+    ctx.moveTo(830, sigY);
+    ctx.lineTo(1050, sigY);
+    ctx.stroke();
+  };
 
   const downloadPDF = async () => {
     setIsGenerating(true);
@@ -492,14 +702,51 @@ export default function DartBucksGenerator() {
       const marginX = (210 - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
       const marginY = (297 - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
+      // PAGE 1: Cash Drawer Audit Slip (If in Drawer mode)
+      if (config.mode === "drawer") {
+        const auditCanvas = document.createElement("canvas");
+        drawDrawerAuditSlip(auditCanvas, config.drawerAmount, config.drawerBreakdown);
+        const auditImg = auditCanvas.toDataURL("image/png");
+        doc.addImage(auditImg, "PNG", 0, 0, 210, 297);
+        doc.addPage();
+      }
+
+      // Prepare Queued Bills Array
+      const billQueue: { denom: string; serial: number }[] = [];
+      let currentSerial = config.startSerial;
+
+      if (config.mode === "drawer") {
+        // Queue $20s
+        for (let i = 0; i < config.drawerBreakdown.bill20; i++) {
+          billQueue.push({ denom: "20", serial: currentSerial++ });
+        }
+        // Queue $10s
+        for (let i = 0; i < config.drawerBreakdown.bill10; i++) {
+          billQueue.push({ denom: "10", serial: currentSerial++ });
+        }
+        // Queue $5s
+        for (let i = 0; i < config.drawerBreakdown.bill5; i++) {
+          billQueue.push({ denom: "5", serial: currentSerial++ });
+        }
+        // Queue $1s
+        for (let i = 0; i < config.drawerBreakdown.bill1; i++) {
+          billQueue.push({ denom: "1", serial: currentSerial++ });
+        }
+      } else {
+        // Single denomination mode
+        for (let i = 0; i < config.cardCount; i++) {
+          billQueue.push({ denom: config.denomination, serial: currentSerial++ });
+        }
+      }
+
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
       canvas.height = 469;
 
       let pageCount = 0;
 
-      for (let i = 0; i < config.cardCount; i++) {
-        const currentSerial = config.startSerial + i;
+      for (let i = 0; i < billQueue.length; i++) {
+        const item = billQueue[i];
         const pageIndex = Math.floor(i / (cols * rows));
         const indexOnPage = i % (cols * rows);
 
@@ -508,7 +755,7 @@ export default function DartBucksGenerator() {
           pageCount = pageIndex;
         }
 
-        renderDartBuckOnCanvas(canvas, currentSerial, 1200, 469);
+        renderDartBuckOnCanvas(canvas, item.serial, item.denom, 1200, 469);
         const imgData = canvas.toDataURL("image/png");
 
         const col = indexOnPage % cols;
@@ -520,7 +767,11 @@ export default function DartBucksGenerator() {
         doc.addImage(imgData, "PNG", x, y, cardWidthMm, cardHeightMm);
       }
 
-      doc.save(`DartBucks_Batch_${config.batchId}.pdf`);
+      const filename = config.mode === "drawer"
+        ? `DartBucks_Drawer_Allotment_$${config.drawerAmount}_${config.batchId}.pdf`
+        : `DartBucks_${config.denomination}s_Batch_${config.batchId}.pdf`;
+
+      doc.save(filename);
     } catch (err) {
       console.error("PDF export failed:", err);
       alert("Failed to export PDF.");
@@ -536,10 +787,10 @@ export default function DartBucksGenerator() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            Client Contest & DartBucks Generator
+            DartBucks Cash Drawer & Monopoly Allotment Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Upload client drawings directly to the database, select winning artworks, and print audit-numbered bills.
+            Allot cash drawers ($250/drawer), print audit summary slips, and auto-contrast SVG watermarks.
           </p>
         </div>
         <button
@@ -552,179 +803,176 @@ export default function DartBucksGenerator() {
           ) : (
             <Download className="w-5 h-5" />
           )}
-          {isGenerating ? "Generating PDF..." : "Export A4 PDF"}
+          {isGenerating ? "Generating Allotment PDF..." : "Export Allotment PDF"}
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Controls & Upload Gallery */}
+        {/* Left Column - Controls */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Direct Upload & Contest Submission */}
+          {/* Mode Selector */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
-              <Upload className="w-5 h-5 text-blue-500" />
-              Upload Client Drawing to Database
+              <Sliders className="w-5 h-5 text-blue-500" />
+              Generation Mode
             </h2>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Title / Artwork Name
-                </label>
-                <input
-                  type="text"
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="e.g. Sarah's Winning Buck"
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Artist / Client Name
-                </label>
-                <input
-                  type="text"
-                  value={uploadArtist}
-                  onChange={(e) => setUploadArtist(e.target.value)}
-                  placeholder="e.g. Sarah M."
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-                />
-              </div>
-
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleInputChange}
-                className="hidden"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setConfig((prev) => ({ ...prev, mode: "drawer" }))}
+                className={`py-2.5 px-3 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${
+                  config.mode === "drawer"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-background hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <Calculator className="w-4 h-4" />
+                Cash Drawer Mode ($250)
+              </button>
 
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="w-full py-3 px-4 text-xs font-bold rounded-lg border-2 border-dashed border-primary bg-primary/5 hover:bg-primary/10 text-primary flex items-center justify-center gap-2 transition-all"
+                onClick={() => setConfig((prev) => ({ ...prev, mode: "single" }))}
+                className={`py-2.5 px-3 text-xs font-bold rounded-md border flex items-center justify-center gap-2 transition-all ${
+                  config.mode === "single"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-background hover:bg-muted text-muted-foreground"
+                }`}
               >
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                {isUploading ? "Uploading to DB..." : "Select & Upload Client Art File"}
+                <DollarSign className="w-4 h-4" />
+                Single Denomination Batch
               </button>
             </div>
           </div>
 
-          {/* Client Submissions Gallery */}
-          <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                Saved Client Bucks Gallery ({templates.length})
+          {/* Cash Drawer Calculator Allotment */}
+          {config.mode === "drawer" && (
+            <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm bg-emerald-500/5">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+                <Calculator className="w-5 h-5 text-emerald-600" />
+                Cash Drawer Allotment Calculator
               </h2>
-            </div>
 
-            {templates.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic py-3 text-center">
-                No custom client artwork uploaded yet. Upload one above to select it!
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                {templates.map((tpl) => {
-                  const isSelected =
-                    config.theme === "custom" && config.activeTemplateId === tpl.id;
-                  return (
-                    <div
-                      key={tpl.id}
-                      onClick={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          theme: "custom",
-                          customBgUrl: tpl.image_url,
-                          activeTemplateId: tpl.id,
-                        }))
-                      }
-                      className={`relative p-2 rounded-lg border cursor-pointer group transition-all ${
-                        isSelected
-                          ? "ring-2 ring-primary border-primary bg-primary/10"
-                          : "border-input bg-background hover:bg-muted"
-                      }`}
-                    >
-                      <img
-                        src={tpl.image_url}
-                        alt={tpl.title}
-                        className="w-full h-20 object-cover rounded border border-border"
-                      />
-                      <div className="mt-1.5 flex items-center justify-between">
-                        <div className="truncate pr-1">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {tpl.title}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            By {tpl.artist_name || "Client"}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => deleteTemplateItem(tpl.id, e)}
-                          title="Remove Artwork"
-                          className="p-1 text-muted-foreground hover:text-red-500 rounded opacity-80 hover:opacity-100"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Target Cash Amount Per Drawer ($)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-sm font-bold text-muted-foreground">$</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="5"
+                    value={config.drawerAmount}
+                    onChange={(e) => handleDrawerAmountChange(parseFloat(e.target.value) || 0)}
+                    className="w-full pl-7 pr-3 py-2 text-base font-bold bg-background border border-input rounded-md"
+                  />
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Preset Monthly Color Palettes */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <span className="text-xs font-semibold text-muted-foreground">Allotted Bill Breakdown:</span>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 bg-emerald-500/10 rounded-md border border-emerald-500/30 flex justify-between items-center">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-300">$20 Bills</span>
+                    <span className="font-mono font-bold text-emerald-900 dark:text-emerald-100">{config.drawerBreakdown.bill20} (${config.drawerBreakdown.bill20 * 20})</span>
+                  </div>
+
+                  <div className="p-2.5 bg-amber-500/10 rounded-md border border-amber-500/30 flex justify-between items-center">
+                    <span className="font-bold text-amber-800 dark:text-amber-300">$10 Bills</span>
+                    <span className="font-mono font-bold text-amber-900 dark:text-amber-100">{config.drawerBreakdown.bill10} (${config.drawerBreakdown.bill10 * 10})</span>
+                  </div>
+
+                  <div className="p-2.5 bg-pink-500/10 rounded-md border border-pink-500/30 flex justify-between items-center">
+                    <span className="font-bold text-pink-800 dark:text-pink-300">$5 Bills</span>
+                    <span className="font-mono font-bold text-pink-900 dark:text-pink-100">{config.drawerBreakdown.bill5} (${config.drawerBreakdown.bill5 * 5})</span>
+                  </div>
+
+                  <div className="p-2.5 bg-yellow-500/10 rounded-md border border-yellow-500/30 flex justify-between items-center">
+                    <span className="font-bold text-yellow-800 dark:text-yellow-300">$1 Bills</span>
+                    <span className="font-mono font-bold text-yellow-900 dark:text-yellow-100">{config.drawerBreakdown.bill1} (${config.drawerBreakdown.bill1 * 1})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Monopoly Denominations */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
-              <Calendar className="w-5 h-5 text-pink-500" />
-              Monopoly Style - Monthly Palettes
+              <DollarSign className="w-5 h-5 text-amber-500" />
+              Monopoly Denomination Styles
             </h2>
 
-            <div className="grid grid-cols-3 gap-2">
-              {MONTHS.map((m) => {
-                const palette = MONTH_PALETTES[m];
-                const isSelected = config.theme === "monopoly" && config.selectedMonth === m;
+            <div className="grid grid-cols-4 gap-2">
+              {Object.values(DENOMINATIONS).map((d) => {
+                const isSelected = config.denomination === d.value;
                 return (
                   <button
-                    key={m}
+                    key={d.value}
                     onClick={() =>
                       setConfig((prev) => ({
                         ...prev,
+                        denomination: d.value,
                         theme: "monopoly",
-                        selectedMonth: m,
-                        activeTemplateId: null,
                       }))
                     }
-                    className={`py-2 px-2 text-xs font-semibold rounded-md border flex items-center justify-between transition-all ${
+                    className={`py-3 px-2 text-xs font-bold rounded-lg border flex flex-col items-center justify-center gap-1 transition-all ${
                       isSelected
                         ? "ring-2 ring-primary border-primary shadow-sm"
                         : "border-input bg-background hover:bg-muted"
                     }`}
                     style={{
-                      backgroundColor: isSelected ? palette.bg : undefined,
-                      borderColor: isSelected ? palette.border : undefined,
-                      color: isSelected ? palette.border : undefined,
+                      backgroundColor: isSelected ? d.bg : undefined,
+                      borderColor: isSelected ? d.border : undefined,
+                      color: isSelected ? d.border : undefined,
                     }}
                   >
-                    <span>{m.substring(0, 3)}</span>
-                    <span
-                      className="w-3 h-3 rounded-full border border-black/20"
-                      style={{ backgroundColor: palette.border }}
-                    />
+                    <span className="text-base font-extrabold">${d.value}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Security & Serial Settings */}
+          {/* SVG Contrast Watermark Settings */}
+          <div className="bg-card p-5 rounded-xl border border-border space-y-4">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <Eye className="w-5 h-5 text-indigo-500" />
+              Contrast-Aware SVG Watermark
+            </h2>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-2">
+                SVG Contrast Mode
+              </label>
+              <div className="grid grid-cols-4 gap-1.5 text-xs">
+                {[
+                  { id: "auto", label: "Auto Contrast" },
+                  { id: "dark", label: "Dark SVG" },
+                  { id: "light", label: "Light SVG" },
+                  { id: "none", label: "Off" },
+                ].map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => setConfig((prev) => ({ ...prev, watermarkMode: w.id as any }))}
+                    className={`py-2 px-1 text-[11px] font-semibold rounded border transition-all ${
+                      config.watermarkMode === w.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-input bg-background hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Security & Serial Batch Settings */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
-              Security & Overlay Controls
+              Batch Security & Serial Numbers
             </h2>
 
             <div className="grid grid-cols-2 gap-3">
@@ -765,39 +1013,6 @@ export default function DartBucksGenerator() {
                 </div>
               </div>
             </div>
-
-            {/* Removable Overlays & Position */}
-            <div className="space-y-2 pt-2 border-t border-border">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.showPresetBorders}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      showPresetBorders: e.target.checked,
-                    }))
-                  }
-                  className="rounded border-input text-primary focus:ring-primary h-4 w-4"
-                />
-                Show Preset Border & Corner Emblems
-              </label>
-
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.showPresetText}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      showPresetText: e.target.checked,
-                    }))
-                  }
-                  className="rounded border-input text-primary focus:ring-primary h-4 w-4"
-                />
-                Show Center Oval & "DART BUCKS" Text
-              </label>
-            </div>
           </div>
         </div>
 
@@ -807,7 +1022,7 @@ export default function DartBucksGenerator() {
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                Live Card Preview
+                Live Card Preview (${config.denomination} Monopoly Style)
               </h2>
               <span className="text-xs font-mono text-muted-foreground">
                 1200 × 469 px
@@ -821,34 +1036,12 @@ export default function DartBucksGenerator() {
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-muted-foreground">
-                Previewing Card #{activeSerialPreview} of {config.cardCount}
+            <div className="p-3 bg-muted/60 rounded-lg border border-border flex items-center justify-between text-xs">
+              <span className="font-medium text-muted-foreground">
+                Active Batch Serial Identifier:
               </span>
-              <div className="flex gap-2">
-                <button
-                  disabled={activeSerialPreview <= 1}
-                  onClick={() => setActiveSerialPreview((prev) => prev - 1)}
-                  className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded disabled:opacity-40"
-                >
-                  Prev
-                </button>
-                <button
-                  disabled={activeSerialPreview >= config.cardCount}
-                  onClick={() => setActiveSerialPreview((prev) => prev + 1)}
-                  className="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-muted/60 rounded-lg border border-border flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">
-                Generated Security Identifier:
-              </span>
-              <span className="text-xs font-mono font-bold text-primary">
-                {getSerialString(config.startSerial + activeSerialPreview - 1)}
+              <span className="font-mono font-bold text-primary">
+                {getSerialString(config.startSerial)}
               </span>
             </div>
           </div>
@@ -856,20 +1049,20 @@ export default function DartBucksGenerator() {
           <div className="bg-card p-5 rounded-xl border border-border space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-              A4 Print Sheet Specifications
+              Cash Drawer Print Spec
             </h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-3 gap-3 text-center text-xs">
               <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                <span className="block text-xs text-muted-foreground">Grid Layout</span>
-                <span className="text-sm font-bold text-foreground">2 × 7 (14 / sheet)</span>
+                <span className="block text-muted-foreground">Target Amount</span>
+                <span className="text-sm font-bold text-emerald-600">${config.drawerAmount}</span>
               </div>
               <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                <span className="block text-xs text-muted-foreground">Paper Format</span>
-                <span className="text-sm font-bold text-foreground">A4 Portrait</span>
+                <span className="block text-muted-foreground">Page 1 Output</span>
+                <span className="text-sm font-bold text-foreground">Drawer Audit Slip</span>
               </div>
               <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                <span className="block text-xs text-muted-foreground">Print DPI</span>
-                <span className="text-sm font-bold text-foreground">300 DPI Vector</span>
+                <span className="block text-muted-foreground">Pages 2+ Output</span>
+                <span className="text-sm font-bold text-foreground">2×7 A4 Bill Grid</span>
               </div>
             </div>
           </div>

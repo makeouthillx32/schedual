@@ -83,7 +83,13 @@ export default function DartBucksGenerator() {
 
         if (!error && data && data.length > 0) {
           setBatchLogs(data);
-          localStorage.setItem("dartbuck_batch_logs", JSON.stringify(data));
+          try {
+            // Strip heavy PDF data before LocalStorage caching
+            const cleanData = data.map((d) => ({ ...d, pdf_data_url: undefined }));
+            localStorage.setItem("dartbuck_batch_logs", JSON.stringify(cleanData));
+          } catch (e) {
+            console.warn("LocalStorage quota error on fetch");
+          }
         }
       }
     } catch (e) {
@@ -92,9 +98,15 @@ export default function DartBucksGenerator() {
   };
 
   const saveBatchLog = async (logItem: BatchLogItem) => {
-    const updated = [logItem, ...batchLogs];
-    setBatchLogs(updated);
-    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+    setBatchLogs((prev) => [logItem, ...prev]);
+
+    // LocalStorage quota protection: strip heavy Base64 PDF string for local cache
+    try {
+      const cleanLogs = [logItem, ...batchLogs].map((l) => ({ ...l, pdf_data_url: undefined }));
+      localStorage.setItem("dartbuck_batch_logs", JSON.stringify(cleanLogs));
+    } catch (e) {
+      console.warn("LocalStorage quota exceeded, skipped local PDF caching");
+    }
 
     try {
       if (supabase) {
@@ -119,7 +131,10 @@ export default function DartBucksGenerator() {
     });
 
     setBatchLogs(updated);
-    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+    try {
+      const clean = updated.map((l) => ({ ...l, pdf_data_url: undefined }));
+      localStorage.setItem("dartbuck_batch_logs", JSON.stringify(clean));
+    } catch (e) {}
 
     try {
       if (supabase) {
@@ -150,14 +165,17 @@ export default function DartBucksGenerator() {
           ...log,
           status: "shredded" as const,
           shredded_at: new Date().toISOString(),
-          pdf_data_url: undefined, // Clear stored PDF document on destruction
+          pdf_data_url: undefined,
         };
       }
       return log;
     });
 
     setBatchLogs(updated);
-    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+    try {
+      const clean = updated.map((l) => ({ ...l, pdf_data_url: undefined }));
+      localStorage.setItem("dartbuck_batch_logs", JSON.stringify(clean));
+    } catch (e) {}
 
     try {
       if (supabase) {
@@ -176,13 +194,16 @@ export default function DartBucksGenerator() {
   };
 
   const deleteBatchLog = async (logId: string) => {
-    if (!confirm("Permanently remove this batch audit log entry and its stored PDF from the ledger?")) {
+    if (!confirm("Permanently remove this batch audit log entry from the ledger?")) {
       return;
     }
 
     const updated = batchLogs.filter((log) => log.id !== logId);
     setBatchLogs(updated);
-    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+    try {
+      const clean = updated.map((l) => ({ ...l, pdf_data_url: undefined }));
+      localStorage.setItem("dartbuck_batch_logs", JSON.stringify(clean));
+    } catch (e) {}
 
     try {
       if (supabase) {
@@ -194,7 +215,7 @@ export default function DartBucksGenerator() {
   };
 
   const clearAllBatchLogs = async () => {
-    if (!confirm("Clear all batch audit log entries and stored PDFs from the ledger? This will remove all test records.")) {
+    if (!confirm("Clear all batch audit log entries from the ledger? This will remove all test records.")) {
       return;
     }
 
@@ -400,8 +421,13 @@ export default function DartBucksGenerator() {
         }
       }
 
-      // Capture generated PDF Data URI string for database storage
-      const pdfDataUrl = doc.output("datauristring");
+      // Safely capture generated PDF Data URI string without causing browser quota exceptions
+      let pdfDataUrl: string | undefined = undefined;
+      try {
+        pdfDataUrl = doc.output("datauristring");
+      } catch (e) {
+        console.warn("Could not generate pdfDataUrl string:", e);
+      }
 
       const logItem: BatchLogItem = {
         id: "log_" + Math.random().toString(36).substring(2, 10),
@@ -435,8 +461,8 @@ export default function DartBucksGenerator() {
 
       doc.save(filename);
     } catch (err) {
-      console.error("PDF export failed:", err);
-      alert("Failed to export PDF.");
+      console.error("PDF export error:", err);
+      alert("Failed to export PDF: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsGenerating(false);
     }

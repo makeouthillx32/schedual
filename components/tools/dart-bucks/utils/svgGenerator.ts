@@ -1,21 +1,22 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot } from "../types";
-import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
+import { getSerialString, MONTH_NAMES_FULL } from "./security";
 
-// Exact Monopoly Bank Photo Color Palettes
-export const MONOPOLY_PHOTO_COLORS: Record<string, { bg: string; border: string; circleBg: string; text: string; innerBorder: string }> = {
-  "1": { bg: "#e2e8f0", border: "#334155", circleBg: "#ffffff", text: "#0f172a", innerBorder: "#1e293b" },
-  "5": { bg: "#f472b6", border: "#701a75", circleBg: "#fbcfe8", text: "#4c0519", innerBorder: "#86198f" },
-  "10": { bg: "#facc15", border: "#583101", circleBg: "#fef08a", text: "#3b1e06", innerBorder: "#78350f" },
-  "20": { bg: "#4ade80", border: "#064e3b", circleBg: "#bbf7d0", text: "#022c22", innerBorder: "#047857" },
+// Exact Monopoly Bank Photo Color Palettes (Rich Contrast)
+export const MONOPOLY_PHOTO_COLORS: Record<string, { bg: string; border: string; circleBg: string; text: string; innerTint: string }> = {
+  "1": { bg: "#ffffff", border: "#27272a", circleBg: "#f8fafc", text: "#09090b", innerTint: "rgba(39, 39, 42, 0.18)" },
+  "5": { bg: "#f472b6", border: "#831843", circleBg: "#fbcfe8", text: "#500724", innerTint: "rgba(131, 24, 67, 0.20)" },
+  "10": { bg: "#facc15", border: "#713f12", circleBg: "#fef08a", text: "#365314", innerTint: "rgba(113, 63, 18, 0.22)" },
+  "20": { bg: "#4ade80", border: "#064e3b", circleBg: "#bbf7d0", text: "#022c22", innerTint: "rgba(6, 78, 59, 0.20)" },
 };
 
+// Exact Classic Monopoly Dimensions: 4.0" x 2.0" (1200px x 600px - 2:1 Aspect Ratio)
 export const generateDartBuckSVG = (
   serialNum: number,
   config: DartBuckConfig,
   denomSlots: Record<string, DenomArtSlot>,
   denomValue = config.denomination,
   width = 1200,
-  height = 469
+  height = 600
 ): string => {
   const photoColor = MONOPOLY_PHOTO_COLORS[denomValue] || MONOPOLY_PHOTO_COLORS["1"];
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
@@ -34,92 +35,114 @@ export const generateDartBuckSVG = (
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
-    <!-- Paper Texture Overlay -->
-    <pattern id="white-texture-dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="0.8" fill="#ffffff" fill-opacity="0.3"/>
-      <circle cx="12" cy="8" r="0.6" fill="#ffffff" fill-opacity="0.2"/>
-      <circle cx="6" cy="16" r="0.9" fill="#ffffff" fill-opacity="0.25"/>
+    <!-- Paper Fiber Texture Overlay -->
+    <pattern id="monopoly-paper-texture" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="0.9" fill="#ffffff" fill-opacity="0.35"/>
+      <circle cx="18" cy="12" r="0.7" fill="#ffffff" fill-opacity="0.25"/>
+      <circle cx="9" cy="24" r="0.8" fill="#ffffff" fill-opacity="0.3"/>
+      <circle cx="27" cy="21" r="0.6" fill="#ffffff" fill-opacity="0.2"/>
     </pattern>
 
-    <!-- Curved Text Path for Bottom Circle -->
-    <path id="monopoly-circle-curve" d="M -120 40 A 130 130 0 0 0 120 40"/>
+    <!-- Hatch Mesh Border Pattern -->
+    <pattern id="border-hatch" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 0 10 L 10 0 M -2 2 L 2 -2 M 8 12 L 12 8" stroke="${photoColor.border}" stroke-width="1" stroke-opacity="0.4"/>
+    </pattern>
+
+    <!-- Fancy Ornate Scroll Vignette -->
+    <g id="fancy-scroll">
+      <path d="M 0 0 C 20 -15, 40 -8, 45 12 C 50 32, 25 45, 12 32 C 0 20, 25 8, 32 16" fill="none" stroke="${photoColor.border}" stroke-width="2.5"/>
+      <circle cx="32" cy="16" r="3" fill="${photoColor.border}"/>
+    </g>
   </defs>
 
-  <!-- Background Base (Exact Monopoly Paper Color) -->
+  <!-- Background Base (Rich Monopoly Paper Color) -->
   <rect x="0" y="0" width="${width}" height="${height}" fill="${photoColor.bg}"/>
 
   ${customImgSvg}
 
-  <!-- Texture Overlay -->
-  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#white-texture-dots)"/>
+  <!-- Paper Texture Overlay -->
+  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#monopoly-paper-texture)"/>
 
   ${config.showPresetBorders ? `
-  <!-- Outer Double Line Monopoly Border -->
-  <rect x="18" y="18" width="${width - 36}" height="${height - 36}" fill="none" stroke="${photoColor.border}" stroke-width="8"/>
-  <rect x="32" y="32" width="${width - 64}" height="${height - 64}" fill="none" stroke="${photoColor.border}" stroke-width="2.5"/>
+  <!-- Concentric Outer & Inner Monopoly Borders (Multiple Borders With Background Shining Through) -->
+  <!-- 1. Outer Solid Thick Border Line -->
+  <rect x="20" y="20" width="${width - 40}" height="${height - 40}" fill="none" stroke="${photoColor.border}" stroke-width="10"/>
 
-  <!-- Left Side Rectangular Box (DART Crest Icon) -->
-  <g transform="translate(70, ${height / 2 - 40})">
-    <rect x="0" y="0" width="130" height="80" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3" rx="2"/>
-    <text x="65" y="36" font-family="sans-serif" font-weight="extrabold" font-size="22" fill="${photoColor.text}" text-anchor="middle">DART</text>
-    <text x="65" y="56" font-family="sans-serif" font-weight="bold" font-size="9" fill="${photoColor.border}" text-anchor="middle">EST. 1962</text>
+  <!-- 2. Middle Hatched Border Frame -->
+  <rect x="36" y="36" width="${width - 72}" height="${height - 72}" fill="url(#border-hatch)" stroke="${photoColor.border}" stroke-width="2"/>
+
+  <!-- 3. Inner Decorative Dashed Border Line -->
+  <rect x="52" y="52" width="${width - 104}" height="${height - 104}" fill="${photoColor.innerTint}" stroke="${photoColor.border}" stroke-width="2.5" stroke-dasharray="10,5"/>
+
+  <!-- Ornate Corner Filigree Scrolls -->
+  <use href="#fancy-scroll" x="65" y="65"/>
+  <use href="#fancy-scroll" x="${width - 65}" y="65" transform="scale(-1, 1) translate(${-width + 130}, 0)"/>
+  <use href="#fancy-scroll" x="65" y="${height - 65}" transform="scale(1, -1) translate(0, ${-height + 130})"/>
+  <use href="#fancy-scroll" x="${width - 65}" y="${height - 65}" transform="scale(-1, -1) translate(${-width + 130}, ${-height + 130})"/>
+
+  <!-- Left Side Panel (DART Crest Box) -->
+  <g transform="translate(90, ${height / 2 - 50})">
+    <rect x="0" y="0" width="140" height="100" fill="${photoColor.circleBg}" fill-opacity="0.95" stroke="${photoColor.border}" stroke-width="4" rx="4"/>
+    <text x="70" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="28" fill="${photoColor.text}" text-anchor="middle">DART</text>
+    <line x1="20" y1="56" x2="120" y2="56" stroke="${photoColor.border}" stroke-width="2"/>
+    <text x="70" y="74" font-family="sans-serif" font-weight="bold" font-size="11" fill="${photoColor.border}" text-anchor="middle">EST. 1962</text>
   </g>
 
-  <!-- Right Side Rectangular Box (DART House/Facility Icon) -->
-  <g transform="translate(${width - 200}, ${height / 2 - 40})">
-    <rect x="0" y="0" width="130" height="80" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3" rx="2"/>
-    <!-- House / Roof Icon -->
-    <path d="M 65 18 L 25 45 L 35 45 L 35 65 L 95 65 L 95 45 L 105 45 Z" fill="${photoColor.border}"/>
-    <rect x="52" y="48" width="26" height="17" fill="${photoColor.circleBg}"/>
+  <!-- Right Side Panel (DART House/Facility Icon Box) -->
+  <g transform="translate(${width - 230}, ${height / 2 - 50})">
+    <rect x="0" y="0" width="140" height="100" fill="${photoColor.circleBg}" fill-opacity="0.95" stroke="${photoColor.border}" stroke-width="4" rx="4"/>
+    <!-- Monopoly House / Facility Roof Icon -->
+    <path d="M 70 20 L 25 55 L 38 55 L 38 82 L 102 82 L 102 55 L 115 55 Z" fill="${photoColor.border}"/>
+    <rect x="56" y="60" width="28" height="22" fill="${photoColor.circleBg}"/>
   </g>
 
-  <!-- 4 Corner Rectangular Denomination Boxes (Matching Photo) -->
+  <!-- 4 Corner Rectangular Denomination Boxes (Matching Reference Photo) -->
   <!-- Top-Left Box -->
-  <g transform="translate(60, 48)">
-    <rect x="0" y="0" width="100" height="50" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3"/>
-    <text x="50" y="36" font-family="serif" font-weight="bold" font-size="34" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+  <g transform="translate(80, 70)">
+    <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Top-Right Box -->
-  <g transform="translate(${width - 160}, 48)">
-    <rect x="0" y="0" width="100" height="50" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3"/>
-    <text x="50" y="36" font-family="serif" font-weight="bold" font-size="34" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+  <g transform="translate(${width - 190}, 70)">
+    <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Bottom-Left Box -->
-  <g transform="translate(60, ${height - 98})">
-    <rect x="0" y="0" width="100" height="50" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3"/>
-    <text x="50" y="36" font-family="serif" font-weight="bold" font-size="34" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+  <g transform="translate(80, ${height - 130})">
+    <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Bottom-Right Box -->
-  <g transform="translate(${width - 160}, ${height - 98})">
-    <rect x="0" y="0" width="100" height="50" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="3"/>
-    <text x="50" y="36" font-family="serif" font-weight="bold" font-size="34" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+  <g transform="translate(${width - 190}, ${height - 130})">
+    <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
   </g>
   ` : ""}
 
   ${config.showPresetText ? `
   <!-- Classic Monopoly Center Circle -->
   <g transform="translate(${width / 2}, ${height / 2})">
-    <circle cx="0" cy="0" r="145" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="6"/>
-    <circle cx="0" cy="0" r="135" fill="none" stroke="${photoColor.border}" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <circle cx="0" cy="0" r="180" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="8"/>
+    <circle cx="0" cy="0" r="168" fill="none" stroke="${photoColor.border}" stroke-width="2" stroke-dasharray="8,4"/>
 
-    <!-- Giant Center Denomination Number -->
-    <text font-family="sans-serif" font-weight="900" font-size="140" fill="${photoColor.text}" text-anchor="middle" y="48">${denomValue}</text>
+    <!-- Giant Center Fancy Serif Denomination Number -->
+    <text font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="170" fill="${photoColor.text}" text-anchor="middle" y="58">${denomValue}</text>
 
-    <!-- Curved "DART BUCKS®" Text Along Bottom Inner Rim -->
-    <text font-family="sans-serif" font-weight="extrabold" font-size="14" fill="${photoColor.border}" letter-spacing="3" text-anchor="middle" y="115">• DART BUCKS ® •</text>
+    <!-- Curved Text "DART BUCKS®" Along Bottom Inner Rim -->
+    <text font-family="sans-serif" font-weight="900" font-size="16" fill="${photoColor.border}" letter-spacing="4" text-anchor="middle" y="145">• DART BUCKS ® •</text>
   </g>
   ` : ""}
 
-  <!-- Transparent Serial Box Overlay -->
-  <g transform="translate(${width / 2 - 260}, ${height - 54})">
-    <rect x="0" y="0" width="520" height="38" fill="#ffffff" fill-opacity="0.94" stroke="${photoColor.border}" stroke-width="2" rx="4"/>
-    <text x="260" y="26" font-family="monospace" font-weight="bold" font-size="22" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
+  <!-- Transparent Serial Box Overlay with Border -->
+  <g transform="translate(${width / 2 - 280}, ${height - 65})">
+    <rect x="0" y="0" width="560" height="42" fill="#ffffff" fill-opacity="0.94" stroke="${photoColor.border}" stroke-width="2.5" rx="5"/>
+    <text x="280" y="28" font-family="monospace" font-weight="bold" font-size="24" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
   </g>
 
   <!-- Hardcoded Fine Print Notice -->
-  <text x="35" y="${height - 20}" font-family="sans-serif" font-size="10" font-weight="bold" fill="${photoColor.border}" fill-opacity="0.85">${finePrintNotice}</text>
+  <text x="45" y="${height - 24}" font-family="sans-serif" font-size="11" font-weight="bold" fill="${photoColor.border}" fill-opacity="0.9">${finePrintNotice}</text>
 </svg>`;
 };

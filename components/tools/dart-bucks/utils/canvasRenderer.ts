@@ -15,7 +15,7 @@ export const getContrastWatermark = (
   return isLightBg(bgColorHex) ? darkImg : lightImg;
 };
 
-// Render Dynamic Pure SVG Vector onto HTML5 Canvas
+// Render Dynamic Pure SVG Vector onto HTML5 Canvas (1200 x 600 px - 4.0" x 2.0" Monopoly Size)
 export const renderDartBuckOnCanvas = (
   canvas: HTMLCanvasElement,
   serialNum: number,
@@ -26,7 +26,7 @@ export const renderDartBuckOnCanvas = (
   watermarkDarkImg: HTMLImageElement | null,
   denomValue = config.denomination,
   width = 1200,
-  height = 469
+  height = 600
 ) => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -35,7 +35,6 @@ export const renderDartBuckOnCanvas = (
   canvas.height = height;
   ctx.clearRect(0, 0, width, height);
 
-  // Generate pure vector SVG string with batch-unique colors & paper textures
   const svgString = generateDartBuckSVG(serialNum, config, denomSlots, denomValue, width, height);
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -57,7 +56,7 @@ export const renderDartBuckBackOnCanvas = (
   watermarkDarkImg: HTMLImageElement | null,
   denomValue = config.denomination,
   width = 1200,
-  height = 469
+  height = 600
 ) => {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -72,36 +71,36 @@ export const renderDartBuckBackOnCanvas = (
   ctx.fillRect(0, 0, width, height);
 
   ctx.strokeStyle = style.border;
-  ctx.lineWidth = 8;
-  ctx.strokeRect(16, 16, width - 32, height - 32);
+  ctx.lineWidth = 10;
+  ctx.strokeRect(20, 20, width - 40, height - 40);
 
   ctx.strokeStyle = style.accent;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(28, 28, width - 56, height - 56);
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(36, 36, width - 72, height - 72);
 
   const wm = getContrastWatermark(style.circleBg, config.watermarkMode, config.showWatermark, watermarkLightImg, watermarkDarkImg);
   if (wm) {
     ctx.save();
     ctx.globalAlpha = 0.25;
-    ctx.drawImage(wm, width / 2 - 200, height / 2 - 200, 400, 400);
+    ctx.drawImage(wm, width / 2 - 220, height / 2 - 220, 440, 440);
     ctx.restore();
   }
 
   ctx.fillStyle = style.border;
-  ctx.font = "bold 110px serif";
+  ctx.font = "bold 130px Georgia, serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(`$${denomValue}`, width / 2, height / 2 - 15);
+  ctx.fillText(`$${denomValue}`, width / 2, height / 2 - 20);
 
-  ctx.font = "bold 18px sans-serif";
+  ctx.font = "bold 20px sans-serif";
   ctx.fillStyle = "#475569";
-  ctx.fillText("DESERT AREA RESOURCES & TRAINING • EST. 1962", width / 2, height / 2 + 75);
+  ctx.fillText("DESERT AREA RESOURCES & TRAINING • EST. 1962", width / 2, height / 2 + 90);
 
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
-  ctx.font = "bold 20px monospace";
+  ctx.font = "bold 22px monospace";
   ctx.fillStyle = "#0f172a";
   ctx.textAlign = "right";
-  ctx.fillText(serialStr, width - 45, height - 40);
+  ctx.fillText(serialStr, width - 50, height - 45);
 };
 
 // Draw Hairline Vector Crop Marks (Registration Black K=100%) in jsPDF

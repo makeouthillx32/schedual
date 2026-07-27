@@ -22,7 +22,7 @@ export default function DartBucksGenerator() {
     stationPrefix: "COACH",
     batchId: generateBatchId(),
     startSerial: 1,
-    cardCount: 14,
+    cardCount: 10,
     digits: 4,
     includeChecksum: true,
     theme: "monopoly",
@@ -355,7 +355,7 @@ export default function DartBucksGenerator() {
 
   useEffect(() => {
     if (config.previewView === "card" && previewCanvasRef.current) {
-      renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg);
+      renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
     } else if (config.previewView === "sheet-front" && sheetCanvasRef.current) {
       renderSheetPreview(sheetCanvasRef.current, false);
     } else if (config.previewView === "sheet-back" && sheetCanvasRef.current) {
@@ -380,8 +380,9 @@ export default function DartBucksGenerator() {
 
     const cols = paperSpec.cols;
     const rows = paperSpec.rows;
-    const cardW = Math.round(5.5 * 95);
-    const cardH = Math.round(5.5 * 37.1);
+    // Exact Monopoly Bill Size: 101.6 mm x 50.8 mm (4.0" x 2.0")
+    const cardW = Math.round(5.5 * 101.6);
+    const cardH = Math.round(5.5 * 50.8);
     const gapX = Math.round(5.5 * config.gutterMm);
     const gapY = Math.round(5.5 * config.gutterMm);
 
@@ -390,7 +391,7 @@ export default function DartBucksGenerator() {
 
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = 1200;
-    tempCanvas.height = 469;
+    tempCanvas.height = 600;
 
     let serialIdx = config.startSerial;
 
@@ -401,9 +402,9 @@ export default function DartBucksGenerator() {
         const y = marginY + r * (cardH + gapY);
 
         if (isBack) {
-          renderDartBuckBackOnCanvas(tempCanvas, serialIdx, config, watermarkLightImg, watermarkDarkImg);
+          renderDartBuckBackOnCanvas(tempCanvas, serialIdx, config, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
         } else {
-          renderDartBuckOnCanvas(tempCanvas, serialIdx, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg);
+          renderDartBuckOnCanvas(tempCanvas, serialIdx, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
         }
 
         ctx.drawImage(tempCanvas, x, y, cardW, cardH);
@@ -425,7 +426,7 @@ export default function DartBucksGenerator() {
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `${paperSpec.label.toUpperCase()} - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
+      `${paperSpec.label.toUpperCase()} - MONOPOLY SIZE (4.0" × 2.0") - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
       canvas.width / 2,
       38
     );
@@ -481,7 +482,7 @@ export default function DartBucksGenerator() {
 
       await saveBatchLog(logItem);
 
-      // Execute PDF Creation
+      // Execute PDF Creation with exact 4.0" x 2.0" (101.6 mm x 50.8 mm) Monopoly bill size
       const { jsPDF } = await import("jspdf");
       const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
 
@@ -493,15 +494,14 @@ export default function DartBucksGenerator() {
 
       const cols = paperSpec.cols;
       const rows = paperSpec.rows;
-      const cardWidthMm = 95;
-      const cardHeightMm = 37.1;
+      const cardWidthMm = 101.6;
+      const cardHeightMm = 50.8;
       const gapX = config.gutterMm;
       const gapY = config.gutterMm;
 
       const marginX = (paperSpec.widthMm - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
       const marginY = (paperSpec.heightMm - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
-      // PAGE 1: Cash Drawer Audit Slip (If in Drawer mode)
       if (config.mode === "drawer") {
         const auditCanvas = document.createElement("canvas");
         drawDrawerAuditSlip(auditCanvas, config.drawerAmount, config.drawerBreakdown, config.batchId, config.stationPrefix);
@@ -534,11 +534,11 @@ export default function DartBucksGenerator() {
 
       const frontCanvas = document.createElement("canvas");
       frontCanvas.width = 1200;
-      frontCanvas.height = 469;
+      frontCanvas.height = 600;
 
       const backCanvas = document.createElement("canvas");
       backCanvas.width = 1200;
-      backCanvas.height = 469;
+      backCanvas.height = 600;
 
       const totalPages = Math.ceil(billQueue.length / (cols * rows));
 
@@ -553,7 +553,7 @@ export default function DartBucksGenerator() {
           if (queueIndex >= billQueue.length) break;
 
           const item = billQueue[queueIndex];
-          renderDartBuckOnCanvas(frontCanvas, item.serial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 469);
+          renderDartBuckOnCanvas(frontCanvas, item.serial, config, denomSlots, loadedSlotImages, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
           const imgData = frontCanvas.toDataURL("image/png");
 
           const col = i % cols;
@@ -577,7 +577,7 @@ export default function DartBucksGenerator() {
             if (queueIndex >= billQueue.length) break;
 
             const item = billQueue[queueIndex];
-            renderDartBuckBackOnCanvas(backCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 469);
+            renderDartBuckBackOnCanvas(backCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
             const imgDataBack = backCanvas.toDataURL("image/png");
 
             const col = i % cols;
@@ -667,10 +667,10 @@ export default function DartBucksGenerator() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            DartBucks Cash Drawer & Print Audit Safeguard Tool
+            DartBucks Cash Drawer & Monopoly Prepress Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Authenticated print gate, fine print shred dates, monthly batch ledger, & double-cut bleed printing.
+            Exact 4.0"×2.0" Monopoly bill dimensions, multiple inner borders, background paper shine, & prepress PDF crop marks.
           </p>
         </div>
 

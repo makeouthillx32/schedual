@@ -15,10 +15,10 @@ export interface DenominationStyle {
 }
 
 export const DENOMINATIONS: Record<string, DenominationStyle> = {
-  "1": { value: "1", label: "$1 Bill", bg: "#fef9c3", border: "#db2777", accent: "#db2777", circleBg: "#fffdf0" },
-  "5": { value: "5", label: "$5 Bill", bg: "#fbcfe8", border: "#be185d", accent: "#be185d", circleBg: "#fff0f3" },
-  "10": { value: "10", label: "$10 Bill", bg: "#fef08a", border: "#b45309", accent: "#b45309", circleBg: "#fffde8" },
-  "20": { value: "20", label: "$20 Bill", bg: "#bbf7d0", border: "#15803d", accent: "#15803d", circleBg: "#f0fdf4" },
+  "1": { value: "1", label: "$1 Bill", bg: "#ffffff", border: "#27272a", accent: "#27272a", circleBg: "#f8fafc" },
+  "5": { value: "5", label: "$5 Bill", bg: "#f472b6", border: "#831843", accent: "#831843", circleBg: "#fbcfe8" },
+  "10": { value: "10", label: "$10 Bill", bg: "#facc15", border: "#713f12", accent: "#713f12", circleBg: "#fef08a" },
+  "20": { value: "20", label: "$20 Bill", bg: "#4ade80", border: "#064e3b", accent: "#064e3b", circleBg: "#bbf7d0" },
 };
 
 export const MONTHS = [
@@ -38,11 +38,12 @@ export interface PaperSpec {
   billsPerSheet: number;
 }
 
+// Exact Classic Monopoly Bill Dimensions: 101.6 mm x 50.8 mm (4.0" x 2.0")
 export const PAPER_SPECS: Record<PaperSizePreset, PaperSpec> = {
-  "letter": { id: "letter", label: 'US Letter (8.5" × 11")', widthMm: 215.9, heightMm: 279.4, cols: 2, rows: 6, billsPerSheet: 12 },
-  "a4": { id: "a4", label: "A4 Sheet (210 × 297 mm)", widthMm: 210.0, heightMm: 297.0, cols: 2, rows: 6, billsPerSheet: 12 },
-  "11x12-14": { id: "11x12-14", label: 'Custom 11" × 12" (14 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 7, billsPerSheet: 14 },
-  "11x12-21": { id: "11x12-21", label: 'Custom 11" × 12" (21 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 3, rows: 7, billsPerSheet: 21 },
+  "letter": { id: "letter", label: 'US Letter (8.5" × 11")', widthMm: 215.9, heightMm: 279.4, cols: 2, rows: 5, billsPerSheet: 10 },
+  "a4": { id: "a4", label: "A4 Sheet (210 × 297 mm)", widthMm: 210.0, heightMm: 297.0, cols: 2, rows: 5, billsPerSheet: 10 },
+  "11x12-14": { id: "11x12-14", label: 'Custom 11" × 12" (10 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 5, billsPerSheet: 10 },
+  "11x12-21": { id: "11x12-21", label: 'Custom 11" × 12" (15 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 2, rows: 5, billsPerSheet: 10 },
 };
 
 export interface BatchLogItem {

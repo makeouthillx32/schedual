@@ -18,9 +18,6 @@ const toolsMap: Record<string, React.ComponentType> = {
   "dart-bucks-generator": dynamic(() =>
     import("@/components/tools/DartBucksGenerator")
   ),
-  "dart-bucks-scanner": dynamic(() =>
-    import("@/components/tools/DartBucksScanner")
-  ),
 };
 
 const ToolPage = ({ params }: { params: Promise<{ tool: string }> }) => {

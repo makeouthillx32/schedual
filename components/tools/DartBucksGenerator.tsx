@@ -5,11 +5,48 @@ import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } fro
 import { supabase } from "@/lib/supabaseClient";
 import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
+import { generateDartBuckSVG } from "./dart-bucks/utils/svgGenerator";
 import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
 import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
 import { BatchAuditLedger } from "./dart-bucks/components/BatchAuditLedger";
+
+// Helper to asynchronously render SVG bill vector to PNG DataURL for jsPDF export
+const renderDartBuckToDataUrlAsync = (
+  serialNum: number,
+  config: DartBuckConfig,
+  denomValue: string,
+  width = 1200,
+  height = 600
+): Promise<string> => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      resolve("");
+      return;
+    }
+
+    const svgString = generateDartBuckSVG(serialNum, config, {}, denomValue, width, height);
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    img.src = url;
+  });
+};
 
 export default function DartBucksGenerator() {
   const [config, setConfig] = useState<DartBuckConfig>({
@@ -317,10 +354,6 @@ export default function DartBucksGenerator() {
 
       const billQueue = getDrawerBillQueue();
 
-      const frontCanvas = document.createElement("canvas");
-      frontCanvas.width = 1200;
-      frontCanvas.height = 600;
-
       const backCanvas = document.createElement("canvas");
       backCanvas.width = 1200;
       backCanvas.height = 600;
@@ -331,14 +364,13 @@ export default function DartBucksGenerator() {
         // Add new page for bill sheet
         doc.addPage();
 
-        // FRONT BILL SHEET PAGE
+        // FRONT BILL SHEET PAGE (Awaits SVG-to-PNG DataUrl rendering asynchronously for each bill)
         for (let i = 0; i < cols * rows; i++) {
           const queueIndex = p * (cols * rows) + i;
           if (queueIndex >= billQueue.length) break;
 
           const item = billQueue[queueIndex];
-          renderDartBuckOnCanvas(frontCanvas, item.serial, config, {}, {}, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
-          const imgData = frontCanvas.toDataURL("image/png");
+          const imgData = await renderDartBuckToDataUrlAsync(item.serial, config, item.denom, 1200, 600);
 
           const col = i % cols;
           const row = Math.floor(i / cols);
@@ -346,7 +378,9 @@ export default function DartBucksGenerator() {
           const x = marginX + col * (cardWidthMm + gapX);
           const y = marginY + row * (cardHeightMm + gapY);
 
-          doc.addImage(imgData, "PNG", x, y, cardWidthMm, cardHeightMm);
+          if (imgData) {
+            doc.addImage(imgData, "PNG", x, y, cardWidthMm, cardHeightMm);
+          }
 
           if (config.includeCropMarks) {
             drawPdfCropMarks(doc, x, y, cardWidthMm, cardHeightMm, config.bleedMm, 4);
@@ -427,7 +461,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Exact duplex page alignment (Audit Verso Cover), itemized bill dispersion, 4.0"×2.0" Monopoly size, & prepress crop marks.
+            Async PDF front bill rendering, duplex page alignment, itemized bill dispersion, 4.0"×2.0" Monopoly size, & prepress crop marks.
           </p>
         </div>
 
@@ -450,10 +484,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Duplex Sheet Page Pairing Active (${config.drawerAmount} Allotment)
+            Async Vector PDF Export Engine Active (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). PDF pair indexing: Page 1 (Audit Front) + Page 2 (Audit Back), Page 3 (Bill Sheet 1 Front) + Page 4 (Bill Sheet 1 Back Mirrored).
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Front bill SVG vectors await async PNG conversion before embedding into jsPDF pages.
           </span>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot } from "../types";
 import { getSerialString, isLightBg } from "./security";
 
-// Deterministically compute a unique batch color tint from a batch hash string
 export const getBatchAccentColor = (batchId: string, defaultColor: string): string => {
   if (!batchId) return defaultColor;
   let hash = 0;
@@ -25,7 +24,6 @@ export const generateDartBuckSVG = (
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
   const slot = denomSlots[denomValue];
 
-  // If custom slot artwork is present, embed it as an SVG <image> tag with transparent overlays
   const customImgSvg = slot && slot.image_url
     ? `<image href="${slot.image_url}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="none"/>`
     : "";
@@ -48,11 +46,22 @@ export const generateDartBuckSVG = (
       <line x1="0" y1="10" x2="20" y2="10" stroke="#ffffff" stroke-opacity="0.08" stroke-width="0.5"/>
     </pattern>
 
+    <!-- Intaglio Cross-Hatch Shading Pattern -->
+    <pattern id="intaglio-hatch" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <path d="M 0 8 L 8 0 M -2 2 L 2 -2 M 6 10 L 10 6" stroke="${batchColor}" stroke-width="0.8" stroke-opacity="0.3"/>
+    </pattern>
+
     <!-- Guilloche Hatch Mesh Pattern -->
     <pattern id="guilloche-mesh" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
       <path d="M 0 20 Q 10 0, 20 20 T 40 20" fill="none" stroke="${batchColor}" stroke-opacity="0.12" stroke-width="1"/>
       <path d="M 0 20 Q 10 40, 20 20 T 40 20" fill="none" stroke="${batchColor}" stroke-opacity="0.12" stroke-width="1"/>
     </pattern>
+
+    <!-- Victorian Filigree Scroll Vignette Group -->
+    <g id="scroll-flourish">
+      <path d="M 0 0 C 15 -10, 30 -5, 35 10 C 40 25, 20 35, 10 25 C 0 15, 20 5, 25 12" fill="none" stroke="${batchColor}" stroke-width="1.8" stroke-opacity="0.7"/>
+      <circle cx="25" cy="12" r="2" fill="${batchColor}" fill-opacity="0.8"/>
+    </g>
 
     <!-- Text Path Curve -->
     <path id="arch-curve" d="M 370 200 A 230 150 0 0 1 830 200"/>
@@ -63,14 +72,20 @@ export const generateDartBuckSVG = (
 
   ${customImgSvg}
 
-  <!-- Texture Overlays (Transparent White Texture & Mesh) -->
+  <!-- Texture Overlays (Transparent White Texture & Intaglio Mesh) -->
   <rect x="0" y="0" width="${width}" height="${height}" fill="url(#white-texture-dots)"/>
   <rect x="0" y="0" width="${width}" height="${height}" fill="url(#guilloche-mesh)"/>
 
   ${config.showPresetBorders ? `
-  <!-- Outer Double Border with Batch Accent Tint -->
+  <!-- Outer Guilloche Double Border with Corner Filigree Scrolls -->
   <rect x="16" y="16" width="${width - 32}" height="${height - 32}" fill="none" stroke="${batchColor}" stroke-width="4"/>
   <rect x="24" y="24" width="${width - 48}" height="${height - 48}" fill="none" stroke="${style.border}" stroke-width="1.5" stroke-dasharray="8,4"/>
+
+  <!-- Ornate Corner Filigree Flourishes -->
+  <use href="#scroll-flourish" x="35" y="35"/>
+  <use href="#scroll-flourish" x="${width - 35}" y="35" transform="scale(-1, 1) translate(${-width + 70}, 0)"/>
+  <use href="#scroll-flourish" x="35" y="${height - 35}" transform="scale(1, -1) translate(0, ${-height + 70})"/>
+  <use href="#scroll-flourish" x="${width - 35}" y="${height - 35}" transform="scale(-1, -1) translate(${-width + 70}, ${-height + 70})"/>
 
   <!-- Four Corner Monopoly Circles (Transparent Backed) -->
   <g transform="translate(78, 78)">
@@ -113,21 +128,32 @@ export const generateDartBuckSVG = (
     <!-- Curved Text "DART BUCKS" -->
     <text font-family="serif" font-weight="bold" font-size="38" fill="#000000" text-anchor="middle" y="-50">DART BUCKS</text>
 
-    <!-- Giant Center Denomination -->
-    <text font-family="serif" font-weight="bold" font-size="110" fill="#ffffff" stroke="#000000" stroke-width="4" text-anchor="middle" y="35">${denomValue}</text>
+    <!-- Giant Center Denomination with Intaglio Cross-Hatch Fill -->
+    <text font-family="serif" font-weight="bold" font-size="110" fill="url(#intaglio-hatch)" stroke="#000000" stroke-width="4" text-anchor="middle" y="35">${denomValue}</text>
 
     <!-- Subtitle Denomination -->
     <text font-family="sans-serif" font-weight="bold" font-size="13" fill="${batchColor}" text-anchor="middle" y="105">$${denomValue} DENOMINATION</text>
   </g>
   ` : ""}
 
-  <!-- Transparent Serial Box Overlay -->
+  <!-- Dual Treasury Signature Lines -->
+  <g transform="translate(180, ${height - 110})">
+    <line x1="0" y1="0" x2="160" y2="0" stroke="#334155" stroke-width="1.5"/>
+    <text x="80" y="16" font-family="sans-serif" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle">Treasurer / Manager Darlene</text>
+  </g>
+
+  <g transform="translate(${width - 340}, ${height - 110})">
+    <line x1="0" y1="0" x2="160" y2="0" stroke="#334155" stroke-width="1.5"/>
+    <text x="80" y="16" font-family="sans-serif" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle">Secretary / Job Coach</text>
+  </g>
+
+  <!-- Transparent Serial Box Overlay with Security Notch -->
   <g transform="translate(${width / 2 - 280}, ${height - 60})">
     <rect x="0" y="0" width="560" height="45" fill="#ffffff" fill-opacity="0.92" stroke="#cbd5e1" stroke-width="2" rx="4"/>
     <text x="280" y="30" font-family="monospace" font-weight="bold" font-size="26" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
   </g>
 
-  <!-- Batch Hash Identity Tag (Transparent Bottom Left) -->
-  <text x="35" y="${height - 22}" font-family="monospace" font-size="12" font-weight="bold" fill="${batchColor}" fill-opacity="0.8">BATCH: ${config.batchId}</text>
+  <!-- Micro-Printed Security Rim Text & Batch Hash Identity Tag -->
+  <text x="35" y="${height - 22}" font-family="monospace" font-size="12" font-weight="bold" fill="${batchColor}" fill-opacity="0.8">BATCH: ${config.batchId} • DART SECURITY PRINT</text>
 </svg>`;
 };

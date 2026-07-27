@@ -110,10 +110,22 @@ export interface BatchLogItem {
 
 export type BillScalePreset = "medium";
 
+export type DrawerWeightingPreset =
+  | "balanced"
+  | "heavy20"
+  | "heavy10"
+  | "heavy5"
+  | "heavy1"
+  | "only20"
+  | "only10"
+  | "only5"
+  | "only1"
+  | "custom";
+
 export interface DartBuckConfig {
   mode: "single" | "drawer";
   drawerAmount: number;
-  drawerWeighting: "balanced" | "heavy" | "light" | "custom";
+  drawerWeighting: DrawerWeightingPreset;
   drawerBreakdown: { bill20: number; bill10: number; bill5: number; bill1: number };
   stationPrefix: string;
   batchId: string;

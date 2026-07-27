@@ -1,13 +1,13 @@
 import React from "react";
-import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2, Palette } from "lucide-react";
-import { DartBuckConfig, PAPER_SPECS, PaperSizePreset, MONTHS } from "../types";
+import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2, Palette, Layers, Plus, Minus } from "lucide-react";
+import { DartBuckConfig, PAPER_SPECS, PaperSizePreset, MONTHS, DrawerWeightingPreset } from "../types";
 import { MONTHLY_PALETTES } from "../utils/svgGenerator";
 
 interface DrawerCalculatorControlsProps {
   config: DartBuckConfig;
   setConfig: React.Dispatch<React.SetStateAction<DartBuckConfig>>;
   onDrawerAmountChange: (amount: number) => void;
-  onWeightingChange: (weighting: "balanced" | "heavy" | "light") => void;
+  onWeightingChange: (weighting: DrawerWeightingPreset) => void;
   onRegenerateBatchId: () => void;
 }
 
@@ -21,6 +21,27 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
   const currentMonthIdx = new Date().getMonth();
   const activeMonthIdx = typeof config.monthOverride === "number" ? config.monthOverride : currentMonthIdx;
   const activePalette = MONTHLY_PALETTES[activeMonthIdx];
+
+  const updateDenomCount = (denom: "bill20" | "bill10" | "bill5" | "bill1", delta: number) => {
+    setConfig((prev) => {
+      const current = prev.drawerBreakdown[denom];
+      const nextCount = Math.max(0, current + delta);
+      const newBreakdown = { ...prev.drawerBreakdown, [denom]: nextCount };
+      
+      const newTotalAmount =
+        newBreakdown.bill20 * 20 +
+        newBreakdown.bill10 * 10 +
+        newBreakdown.bill5 * 5 +
+        newBreakdown.bill1 * 1;
+
+      return {
+        ...prev,
+        drawerWeighting: "custom",
+        drawerAmount: newTotalAmount,
+        drawerBreakdown: newBreakdown,
+      };
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -172,10 +193,10 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
 
       {/* Cash Drawer Calculator Allotment */}
       {config.mode === "drawer" && (
-        <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm bg-emerald-500/5">
+        <div className="bg-card p-5 rounded-xl border border-border space-y-5 shadow-sm bg-emerald-500/5">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
             <Calculator className="w-5 h-5 text-emerald-600" />
-            Cash Drawer Allotment Calculator
+            In-Demand Bill Weighting & Drawer Allotment Engine
           </h2>
 
           <div>
@@ -209,22 +230,29 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Bill Weighting Preference
+          {/* Expanded Fleshed-Out Bill Weighting Presets */}
+          <div className="space-y-3">
+            <label className="block text-xs font-bold text-foreground flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-emerald-600" />
+              In-Demand Bill Weighting Presets
             </label>
-            <div className="grid grid-cols-3 gap-1 text-xs">
+
+            {/* General Mix Presets */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs">
               {[
-                { id: "balanced", label: "Balanced (Recommended)" },
-                { id: "heavy", label: "Heavy ($20s)" },
-                { id: "light", label: "Light ($1s)" },
+                { id: "balanced", label: "Balanced Mix" },
+                { id: "heavy20", label: "Heavy $20s" },
+                { id: "heavy10", label: "Heavy $10s" },
+                { id: "heavy5", label: "Heavy $5s" },
+                { id: "heavy1", label: "Heavy $1s" },
+                { id: "custom", label: "Custom Ratio" },
               ].map((w) => (
                 <button
                   key={w.id}
-                  onClick={() => onWeightingChange(w.id as any)}
-                  className={`py-1.5 px-2 text-[11px] font-bold rounded border transition-all ${
+                  onClick={() => onWeightingChange(w.id as DrawerWeightingPreset)}
+                  className={`py-2 px-2 text-[11px] font-bold rounded-lg border transition-all ${
                     config.drawerWeighting === w.id
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
                       : "border-input bg-background hover:bg-muted text-muted-foreground"
                   }`}
                 >
@@ -232,77 +260,135 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
                 </button>
               ))}
             </div>
+
+            {/* Single-Denomination Only Quick Filters */}
+            <div className="pt-2">
+              <span className="text-[11px] font-bold text-muted-foreground block mb-1.5">
+                Print ONLY Single Denominations:
+              </span>
+              <div className="grid grid-cols-4 gap-1.5 text-xs">
+                {[
+                  { id: "only20", label: "ONLY $20s", color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30" },
+                  { id: "only10", label: "ONLY $10s", color: "bg-amber-500/10 text-amber-700 border-amber-500/30" },
+                  { id: "only5", label: "ONLY $5s", color: "bg-pink-500/10 text-pink-700 border-pink-500/30" },
+                  { id: "only1", label: "ONLY $1s", color: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30" },
+                ].map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => onWeightingChange(w.id as DrawerWeightingPreset)}
+                    className={`py-1.5 px-1 text-[10px] font-extrabold rounded-lg border transition-all text-center ${
+                      config.drawerWeighting === w.id
+                        ? "border-primary bg-primary text-primary-foreground shadow"
+                        : `${w.color} hover:opacity-80`
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-border">
-            <span className="text-xs font-semibold text-muted-foreground">Allotted Bill Breakdown:</span>
+          {/* Itemized Denomination Steppers & Direct Input */}
+          <div className="space-y-2 pt-3 border-t border-border">
+            <span className="text-xs font-bold text-foreground">
+              Itemized Bill Quantity Controls & Fine-Tuning:
+            </span>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 bg-emerald-500/10 rounded-md border border-emerald-500/30 flex justify-between items-center">
-                <span className="font-bold text-emerald-800 dark:text-emerald-300">$20 Bills</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={config.drawerBreakdown.bill20}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      drawerWeighting: "custom",
-                      drawerBreakdown: { ...prev.drawerBreakdown, bill20: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                  className="w-16 px-1 py-0.5 text-right font-mono font-bold bg-background border border-input rounded"
-                />
+              <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/30 flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="font-bold text-emerald-800 dark:text-emerald-300">$20 Bills</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">(${config.drawerBreakdown.bill20 * 20})</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateDenomCount("bill20", -1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Minus className="w-3 h-3" /></button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={config.drawerBreakdown.bill20}
+                    onChange={(e) =>
+                      setConfig((prev) => {
+                        const newBreakdown = { ...prev.drawerBreakdown, bill20: parseInt(e.target.value) || 0 };
+                        const newTotal = newBreakdown.bill20 * 20 + newBreakdown.bill10 * 10 + newBreakdown.bill5 * 5 + newBreakdown.bill1;
+                        return { ...prev, drawerWeighting: "custom", drawerAmount: newTotal, drawerBreakdown: newBreakdown };
+                      })
+                    }
+                    className="w-12 text-center font-mono font-bold bg-background border border-input rounded py-0.5 text-xs"
+                  />
+                  <button onClick={() => updateDenomCount("bill20", 1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                </div>
               </div>
 
-              <div className="p-2.5 bg-amber-500/10 rounded-md border border-amber-500/30 flex justify-between items-center">
-                <span className="font-bold text-amber-800 dark:text-amber-300">$10 Bills</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={config.drawerBreakdown.bill10}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      drawerWeighting: "custom",
-                      drawerBreakdown: { ...prev.drawerBreakdown, bill10: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                  className="w-16 px-1 py-0.5 text-right font-mono font-bold bg-background border border-input rounded"
-                />
+              <div className="p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/30 flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="font-bold text-amber-800 dark:text-amber-300">$10 Bills</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">(${config.drawerBreakdown.bill10 * 10})</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateDenomCount("bill10", -1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Minus className="w-3 h-3" /></button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={config.drawerBreakdown.bill10}
+                    onChange={(e) =>
+                      setConfig((prev) => {
+                        const newBreakdown = { ...prev.drawerBreakdown, bill10: parseInt(e.target.value) || 0 };
+                        const newTotal = newBreakdown.bill20 * 20 + newBreakdown.bill10 * 10 + newBreakdown.bill5 * 5 + newBreakdown.bill1;
+                        return { ...prev, drawerWeighting: "custom", drawerAmount: newTotal, drawerBreakdown: newBreakdown };
+                      })
+                    }
+                    className="w-12 text-center font-mono font-bold bg-background border border-input rounded py-0.5 text-xs"
+                  />
+                  <button onClick={() => updateDenomCount("bill10", 1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                </div>
               </div>
 
-              <div className="p-2.5 bg-pink-500/10 rounded-md border border-pink-500/30 flex justify-between items-center">
-                <span className="font-bold text-pink-800 dark:text-pink-300">$5 Bills</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={config.drawerBreakdown.bill5}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      drawerWeighting: "custom",
-                      drawerBreakdown: { ...prev.drawerBreakdown, bill5: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                  className="w-16 px-1 py-0.5 text-right font-mono font-bold bg-background border border-input rounded"
-                />
+              <div className="p-2.5 bg-pink-500/10 rounded-xl border border-pink-500/30 flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="font-bold text-pink-800 dark:text-pink-300">$5 Bills</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">(${config.drawerBreakdown.bill5 * 5})</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateDenomCount("bill5", -1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Minus className="w-3 h-3" /></button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={config.drawerBreakdown.bill5}
+                    onChange={(e) =>
+                      setConfig((prev) => {
+                        const newBreakdown = { ...prev.drawerBreakdown, bill5: parseInt(e.target.value) || 0 };
+                        const newTotal = newBreakdown.bill20 * 20 + newBreakdown.bill10 * 10 + newBreakdown.bill5 * 5 + newBreakdown.bill1;
+                        return { ...prev, drawerWeighting: "custom", drawerAmount: newTotal, drawerBreakdown: newBreakdown };
+                      })
+                    }
+                    className="w-12 text-center font-mono font-bold bg-background border border-input rounded py-0.5 text-xs"
+                  />
+                  <button onClick={() => updateDenomCount("bill5", 1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                </div>
               </div>
 
-              <div className="p-2.5 bg-yellow-500/10 rounded-md border border-yellow-500/30 flex justify-between items-center">
-                <span className="font-bold text-yellow-800 dark:text-yellow-300">$1 Bills</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={config.drawerBreakdown.bill1}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      drawerWeighting: "custom",
-                      drawerBreakdown: { ...prev.drawerBreakdown, bill1: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                  className="w-16 px-1 py-0.5 text-right font-mono font-bold bg-background border border-input rounded"
-                />
+              <div className="p-2.5 bg-yellow-500/10 rounded-xl border border-yellow-500/30 flex justify-between items-center">
+                <div className="flex flex-col">
+                  <span className="font-bold text-yellow-800 dark:text-yellow-300">$1 Bills</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">(${config.drawerBreakdown.bill1 * 1})</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => updateDenomCount("bill1", -1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Minus className="w-3 h-3" /></button>
+                  <input
+                    type="number"
+                    min="0"
+                    value={config.drawerBreakdown.bill1}
+                    onChange={(e) =>
+                      setConfig((prev) => {
+                        const newBreakdown = { ...prev.drawerBreakdown, bill1: parseInt(e.target.value) || 0 };
+                        const newTotal = newBreakdown.bill20 * 20 + newBreakdown.bill10 * 10 + newBreakdown.bill5 * 5 + newBreakdown.bill1;
+                        return { ...prev, drawerWeighting: "custom", drawerAmount: newTotal, drawerBreakdown: newBreakdown };
+                      })
+                    }
+                    className="w-12 text-center font-mono font-bold bg-background border border-input rounded py-0.5 text-xs"
+                  />
+                  <button onClick={() => updateDenomCount("bill1", 1)} className="p-1 bg-background border border-input rounded hover:bg-muted"><Plus className="w-3 h-3" /></button>
+                </div>
               </div>
             </div>
           </div>

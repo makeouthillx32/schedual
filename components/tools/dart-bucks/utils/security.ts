@@ -1,3 +1,5 @@
+import { DrawerWeightingPreset } from "../types";
+
 export const MONTH_NAMES_SHORT = [
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
@@ -59,14 +61,15 @@ export const isLightBg = (hexColor: string): boolean => {
   return luminance > 140;
 };
 
-// Compute Harmonized, Perfectly Balanced Cash Drawer Allotment Dispersion
+// Compute Fleshed-Out On-Demand Cash Drawer Allotment Dispersion
 export const computeBreakdown = (
   targetVal: number,
-  weighting: "balanced" | "heavy" | "light" | "custom"
+  weighting: DrawerWeightingPreset
 ): { bill20: number; bill10: number; bill5: number; bill1: number } => {
   let remaining = Math.max(0, targetVal);
 
-  if (weighting === "heavy") {
+  // 1. Single Denomination Only Modes
+  if (weighting === "only20") {
     const b20 = Math.floor(remaining / 20);
     remaining %= 20;
     const b10 = Math.floor(remaining / 10);
@@ -77,28 +80,86 @@ export const computeBreakdown = (
     return { bill20: b20, bill10: b10, bill5: b5, bill1: b1 };
   }
 
-  if (weighting === "light") {
+  if (weighting === "only10") {
+    const b10 = Math.floor(remaining / 10);
+    remaining %= 10;
+    const b5 = Math.floor(remaining / 5);
+    remaining %= 5;
+    const b1 = Math.floor(remaining);
+    return { bill20: 0, bill10: b10, bill5: b5, bill1: b1 };
+  }
+
+  if (weighting === "only5") {
+    const b5 = Math.floor(remaining / 5);
+    remaining %= 5;
+    const b1 = Math.floor(remaining);
+    return { bill20: 0, bill10: 0, bill5: b5, bill1: b1 };
+  }
+
+  if (weighting === "only1") {
+    return { bill20: 0, bill10: 0, bill5: 0, bill1: Math.floor(remaining) };
+  }
+
+  // 2. Heavy Focus Modes (In-Demand Heavy $20s, $10s, $5s, or $1s)
+  if (weighting === "heavy20") {
+    const b20 = Math.floor((remaining * 0.80) / 20);
+    remaining -= b20 * 20;
+    const b10 = Math.floor((remaining * 0.50) / 10);
+    remaining -= b10 * 10;
+    const b5 = Math.floor((remaining * 0.50) / 5);
+    remaining -= b5 * 5;
+    return { bill20: b20, bill10: b10, bill5: b5, bill1: Math.floor(remaining) };
+  }
+
+  if (weighting === "heavy10") {
+    let b20 = 0;
+    if (remaining >= 120) {
+      b20 = Math.floor((remaining * 0.20) / 20);
+      remaining -= b20 * 20;
+    }
+    const b10 = Math.floor((remaining * 0.70) / 10);
+    remaining -= b10 * 10;
+    const b5 = Math.floor((remaining * 0.50) / 5);
+    remaining -= b5 * 5;
+    return { bill20: b20, bill10: b10, bill5: b5, bill1: Math.floor(remaining) };
+  }
+
+  if (weighting === "heavy5") {
+    let b20 = 0;
+    let b10 = 0;
+    if (remaining >= 120) {
+      b20 = Math.floor((remaining * 0.15) / 20);
+      remaining -= b20 * 20;
+    }
+    if (remaining >= 60) {
+      b10 = Math.floor((remaining * 0.20) / 10);
+      remaining -= b10 * 10;
+    }
+    const b5 = Math.floor((remaining * 0.75) / 5);
+    remaining -= b5 * 5;
+    return { bill20: b20, bill10: b10, bill5: b5, bill1: Math.floor(remaining) };
+  }
+
+  if (weighting === "heavy1") {
     let b20 = 0;
     let b10 = 0;
     let b5 = 0;
-    let b1 = 0;
-
-    if (remaining >= 100) {
-      b20 = Math.floor((remaining * 0.35) / 20);
+    if (remaining >= 140) {
+      b20 = Math.floor((remaining * 0.15) / 20);
       remaining -= b20 * 20;
     }
-
-    b10 = Math.floor((remaining * 0.35) / 10);
-    remaining -= b10 * 10;
-
-    b5 = Math.floor((remaining * 0.45) / 5);
-    remaining -= b5 * 5;
-
-    b1 = Math.floor(remaining);
-    return { bill20: b20, bill10: b10, bill5: b5, bill1: b1 };
+    if (remaining >= 60) {
+      b10 = Math.floor((remaining * 0.15) / 10);
+      remaining -= b10 * 10;
+    }
+    if (remaining >= 30) {
+      b5 = Math.floor((remaining * 0.20) / 5);
+      remaining -= b5 * 5;
+    }
+    return { bill20: b20, bill10: b10, bill5: b5, bill1: Math.floor(remaining) };
   }
 
-  // Perfectly Balanced Register Drawer Allotment Dispersion ($200 -> 6x$20s, 4x$10s, 4x$5s, 20x$1s)
+  // 3. Balanced Cash Register Drawer Allotment Dispersion ($200 -> 6x$20s, 4x$10s, 4x$5s, 20x$1s)
   let b20 = 0;
   let b10 = 0;
   let b5 = 0;

@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Download, RefreshCw, Trophy, ShieldCheck, Sparkles, Printer, Info } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { DartBuckConfig, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
+import { DartBuckConfig, PAPER_SPECS, BatchLogItem, DrawerWeightingPreset } from "./dart-bucks/types";
 import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
 import { renderDartBuckOnCanvas, renderDartBuckOnCanvasDirect, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawDrawerAuditSlipBack, drawPdfCropMarks, renderSheetPreviewAsync, getGridSpec } from "./dart-bucks/utils/canvasRenderer";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
@@ -240,7 +240,7 @@ export default function DartBucksGenerator() {
     setCurrentPageIndex(0);
   };
 
-  const handleWeightingChange = (weighting: "balanced" | "heavy" | "light") => {
+  const handleWeightingChange = (weighting: DrawerWeightingPreset) => {
     const breakdown = computeBreakdown(config.drawerAmount, weighting);
     setConfig((prev) => ({
       ...prev,
@@ -499,7 +499,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Standard Medium Full Coverage bill scale, harmonized drawer allotments, duplex alignment, & prepress crop marks.
+            In-demand bill weighting presets (Only 5s, Only 1s, Heavy $20s/10s/5s/1s), itemized quantity steppers, duplex alignment, & prepress crop marks.
           </p>
         </div>
 
@@ -522,10 +522,10 @@ export default function DartBucksGenerator() {
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Standard Medium Full Coverage Scale Active (${config.drawerAmount} Allotment)
+            {config.drawerWeighting === "only5" ? "ONLY $5 Bills Mode Active" : config.drawerWeighting === "only1" ? "ONLY $1 Bills Mode Active" : config.drawerWeighting === "only20" ? "ONLY $20 Bills Mode Active" : config.drawerWeighting === "only10" ? "ONLY $10 Bills Mode Active" : "In-Demand Bill Weighting Active"} (${config.drawerAmount} Total Allotment)
           </span>
           <span className="text-muted-foreground">
-            Harmonized Allotment: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Total Sheets Required: {calculatedTotalPages} Sheet(s).
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Total Sheets Required: {calculatedTotalPages} Sheet(s).
           </span>
         </div>
       </div>

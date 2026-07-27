@@ -1,5 +1,5 @@
-import React from "react";
-import { Eye, FileSpreadsheet } from "lucide-react";
+import React, { useState } from "react";
+import { Eye, FileSpreadsheet, ChevronLeft, ChevronRight, Layers, Sparkles } from "lucide-react";
 import { DartBuckConfig, DenomArtSlot, PAPER_SPECS } from "../types";
 
 interface PreviewPanelProps {
@@ -8,17 +8,27 @@ interface PreviewPanelProps {
   denomSlots: Record<string, DenomArtSlot>;
   previewCanvasRef: React.RefObject<HTMLCanvasElement>;
   sheetCanvasRef: React.RefObject<HTMLCanvasElement>;
+  currentBillIndex?: number;
+  onBillIndexChange?: (index: number) => void;
+  currentPageIndex?: number;
+  onPageIndexChange?: (page: number) => void;
+  totalDrawerBills?: number;
+  totalPages?: number;
 }
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   config,
   setConfig,
-  denomSlots,
   previewCanvasRef,
   sheetCanvasRef,
+  currentBillIndex = 0,
+  onBillIndexChange,
+  currentPageIndex = 0,
+  onPageIndexChange,
+  totalDrawerBills = 19,
+  totalPages = 2,
 }) => {
   const spec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
-  const totalBills = config.drawerBreakdown.bill20 + config.drawerBreakdown.bill10 + config.drawerBreakdown.bill5 + config.drawerBreakdown.bill1;
 
   return (
     <div className="space-y-6">
@@ -26,9 +36,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 gap-2">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Eye className="w-5 h-5 text-primary" />
-            Live Monopoly Print Preview (${config.denomination} Bill)
+            Live Prepress Preview (${config.denomination} Bill)
           </h2>
 
+          {/* Mode View Switcher */}
           <div className="flex gap-1 bg-muted p-1 rounded-lg text-xs font-bold">
             <button
               onClick={() => setConfig((prev) => ({ ...prev, previewView: "card" }))}
@@ -38,7 +49,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Single Bill (4" × 2")
+              Single Bill Inspector
             </button>
             <button
               onClick={() => setConfig((prev) => ({ ...prev, previewView: "sheet-front" }))}
@@ -63,28 +74,68 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </div>
         </div>
 
-        {/* Single Bill Denomination Selector */}
+        {/* SINGLE BILL STACK CAROUSEL INSPECTOR */}
         {config.previewView === "card" && (
-          <div className="flex items-center gap-2 text-xs font-bold bg-muted/50 p-2 rounded-lg">
-            <span className="text-muted-foreground">Inspect Bill Denomination:</span>
-            <div className="flex gap-1">
-              {["20", "10", "5", "1"].map((denom) => (
-                <button
-                  key={denom}
-                  onClick={() => setConfig((prev) => ({ ...prev, denomination: denom }))}
-                  className={`px-2.5 py-1 rounded border transition-all ${
-                    config.denomination === denom
-                      ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
-                      : "border-input bg-background hover:bg-muted text-muted-foreground"
-                  }`}
-                >
-                  ${denom}
-                </button>
-              ))}
+          <div className="flex flex-wrap justify-between items-center gap-2 bg-muted/60 p-2.5 rounded-xl border border-border text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Layers className="w-4 h-4 text-emerald-500" />
+              <span>Denomination Quick Inspector:</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {["20", "10", "5", "1"].map((denom) => {
+                const count = config.drawerBreakdown[`bill${denom}` as keyof typeof config.drawerBreakdown] || 0;
+                const isSelected = config.denomination === denom;
+                return (
+                  <button
+                    key={denom}
+                    onClick={() => setConfig((prev) => ({ ...prev, denomination: denom }))}
+                    className={`px-2.5 py-1 rounded-md font-bold text-xs border transition-all flex items-center gap-1 ${
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground shadow"
+                        : "border-input bg-background hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <span>${denom}</span>
+                    <span className="opacity-80 text-[10px]">({count})</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
+        {/* SHEET PREVIEW PAGE NAVIGATOR */}
+        {config.previewView !== "card" && totalPages > 1 && onPageIndexChange && (
+          <div className="flex justify-between items-center bg-muted/60 p-2.5 rounded-xl border border-border text-xs">
+            <span className="font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              Prepress Sheet Page Navigator:
+            </span>
+
+            <div className="flex items-center gap-2 font-bold">
+              <button
+                disabled={currentPageIndex === 0}
+                onClick={() => onPageIndexChange(currentPageIndex - 1)}
+                className="p-1 rounded bg-background border border-input hover:bg-muted disabled:opacity-40"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="font-mono text-xs">
+                Sheet {currentPageIndex + 1} of {totalPages}
+              </span>
+              <button
+                disabled={currentPageIndex >= totalPages - 1}
+                onClick={() => onPageIndexChange(currentPageIndex + 1)}
+                className="p-1 rounded bg-background border border-input hover:bg-muted disabled:opacity-40"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* CANVAS PREVIEW CONTAINER */}
         <div className="relative rounded-lg overflow-hidden border border-border bg-slate-950 p-4 flex items-center justify-center min-h-[340px]">
           {config.previewView === "card" ? (
             <canvas
@@ -142,7 +193,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             Total Allotted Currency Yield:
           </span>
           <span className="font-mono font-bold text-foreground">
-            {totalBills} Bills Total across {Math.ceil(totalBills / spec.billsPerSheet)} Sheet(s)
+            {totalDrawerBills} Bills Total across {totalPages} Prepress Sheet(s)
           </span>
         </div>
       </div>

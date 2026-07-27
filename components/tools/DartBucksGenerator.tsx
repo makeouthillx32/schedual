@@ -43,6 +43,7 @@ export default function DartBucksGenerator() {
   const [batchLogs, setBatchLogs] = useState<BatchLogItem[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   const [watermarkLightImg, setWatermarkLightImg] = useState<HTMLImageElement | null>(null);
   const [watermarkDarkImg, setWatermarkDarkImg] = useState<HTMLImageElement | null>(null);
@@ -179,6 +180,7 @@ export default function DartBucksGenerator() {
       drawerAmount: validAmount,
       drawerBreakdown: breakdown,
     }));
+    setCurrentPageIndex(0);
   };
 
   const handleWeightingChange = (weighting: "balanced" | "heavy" | "light") => {
@@ -188,6 +190,7 @@ export default function DartBucksGenerator() {
       drawerWeighting: weighting,
       drawerBreakdown: breakdown,
     }));
+    setCurrentPageIndex(0);
   };
 
   // Helper to construct the exact bill queue for the drawer allotment
@@ -220,13 +223,13 @@ export default function DartBucksGenerator() {
     if (config.previewView === "card" && previewCanvasRef.current) {
       renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
     } else if (config.previewView === "sheet-front" && sheetCanvasRef.current) {
-      renderSheetPreview(sheetCanvasRef.current, false);
+      renderSheetPreview(sheetCanvasRef.current, false, currentPageIndex);
     } else if (config.previewView === "sheet-back" && sheetCanvasRef.current) {
-      renderSheetPreview(sheetCanvasRef.current, true);
+      renderSheetPreview(sheetCanvasRef.current, true, currentPageIndex);
     }
-  }, [config, watermarkLightImg, watermarkDarkImg]);
+  }, [config, watermarkLightImg, watermarkDarkImg, currentPageIndex]);
 
-  const renderSheetPreview = (canvas: HTMLCanvasElement, isBack: boolean) => {
+  const renderSheetPreview = (canvas: HTMLCanvasElement, isBack: boolean, pageIdx = 0) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -243,6 +246,7 @@ export default function DartBucksGenerator() {
 
     const cols = paperSpec.cols;
     const rows = paperSpec.rows;
+    const billsPerPage = cols * rows;
 
     const cardW = Math.round(5.5 * 101.6);
     const cardH = Math.round(5.5 * 50.8);
@@ -257,10 +261,12 @@ export default function DartBucksGenerator() {
     tempCanvas.height = 600;
 
     const billQueue = getDrawerBillQueue();
+    const startIndex = pageIdx * billsPerPage;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const queueIdx = r * cols + c;
+        const gridIndex = r * cols + c;
+        const queueIdx = startIndex + gridIndex;
         if (queueIdx >= billQueue.length) break;
 
         const item = billQueue[queueIdx];
@@ -284,6 +290,8 @@ export default function DartBucksGenerator() {
       }
     }
 
+    const totalPages = Math.ceil(billQueue.length / billsPerPage) || 1;
+
     ctx.fillStyle = isBack ? "#1e1b4b" : "#064e3b";
     ctx.fillRect(marginX, 15, cols * cardW + (cols - 1) * gapX, 36);
 
@@ -291,7 +299,7 @@ export default function DartBucksGenerator() {
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `${paperSpec.label.toUpperCase()} - ITEMISED DRAWER ALLOTMENT (${billQueue.length} BILLS) - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
+      `${paperSpec.label.toUpperCase()} - SHEET ${pageIdx + 1} OF ${totalPages} (${config.drawerWeighting.toUpperCase()} WEIGHTING) - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
       canvas.width / 2,
       38
     );
@@ -463,6 +471,9 @@ export default function DartBucksGenerator() {
     ? config.drawerAmount
     : config.cardCount * (parseFloat(config.denomination) || 1);
 
+  const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
+  const calculatedTotalPages = Math.ceil(totalCalculatedBills / paperSpec.billsPerSheet) || 1;
+
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       {/* Print Authorization Safeguard Modal */}
@@ -485,7 +496,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Itemized cash drawer breakdown ($20s, $10s, $5s, $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
+            Real-time weight reflection (Balanced, Heavy $20s, Light $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
           </p>
         </div>
 
@@ -503,15 +514,15 @@ export default function DartBucksGenerator() {
         </button>
       </div>
 
-      {/* Itemized Drawer Breakdown Notice */}
+      {/* Itemized Drawer Weighting Notice */}
       <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-xs">
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Itemized Cash Drawer Dispersion Active (${config.drawerAmount} Total Allotment)
+            Live Preview Synchronized to {config.drawerWeighting.toUpperCase()} Drawer Weighting (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). All 19 bills are rendered sequentially on prepress sheets and logged in the audit ledger.
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Live preview immediately re-renders all {totalCalculatedBills} bills across {calculatedTotalPages} sheet page(s).
           </span>
         </div>
       </div>
@@ -536,6 +547,10 @@ export default function DartBucksGenerator() {
             denomSlots={{}}
             previewCanvasRef={previewCanvasRef}
             sheetCanvasRef={sheetCanvasRef}
+            currentPageIndex={currentPageIndex}
+            onPageIndexChange={setCurrentPageIndex}
+            totalDrawerBills={totalCalculatedBills}
+            totalPages={calculatedTotalPages}
           />
         </div>
       </div>

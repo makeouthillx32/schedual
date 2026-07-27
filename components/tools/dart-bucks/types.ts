@@ -45,6 +45,23 @@ export const PAPER_SPECS: Record<PaperSizePreset, PaperSpec> = {
   "11x12-21": { id: "11x12-21", label: 'Custom 11" × 12" (21 Bills)', widthMm: 279.4, heightMm: 304.8, cols: 3, rows: 7, billsPerSheet: 21 },
 };
 
+export interface BatchLogItem {
+  id: string;
+  batch_id: string;
+  station_prefix: string;
+  issuer_name: string;
+  issuer_role: string;
+  department: string;
+  mode: "single" | "drawer";
+  drawer_amount: number;
+  total_bills_count: number;
+  itemized_breakdown: { bill20: number; bill10: number; bill5: number; bill1: number };
+  serial_start: string;
+  serial_end: string;
+  issue_reason: string;
+  printed_at: string;
+}
+
 export interface DartBuckConfig {
   mode: "single" | "drawer";
   drawerAmount: number;

@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Trophy } from "lucide-react";
+import { Download, RefreshCw, Trophy, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { DartBuckConfig, DenomArtSlot, PAPER_SPECS } from "./dart-bucks/types";
-import { generateBatchId, computeBreakdown } from "./dart-bucks/utils/security";
+import { DartBuckConfig, DenomArtSlot, PAPER_SPECS, BatchLogItem } from "./dart-bucks/types";
+import { generateBatchId, computeBreakdown, getSerialString } from "./dart-bucks/utils/security";
 import { renderDartBuckOnCanvas, renderDartBuckBackOnCanvas, drawDrawerAuditSlip, drawPdfCropMarks } from "./dart-bucks/utils/canvasRenderer";
 import { DenomArtBuckets } from "./dart-bucks/components/DenomArtBuckets";
 import { CropEditorModal } from "./dart-bucks/components/CropEditorModal";
 import { DrawerCalculatorControls } from "./dart-bucks/components/DrawerCalculatorControls";
 import { PreviewPanel } from "./dart-bucks/components/PreviewPanel";
+import { PrintAuthModal } from "./dart-bucks/components/PrintAuthModal";
+import { BatchAuditLedger } from "./dart-bucks/components/BatchAuditLedger";
 
 export default function DartBucksGenerator() {
   const [config, setConfig] = useState<DartBuckConfig>({
@@ -45,6 +47,9 @@ export default function DartBucksGenerator() {
     "20": { denom: "20", title: "$20 Bill Artwork", artist_name: "Client Submission", image_url: null },
   });
 
+  const [batchLogs, setBatchLogs] = useState<BatchLogItem[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const [activeEditingDenom, setActiveEditingDenom] = useState<"1" | "5" | "10" | "20" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -75,6 +80,7 @@ export default function DartBucksGenerator() {
     imgD.onload = () => setWatermarkDarkImg(imgD);
 
     fetchDenomSlots();
+    fetchBatchLogs();
   }, []);
 
   useEffect(() => {
@@ -90,6 +96,33 @@ export default function DartBucksGenerator() {
       }
     });
   }, [denomSlots]);
+
+  const fetchBatchLogs = async () => {
+    const local = localStorage.getItem("dartbuck_batch_logs");
+    if (local) {
+      try {
+        setBatchLogs(JSON.parse(local));
+      } catch (err) {
+        console.error("Failed to parse local batch logs", err);
+      }
+    }
+
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("dartbuck_batch_logs")
+          .select("*")
+          .order("printed_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setBatchLogs(data);
+          localStorage.setItem("dartbuck_batch_logs", JSON.stringify(data));
+        }
+      }
+    } catch (e) {
+      console.warn("Supabase batch logs fetch fallback");
+    }
+  };
 
   const fetchDenomSlots = async () => {
     const local = localStorage.getItem("dartbuck_denom_slots");
@@ -142,6 +175,20 @@ export default function DartBucksGenerator() {
       }
     } catch (e) {
       console.warn("Supabase slot upsert fallback");
+    }
+  };
+
+  const saveBatchLog = async (logItem: BatchLogItem) => {
+    const updated = [logItem, ...batchLogs];
+    setBatchLogs(updated);
+    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+
+    try {
+      if (supabase) {
+        await supabase.from("dartbuck_batch_logs").insert([logItem]);
+      }
+    } catch (e) {
+      console.warn("Supabase batch log insert fallback");
     }
   };
 
@@ -291,7 +338,6 @@ export default function DartBucksGenerator() {
 
         ctx.drawImage(tempCanvas, x, y, cardW, cardH);
 
-        // Draw visual cut guidelines in preview
         if (config.includeCropMarks) {
           ctx.strokeStyle = "#ef4444";
           ctx.lineWidth = 1;
@@ -315,9 +361,58 @@ export default function DartBucksGenerator() {
     );
   };
 
-  const downloadPDF = async () => {
+  // Trigger Print Authorization Safeguard Modal
+  const initiatePrintRequest = () => {
+    setShowAuthModal(true);
+  };
+
+  // Execute PDF generation and log batch to DB once authorized
+  const executeAuthorizedPrint = async (authData: {
+    issuerName: string;
+    department: string;
+    issuerRole: string;
+    issueReason: string;
+  }) => {
+    setShowAuthModal(false);
     setIsGenerating(true);
+
     try {
+      const totalBills = config.mode === "drawer"
+        ? (config.drawerBreakdown.bill20 + config.drawerBreakdown.bill10 + config.drawerBreakdown.bill5 + config.drawerBreakdown.bill1)
+        : config.cardCount;
+
+      const totalVal = config.mode === "drawer"
+        ? config.drawerAmount
+        : config.cardCount * (parseFloat(config.denomination) || 1);
+
+      const startStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial, config.digits, config.includeChecksum);
+      const endStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial + totalBills - 1, config.digits, config.includeChecksum);
+
+      const logItem: BatchLogItem = {
+        id: "log_" + Math.random().toString(36).substring(2, 10),
+        batch_id: config.batchId,
+        station_prefix: config.stationPrefix,
+        issuer_name: authData.issuerName,
+        issuer_role: authData.issuerRole,
+        department: authData.department,
+        mode: config.mode,
+        drawer_amount: totalVal,
+        total_bills_count: totalBills,
+        itemized_breakdown: config.mode === "drawer" ? config.drawerBreakdown : {
+          bill20: config.denomination === "20" ? config.cardCount : 0,
+          bill10: config.denomination === "10" ? config.cardCount : 0,
+          bill5: config.denomination === "5" ? config.cardCount : 0,
+          bill1: config.denomination === "1" ? config.cardCount : 0,
+        },
+        serial_start: startStr,
+        serial_end: endStr,
+        issue_reason: authData.issueReason,
+        printed_at: new Date().toISOString(),
+      };
+
+      await saveBatchLog(logItem);
+
+      // Execute PDF Creation
       const { jsPDF } = await import("jspdf");
       const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
 
@@ -446,6 +541,14 @@ export default function DartBucksGenerator() {
     }
   };
 
+  const totalCalculatedBills = config.mode === "drawer"
+    ? (config.drawerBreakdown.bill20 + config.drawerBreakdown.bill10 + config.drawerBreakdown.bill5 + config.drawerBreakdown.bill1)
+    : config.cardCount;
+
+  const totalCalculatedValue = config.mode === "drawer"
+    ? config.drawerAmount
+    : config.cardCount * (parseFloat(config.denomination) || 1);
+
   return (
     <div className="container mx-auto p-4 max-w-7xl">
       <input
@@ -456,6 +559,19 @@ export default function DartBucksGenerator() {
         className="hidden"
       />
 
+      {/* Print Authorization Safeguard Modal */}
+      {showAuthModal && (
+        <PrintAuthModal
+          batchId={config.batchId}
+          totalAmount={totalCalculatedValue}
+          totalBills={totalCalculatedBills}
+          stationPrefix={config.stationPrefix}
+          onAuthorize={executeAuthorizedPrint}
+          onCancel={() => setShowAuthModal(false)}
+        />
+      )}
+
+      {/* Crop Editor Modal */}
       {activeEditingDenom && cropImageSrc && (
         <CropEditorModal
           denom={activeEditingDenom}
@@ -482,21 +598,21 @@ export default function DartBucksGenerator() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            DartBucks Cash Drawer & Vector Bleed Print Tool
+            DartBucks Cash Drawer & Print Audit Safeguard Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Print 11"×12", Letter, or A4 sheets with 3mm bleeds, 6mm double-cut gutters, & hairline guillotine crop marks.
+            Authenticated print gate, monthly audit logging, crop editor, & double-cut bleed printing.
           </p>
         </div>
         <button
-          onClick={downloadPDF}
+          onClick={initiatePrintRequest}
           disabled={isGenerating}
-          className="mt-4 md:mt-0 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold px-5 py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 shadow-md"
+          className="mt-4 md:mt-0 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3.5 rounded-xl transition-all disabled:opacity-50 shadow-lg"
         >
           {isGenerating ? (
             <RefreshCw className="w-5 h-5 animate-spin" />
           ) : (
-            <Download className="w-5 h-5" />
+            <ShieldCheck className="w-5 h-5 text-emerald-200" />
           )}
           {isGenerating ? "Generating Prepress PDF..." : "Export Prepress PDF"}
         </button>
@@ -535,6 +651,9 @@ export default function DartBucksGenerator() {
           />
         </div>
       </div>
+
+      {/* MONTHLY BATCH AUDIT LEDGER TABLE */}
+      <BatchAuditLedger logs={batchLogs} />
     </div>
   );
 }

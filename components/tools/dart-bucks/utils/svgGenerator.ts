@@ -1,6 +1,22 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot } from "../types";
 import { getSerialString, isLightBg, MONTH_NAMES_FULL } from "./security";
 
+// Monthly Seasonal Theme Palettes
+export const SEASONAL_MONTHLY_THEMES: Record<number, { name: string; accent: string; sealBg: string; border: string }> = {
+  0: { name: "Winter Ice", accent: "#0284c7", sealBg: "#f0f9ff", border: "#0369a1" },     // Jan
+  1: { name: "Valentine Rose", accent: "#e11d48", sealBg: "#fff1f2", border: "#be123c" },  // Feb
+  2: { name: "Emerald Spring", accent: "#059669", sealBg: "#ecfdf5", border: "#047857" },  // Mar
+  3: { name: "Bloom Violet", accent: "#7c3aed", sealBg: "#f5f3ff", border: "#6d28d9" },    // Apr
+  4: { name: "Golden Sunshine", accent: "#d97706", sealBg: "#fffbeb", border: "#b45309" }, // May
+  5: { name: "Summer Cyan", accent: "#0891b2", sealBg: "#ecfeff", border: "#0e7490" },     // Jun
+  6: { name: "Patriotic Gold", accent: "#b45309", sealBg: "#fffdf0", border: "#1e3a8a" },  // Jul
+  7: { name: "Solar Amber", accent: "#ca8a04", sealBg: "#fefce8", border: "#854d0e" },     // Aug
+  8: { name: "Autumn Copper", accent: "#c2410c", sealBg: "#fff7ed", border: "#9a3412" },   // Sep
+  9: { name: "Harvest Orange", accent: "#ea580c", sealBg: "#fff7ed", border: "#c2410c" },  // Oct
+  10: { name: "Crimson Bronze", accent: "#9f1239", sealBg: "#fff1f2", border: "#881337" }, // Nov
+  11: { name: "Holiday Holly", accent: "#15803d", sealBg: "#f0fdf4", border: "#166534" },  // Dec
+};
+
 export const getBatchAccentColor = (batchId: string, defaultColor: string): string => {
   if (!batchId) return defaultColor;
   let hash = 0;
@@ -20,12 +36,15 @@ export const generateDartBuckSVG = (
   height = 469
 ): string => {
   const style = DENOMINATIONS[denomValue] || DENOMINATIONS["1"];
-  const batchColor = getBatchAccentColor(config.batchId, style.border);
+  const now = new Date();
+  const currentMonthIdx = now.getMonth();
+  const seasonalTheme = SEASONAL_MONTHLY_THEMES[currentMonthIdx] || SEASONAL_MONTHLY_THEMES[6];
+
+  const batchColor = getBatchAccentColor(config.batchId, seasonalTheme.border);
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
   const slot = denomSlots[denomValue];
 
-  const now = new Date();
-  const currentMonthYearStr = `${MONTH_NAMES_FULL[now.getMonth()].toUpperCase()} ${now.getFullYear()}`;
+  const currentMonthYearStr = `${MONTH_NAMES_FULL[currentMonthIdx].toUpperCase()} ${now.getFullYear()}`;
 
   const customImgSvg = slot && slot.image_url
     ? `<image href="${slot.image_url}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="none"/>`
@@ -139,9 +158,9 @@ export const generateDartBuckSVG = (
     <!-- Giant Center Denomination with Intaglio Cross-Hatch Fill -->
     <text font-family="serif" font-weight="bold" font-size="110" fill="url(#intaglio-hatch)" stroke="#000000" stroke-width="4" text-anchor="middle" y="35">${denomValue}</text>
 
-    <!-- Subtitle Denomination & Current Month/Year Treasury Seal -->
+    <!-- Subtitle Denomination & Current Month/Year Seasonal Treasury Seal -->
     <text font-family="sans-serif" font-weight="bold" font-size="12" fill="${batchColor}" text-anchor="middle" y="98">$${denomValue} DENOMINATION</text>
-    <text font-family="monospace" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle" y="114">• ${currentMonthYearStr} ISSUE •</text>
+    <text font-family="monospace" font-weight="bold" font-size="9" fill="#475569" text-anchor="middle" y="114">• ${currentMonthYearStr} ${seasonalTheme.name.toUpperCase()} ISSUE •</text>
   </g>
   ` : ""}
 

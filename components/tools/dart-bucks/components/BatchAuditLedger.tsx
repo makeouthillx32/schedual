@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2, PieChart } from "lucide-react";
 import { BatchLogItem } from "../types";
 
 interface BatchAuditLedgerProps {
@@ -42,6 +42,12 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
   const totalBillsIssued = filteredLogs.reduce((sum, item) => sum + item.total_bills_count, 0);
   const completedBatchesCount = logs.filter((l) => l.status === "completed").length;
   const shreddedBatchesCount = logs.filter((l) => l.status === "shredded").length;
+  const activeBatchesCount = logs.filter((l) => l.status === "active" || !l.status).length;
+
+  const totalCount = logs.length || 1;
+  const completedPct = Math.round((completedBatchesCount / totalCount) * 100);
+  const activePct = Math.round((activeBatchesCount / totalCount) * 100);
+  const shreddedPct = Math.round((shreddedBatchesCount / totalCount) * 100);
 
   const exportMonthlyCSV = () => {
     if (filteredLogs.length === 0) {
@@ -104,7 +110,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
   };
 
   return (
-    <div className="mt-8 bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
+    <div className="mt-8 bg-card p-6 rounded-2xl border border-border shadow-sm space-y-5">
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-4 gap-4">
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -123,6 +129,30 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
           <Download className="w-4 h-4" />
           Export Monthly Audit Log (.CSV)
         </button>
+      </div>
+
+      {/* Circulation Lifecycle Progress Bar */}
+      <div className="p-4 bg-muted/50 rounded-xl border border-border space-y-2">
+        <div className="flex justify-between items-center text-xs font-bold">
+          <span className="flex items-center gap-1.5 text-foreground">
+            <PieChart className="w-4 h-4 text-primary" />
+            Currency Circulation Lifecycle Breakdown
+          </span>
+          <span className="text-muted-foreground">{logs.length} Batches Total</span>
+        </div>
+
+        {/* Multi-Segment Bar */}
+        <div className="h-3 w-full bg-background rounded-full overflow-hidden flex border border-input">
+          <div style={{ width: `${completedPct}%` }} className="bg-emerald-500 transition-all" title={`Collected: ${completedPct}%`} />
+          <div style={{ width: `${activePct}%` }} className="bg-amber-500 transition-all" title={`Active: ${activePct}%`} />
+          <div style={{ width: `${shreddedPct}%` }} className="bg-red-500 transition-all" title={`Shredded: ${shreddedPct}%`} />
+        </div>
+
+        <div className="flex justify-between text-[11px] font-semibold pt-1">
+          <span className="text-emerald-600 dark:text-emerald-400">● Collected at Register: {completedPct}% ({completedBatchesCount})</span>
+          <span className="text-amber-600 dark:text-amber-400">● Active in Field: {activePct}% ({activeBatchesCount})</span>
+          <span className="text-red-600 dark:text-red-400">● Shredded: {shreddedPct}% ({shreddedBatchesCount})</span>
+        </div>
       </div>
 
       {/* Summary Stat Cards */}
@@ -179,7 +209,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Active In Circulation ({logs.filter((l) => l.status === "active" || !l.status).length})
+            Active In Circulation ({activeBatchesCount})
           </button>
           <button
             onClick={() => setStatusFilter("completed")}
@@ -228,7 +258,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
         </div>
       </div>
 
-      {/* Log Table with Check as Complete & Shred Actions */}
+      {/* Log Table */}
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-left text-xs">
           <thead className="bg-muted text-muted-foreground font-bold border-b border-border">

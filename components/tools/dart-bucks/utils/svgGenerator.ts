@@ -132,7 +132,6 @@ export const generateDartBuckSVG = (
   const photoColor = activePalette.denoms[denomValue] || activePalette.denoms["1"];
 
   const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
-
   const currentMonthYearStr = `${MONTH_NAMES_FULL[monthIdx].toUpperCase()} ${now.getFullYear()}`;
 
   const finePrintNotice = config.validityMode === "expires"
@@ -141,6 +140,11 @@ export const generateDartBuckSVG = (
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
+    <!-- Vector Drop Shadow Filter for 3D Text -->
+    <filter id="text-drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="3" dy="3" stdDeviation="2" flood-color="#000000" flood-opacity="0.38"/>
+    </filter>
+
     <!-- Paper Fiber Texture Overlay -->
     <pattern id="monopoly-paper-texture" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
       <circle cx="3" cy="3" r="0.9" fill="#ffffff" fill-opacity="0.35"/>
@@ -184,15 +188,15 @@ export const generateDartBuckSVG = (
   <use href="#fancy-scroll" x="65" y="${height - 65}" transform="scale(1, -1) translate(0, ${-height + 130})"/>
   <use href="#fancy-scroll" x="${width - 65}" y="${height - 65}" transform="scale(-1, -1) translate(${-width + 130}, ${-height + 130})"/>
 
-  <!-- Left Side Panel (DART Crest Box) -->
+  <!-- Left Side Panel (DART Crest Box with Outer Box Border, Vector Text Stroke & Drop Shadow) -->
   <g transform="translate(90, ${height / 2 - 50})">
     <rect x="0" y="0" width="140" height="100" fill="${photoColor.circleBg}" fill-opacity="0.95" stroke="${photoColor.border}" stroke-width="4" rx="4"/>
-    <text x="70" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="28" fill="${photoColor.text}" text-anchor="middle">DART</text>
+    <text x="70" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="28" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="1.5" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">DART</text>
     <line x1="20" y1="56" x2="120" y2="56" stroke="${photoColor.border}" stroke-width="2"/>
-    <text x="70" y="74" font-family="sans-serif" font-weight="bold" font-size="11" fill="${photoColor.border}" text-anchor="middle">EST. 1962</text>
+    <text x="70" y="74" font-family="sans-serif" font-weight="extrabold" font-size="11" fill="${photoColor.border}" stroke="${photoColor.border}" stroke-width="0.3" filter="url(#text-drop-shadow)" text-anchor="middle">EST. 1962</text>
   </g>
 
-  <!-- Right Side Panel (DART House/Facility Icon Box) -->
+  <!-- Right Side Panel (DART House/Facility Icon Box with Outer Box Border) -->
   <g transform="translate(${width - 230}, ${height / 2 - 50})">
     <rect x="0" y="0" width="140" height="100" fill="${photoColor.circleBg}" fill-opacity="0.95" stroke="${photoColor.border}" stroke-width="4" rx="4"/>
     <!-- Monopoly House / Facility Roof Icon -->
@@ -200,29 +204,29 @@ export const generateDartBuckSVG = (
     <rect x="56" y="60" width="28" height="22" fill="${photoColor.circleBg}"/>
   </g>
 
-  <!-- 4 Corner Rectangular Denomination Boxes (Matching Reference Photo) -->
+  <!-- 4 Corner Rectangular Boxes (Featuring Outer Box Border, Vector Text Stroke & 3D Drop Shadow) -->
   <!-- Top-Left Box -->
   <g transform="translate(80, 70)">
     <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
-    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="2.2" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Top-Right Box -->
   <g transform="translate(${width - 190}, 70)">
     <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
-    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="2.2" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Bottom-Left Box -->
   <g transform="translate(80, ${height - 130})">
     <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
-    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="2.2" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">${denomValue}</text>
   </g>
 
   <!-- Bottom-Right Box -->
   <g transform="translate(${width - 190}, ${height - 130})">
     <rect x="0" y="0" width="110" height="60" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="4" rx="3"/>
-    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" text-anchor="middle">${denomValue}</text>
+    <text x="55" y="44" font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="42" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="2.2" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">${denomValue}</text>
   </g>
   ` : ""}
 
@@ -232,21 +236,21 @@ export const generateDartBuckSVG = (
     <circle cx="0" cy="0" r="180" fill="${photoColor.circleBg}" stroke="${photoColor.border}" stroke-width="8"/>
     <circle cx="0" cy="0" r="168" fill="none" stroke="${photoColor.border}" stroke-width="2" stroke-dasharray="8,4"/>
 
-    <!-- Giant Center Fancy Serif Denomination Number -->
-    <text font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="170" fill="${photoColor.text}" text-anchor="middle" y="58">${denomValue}</text>
+    <!-- Giant Center Denomination (Full Triad: Contrast Fill + Vector Text Stroke Border + 3D Drop Shadow) -->
+    <text font-family="Georgia, 'Times New Roman', serif" font-weight="900" font-size="170" fill="${photoColor.text}" stroke="${photoColor.border}" stroke-width="3.5" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle" y="58">${denomValue}</text>
 
-    <!-- Curved Text "DART BUCKS®" Along Bottom Inner Rim -->
-    <text font-family="sans-serif" font-weight="900" font-size="16" fill="${photoColor.border}" letter-spacing="4" text-anchor="middle" y="145">• DART BUCKS ® •</text>
+    <!-- Curved Text "DART BUCKS®" Along Bottom Inner Rim (Featuring Vector Stroke & Drop Shadow) -->
+    <text font-family="sans-serif" font-weight="900" font-size="16" fill="${photoColor.border}" stroke="${photoColor.border}" stroke-width="0.5" filter="url(#text-drop-shadow)" letter-spacing="4" text-anchor="middle" y="145">• DART BUCKS ® •</text>
   </g>
   ` : ""}
 
-  <!-- Transparent Serial Box Overlay with Border -->
+  <!-- Transparent Serial Box Overlay with Box Border & Text Drop Shadow -->
   <g transform="translate(${width / 2 - 280}, ${height - 65})">
-    <rect x="0" y="0" width="560" height="42" fill="#ffffff" fill-opacity="0.94" stroke="${photoColor.border}" stroke-width="2.5" rx="5"/>
-    <text x="280" y="28" font-family="monospace" font-weight="bold" font-size="24" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
+    <rect x="0" y="0" width="560" height="42" fill="#ffffff" fill-opacity="0.95" stroke="${photoColor.border}" stroke-width="2.5" rx="5"/>
+    <text x="280" y="28" font-family="monospace" font-weight="bold" font-size="24" fill="#b91c1c" stroke="#991b1b" stroke-width="1.0" stroke-linejoin="round" filter="url(#text-drop-shadow)" text-anchor="middle">${serialStr}</text>
   </g>
 
-  <!-- Hardcoded Fine Print Notice -->
-  <text x="45" y="${height - 24}" font-family="sans-serif" font-size="11" font-weight="bold" fill="${photoColor.border}" fill-opacity="0.9">${finePrintNotice}</text>
+  <!-- Hardcoded Fine Print Notice with High Contrast Fill, Vector Stroke & Drop Shadow -->
+  <text x="45" y="${height - 24}" font-family="sans-serif" font-size="11" font-weight="bold" fill="${photoColor.border}" stroke="${photoColor.border}" stroke-width="0.4" filter="url(#text-drop-shadow)" fill-opacity="0.95">${finePrintNotice}</text>
 </svg>`;
 };

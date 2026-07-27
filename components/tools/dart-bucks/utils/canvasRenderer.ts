@@ -1,5 +1,6 @@
 import { DartBuckConfig, DENOMINATIONS, DenomArtSlot, PAPER_SPECS, PaperSpec } from "../types";
 import { getSerialString, isLightBg } from "./security";
+import { generateDartBuckSVG } from "./svgGenerator";
 
 export const getContrastWatermark = (
   bgColorHex: string,
@@ -14,106 +15,7 @@ export const getContrastWatermark = (
   return isLightBg(bgColorHex) ? darkImg : lightImg;
 };
 
-export const drawDartLogoInCircle = (
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  textColor: string
-) => {
-  ctx.save();
-  ctx.textAlign = "center";
-
-  ctx.strokeStyle = textColor;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(cx - 32, cy - 20);
-  ctx.lineTo(cx + 32, cy - 20);
-  ctx.stroke();
-
-  ctx.fillStyle = textColor;
-  ctx.font = "bold 20px sans-serif";
-  ctx.fillText("DART", cx, cy - 2);
-
-  ctx.font = "bold 5px sans-serif";
-  ctx.fillText("DESERT AREA RESOURCES & TRAINING", cx, cy + 8);
-
-  ctx.beginPath();
-  ctx.moveTo(cx - 32, cy + 13);
-  ctx.lineTo(cx + 12, cy + 13);
-  ctx.stroke();
-
-  ctx.font = "italic 7px cursive, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText("Established Since 1962", cx + 32, cy + 22);
-
-  ctx.restore();
-};
-
-export const drawCurvedText = (
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  cx: number,
-  cy: number,
-  radius: number,
-  startAngle: number,
-  endAngle: number,
-  color: string
-) => {
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.font = "bold 40px serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  const totalAngle = endAngle - startAngle;
-  const numChars = text.length;
-
-  for (let i = 0; i < numChars; i++) {
-    const charAngle = startAngle + (i / (numChars - 1 || 1)) * totalAngle;
-    const x = cx + radius * Math.cos(charAngle);
-    const y = cy + radius * Math.sin(charAngle);
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(charAngle + Math.PI / 2);
-    ctx.fillText(text[i], 0, 0);
-    ctx.restore();
-  }
-  ctx.restore();
-};
-
-export const drawTextOverlay = (
-  ctx: CanvasRenderingContext2D,
-  serialStr: string,
-  width: number,
-  height: number,
-  position: "bottom" | "top" | "bottom-right" = "bottom"
-) => {
-  let boxX = width / 2 - 280;
-  let boxY = height - 60;
-
-  if (position === "top") {
-    boxY = 15;
-  } else if (position === "bottom-right") {
-    boxX = width - 580;
-    boxY = height - 60;
-  }
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
-  ctx.fillRect(boxX, boxY, 560, 45);
-
-  ctx.strokeStyle = "#cbd5e1";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(boxX, boxY, 560, 45);
-
-  ctx.fillStyle = "#b91c1c";
-  ctx.font = "bold 28px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(serialStr, boxX + 280, boxY + 23);
-};
-
-// Render DartBuck FRONT side
+// Render Dynamic Pure SVG Vector onto HTML5 Canvas
 export const renderDartBuckOnCanvas = (
   canvas: HTMLCanvasElement,
   serialNum: number,
@@ -133,121 +35,17 @@ export const renderDartBuckOnCanvas = (
   canvas.height = height;
   ctx.clearRect(0, 0, width, height);
 
-  const style = DENOMINATIONS[denomValue] || DENOMINATIONS["1"];
-  const slot = denomSlots[denomValue];
-  const slotImg = loadedSlotImages[denomValue];
-  const serialStr = getSerialString(config.stationPrefix, config.batchId, serialNum, config.digits, config.includeChecksum);
+  // Generate pure vector SVG string with batch-unique colors & paper textures
+  const svgString = generateDartBuckSVG(serialNum, config, denomSlots, denomValue, width, height);
+  const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
 
-  if (slot && slot.image_url && slotImg) {
-    ctx.drawImage(slotImg, 0, 0, width, height);
-
-    const wm = getContrastWatermark("#ffffff", config.watermarkMode, config.showWatermark, watermarkLightImg, watermarkDarkImg);
-    if (wm) {
-      ctx.save();
-      ctx.globalAlpha = 0.2;
-      ctx.drawImage(wm, width / 2 - 250, height / 2 - 250, 500, 500);
-      ctx.restore();
-    }
-
-    if (config.showPresetBorders) {
-      ctx.strokeStyle = "rgba(0,0,0,0.4)";
-      ctx.lineWidth = 6;
-      ctx.strokeRect(12, 12, width - 24, height - 24);
-    }
-
-    drawTextOverlay(ctx, serialStr, width, height, config.serialPosition);
-    return;
-  }
-
-  // Monopoly Theme
-  ctx.fillStyle = style.bg;
-  ctx.fillRect(0, 0, width, height);
-
-  const wm = getContrastWatermark(style.bg, config.watermarkMode, config.showWatermark, watermarkLightImg, watermarkDarkImg);
-  if (wm) {
-    ctx.save();
-    ctx.globalAlpha = 0.15;
-    ctx.drawImage(wm, width / 2 - 260, height / 2 - 260, 520, 520);
-    ctx.restore();
-  }
-
-  if (config.showPresetBorders) {
-    const margin = 16;
-    ctx.strokeStyle = style.border;
-    ctx.lineWidth = 4;
-    ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
-
-    const r = 62;
-    const corners = [
-      { cx: margin + r, cy: margin + r, type: "logo" },
-      { cx: width - margin - r, cy: margin + r, type: "number" },
-      { cx: margin + r, cy: height - margin - r, type: "number" },
-      { cx: width - margin - r, cy: height - margin - r, type: "logo" },
-    ];
-
-    corners.forEach((c) => {
-      ctx.fillStyle = style.circleBg;
-      ctx.beginPath();
-      ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = style.border;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      if (c.type === "logo") {
-        drawDartLogoInCircle(ctx, c.cx, c.cy, "#000000");
-      } else {
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 60px serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(denomValue, c.cx, c.cy);
-      }
-    });
-
-    ctx.fillStyle = style.accent;
-    ctx.font = "bold 96px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("$", 220, height / 2 - 10);
-    ctx.fillText("$", width - 220, height / 2 - 10);
-  }
-
-  if (config.showPresetText) {
-    const ovalCx = width / 2;
-    const ovalCy = height / 2 - 10;
-    const ovalRx = 210;
-    const ovalRy = 145;
-
-    ctx.fillStyle = style.circleBg;
-    ctx.beginPath();
-    ctx.ellipse(ovalCx, ovalCy, ovalRx, ovalRy, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = style.border;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    drawCurvedText(ctx, "DART BUCKS", ovalCx, ovalCy + 25, 130, -Math.PI * 0.78, -Math.PI * 0.22, "#000000");
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 120px serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(denomValue, ovalCx, ovalCy + 25);
-
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 5;
-    ctx.strokeText(denomValue, ovalCx, ovalCy + 25);
-
-    ctx.fillStyle = style.accent;
-    ctx.font = "bold 14px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(`$${denomValue} DENOMINATION`, ovalCx, ovalCy + 105);
-  }
-
-  drawTextOverlay(ctx, serialStr, width, height, config.serialPosition);
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
 };
 
 // Render DartBuck BACK side
@@ -316,8 +114,8 @@ export const drawPdfCropMarks = (
   bleedOffset = 3,
   markLength = 4
 ) => {
-  doc.setDrawColor(0, 0, 0); // Registration Black
-  doc.setLineWidth(0.1);     // Hairline ~0.25 pt
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.1);
 
   // Top-Left Corner
   doc.line(x - bleedOffset - markLength, y, x - bleedOffset, y);

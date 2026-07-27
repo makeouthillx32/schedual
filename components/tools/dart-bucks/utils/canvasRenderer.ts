@@ -103,7 +103,7 @@ export const renderDartBuckBackOnCanvas = (
   ctx.fillText(serialStr, width - 50, height - 45);
 };
 
-// Async Prepress Sheet Grid Preview Renderer (Renders Front & Back Grids Cleanly via Promise.all)
+// Async Prepress Sheet Grid Preview Renderer with Perfect Aspect-Ratio Centering & Strict Page Bounds
 export const renderSheetPreviewAsync = async (
   canvas: HTMLCanvasElement,
   isBack: boolean,
@@ -117,27 +117,43 @@ export const renderSheetPreviewAsync = async (
   if (!ctx) return;
 
   const paperSpec = PAPER_SPECS[config.paperSize] || PAPER_SPECS["11x12-14"];
-  canvas.width = Math.round(paperSpec.widthMm * 5.5);
-  canvas.height = Math.round(paperSpec.heightMm * 5.5);
+  const scaleFactor = 4; // High DPI preview resolution
 
-  ctx.fillStyle = "#f8fafc";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const paperWidthPx = Math.round(paperSpec.widthMm * scaleFactor);
+  const paperHeightPx = Math.round(paperSpec.heightMm * scaleFactor);
 
-  ctx.strokeStyle = "#cbd5e1";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+  canvas.width = paperWidthPx;
+  canvas.height = paperHeightPx;
+
+  // Background Paper Stock (Clean White Sheet with Outer Border)
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, paperWidthPx, paperHeightPx);
+
+  // Outer Paper Boundary & Drop Shadow Line
+  ctx.strokeStyle = "#94a3b8";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(12, 12, paperWidthPx - 24, paperHeightPx - 24);
 
   const cols = paperSpec.cols;
   const rows = paperSpec.rows;
   const billsPerPage = cols * rows;
 
-  const cardW = Math.round(5.5 * 101.6);
-  const cardH = Math.round(5.5 * 50.8);
-  const gapX = Math.round(5.5 * config.gutterMm);
-  const gapY = Math.round(5.5 * config.gutterMm);
+  const cardWidthMm = 101.6;
+  const cardHeightMm = 50.8;
+  const gapXmm = config.gutterMm;
+  const gapYmm = config.gutterMm;
 
-  const marginX = (paperSpec.widthMm - (cols * cardW + (cols - 1) * gapX)) / 2;
-  const marginY = (paperSpec.heightMm - (rows * cardH + (rows - 1) * gapY)) / 2;
+  const cardW = Math.round(cardWidthMm * scaleFactor);
+  const cardH = Math.round(cardHeightMm * scaleFactor);
+  const gapX = Math.round(gapXmm * scaleFactor);
+  const gapY = Math.round(gapYmm * scaleFactor);
+
+  const gridWidthPx = cols * cardW + (cols - 1) * gapX;
+  const gridHeightPx = rows * cardH + (rows - 1) * gapY;
+
+  // Perfectly Centered Sheet Margins
+  const marginX = Math.max(16, (paperWidthPx - gridWidthPx) / 2);
+  const marginY = Math.max(50, (paperHeightPx - gridHeightPx) / 2);
 
   const billQueue = getDrawerBillQueue();
   const startIndex = pageIdx * billsPerPage;
@@ -151,9 +167,11 @@ export const renderSheetPreviewAsync = async (
       if (queueIdx >= billQueue.length) break;
 
       const item = billQueue[queueIdx];
+      // Duplex Long-Edge Mirroring for Back Pages
       const colToDraw = isBack ? cols - 1 - c : c;
-      const x = marginX + colToDraw * (cardW + gapX);
-      const y = marginY + r * (cardH + gapY);
+
+      const x = Math.round(marginX + colToDraw * (cardW + gapX));
+      const y = Math.round(marginY + r * (cardH + gapY));
 
       if (isBack) {
         const tempCanvas = document.createElement("canvas");
@@ -182,9 +200,10 @@ export const renderSheetPreviewAsync = async (
         drawPromises.push(p);
       }
 
+      // Prepress Crop Mark Guides
       if (config.includeCropMarks) {
         ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5;
         ctx.strokeRect(x - 2, y - 2, cardW + 4, cardH + 4);
       }
     }
@@ -194,16 +213,17 @@ export const renderSheetPreviewAsync = async (
 
   const totalPages = Math.ceil(billQueue.length / billsPerPage) || 1;
 
+  // Header Banner on Prepress Sheet
   ctx.fillStyle = isBack ? "#1e1b4b" : "#064e3b";
-  ctx.fillRect(marginX, 15, cols * cardW + (cols - 1) * gapX, 36);
+  ctx.fillRect(16, 16, paperWidthPx - 32, 40);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 16px sans-serif";
+  ctx.font = "bold 14px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(
-    `${paperSpec.label.toUpperCase()} - SHEET ${pageIdx + 1} OF ${totalPages} (${config.drawerWeighting.toUpperCase()} WEIGHTING) - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
-    canvas.width / 2,
-    38
+    `${paperSpec.label.toUpperCase()} (${paperSpec.widthMm}mm × ${paperSpec.heightMm}mm) • SHEET ${pageIdx + 1} OF ${totalPages} • ${isBack ? "BACK DUPLEX MIRRORED" : "FRONT SHEET GRID"}`,
+    paperWidthPx / 2,
+    41
   );
 };
 

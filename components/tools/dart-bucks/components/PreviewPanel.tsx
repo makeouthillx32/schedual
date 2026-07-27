@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Eye, FileSpreadsheet, ChevronLeft, ChevronRight, Layers, Sparkles } from "lucide-react";
 import { DartBuckConfig, DenomArtSlot, PAPER_SPECS } from "../types";
 
@@ -21,8 +21,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   setConfig,
   previewCanvasRef,
   sheetCanvasRef,
-  currentBillIndex = 0,
-  onBillIndexChange,
   currentPageIndex = 0,
   onPageIndexChange,
   totalDrawerBills = 19,
@@ -49,7 +47,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Single Bill Inspector
+              Single Bill
             </button>
             <button
               onClick={() => setConfig((prev) => ({ ...prev, previewView: "sheet-front" }))}
@@ -74,12 +72,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </div>
         </div>
 
-        {/* SINGLE BILL STACK CAROUSEL INSPECTOR */}
+        {/* SINGLE BILL STACK INSPECTOR */}
         {config.previewView === "card" && (
           <div className="flex flex-wrap justify-between items-center gap-2 bg-muted/60 p-2.5 rounded-xl border border-border text-xs">
             <div className="flex items-center gap-1.5 font-bold text-foreground">
               <Layers className="w-4 h-4 text-emerald-500" />
-              <span>Denomination Quick Inspector:</span>
+              <span>Denomination Inspector:</span>
             </div>
 
             <div className="flex items-center gap-1.5">
@@ -110,7 +108,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <div className="flex justify-between items-center bg-muted/60 p-2.5 rounded-xl border border-border text-xs">
             <span className="font-bold text-foreground flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              Prepress Sheet Page Navigator:
+              Prepress Sheet Navigator:
             </span>
 
             <div className="flex items-center gap-2 font-bold">
@@ -135,17 +133,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           </div>
         )}
 
-        {/* CANVAS PREVIEW CONTAINER */}
-        <div className="relative rounded-lg overflow-hidden border border-border bg-slate-950 p-4 flex items-center justify-center min-h-[340px]">
+        {/* RESPONSIVE CANVAS CONTAINER (Fits perfectly on Mobile & Desktop) */}
+        <div className="relative rounded-xl overflow-hidden border border-border bg-slate-950 p-2 sm:p-4 flex items-center justify-center min-h-[300px] sm:min-h-[420px] w-full">
           {config.previewView === "card" ? (
             <canvas
               ref={previewCanvasRef}
-              className="max-w-full h-auto rounded shadow-2xl border border-slate-800"
+              className="max-w-full h-auto object-contain rounded-lg shadow-2xl border border-slate-800"
             />
           ) : (
             <canvas
               ref={sheetCanvasRef}
-              className="max-w-full h-auto max-h-[540px] rounded shadow-2xl border border-slate-800"
+              className="max-w-full max-h-[600px] w-auto h-auto object-contain rounded-lg shadow-2xl border border-slate-800"
             />
           )}
         </div>
@@ -158,7 +156,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           Itemized Cash Drawer Allotment & Prepress Grid (${config.drawerAmount} Total)
         </h3>
 
-        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
           <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
             <span className="block text-[10px] text-muted-foreground font-semibold">$20 Bills</span>
             <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar, Trash2, Trophy, Sparkles, DollarSign, Calculator, Eye, Sliders } from "lucide-react";
+import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar, Trash2, Trophy, Sparkles, DollarSign, Calculator, Eye, Sliders, Crop, Scissors, Save, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface DartBuckTemplateItem {
@@ -92,13 +92,20 @@ export default function DartBucksGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeSerialPreview, setActiveSerialPreview] = useState(1);
 
+  // Crop Editor State
+  const [croppingItem, setCroppingItem] = useState<DartBuckTemplateItem | null>(null);
+  const [cropZoom, setCropZoom] = useState(1.0);
+  const [cropOffsetX, setCropOffsetX] = useState(0);
+  const [cropOffsetY, setCropOffsetY] = useState(0);
+  const [cropFitMode, setCropFitMode] = useState<"cover" | "contain" | "stretch">("cover");
+  const cropCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const [watermarkLightImg, setWatermarkLightImg] = useState<HTMLImageElement | null>(null);
   const [watermarkDarkImg, setWatermarkDarkImg] = useState<HTMLImageElement | null>(null);
 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Preload Watermark SVGs
   useEffect(() => {
     const imgL = new Image();
     imgL.src = "/images/watermarks/watermark-light.svg";
@@ -111,7 +118,6 @@ export default function DartBucksGenerator() {
     fetchTemplates();
   }, []);
 
-  // Recalculate bill allotment when drawer target amount changes
   const calculateDrawerBreakdown = (target: number) => {
     let remaining = target;
     const bill20 = Math.floor(remaining / 20);
@@ -210,6 +216,101 @@ export default function DartBucksGenerator() {
     }
   };
 
+  // Render crop preview canvas (1200x469)
+  const renderCropPreview = () => {
+    if (!croppingItem || !cropCanvasRef.current) return;
+    const canvas = cropCanvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = 1200;
+    canvas.height = 469;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, 1200, 469);
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = croppingItem.image_url;
+    img.onload = () => {
+      ctx.clearRect(0, 0, 1200, 469);
+
+      if (cropFitMode === "stretch") {
+        ctx.drawImage(img, 0, 0, 1200, 469);
+      } else {
+        const targetAspect = 1200 / 469;
+        const imgAspect = img.width / img.height;
+
+        let drawW = 1200 * cropZoom;
+        let drawH = 469 * cropZoom;
+
+        if (cropFitMode === "contain") {
+          if (imgAspect > targetAspect) {
+            drawW = 1200 * cropZoom;
+            drawH = (1200 / imgAspect) * cropZoom;
+          } else {
+            drawH = 469 * cropZoom;
+            drawW = (469 * imgAspect) * cropZoom;
+          }
+        } else {
+          // cover mode
+          if (imgAspect > targetAspect) {
+            drawH = 469 * cropZoom;
+            drawW = (469 * imgAspect) * cropZoom;
+          } else {
+            drawW = 1200 * cropZoom;
+            drawH = (1200 / imgAspect) * cropZoom;
+          }
+        }
+
+        const drawX = (1200 - drawW) / 2 + cropOffsetX;
+        const drawY = (469 - drawH) / 2 + cropOffsetY;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      }
+    };
+  };
+
+  useEffect(() => {
+    if (croppingItem) {
+      renderCropPreview();
+    }
+  }, [croppingItem, cropZoom, cropOffsetX, cropOffsetY, cropFitMode]);
+
+  // Permanently overwrite image in DB / LocalStorage (No Undo/Redo)
+  const applyCropAndOverwritePermanently = async () => {
+    if (!croppingItem || !cropCanvasRef.current) return;
+    const canvas = cropCanvasRef.current;
+    const croppedDataUrl = canvas.toDataURL("image/png");
+
+    const updatedTemplates = templates.map((t) =>
+      t.id === croppingItem.id ? { ...t, image_url: croppedDataUrl } : t
+    );
+
+    setTemplates(updatedTemplates);
+    localStorage.setItem("dartbuck_templates", JSON.stringify(updatedTemplates));
+
+    if (config.activeTemplateId === croppingItem.id) {
+      setConfig((prev) => ({
+        ...prev,
+        customBgUrl: croppedDataUrl,
+      }));
+    }
+
+    try {
+      if (supabase) {
+        await supabase
+          .from("dartbuck_templates")
+          .update({ image_url: croppedDataUrl })
+          .eq("id", croppingItem.id);
+      }
+    } catch (e) {
+      console.warn("Supabase update fallback");
+    }
+
+    setCroppingItem(null);
+  };
+
   const calculateChecksum = (batchStr: string, serialNum: number): string => {
     let sum = 0;
     const combined = `${batchStr}${serialNum}`;
@@ -265,6 +366,12 @@ export default function DartBucksGenerator() {
         activeTemplateId: newItem.id,
       }));
 
+      // Open Crop Editor automatically on upload
+      setCroppingItem(newItem);
+      setCropZoom(1.0);
+      setCropOffsetX(0);
+      setCropOffsetY(0);
+
       setUploadTitle("");
       setUploadArtist("");
       setIsUploading(false);
@@ -278,7 +385,6 @@ export default function DartBucksGenerator() {
     if (file) handleFileUpload(file);
   };
 
-  // Determine if background is light or dark (contrast picker)
   const isLightBg = (hexColor: string): boolean => {
     let hex = hexColor.replace("#", "");
     if (hex.length === 3) {
@@ -292,14 +398,12 @@ export default function DartBucksGenerator() {
     return luminance > 140;
   };
 
-  // Select optimal SVG Watermark based on contrast
   const getContrastWatermark = (bgColorHex: string): HTMLImageElement | null => {
     if (config.watermarkMode === "none" || !config.showWatermark) return null;
 
     if (config.watermarkMode === "light") return watermarkLightImg;
     if (config.watermarkMode === "dark") return watermarkDarkImg;
 
-    // Automatic Contrast Mode
     return isLightBg(bgColorHex) ? watermarkDarkImg : watermarkLightImg;
   };
 
@@ -371,7 +475,6 @@ export default function DartBucksGenerator() {
     ctx.restore();
   };
 
-  // Render DartBuck on Canvas
   const renderDartBuckOnCanvas = (
     canvas: HTMLCanvasElement,
     serialNum: number,
@@ -389,7 +492,6 @@ export default function DartBucksGenerator() {
 
     const style = DENOMINATIONS[denomValue] || DENOMINATIONS["1"];
 
-    // Custom Background (Uploaded Client Design)
     if (config.theme === "custom" && config.customBgUrl) {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -397,7 +499,6 @@ export default function DartBucksGenerator() {
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Draw Watermark if enabled
         const wm = getContrastWatermark("#ffffff");
         if (wm) {
           ctx.save();
@@ -417,12 +518,10 @@ export default function DartBucksGenerator() {
       return;
     }
 
-    // Monopoly Style Theme
     if (config.theme === "monopoly") {
       ctx.fillStyle = style.bg;
       ctx.fillRect(0, 0, width, height);
 
-      // Render Contrast SVG Watermark in center background
       const wm = getContrastWatermark(style.bg);
       if (wm) {
         ctx.save();
@@ -558,13 +657,12 @@ export default function DartBucksGenerator() {
     }
   }, [config, activeSerialPreview]);
 
-  // Generate Drawer Audit Summary Slip (Page 1 of PDF)
   const drawDrawerAuditSlip = (canvas: HTMLCanvasElement, totalValue: number, breakdown: { bill20: number; bill10: number; bill5: number; bill1: number }) => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     canvas.width = 1200;
-    canvas.height = 1697; // A4 aspect high-res
+    canvas.height = 1697;
 
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -589,7 +687,6 @@ export default function DartBucksGenerator() {
     ctx.lineTo(canvas.width - 80, 230);
     ctx.stroke();
 
-    // Metadata Grid
     ctx.textAlign = "left";
     ctx.font = "bold 24px sans-serif";
     ctx.fillStyle = "#334155";
@@ -611,7 +708,6 @@ export default function DartBucksGenerator() {
     ctx.font = "bold 36px sans-serif";
     ctx.fillText(`TARGET DRAWER TOTAL: $${totalValue.toFixed(2)}`, 100, 480);
 
-    // Table Header
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(100, 540, canvas.width - 200, 60);
 
@@ -621,7 +717,6 @@ export default function DartBucksGenerator() {
     ctx.fillText("BILL COUNT", 500, 580);
     ctx.fillText("SUBTOTAL VALUE", 850, 580);
 
-    // Table Rows
     const rows = [
       { name: "$20 Bills", count: breakdown.bill20, value: breakdown.bill20 * 20 },
       { name: "$10 Bills", count: breakdown.bill10, value: breakdown.bill10 * 10 },
@@ -648,7 +743,6 @@ export default function DartBucksGenerator() {
 
     const totalBills = breakdown.bill20 + breakdown.bill10 + breakdown.bill5 + breakdown.bill1;
 
-    // Total Row
     ctx.fillStyle = "#e2e8f0";
     ctx.fillRect(100, currentY - 30, canvas.width - 200, 70);
     ctx.fillStyle = "#0f172a";
@@ -657,7 +751,6 @@ export default function DartBucksGenerator() {
     ctx.fillText(`${totalBills} Bills Total`, 500, currentY + 15);
     ctx.fillText(`$${totalValue.toFixed(2)}`, 850, currentY + 15);
 
-    // Signature Section
     const sigY = currentY + 220;
     ctx.font = "bold 22px sans-serif";
     ctx.fillStyle = "#475569";
@@ -702,7 +795,6 @@ export default function DartBucksGenerator() {
       const marginX = (210 - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
       const marginY = (297 - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
-      // PAGE 1: Cash Drawer Audit Slip (If in Drawer mode)
       if (config.mode === "drawer") {
         const auditCanvas = document.createElement("canvas");
         drawDrawerAuditSlip(auditCanvas, config.drawerAmount, config.drawerBreakdown);
@@ -711,29 +803,23 @@ export default function DartBucksGenerator() {
         doc.addPage();
       }
 
-      // Prepare Queued Bills Array
       const billQueue: { denom: string; serial: number }[] = [];
       let currentSerial = config.startSerial;
 
       if (config.mode === "drawer") {
-        // Queue $20s
         for (let i = 0; i < config.drawerBreakdown.bill20; i++) {
           billQueue.push({ denom: "20", serial: currentSerial++ });
         }
-        // Queue $10s
         for (let i = 0; i < config.drawerBreakdown.bill10; i++) {
           billQueue.push({ denom: "10", serial: currentSerial++ });
         }
-        // Queue $5s
         for (let i = 0; i < config.drawerBreakdown.bill5; i++) {
           billQueue.push({ denom: "5", serial: currentSerial++ });
         }
-        // Queue $1s
         for (let i = 0; i < config.drawerBreakdown.bill1; i++) {
           billQueue.push({ denom: "1", serial: currentSerial++ });
         }
       } else {
-        // Single denomination mode
         for (let i = 0; i < config.cardCount; i++) {
           billQueue.push({ denom: config.denomination, serial: currentSerial++ });
         }
@@ -782,6 +868,126 @@ export default function DartBucksGenerator() {
 
   return (
     <div className="container mx-auto p-4 max-w-7xl">
+      {/* Crop & Scale Editor Modal */}
+      {croppingItem && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-4xl p-6 rounded-2xl border border-border shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Scissors className="w-6 h-6 text-red-500" />
+                  Irreversible Image Crop & Stretch Editor
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Adjust zoom, stretch, and alignment to 1200 × 469 px.
+                </p>
+              </div>
+              <button
+                onClick={() => setCroppingItem(null)}
+                className="text-xs px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Warning Alert */}
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-600 dark:text-red-400 text-xs">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <span>
+                <strong>Warning (No Undo / Redo):</strong> Once saved, the cropped areas outside the frame will be permanently deleted from the database!
+              </span>
+            </div>
+
+            {/* Crop Canvas Live Preview */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-muted-foreground block">
+                Target Resolution Preview (1200 × 469 px):
+              </label>
+              <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950 p-2 flex items-center justify-center">
+                <canvas
+                  ref={cropCanvasRef}
+                  className="max-w-full h-auto rounded border border-slate-800"
+                />
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-muted/40 p-4 rounded-xl border border-border">
+              <div>
+                <label className="font-bold text-muted-foreground block mb-2">Scaling / Fit Mode</label>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    { id: "cover", label: "Cover" },
+                    { id: "contain", label: "Fit" },
+                    { id: "stretch", label: "Stretch" },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setCropFitMode(f.id as any)}
+                      className={`py-1.5 px-2 rounded font-bold transition-all ${
+                        cropFitMode === f.id
+                          ? "bg-primary text-primary-foreground shadow"
+                          : "bg-background border border-input text-muted-foreground"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-muted-foreground block mb-1">
+                  Zoom Scale: {cropZoom.toFixed(2)}x
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.0"
+                  step="0.05"
+                  value={cropZoom}
+                  disabled={cropFitMode === "stretch"}
+                  onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                  className="w-fullaccent-primary"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-muted-foreground block mb-1">
+                  Horizontal Offset: {cropOffsetX}px
+                </label>
+                <input
+                  type="range"
+                  min="-600"
+                  max="600"
+                  step="10"
+                  value={cropOffsetX}
+                  disabled={cropFitMode === "stretch"}
+                  onChange={(e) => setCropOffsetX(parseInt(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
+              <button
+                onClick={() => setCroppingItem(null)}
+                className="px-4 py-2 text-xs font-semibold bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80"
+              >
+                Discard Changes
+              </button>
+              <button
+                onClick={applyCropAndOverwritePermanently}
+                className="px-5 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2 shadow-lg"
+              >
+                <Save className="w-4 h-4" />
+                Crop & Save Permanently to DB
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between bg-card p-6 rounded-xl border border-border shadow-sm">
         <div>
@@ -790,7 +996,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Allotment Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Allot cash drawers ($250/drawer), print audit summary slips, and auto-contrast SVG watermarks.
+            Allot cash drawers ($250/drawer), print audit summary slips, and crop/overwrite client artwork.
           </p>
         </div>
         <button
@@ -896,6 +1102,138 @@ export default function DartBucksGenerator() {
             </div>
           )}
 
+          {/* Upload Client Artwork */}
+          <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <Upload className="w-5 h-5 text-blue-500" />
+              Upload Client Drawing to Database
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Title / Artwork Name
+                </label>
+                <input
+                  type="text"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Sarah's Winning Buck"
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Artist / Client Name
+                </label>
+                <input
+                  type="text"
+                  value={uploadArtist}
+                  onChange={(e) => setUploadArtist(e.target.value)}
+                  placeholder="e.g. Sarah M."
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
+                />
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleInputChange}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full py-3 px-4 text-xs font-bold rounded-lg border-2 border-dashed border-primary bg-primary/5 hover:bg-primary/10 text-primary flex items-center justify-center gap-2 transition-all"
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                {isUploading ? "Uploading to DB..." : "Select & Upload Client Art File"}
+              </button>
+            </div>
+          </div>
+
+          {/* Client Submissions Gallery with Crop Option */}
+          <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                Saved Client Bucks Gallery ({templates.length})
+              </h2>
+            </div>
+
+            {templates.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic py-3 text-center">
+                No custom client artwork uploaded yet. Upload one above to select it!
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                {templates.map((tpl) => {
+                  const isSelected =
+                    config.theme === "custom" && config.activeTemplateId === tpl.id;
+                  return (
+                    <div
+                      key={tpl.id}
+                      onClick={() =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          theme: "custom",
+                          customBgUrl: tpl.image_url,
+                          activeTemplateId: tpl.id,
+                        }))
+                      }
+                      className={`relative p-2 rounded-lg border cursor-pointer group transition-all ${
+                        isSelected
+                          ? "ring-2 ring-primary border-primary bg-primary/10"
+                          : "border-input bg-background hover:bg-muted"
+                      }`}
+                    >
+                      <img
+                        src={tpl.image_url}
+                        alt={tpl.title}
+                        className="w-full h-20 object-cover rounded border border-border"
+                      />
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <div className="truncate pr-1">
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {tpl.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            By {tpl.artist_name || "Client"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCroppingItem(tpl);
+                              setCropZoom(1.0);
+                              setCropOffsetX(0);
+                              setCropOffsetY(0);
+                            }}
+                            title="Crop & Scale Image"
+                            className="p-1 text-muted-foreground hover:text-primary rounded opacity-80 hover:opacity-100"
+                          >
+                            <Crop className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => deleteTemplateItem(tpl.id, e)}
+                            title="Remove Artwork"
+                            className="p-1 text-muted-foreground hover:text-red-500 rounded opacity-80 hover:opacity-100"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Monopoly Denominations */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
@@ -964,53 +1302,6 @@ export default function DartBucksGenerator() {
                     {w.label}
                   </button>
                 ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Security & Serial Batch Settings */}
-          <div className="bg-card p-5 rounded-xl border border-border space-y-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-500" />
-              Batch Security & Serial Numbers
-            </h2>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Station Prefix
-                </label>
-                <input
-                  type="text"
-                  value={config.stationPrefix}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      stationPrefix: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Batch Hash
-                </label>
-                <div className="flex gap-1">
-                  <input
-                    type="text"
-                    value={config.batchId}
-                    readOnly
-                    className="w-full px-3 py-2 text-sm font-mono bg-muted text-foreground border border-input rounded-md"
-                  />
-                  <button
-                    onClick={regenerateBatchId}
-                    className="p-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
             </div>
           </div>

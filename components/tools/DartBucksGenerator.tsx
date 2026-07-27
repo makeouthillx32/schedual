@@ -38,6 +38,8 @@ export default function DartBucksGenerator() {
     gutterMm: 6,
     previewView: "card",
     serialPosition: "bottom",
+    validityMode: "forever",
+    expirationDate: "2026-12-31",
   });
 
   const [denomSlots, setDenomSlots] = useState<Record<string, DenomArtSlot>>({
@@ -668,7 +670,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Print Audit Safeguard Tool
           </h1>
           <p className="text-muted-foreground mt-1">
-            Authenticated print gate, monthly batch ledger, crop editor, & double-cut bleed printing.
+            Authenticated print gate, fine print shred dates, monthly batch ledger, & double-cut bleed printing.
           </p>
         </div>
 

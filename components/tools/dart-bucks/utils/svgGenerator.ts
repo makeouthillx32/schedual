@@ -28,6 +28,11 @@ export const generateDartBuckSVG = (
     ? `<image href="${slot.image_url}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="none"/>`
     : "";
 
+  // Fine Print Validity / Destruction Text Notice
+  const finePrintNotice = config.validityMode === "expires"
+    ? `MUST BE DESTROYED BY DART SHRED DEPT ON: ${config.expirationDate || "END OF MONTH"} • BATCH: ${config.batchId}`
+    : `VALID FOREVER ∞ • BATCH: ${config.batchId} • DART INCENTIVE CURRENCY`;
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}px" height="${height}px">
   <defs>
     <!-- Paper Grain Noise Filter -->
@@ -153,7 +158,7 @@ export const generateDartBuckSVG = (
     <text x="280" y="30" font-family="monospace" font-weight="bold" font-size="26" fill="#b91c1c" text-anchor="middle">${serialStr}</text>
   </g>
 
-  <!-- Micro-Printed Security Rim Text & Batch Hash Identity Tag -->
-  <text x="35" y="${height - 22}" font-family="monospace" font-size="12" font-weight="bold" fill="${batchColor}" fill-opacity="0.8">BATCH: ${config.batchId} • DART SECURITY PRINT</text>
+  <!-- Hardcoded Fine Print Notice: Shred Date / Valid Forever ∞ -->
+  <text x="35" y="${height - 20}" font-family="sans-serif" font-size="11" font-weight="bold" fill="${batchColor}" fill-opacity="0.9">${finePrintNotice}</text>
 </svg>`;
 };

@@ -89,4 +89,6 @@ export interface DartBuckConfig {
   gutterMm: number;
   previewView: "card" | "sheet-front" | "sheet-back";
   serialPosition: "bottom" | "top" | "bottom-right";
+  validityMode: "forever" | "expires";
+  expirationDate: string;
 }

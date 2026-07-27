@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop } from "lucide-react";
+import { Sliders, Calculator, DollarSign, ShieldCheck, RefreshCw, Printer, Crop, Calendar, Trash2 } from "lucide-react";
 import { DartBuckConfig, PAPER_SPECS, PaperSizePreset } from "../types";
 
 interface DrawerCalculatorControlsProps {
@@ -248,48 +248,98 @@ export const DrawerCalculatorControls: React.FC<DrawerCalculatorControlsProps> =
         </div>
       )}
 
-      {/* Security & Serial Batch Settings */}
+      {/* Security, Fine Print & Shred Policy */}
       <div className="bg-card p-5 rounded-xl border border-border space-y-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
           <ShieldCheck className="w-5 h-5 text-emerald-500" />
-          Batch Security & Serial Numbers
+          Fine Print Validity & Shred Policy
         </h2>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Station Prefix
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">
+              Bill Fine Print Validity Standard
             </label>
-            <input
-              type="text"
-              value={config.stationPrefix}
-              onChange={(e) =>
-                setConfig((prev) => ({
-                  ...prev,
-                  stationPrefix: e.target.value.toUpperCase(),
-                }))
-              }
-              className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-            />
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                onClick={() => setConfig((prev) => ({ ...prev, validityMode: "forever" }))}
+                className={`py-2 px-3 rounded-lg border text-left font-bold transition-all flex items-center gap-2 ${
+                  config.validityMode === "forever"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-background hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <span className="text-base font-serif font-black">∞</span>
+                <span>Valid Forever (No Exp.)</span>
+              </button>
+
+              <button
+                onClick={() => setConfig((prev) => ({ ...prev, validityMode: "expires" }))}
+                className={`py-2 px-3 rounded-lg border text-left font-bold transition-all flex items-center gap-2 ${
+                  config.validityMode === "expires"
+                    ? "border-red-500 bg-red-500/10 text-red-600 dark:text-red-400"
+                    : "border-input bg-background hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <Trash2 className="w-4 h-4 text-red-500" />
+                <span>Set Shred Date</span>
+              </button>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              Batch Hash
-            </label>
-            <div className="flex gap-1">
+          {config.validityMode === "expires" && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl space-y-1.5 text-xs">
+              <label className="block font-bold text-red-700 dark:text-red-300">
+                Must Be Destroyed By Shred Dept On:
+              </label>
+              <input
+                type="date"
+                value={config.expirationDate}
+                onChange={(e) => setConfig((prev) => ({ ...prev, expirationDate: e.target.value }))}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md font-semibold text-xs"
+              />
+              <span className="text-[10px] text-muted-foreground block">
+                Prints on bottom fine print notice: "MUST BE DESTROYED BY DART SHRED DEPT ON: {config.expirationDate}"
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Station Prefix
+              </label>
               <input
                 type="text"
-                value={config.batchId}
-                readOnly
-                className="w-full px-3 py-2 text-sm font-mono bg-muted text-foreground border border-input rounded-md"
+                value={config.stationPrefix}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    stationPrefix: e.target.value.toUpperCase(),
+                  }))
+                }
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
               />
-              <button
-                onClick={onRegenerateBatchId}
-                className="p-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Batch Hash
+              </label>
+              <div className="flex gap-1">
+                <input
+                  type="text"
+                  value={config.batchId}
+                  readOnly
+                  className="w-full px-3 py-2 text-sm font-mono bg-muted text-foreground border border-input rounded-md"
+                />
+                <button
+                  onClick={onRegenerateBatchId}
+                  className="p-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,7 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar } from "lucide-react";
+import { Download, RefreshCw, Upload, Image as ImageIcon, CheckCircle2, ShieldCheck, FileSpreadsheet, Calendar, Trash2, Trophy, Sparkles } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+
+interface DartBuckTemplateItem {
+  id: string;
+  title: string;
+  artist_name?: string;
+  image_url: string;
+  is_winning_design?: boolean;
+  created_at: string;
+}
 
 interface DartBuckConfig {
   stationPrefix: string;
@@ -10,9 +20,13 @@ interface DartBuckConfig {
   cardCount: number;
   digits: number;
   includeChecksum: boolean;
-  theme: "monopoly" | "classic_gold" | "clean_teal" | "vintage_navy" | "custom";
+  theme: "monopoly" | "custom" | "classic_gold" | "clean_teal" | "vintage_navy";
   selectedMonth: string;
+  activeTemplateId: string | null;
   customBgUrl: string | null;
+  showPresetBorders: boolean;
+  showPresetText: boolean;
+  serialPosition: "bottom" | "top" | "bottom-right";
   denomination: string;
   title: string;
   subtitle: string;
@@ -49,19 +63,106 @@ export default function DartBucksGenerator() {
     includeChecksum: true,
     theme: "monopoly",
     selectedMonth: "January",
+    activeTemplateId: null,
     customBgUrl: null,
+    showPresetBorders: true,
+    showPresetText: true,
+    serialPosition: "bottom",
     denomination: "1",
     title: "DART BUCKS",
     subtitle: "COMMERCIAL SERVICES INCENTIVE",
     textColor: "#1a4d2e",
   });
 
+  const [templates, setTemplates] = useState<DartBuckTemplateItem[]>([]);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [uploadArtist, setUploadArtist] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeSerialPreview, setActiveSerialPreview] = useState(1);
+
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Generate simple 2-character verification checksum for fraud prevention
+  // Load saved templates from Supabase or localStorage
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("dartbuck_templates")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setTemplates(data);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Supabase fetch fallback to local storage");
+    }
+
+    // LocalStorage Fallback
+    const local = localStorage.getItem("dartbuck_templates");
+    if (local) {
+      try {
+        setTemplates(JSON.parse(local));
+      } catch (err) {
+        console.error("Failed to parse local templates", err);
+      }
+    }
+  };
+
+  const saveTemplateItem = async (newItem: DartBuckTemplateItem) => {
+    const updated = [newItem, ...templates];
+    setTemplates(updated);
+    localStorage.setItem("dartbuck_templates", JSON.stringify(updated));
+
+    try {
+      if (supabase) {
+        await supabase.from("dartbuck_templates").insert([{
+          id: newItem.id,
+          title: newItem.title,
+          artist_name: newItem.artist_name,
+          image_url: newItem.image_url,
+          is_winning_design: newItem.is_winning_design,
+          created_at: newItem.created_at
+        }]);
+      }
+    } catch (e) {
+      console.warn("Supabase insert fallback");
+    }
+  };
+
+  const deleteTemplateItem = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = templates.filter((t) => t.id !== id);
+    setTemplates(updated);
+    localStorage.setItem("dartbuck_templates", JSON.stringify(updated));
+
+    if (config.activeTemplateId === id) {
+      setConfig((prev) => ({
+        ...prev,
+        theme: "monopoly",
+        customBgUrl: null,
+        activeTemplateId: null,
+      }));
+    }
+
+    try {
+      if (supabase) {
+        await supabase.from("dartbuck_templates").delete().eq("id", id);
+      }
+    } catch (e) {
+      console.warn("Supabase delete fallback");
+    }
+  };
+
+  // Generate 2-character verification checksum
   const calculateChecksum = (batchStr: string, serialNum: number): string => {
     let sum = 0;
     const combined = `${batchStr}${serialNum}`;
@@ -71,7 +172,6 @@ export default function DartBucksGenerator() {
     return sum.toString(16).padStart(2, "0").toUpperCase();
   };
 
-  // Generate full batch serial string
   const getSerialString = (serialNum: number): string => {
     const padded = serialNum.toString().padStart(config.digits, "0");
     const checksumStr = config.includeChecksum
@@ -90,6 +190,49 @@ export default function DartBucksGenerator() {
     setConfig((prev) => ({ ...prev, batchId: newId }));
   };
 
+  // Handle direct file upload / client drawing submission
+  const handleFileUpload = (file: File) => {
+    if (!file) return;
+    setIsUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      const title = uploadTitle.trim() || `Client Buck ${templates.length + 1}`;
+      const artist = uploadArtist.trim() || "Client Submission";
+
+      const newItem: DartBuckTemplateItem = {
+        id: "tpl_" + Math.random().toString(36).substring(2, 9),
+        title,
+        artist_name: artist,
+        image_url: dataUrl,
+        is_winning_design: true,
+        created_at: new Date().toISOString(),
+      };
+
+      await saveTemplateItem(newItem);
+
+      // Instantly set as active custom template
+      setConfig((prev) => ({
+        ...prev,
+        theme: "custom",
+        customBgUrl: dataUrl,
+        activeTemplateId: newItem.id,
+      }));
+
+      setUploadTitle("");
+      setUploadArtist("");
+      setIsUploading(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+  };
+
   // Draw DART logo inside canvas circle
   const drawDartLogoInCircle = (
     ctx: CanvasRenderingContext2D,
@@ -100,7 +243,6 @@ export default function DartBucksGenerator() {
     ctx.save();
     ctx.textAlign = "center";
 
-    // Top border line
     ctx.strokeStyle = textColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -108,22 +250,18 @@ export default function DartBucksGenerator() {
     ctx.lineTo(cx + 32, cy - 20);
     ctx.stroke();
 
-    // DART main text
     ctx.fillStyle = textColor;
     ctx.font = "bold 20px sans-serif";
     ctx.fillText("DART", cx, cy - 2);
 
-    // Subtitle
     ctx.font = "bold 5px sans-serif";
     ctx.fillText("DESERT AREA RESOURCES & TRAINING", cx, cy + 8);
 
-    // Bottom border line
     ctx.beginPath();
     ctx.moveTo(cx - 32, cy + 13);
     ctx.lineTo(cx + 12, cy + 13);
     ctx.stroke();
 
-    // Established Since 1962
     ctx.font = "italic 7px cursive, sans-serif";
     ctx.textAlign = "right";
     ctx.fillText("Established Since 1962", cx + 32, cy + 22);
@@ -131,7 +269,7 @@ export default function DartBucksGenerator() {
     ctx.restore();
   };
 
-  // Draw curved text along oval arc
+  // Draw curved text along arc
   const drawCurvedText = (
     ctx: CanvasRenderingContext2D,
     text: string,
@@ -165,7 +303,7 @@ export default function DartBucksGenerator() {
     ctx.restore();
   };
 
-  // Draw DartBuck onto canvas
+  // Render DartBuck on Canvas
   const renderDartBuckOnCanvas = (
     canvas: HTMLCanvasElement,
     serialNum: number,
@@ -178,192 +316,118 @@ export default function DartBucksGenerator() {
     canvas.width = width;
     canvas.height = height;
 
-    // Clear background
     ctx.clearRect(0, 0, width, height);
 
-    // If Custom Image uploaded
+    // Custom Background (Uploaded Client Design)
     if (config.theme === "custom" && config.customBgUrl) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.src = config.customBgUrl;
       img.onload = () => {
         ctx.drawImage(img, 0, 0, width, height);
+
+        if (config.showPresetBorders) {
+          ctx.strokeStyle = "rgba(0,0,0,0.4)";
+          ctx.lineWidth = 6;
+          ctx.strokeRect(12, 12, width - 24, height - 24);
+        }
+
         drawTextOverlay(ctx, serialNum, width, height);
       };
       return;
     }
 
-    // MONOPOLY STYLE THEME
+    // Monopoly Style Theme
     if (config.theme === "monopoly") {
       const palette = MONTH_PALETTES[config.selectedMonth] || MONTH_PALETTES["January"];
 
-      // 1. Background fill
       ctx.fillStyle = palette.bg;
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Inner Rect Border
-      const margin = 16;
-      ctx.strokeStyle = palette.border;
-      ctx.lineWidth = 4;
-      ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+      if (config.showPresetBorders) {
+        const margin = 16;
+        ctx.strokeStyle = palette.border;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
 
-      // 3. Corner Circles (Radius 62px)
-      const r = 62;
-      const corners = [
-        { cx: margin + r, cy: margin + r, type: "logo" },
-        { cx: width - margin - r, cy: margin + r, type: "number" },
-        { cx: margin + r, cy: height - margin - r, type: "number" },
-        { cx: width - margin - r, cy: height - margin - r, type: "logo" },
-      ];
+        const r = 62;
+        const corners = [
+          { cx: margin + r, cy: margin + r, type: "logo" },
+          { cx: width - margin - r, cy: margin + r, type: "number" },
+          { cx: margin + r, cy: height - margin - r, type: "number" },
+          { cx: width - margin - r, cy: height - margin - r, type: "logo" },
+        ];
 
-      corners.forEach((c) => {
+        corners.forEach((c) => {
+          ctx.fillStyle = palette.circleBg;
+          ctx.beginPath();
+          ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = palette.border;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          if (c.type === "logo") {
+            drawDartLogoInCircle(ctx, c.cx, c.cy, "#000000");
+          } else {
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 64px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(config.denomination, c.cx, c.cy);
+          }
+        });
+
+        ctx.fillStyle = palette.accent;
+        ctx.font = "bold 96px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("$", 220, height / 2 - 10);
+        ctx.fillText("$", width - 220, height / 2 - 10);
+      }
+
+      if (config.showPresetText) {
+        const ovalCx = width / 2;
+        const ovalCy = height / 2 - 10;
+        const ovalRx = 210;
+        const ovalRy = 145;
+
         ctx.fillStyle = palette.circleBg;
         ctx.beginPath();
-        ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
+        ctx.ellipse(ovalCx, ovalCy, ovalRx, ovalRy, 0, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = palette.border;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.stroke();
 
-        if (c.type === "logo") {
-          drawDartLogoInCircle(ctx, c.cx, c.cy, "#000000");
-        } else {
-          ctx.fillStyle = "#000000";
-          ctx.font = "bold 64px serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(config.denomination, c.cx, c.cy);
-        }
-      });
+        drawCurvedText(
+          ctx,
+          "DART BUCKS",
+          ovalCx,
+          ovalCy + 25,
+          130,
+          -Math.PI * 0.78,
+          -Math.PI * 0.22,
+          "#000000"
+        );
 
-      // 4. Side Dollar Signs
-      ctx.fillStyle = palette.accent;
-      ctx.font = "bold 96px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("$", 220, height / 2 - 10);
-      ctx.fillText("$", width - 220, height / 2 - 10);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 130px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(config.denomination, ovalCx, ovalCy + 25);
 
-      // 5. Central Oval
-      const ovalCx = width / 2;
-      const ovalCy = height / 2 - 10;
-      const ovalRx = 210;
-      const ovalRy = 145;
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 5;
+        ctx.strokeText(config.denomination, ovalCx, ovalCy + 25);
 
-      ctx.fillStyle = palette.circleBg;
-      ctx.beginPath();
-      ctx.ellipse(ovalCx, ovalCy, ovalRx, ovalRy, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = palette.border;
-      ctx.lineWidth = 4;
-      ctx.stroke();
-
-      // Curved "DART BUCKS"
-      drawCurvedText(
-        ctx,
-        "DART BUCKS",
-        ovalCx,
-        ovalCy + 25,
-        130,
-        -Math.PI * 0.78,
-        -Math.PI * 0.22,
-        "#000000"
-      );
-
-      // Central Big Outlined Denomination "1"
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 130px serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(config.denomination, ovalCx, ovalCy + 25);
-
-      ctx.strokeStyle = "#000000";
-      ctx.lineWidth = 5;
-      ctx.strokeText(config.denomination, ovalCx, ovalCy + 25);
-
-      // Month Tag
-      ctx.fillStyle = palette.accent;
-      ctx.font = "bold 14px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(config.selectedMonth.toUpperCase(), ovalCx, ovalCy + 105);
-    } else if (config.theme === "classic_gold") {
-      // Classic Gold Theme
-      ctx.fillStyle = "#fcfdf9";
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.strokeStyle = "#1a4d2e";
-      ctx.lineWidth = 14;
-      ctx.strokeRect(10, 10, width - 20, height - 20);
-
-      ctx.strokeStyle = "#d4af37";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(22, 22, width - 44, height - 44);
-
-      ctx.fillStyle = "#1a4d2e";
-      ctx.font = "bold 64px serif";
-      ctx.textAlign = "center";
-      ctx.fillText(config.title, width / 2, 130);
-
-      ctx.fillStyle = "#4a7c59";
-      ctx.font = "600 22px sans-serif";
-      ctx.fillText(config.subtitle, width / 2, 175);
-
-      ctx.fillStyle = "#e8f5e9";
-      ctx.strokeStyle = "#1a4d2e";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.ellipse(width / 2, 260, 120, 55, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#1a4d2e";
-      ctx.font = "bold 56px sans-serif";
-      ctx.fillText(config.denomination, width / 2, 280);
-    } else if (config.theme === "clean_teal") {
-      ctx.fillStyle = "#f0fdfa";
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.fillStyle = "#0d9488";
-      ctx.fillRect(0, 0, width, 24);
-      ctx.fillRect(0, height - 24, width, 24);
-
-      ctx.strokeStyle = "#14b8a6";
-      ctx.lineWidth = 6;
-      ctx.strokeRect(16, 36, width - 32, height - 72);
-
-      ctx.fillStyle = "#0f766e";
-      ctx.font = "bold 68px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(config.title, width / 2, 140);
-
-      ctx.fillStyle = "#0d9488";
-      ctx.font = "500 24px sans-serif";
-      ctx.fillText(config.subtitle, width / 2, 185);
-
-      ctx.fillStyle = "#ccfbf1";
-      ctx.fillRect(width / 2 - 100, 220, 200, 90);
-
-      ctx.fillStyle = "#0f766e";
-      ctx.font = "bold 60px sans-serif";
-      ctx.fillText(config.denomination, width / 2, 285);
-    } else if (config.theme === "vintage_navy") {
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.strokeStyle = "#94a3b8";
-      ctx.lineWidth = 8;
-      ctx.strokeRect(16, 16, width - 32, height - 32);
-
-      ctx.fillStyle = "#f8fafc";
-      ctx.font = "bold 66px serif";
-      ctx.textAlign = "center";
-      ctx.fillText(config.title, width / 2, 135);
-
-      ctx.fillStyle = "#fbbf24";
-      ctx.font = "bold 64px serif";
-      ctx.fillText(config.denomination, width / 2, 285);
+        ctx.fillStyle = palette.accent;
+        ctx.font = "bold 14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(config.selectedMonth.toUpperCase(), ovalCx, ovalCy + 105);
+      }
     }
 
     drawTextOverlay(ctx, serialNum, width, height);
@@ -377,20 +441,28 @@ export default function DartBucksGenerator() {
   ) => {
     const serialStr = getSerialString(serialNum);
 
-    // Bottom Bar background for serial number readability
-    ctx.fillStyle = config.theme === "vintage_navy" ? "rgba(15, 23, 42, 0.85)" : "rgba(255, 255, 255, 0.9)";
-    ctx.fillRect(width / 2 - 280, height - 60, 560, 45);
+    let boxX = width / 2 - 280;
+    let boxY = height - 60;
 
-    ctx.strokeStyle = config.theme === "vintage_navy" ? "#475569" : "#cbd5e1";
+    if (config.serialPosition === "top") {
+      boxY = 15;
+    } else if (config.serialPosition === "bottom-right") {
+      boxX = width - 580;
+      boxY = height - 60;
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.fillRect(boxX, boxY, 560, 45);
+
+    ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 2;
-    ctx.strokeRect(width / 2 - 280, height - 60, 560, 45);
+    ctx.strokeRect(boxX, boxY, 560, 45);
 
-    // Draw Serial Number
-    ctx.fillStyle = config.theme === "vintage_navy" ? "#38bdf8" : "#b91c1c";
+    ctx.fillStyle = "#b91c1c";
     ctx.font = "bold 28px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(serialStr, width / 2, height - 37);
+    ctx.fillText(serialStr, boxX + 280, boxY + 23);
   };
 
   useEffect(() => {
@@ -399,27 +471,11 @@ export default function DartBucksGenerator() {
     }
   }, [config, activeSerialPreview]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setConfig((prev) => ({
-          ...prev,
-          theme: "custom",
-          customBgUrl: event.target?.result as string,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const downloadPDF = async () => {
     setIsGenerating(true);
     try {
       const { jsPDF } = await import("jspdf");
 
-      // A4 page setup in mm
       const doc = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -436,7 +492,6 @@ export default function DartBucksGenerator() {
       const marginX = (210 - (cols * cardWidthMm + (cols - 1) * gapX)) / 2;
       const marginY = (297 - (rows * cardHeightMm + (rows - 1) * gapY)) / 2;
 
-      // Offscreen canvas for high-res rendering (1200x469)
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
       canvas.height = 469;
@@ -465,10 +520,10 @@ export default function DartBucksGenerator() {
         doc.addImage(imgData, "PNG", x, y, cardWidthMm, cardHeightMm);
       }
 
-      doc.save(`DartBucks_${config.selectedMonth}_Batch_${config.batchId}.pdf`);
+      doc.save(`DartBucks_Batch_${config.batchId}.pdf`);
     } catch (err) {
       console.error("PDF export failed:", err);
-      alert("Failed to export PDF. Please check browser permissions.");
+      alert("Failed to export PDF.");
     } finally {
       setIsGenerating(false);
     }
@@ -480,11 +535,11 @@ export default function DartBucksGenerator() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between bg-card p-6 rounded-xl border border-border shadow-sm">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-primary" />
-            DartBucks Generator
+            <Trophy className="w-8 h-8 text-amber-500" />
+            Client Contest & DartBucks Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Generate Monopoly-style incentive currency with 12 monthly color palettes & audit serials (Est. 1962).
+            Upload client drawings directly to the database, select winning artworks, and print audit-numbered bills.
           </p>
         </div>
         <button
@@ -502,13 +557,130 @@ export default function DartBucksGenerator() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Controls & Security Settings */}
+        {/* Left Column - Controls & Upload Gallery */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Monopoly Month Selector */}
+          {/* Direct Upload & Contest Submission */}
+          <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
+              <Upload className="w-5 h-5 text-blue-500" />
+              Upload Client Drawing to Database
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Title / Artwork Name
+                </label>
+                <input
+                  type="text"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Sarah's Winning Buck"
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Artist / Client Name
+                </label>
+                <input
+                  type="text"
+                  value={uploadArtist}
+                  onChange={(e) => setUploadArtist(e.target.value)}
+                  placeholder="e.g. Sarah M."
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
+                />
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleInputChange}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full py-3 px-4 text-xs font-bold rounded-lg border-2 border-dashed border-primary bg-primary/5 hover:bg-primary/10 text-primary flex items-center justify-center gap-2 transition-all"
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                {isUploading ? "Uploading to DB..." : "Select & Upload Client Art File"}
+              </button>
+            </div>
+          </div>
+
+          {/* Client Submissions Gallery */}
+          <div className="bg-card p-5 rounded-xl border border-border space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                Saved Client Bucks Gallery ({templates.length})
+              </h2>
+            </div>
+
+            {templates.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic py-3 text-center">
+                No custom client artwork uploaded yet. Upload one above to select it!
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
+                {templates.map((tpl) => {
+                  const isSelected =
+                    config.theme === "custom" && config.activeTemplateId === tpl.id;
+                  return (
+                    <div
+                      key={tpl.id}
+                      onClick={() =>
+                        setConfig((prev) => ({
+                          ...prev,
+                          theme: "custom",
+                          customBgUrl: tpl.image_url,
+                          activeTemplateId: tpl.id,
+                        }))
+                      }
+                      className={`relative p-2 rounded-lg border cursor-pointer group transition-all ${
+                        isSelected
+                          ? "ring-2 ring-primary border-primary bg-primary/10"
+                          : "border-input bg-background hover:bg-muted"
+                      }`}
+                    >
+                      <img
+                        src={tpl.image_url}
+                        alt={tpl.title}
+                        className="w-full h-20 object-cover rounded border border-border"
+                      />
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <div className="truncate pr-1">
+                          <p className="text-xs font-bold text-foreground truncate">
+                            {tpl.title}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            By {tpl.artist_name || "Client"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => deleteTemplateItem(tpl.id, e)}
+                          title="Remove Artwork"
+                          className="p-1 text-muted-foreground hover:text-red-500 rounded opacity-80 hover:opacity-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Preset Monthly Color Palettes */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
               <Calendar className="w-5 h-5 text-pink-500" />
-              Monopoly Style - Month Palette
+              Monopoly Style - Monthly Palettes
             </h2>
 
             <div className="grid grid-cols-3 gap-2">
@@ -523,6 +695,7 @@ export default function DartBucksGenerator() {
                         ...prev,
                         theme: "monopoly",
                         selectedMonth: m,
+                        activeTemplateId: null,
                       }))
                     }
                     className={`py-2 px-2 text-xs font-semibold rounded-md border flex items-center justify-between transition-all ${
@@ -547,17 +720,17 @@ export default function DartBucksGenerator() {
             </div>
           </div>
 
-          {/* Security & Serial Batch Settings */}
+          {/* Security & Serial Settings */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
               <ShieldCheck className="w-5 h-5 text-emerald-500" />
-              Decentralized Batch & Audit Settings
+              Security & Overlay Controls
             </h2>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Issuer / Station Prefix
+                  Station Prefix
                 </label>
                 <input
                   type="text"
@@ -568,14 +741,13 @@ export default function DartBucksGenerator() {
                       stationPrefix: e.target.value.toUpperCase(),
                     }))
                   }
-                  placeholder="e.g. COACH"
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Batch Hash Identifier
+                  Batch Hash
                 </label>
                 <div className="flex gap-1">
                   <input
@@ -586,7 +758,6 @@ export default function DartBucksGenerator() {
                   />
                   <button
                     onClick={regenerateBatchId}
-                    title="Generate new Batch Hash"
                     className="p-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80"
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -595,159 +766,54 @@ export default function DartBucksGenerator() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Start Serial No.
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={config.startSerial}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      startSerial: Math.max(1, parseInt(e.target.value) || 1),
-                    }))
-                  }
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Total Quantity (Bucks)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="140"
-                  value={config.cardCount}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      cardCount: Math.max(1, parseInt(e.target.value) || 1),
-                    }))
-                  }
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
+            {/* Removable Overlays & Position */}
+            <div className="space-y-2 pt-2 border-t border-border">
               <label className="text-xs font-medium text-muted-foreground flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={config.includeChecksum}
+                  checked={config.showPresetBorders}
                   onChange={(e) =>
                     setConfig((prev) => ({
                       ...prev,
-                      includeChecksum: e.target.checked,
+                      showPresetBorders: e.target.checked,
                     }))
                   }
                   className="rounded border-input text-primary focus:ring-primary h-4 w-4"
                 />
-                Include Anti-Tamper Checksum Hash
+                Show Preset Border & Corner Emblems
               </label>
-              <span className="text-xs text-emerald-600 font-medium">
-                {config.cardCount} Bucks ({Math.ceil(config.cardCount / 14)} Page{Math.ceil(config.cardCount / 14) > 1 ? "s" : ""})
-              </span>
-            </div>
-          </div>
 
-          {/* Design & Preset Themes */}
-          <div className="bg-card p-5 rounded-xl border border-border space-y-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 border-b border-border pb-3">
-              <ImageIcon className="w-5 h-5 text-blue-500" />
-              Alternative Themes & Custom Upload
-            </h2>
-
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: "monopoly", name: "Monopoly Style" },
-                { id: "classic_gold", name: "Classic Emerald" },
-                { id: "clean_teal", name: "Clean Teal" },
-                { id: "vintage_navy", name: "Vintage Navy" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      theme: t.id as any,
-                    }))
-                  }
-                  className={`py-2 px-3 text-xs font-medium rounded-md border transition-all ${
-                    config.theme === t.id
-                      ? "border-primary bg-primary/10 text-primary font-bold"
-                      : "border-input bg-background hover:bg-muted"
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Image Upload */}
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Upload Custom Base Image (`base_dartbuck.png`)
-              </label>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className={`w-full py-2.5 px-4 text-xs font-medium rounded-md border border-dashed flex items-center justify-center gap-2 transition-all ${
-                  config.theme === "custom"
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-input bg-background hover:bg-muted text-muted-foreground"
-                }`}
-              >
-                <Upload className="w-4 h-4" />
-                {config.customBgUrl ? "Change Custom Image" : "Upload Custom Background"}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Denomination / Value
-                </label>
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-2 cursor-pointer">
                 <input
-                  type="text"
-                  value={config.denomination}
+                  type="checkbox"
+                  checked={config.showPresetText}
                   onChange={(e) =>
                     setConfig((prev) => ({
                       ...prev,
-                      denomination: e.target.value,
+                      showPresetText: e.target.checked,
                     }))
                   }
-                  className="w-full px-3 py-2 text-sm bg-background border border-input rounded-md"
+                  className="rounded border-input text-primary focus:ring-primary h-4 w-4"
                 />
-              </div>
+                Show Center Oval & "DART BUCKS" Text
+              </label>
             </div>
           </div>
         </div>
 
-        {/* Right Column - Live Card & Printable Layout Preview */}
+        {/* Right Column - Live Card & Preview */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-card p-6 rounded-xl border border-border space-y-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                Live Card Preview ({config.selectedMonth} Palette)
+                Live Card Preview
               </h2>
-              <span className="text-xs text-muted-foreground font-mono">
-                Size: 1200 × 469 px
+              <span className="text-xs font-mono text-muted-foreground">
+                1200 × 469 px
               </span>
             </div>
 
-            {/* Canvas Container */}
             <div className="relative rounded-lg overflow-hidden border border-border bg-slate-950 p-3 flex items-center justify-center">
               <canvas
                 ref={previewCanvasRef}
@@ -755,7 +821,6 @@ export default function DartBucksGenerator() {
               />
             </div>
 
-            {/* Serial Navigation slider for preview */}
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-muted-foreground">
                 Previewing Card #{activeSerialPreview} of {config.cardCount}
@@ -778,7 +843,6 @@ export default function DartBucksGenerator() {
               </div>
             </div>
 
-            {/* Active Identifier Display */}
             <div className="p-3 bg-muted/60 rounded-lg border border-border flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">
                 Generated Security Identifier:
@@ -789,7 +853,6 @@ export default function DartBucksGenerator() {
             </div>
           </div>
 
-          {/* Printable Layout Sheet Spec */}
           <div className="bg-card p-5 rounded-xl border border-border space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-emerald-500" />

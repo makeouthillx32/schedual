@@ -190,6 +190,32 @@ export default function DartBucksGenerator() {
     }));
   };
 
+  // Helper to construct the exact bill queue for the drawer allotment
+  const getDrawerBillQueue = () => {
+    const queue: { denom: string; serial: number }[] = [];
+    let currentSerial = config.startSerial;
+
+    if (config.mode === "drawer") {
+      for (let i = 0; i < config.drawerBreakdown.bill20; i++) {
+        queue.push({ denom: "20", serial: currentSerial++ });
+      }
+      for (let i = 0; i < config.drawerBreakdown.bill10; i++) {
+        queue.push({ denom: "10", serial: currentSerial++ });
+      }
+      for (let i = 0; i < config.drawerBreakdown.bill5; i++) {
+        queue.push({ denom: "5", serial: currentSerial++ });
+      }
+      for (let i = 0; i < config.drawerBreakdown.bill1; i++) {
+        queue.push({ denom: "1", serial: currentSerial++ });
+      }
+    } else {
+      for (let i = 0; i < config.cardCount; i++) {
+        queue.push({ denom: config.denomination, serial: currentSerial++ });
+      }
+    }
+    return queue;
+  };
+
   useEffect(() => {
     if (config.previewView === "card" && previewCanvasRef.current) {
       renderDartBuckOnCanvas(previewCanvasRef.current, config.startSerial, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
@@ -230,18 +256,22 @@ export default function DartBucksGenerator() {
     tempCanvas.width = 1200;
     tempCanvas.height = 600;
 
-    let serialIdx = config.startSerial;
+    const billQueue = getDrawerBillQueue();
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
+        const queueIdx = r * cols + c;
+        if (queueIdx >= billQueue.length) break;
+
+        const item = billQueue[queueIdx];
         const colToDraw = isBack ? cols - 1 - c : c;
         const x = marginX + colToDraw * (cardW + gapX);
         const y = marginY + r * (cardH + gapY);
 
         if (isBack) {
-          renderDartBuckBackOnCanvas(tempCanvas, serialIdx, config, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
+          renderDartBuckBackOnCanvas(tempCanvas, item.serial, config, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
         } else {
-          renderDartBuckOnCanvas(tempCanvas, serialIdx, config, {}, {}, watermarkLightImg, watermarkDarkImg, config.denomination, 1200, 600);
+          renderDartBuckOnCanvas(tempCanvas, item.serial, config, {}, {}, watermarkLightImg, watermarkDarkImg, item.denom, 1200, 600);
         }
 
         ctx.drawImage(tempCanvas, x, y, cardW, cardH);
@@ -251,8 +281,6 @@ export default function DartBucksGenerator() {
           ctx.lineWidth = 1;
           ctx.strokeRect(x - 2, y - 2, cardW + 4, cardH + 4);
         }
-
-        serialIdx++;
       }
     }
 
@@ -263,7 +291,7 @@ export default function DartBucksGenerator() {
     ctx.font = "bold 16px sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
-      `${paperSpec.label.toUpperCase()} - MONOPOLY SIZE (4.0" × 2.0") - ${isBack ? "BACK SIDE (DUPLEX MIRRORED)" : "FRONT SIDE (6mm DOUBLE-CUT GUTTERS)"}`,
+      `${paperSpec.label.toUpperCase()} - ITEMISED DRAWER ALLOTMENT (${billQueue.length} BILLS) - ${isBack ? "BACK SIDE" : "FRONT SIDE"}`,
       canvas.width / 2,
       38
     );
@@ -347,27 +375,7 @@ export default function DartBucksGenerator() {
         doc.addPage();
       }
 
-      const billQueue: { denom: string; serial: number }[] = [];
-      let currentSerial = config.startSerial;
-
-      if (config.mode === "drawer") {
-        for (let i = 0; i < config.drawerBreakdown.bill20; i++) {
-          billQueue.push({ denom: "20", serial: currentSerial++ });
-        }
-        for (let i = 0; i < config.drawerBreakdown.bill10; i++) {
-          billQueue.push({ denom: "10", serial: currentSerial++ });
-        }
-        for (let i = 0; i < config.drawerBreakdown.bill5; i++) {
-          billQueue.push({ denom: "5", serial: currentSerial++ });
-        }
-        for (let i = 0; i < config.drawerBreakdown.bill1; i++) {
-          billQueue.push({ denom: "1", serial: currentSerial++ });
-        }
-      } else {
-        for (let i = 0; i < config.cardCount; i++) {
-          billQueue.push({ denom: config.denomination, serial: currentSerial++ });
-        }
-      }
+      const billQueue = getDrawerBillQueue();
 
       const frontCanvas = document.createElement("canvas");
       frontCanvas.width = 1200;
@@ -474,10 +482,10 @@ export default function DartBucksGenerator() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            DartBucks Monopoly Cash Drawer & Prepress Generator
+            DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Pure vector SVG currency engine, exact 4.0"×2.0" Monopoly dimensions, date-stamped batch IDs, & prepress PDF crop marks.
+            Itemized cash drawer breakdown ($20s, $10s, $5s, $1s), 4.0"×2.0" Monopoly size, & prepress PDF crop marks.
           </p>
         </div>
 
@@ -495,15 +503,15 @@ export default function DartBucksGenerator() {
         </button>
       </div>
 
-      {/* Pure Vector Generation Status Notice */}
+      {/* Itemized Drawer Breakdown Notice */}
       <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3 text-xs">
         <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
         <div className="flex-1">
           <span className="font-bold text-emerald-800 dark:text-emerald-300 block">
-            Pure Vector SVG Generation Engine Active
+            Itemized Cash Drawer Dispersion Active (${config.drawerAmount} Total Allotment)
           </span>
           <span className="text-muted-foreground">
-            All Monopoly bills are dynamically rendered as resolution-independent vector graphics featuring concentric borders, background paper shine, intaglio cross-hatching, and date-stamped security seals directly onto PDF prepress sheets.
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). All 19 bills are rendered sequentially on prepress sheets and logged in the audit ledger.
           </span>
         </div>
       </div>

@@ -1,9 +1,9 @@
 # DART BUCKS: USER INTERFACE GUIDE & INCENTIVE OPERATIONAL WORKFLOW
 
-> **Document Version**: 3.0.0  
-> **Target Audience**: Job Coaches, Employment Specialists, Department Managers (Manager Darlene), & Cashiers  
+> **Document Version**: 4.0.0  
+> **Target Audience**: Job Coaches, Employment Specialists, Department Managers (Manager Darlene), Cashiers, & Shredding Staff  
 > **Tool Location**: `https://schedual-five.vercel.app/Tools/dart-bucks-generator`  
-> **UI Components**: [[GenerationModeToggle]] | [[DrawerAmountPresets]] | [[BillWeightingTiles]] | [[A4PreviewTabs]] | [[CropEditorModal]]  
+> **UI Components**: [[GenerationModeToggle]] | [[DrawerAmountPresets]] | [[BillWeightingTiles]] | [[A4PreviewTabs]] | [[CropEditorModal]] | [[ShredDestructionPolicy]]  
 
 ---
 
@@ -53,46 +53,40 @@ To access the tool:
 
 ---
 
-### Workflow B: Manager Darlene Departmental Cash Drawer ($200 or $250 Allotment)
+### Workflow B: Manager Darlene Departmental Cash Drawer ($100, $200, $250 Allotment)
 
-**Use Case**: Department Manager [[ManagerDarlene]] requests a $200 or $250 cash drawer of DART Bucks for an upcoming department incentive program or store register.
+**Use Case**: Department Manager [[ManagerDarlene]] asks: *"Hey, this department needs $100 in DartBucks, can you get that for them?"*
 
 #### Step-by-Step UI Instructions:
 1. Open [[DartBucksGenerator]].
 2. Under **[[GenerationModeToggle]]**, select **Cash Drawer Mode ($200/$250)**.
-3. Click the **[ $200 Preset ]** or **[ $250 Preset ]** button under **[[DrawerAmountPresets]]**.
+3. Type `$100` (or click `$200` / `$250` presets) into the **Target Cash Amount** box.
 4. Select your **[[BillWeightingPreference]]**:
    - **Balanced**: Standard mix ($20s, $10s, $5s, $1s).
    - **Heavy ($20s)**: Higher denomination bills.
    - **Light ($1s)**: Extra $1s and $5s for high-volume change drawers.
    - **Custom**: Type exact bill quantities into the denomination input boxes.
-5. Under **[[DuplexPrintingSettings]]**, ensure **Include Double-Sided Back Pages (Mirrored Duplex Grid)** is checked.
-6. **Verify Paper Layout**:
-   - Click **[[A4FrontGridTab]]** on top of the preview window to see how the bill fronts look on the paper sheet.
-   - Click **[[A4BackMirroredTab]]** to inspect the double-sided back side with the DART emblem and mirrored column alignment.
-7. Click **[[ExportAllotmentPDFButton]]**.
-8. **Print & Sign**:
-   - Load paper into printer and select **Print Double-Sided** (Flip on Long Edge).
-   - Page 1 prints as the formal **[[CashDrawerAuditSlip]]**.
-   - Manager [[ManagerDarlene]] signs Page 1, attaches it to the cash drawer, and issues the batch!
+5. Click **[[ExportPrepressPDFButton]]**. The **[[PrintAuthModal]]** appears:
+   - Enter Issuer Name (*Manager Darlene* or *Job Coach*)
+   - Select Department (*Commercial Services*, *Thrift Shop*, *Janitorial*, etc.)
+   - Enter Authorization PIN
+6. **Print & Sign**:
+   - Page 1 prints as the formal **[[CashDrawerAuditSlip]]** listing the batch hash, date, issuer, and bill counts.
+   - Manager [[ManagerDarlene]] and the department recipient sign Page 1, attach it to the cash drawer, and issue the batch!
 
 ---
 
-### Workflow C: Uploading & Cropping Client Contest Artwork
+### Workflow C: Register Turn-In & Shred Department Destruction Policy
 
-**Use Case**: A client submits a custom drawing for the monthly DART Buck contest. You want to upload it and fit it onto the official bill template.
+**Operational Rule**: Clients present earned DartBucks at the DART Thrift Store register to make purchases. Paired cashier teams (a job coach working alongside an adult with a disability) accept physical bills directly into the register drawer.
 
-#### Step-by-Step UI Instructions:
-1. Scroll down the left panel to **[[UploadClientDrawingBox]]**.
-2. Enter the **Artwork Title** (e.g., *"Sarah's Winning Sunset"*) and **Client Artist Name** (e.g., *"Sarah M."*).
-3. Click **[[SelectUploadArtFileButton]]** and choose the image file from your computer.
-4. The **[[CropEditorModal]]** opens automatically:
-   - **Fit Mode Buttons**: Click `Cover` (smart aspect crop), `Fit` (contain full drawing), or `Stretch` (forced fill).
-   - **Zoom Slider**: Drag left/right to scale between 0.5× and 3.0×.
-   - **Horizontal Offset Slider**: Pan drawing left or right.
-5. Review the 1200×469 px live frame in the modal.
-6. Click **[[CropSavePermanentlyButton]]**.
-7. The cropped artwork immediately applies to all active bills and saves to the [[ClientBucksGallery]].
+#### Unused Bill Destruction Policy:
+- **Policy Standard**: Any unissued, expired, damaged, or leftover DartBucks that are NOT returned to active circulation **MUST be handed over to the DART Shredding Department for secure destruction**.
+- **Audit Logging**:
+  - In the **Monthly Audit & Shred Ledger** table (bottom of screen), locate the batch row.
+  - Click **[ Shred Unused ]**.
+  - Confirm handover to the Shredding Department.
+  - The status updates to **Shredded / Destroyed** with an ISO timestamp, permanently closing out the batch ledger record.
 
 ---
 
@@ -100,13 +94,12 @@ To access the tool:
 
 | UI Element | Location | Function |
 | :--- | :--- | :--- |
-| **[[GenerationModeToggle]]** | Top Left | Switch between single denomination batches and $200/$250 cash drawer allotments. |
-| **[[DrawerAmountPresets]]** | Left Column | 1-click sets target drawer to `$200` or `$250`. |
-| **[[BillWeightingTiles]]** | Left Column | Auto-calculates bill mix (`Balanced`, `Heavy`, `Light`, `Custom`). |
-| **[[A4PreviewTabs]]** | Top Right | Switch live view between `Single Card`, `A4 Front Grid`, and `A4 Back (Mirrored)`. |
-| **[[CropEditorModal]]** | Pop-up Modal | Interactively crop, zoom, and stretch client artwork to 1200×469 px. |
-| **[[DuplexCheckbox]]** | Left Column | Enables mirrored back-page PDF generation for double-sided printers. |
-| **[[ExportPDFButton]]** | Top Right Header | Generates 300DPI print-ready PDF containing Audit Slip & bill sheets. |
+| **[[GenerationModeToggle]]** | Top Left | Switch between single denomination batches and cash drawer allotments. |
+| **[[DrawerAmountPresets]]** | Left Column | Type any target drawer amount ($100, $200, $250) or click presets. |
+| **[[PrintAuthModal]]** | Pop-up Modal | Enforces manager authorization PIN, issuer name, and department tracking. |
+| **[[TurnedInButton]]** | Audit Table | 1-click marks batch as collected at the store register. |
+| **[[ShredUnusedButton]]** | Audit Table | Marks unallocated bills as handed over to the DART Shredding Department. |
+| **[[ExportPDFButton]]** | Header Banner | Generates 300DPI prepress PDF containing Audit Slip & bill sheets. |
 
 ---
 
@@ -114,5 +107,6 @@ To access the tool:
 
 - [[DartBucksGenerator]] - Main App Route (`/Tools/dart-bucks-generator`)
 - [[ManagerDarleneWorkflow]] - Departmental Allotment Standard Operating Procedure
-- [[DARTThriftShop]] - Community Retail & Field Reward Site
+- [[DARTThriftShop]] - Community Retail & Register Turn-In Site
+- [[DARTShreddingDepartment]] - Secure Currency Shredding & Destruction Protocol
 - [[CashDrawerAuditSlip]] - Page 1 Printable PDF Receipt & Signature Form

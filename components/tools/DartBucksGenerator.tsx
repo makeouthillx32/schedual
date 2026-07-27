@@ -226,6 +226,40 @@ export default function DartBucksGenerator() {
     }
   };
 
+  const markBatchAsShredded = async (logId: string) => {
+    if (!confirm("Confirm handing over remaining unused bills from this batch to the DART Shredding Department for destruction?")) {
+      return;
+    }
+
+    const updated = batchLogs.map((log) => {
+      if (log.id === logId) {
+        return {
+          ...log,
+          status: "shredded" as const,
+          shredded_at: new Date().toISOString(),
+        };
+      }
+      return log;
+    });
+
+    setBatchLogs(updated);
+    localStorage.setItem("dartbuck_batch_logs", JSON.stringify(updated));
+
+    try {
+      if (supabase) {
+        await supabase
+          .from("dartbuck_batch_logs")
+          .update({
+            status: "shredded",
+            shredded_at: new Date().toISOString(),
+          })
+          .eq("id", logId);
+      }
+    } catch (e) {
+      console.warn("Supabase batch shred status update fallback");
+    }
+  };
+
   const handleDrawerAmountChange = (amount: number) => {
     const validAmount = Math.max(0, amount);
     const breakdown = computeBreakdown(validAmount, config.drawerWeighting === "custom" ? "balanced" : config.drawerWeighting);
@@ -687,7 +721,11 @@ export default function DartBucksGenerator() {
       </div>
 
       {/* MONTHLY BATCH AUDIT LEDGER TABLE */}
-      <BatchAuditLedger logs={batchLogs} onToggleComplete={toggleBatchCycleComplete} />
+      <BatchAuditLedger
+        logs={batchLogs}
+        onToggleComplete={toggleBatchCycleComplete}
+        onMarkShredded={markBatchAsShredded}
+      />
     </div>
   );
 }

@@ -1,16 +1,21 @@
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check } from "lucide-react";
+import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2 } from "lucide-react";
 import { BatchLogItem } from "../types";
 
 interface BatchAuditLedgerProps {
   logs: BatchLogItem[];
   onToggleComplete: (logId: string) => void;
+  onMarkShredded?: (logId: string) => void;
 }
 
-export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onToggleComplete }) => {
+export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
+  logs,
+  onToggleComplete,
+  onMarkShredded,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "shredded">("all");
 
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
@@ -23,8 +28,10 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
       statusFilter === "all"
         ? true
         : statusFilter === "active"
-        ? log.status !== "completed"
-        : log.status === "completed";
+        ? log.status === "active" || !log.status
+        : statusFilter === "completed"
+        ? log.status === "completed"
+        : log.status === "shredded";
 
     if (selectedMonth === "all") return matchesSearch && matchesStatus;
     const logMonth = new Date(log.printed_at).toISOString().substring(0, 7);
@@ -34,6 +41,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
   const totalValueIssued = filteredLogs.reduce((sum, item) => sum + item.drawer_amount, 0);
   const totalBillsIssued = filteredLogs.reduce((sum, item) => sum + item.total_bills_count, 0);
   const completedBatchesCount = logs.filter((l) => l.status === "completed").length;
+  const shreddedBatchesCount = logs.filter((l) => l.status === "shredded").length;
 
   const exportMonthlyCSV = () => {
     if (filteredLogs.length === 0) {
@@ -44,8 +52,8 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
     const headers = [
       "Log ID",
       "Timestamp",
-      "Cycle Status",
-      "Completed Date",
+      "Batch Status",
+      "Status Date",
       "Batch ID",
       "Station",
       "Issuer Name",
@@ -65,8 +73,8 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
     const rows = filteredLogs.map((log) => [
       `"${log.id}"`,
       `"${new Date(log.printed_at).toLocaleString()}"`,
-      `"${log.status === "completed" ? "Completed & Collected" : "Active in Circulation"}"`,
-      `"${log.completed_at ? new Date(log.completed_at).toLocaleString() : "N/A"}"`,
+      `"${log.status === "completed" ? "Completed & Collected" : log.status === "shredded" ? "Shredded / Destroyed" : "Active in Circulation"}"`,
+      `"${log.completed_at ? new Date(log.completed_at).toLocaleString() : log.shredded_at ? new Date(log.shredded_at).toLocaleString() : "N/A"}"`,
       `"${log.batch_id}"`,
       `"${log.station_prefix}"`,
       `"${log.issuer_name}"`,
@@ -101,10 +109,10 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-emerald-500" />
-            Monthly Batch Audit & Collection Cycle Ledger
+            Department Allotment & Shred Destruction Audit Ledger
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Track active circulation and check batches as complete when all bills are collected!
+            Track department allocations, register turn-ins, and record unused bills sent to the DART Shredding Department.
           </p>
         </div>
 
@@ -130,21 +138,21 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
         </div>
 
         <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center gap-3">
-          <FileSpreadsheet className="w-8 h-8 text-blue-600 shrink-0" />
+          <CheckCircle2 className="w-8 h-8 text-blue-600 shrink-0" />
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Total Printed Bills</span>
+            <span className="text-xs text-muted-foreground block font-medium">Register Turn-Ins Completed</span>
             <span className="text-2xl font-black text-blue-600 dark:text-blue-400">
-              {totalBillsIssued} Bills
+              {completedBatchesCount} / {logs.length} Batches
             </span>
           </div>
         </div>
 
-        <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl flex items-center gap-3">
-          <CheckCircle2 className="w-8 h-8 text-purple-600 shrink-0" />
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
+          <Trash2 className="w-8 h-8 text-red-600 shrink-0" />
           <div>
-            <span className="text-xs text-muted-foreground block font-medium">Cycles Completed & Collected</span>
-            <span className="text-2xl font-black text-purple-600 dark:text-purple-400">
-              {completedBatchesCount} / {logs.length} Batches
+            <span className="text-xs text-muted-foreground block font-medium">Shredded / Destroyed</span>
+            <span className="text-2xl font-black text-red-600 dark:text-red-400">
+              {shreddedBatchesCount} Batches
             </span>
           </div>
         </div>
@@ -171,7 +179,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Active In Circulation ({logs.filter((l) => l.status !== "completed").length})
+            Active In Circulation ({logs.filter((l) => l.status === "active" || !l.status).length})
           </button>
           <button
             onClick={() => setStatusFilter("completed")}
@@ -181,7 +189,17 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Completed & Collected ({completedBatchesCount})
+            Completed Turn-Ins ({completedBatchesCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter("shredded")}
+            className={`px-3 py-1.5 rounded-md transition-all ${
+              statusFilter === "shredded"
+                ? "bg-background text-foreground shadow text-red-600 dark:text-red-400"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Shredded ({shreddedBatchesCount})
           </button>
         </div>
 
@@ -192,7 +210,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search Issuer, Batch ID..."
+              placeholder="Search Issuer, Department..."
               className="w-full pl-9 pr-3 py-2 text-xs bg-background border border-input rounded-lg"
             />
           </div>
@@ -210,19 +228,19 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
         </div>
       </div>
 
-      {/* Log Table with Check as Complete Action */}
+      {/* Log Table with Check as Complete & Shred Actions */}
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-left text-xs">
           <thead className="bg-muted text-muted-foreground font-bold border-b border-border">
             <tr>
-              <th className="p-3">Cycle Status</th>
+              <th className="p-3">Batch Status</th>
               <th className="p-3">Timestamp</th>
               <th className="p-3">Batch ID</th>
               <th className="p-3">Authorized Issuer</th>
               <th className="p-3">Department</th>
               <th className="p-3">Drawer Value</th>
               <th className="p-3">Bills Breakdown</th>
-              <th className="p-3 text-right">Cycle Action</th>
+              <th className="p-3 text-right">Lifecycle Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border bg-card">
@@ -235,18 +253,25 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
             ) : (
               filteredLogs.map((log) => {
                 const isCompleted = log.status === "completed";
+                const isShredded = log.status === "shredded";
+
                 return (
-                  <tr key={log.id} className={`hover:bg-muted/50 transition-colors ${isCompleted ? "bg-emerald-500/5" : ""}`}>
+                  <tr key={log.id} className={`hover:bg-muted/50 transition-colors ${isCompleted ? "bg-emerald-500/5" : isShredded ? "bg-red-500/5" : ""}`}>
                     <td className="p-3 whitespace-nowrap">
                       {isCompleted ? (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/30">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Cycle Completed
+                          Collected at Register
+                        </span>
+                      ) : isShredded ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-red-500/10 text-red-600 rounded-full border border-red-500/30">
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Shredded / Destroyed
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/30">
                           <Clock className="w-3.5 h-3.5" />
-                          In Circulation
+                          Active in Circulation
                         </span>
                       )}
                     </td>
@@ -270,17 +295,33 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({ logs, onTogg
                       20s:{log.itemized_breakdown.bill20} | 10s:{log.itemized_breakdown.bill10} | 5s:{log.itemized_breakdown.bill5} | 1s:{log.itemized_breakdown.bill1}
                     </td>
                     <td className="p-3 text-right">
-                      <button
-                        onClick={() => onToggleComplete(log.id)}
-                        className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ml-auto ${
-                          isCompleted
-                            ? "bg-muted text-muted-foreground border border-input hover:bg-background"
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        {isCompleted ? "Reopen Batch" : "Check as Complete & Collected"}
-                      </button>
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          onClick={() => onToggleComplete(log.id)}
+                          className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                            isCompleted
+                              ? "bg-muted text-muted-foreground border border-input hover:bg-background"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                          }`}
+                        >
+                          <Check className="w-3 h-3" />
+                          {isCompleted ? "Reopen" : "Turned In"}
+                        </button>
+
+                        {onMarkShredded && !isCompleted && (
+                          <button
+                            onClick={() => onMarkShredded(log.id)}
+                            className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
+                              isShredded
+                                ? "bg-muted text-muted-foreground border border-input"
+                                : "bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/30"
+                            }`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            {isShredded ? "Shredded" : "Shred Unused"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

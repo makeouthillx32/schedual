@@ -60,9 +60,9 @@ export interface BatchLogItem {
   serial_end: string;
   issue_reason: string;
   printed_at: string;
-  status: "active" | "completed";
+  status: "active" | "completed" | "shredded";
   completed_at?: string;
-  completed_by?: string;
+  shredded_at?: string;
 }
 
 export interface DartBuckConfig {

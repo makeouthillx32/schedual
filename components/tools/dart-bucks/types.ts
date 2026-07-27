@@ -105,6 +105,7 @@ export interface BatchLogItem {
   status: "active" | "completed" | "shredded";
   completed_at?: string;
   shredded_at?: string;
+  pdf_data_url?: string;
 }
 
 export type BillScalePreset = "large" | "standard" | "jumbo";

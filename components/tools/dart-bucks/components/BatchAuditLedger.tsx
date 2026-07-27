@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2, PieChart, XCircle } from "lucide-react";
+import { FileSpreadsheet, Download, ShieldCheck, Search, CheckCircle2, Clock, DollarSign, Check, Trash2, PieChart, XCircle, FileText } from "lucide-react";
 import { BatchLogItem } from "../types";
 
 interface BatchAuditLedgerProps {
@@ -45,7 +45,6 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
   // Calculate Active Total Value (EXCLUDING Destroyed/Shredded Batches)
   const activeLogs = filteredLogs.filter((item) => item.status !== "shredded");
   const totalValueActive = activeLogs.reduce((sum, item) => sum + item.drawer_amount, 0);
-  const totalBillsIssued = filteredLogs.reduce((sum, item) => sum + item.total_bills_count, 0);
 
   const completedBatchesCount = logs.filter((l) => l.status === "completed").length;
   const shreddedBatchesCount = logs.filter((l) => l.status === "shredded").length;
@@ -125,7 +124,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
             Department Allotment & Shred Destruction Audit Ledger
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Track department allocations, register turn-ins, and record unused bills sent to the DART Shredding Department.
+            Track department allocations, register turn-ins, download stored PDF documents, and record unused bills sent to the DART Shredding Department.
           </p>
         </div>
 
@@ -348,6 +347,18 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1.5">
+                        {log.pdf_data_url && !isShredded && (
+                          <a
+                            href={log.pdf_data_url}
+                            download={`DartBucks_Batch_${log.batch_id}.pdf`}
+                            title="Re-Download Stored Prepress PDF Document"
+                            className="p-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/30 transition-all flex items-center gap-1 font-bold text-[11px]"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
+                          </a>
+                        )}
+
                         <button
                           onClick={() => onToggleComplete(log.id)}
                           className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 ${
@@ -377,7 +388,7 @@ export const BatchAuditLedger: React.FC<BatchAuditLedgerProps> = ({
                         {onDeleteLog && (
                           <button
                             onClick={() => onDeleteLog(log.id)}
-                            title="Delete Log Entry"
+                            title="Delete Log Entry & PDF Record"
                             className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 rounded-lg border border-red-500/30 transition-all"
                           >
                             <XCircle className="w-4 h-4" />

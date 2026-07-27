@@ -150,6 +150,7 @@ export default function DartBucksGenerator() {
           ...log,
           status: "shredded" as const,
           shredded_at: new Date().toISOString(),
+          pdf_data_url: undefined, // Clear stored PDF document on destruction
         };
       }
       return log;
@@ -165,6 +166,7 @@ export default function DartBucksGenerator() {
           .update({
             status: "shredded",
             shredded_at: new Date().toISOString(),
+            pdf_data_url: null,
           })
           .eq("id", logId);
       }
@@ -174,7 +176,7 @@ export default function DartBucksGenerator() {
   };
 
   const deleteBatchLog = async (logId: string) => {
-    if (!confirm("Permanently remove this batch audit log entry from the ledger?")) {
+    if (!confirm("Permanently remove this batch audit log entry and its stored PDF from the ledger?")) {
       return;
     }
 
@@ -192,7 +194,7 @@ export default function DartBucksGenerator() {
   };
 
   const clearAllBatchLogs = async () => {
-    if (!confirm("Clear all batch audit log entries from the ledger? This will remove all test records.")) {
+    if (!confirm("Clear all batch audit log entries and stored PDFs from the ledger? This will remove all test records.")) {
       return;
     }
 
@@ -288,31 +290,6 @@ export default function DartBucksGenerator() {
 
       const startStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial, config.digits, config.includeChecksum);
       const endStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial + totalBills - 1, config.digits, config.includeChecksum);
-
-      const logItem: BatchLogItem = {
-        id: "log_" + Math.random().toString(36).substring(2, 10),
-        batch_id: config.batchId,
-        station_prefix: config.stationPrefix,
-        issuer_name: authData.issuerName,
-        issuer_role: authData.issuerRole,
-        department: authData.department,
-        mode: config.mode,
-        drawer_amount: totalVal,
-        total_bills_count: totalBills,
-        itemized_breakdown: config.mode === "drawer" ? config.drawerBreakdown : {
-          bill20: config.denomination === "20" ? config.cardCount : 0,
-          bill10: config.denomination === "10" ? config.cardCount : 0,
-          bill5: config.denomination === "5" ? config.cardCount : 0,
-          bill1: config.denomination === "1" ? config.cardCount : 0,
-        },
-        serial_start: startStr,
-        serial_end: endStr,
-        issue_reason: authData.issueReason,
-        printed_at: new Date().toISOString(),
-        status: "active",
-      };
-
-      await saveBatchLog(logItem);
 
       // Execute Vector PDF Creation
       const { jsPDF } = await import("jspdf");
@@ -423,6 +400,35 @@ export default function DartBucksGenerator() {
         }
       }
 
+      // Capture generated PDF Data URI string for database storage
+      const pdfDataUrl = doc.output("datauristring");
+
+      const logItem: BatchLogItem = {
+        id: "log_" + Math.random().toString(36).substring(2, 10),
+        batch_id: config.batchId,
+        station_prefix: config.stationPrefix,
+        issuer_name: authData.issuerName,
+        issuer_role: authData.issuerRole,
+        department: authData.department,
+        mode: config.mode,
+        drawer_amount: totalVal,
+        total_bills_count: totalBills,
+        itemized_breakdown: config.mode === "drawer" ? config.drawerBreakdown : {
+          bill20: config.denomination === "20" ? config.cardCount : 0,
+          bill10: config.denomination === "10" ? config.cardCount : 0,
+          bill5: config.denomination === "5" ? config.cardCount : 0,
+          bill1: config.denomination === "1" ? config.cardCount : 0,
+        },
+        serial_start: startStr,
+        serial_end: endStr,
+        issue_reason: authData.issueReason,
+        printed_at: new Date().toISOString(),
+        status: "active",
+        pdf_data_url: pdfDataUrl,
+      };
+
+      await saveBatchLog(logItem);
+
       const filename = config.mode === "drawer"
         ? `DartBucks_Drawer_Allotment_$${config.drawerAmount}_${config.batchId}.pdf`
         : `DartBucks_${config.denomination}s_Batch_${config.batchId}.pdf`;
@@ -470,7 +476,7 @@ export default function DartBucksGenerator() {
             DartBucks Cash Drawer & Monopoly Prepress Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Flexible bill scaling (Size 1 Standard, Size 2 Large, Size 3 Jumbo Oversized), duplex alignment, & prepress crop marks.
+            Database PDF storage, flexible bill scaling (Size 1 Standard, Size 2 Large, Size 3 Jumbo Oversized), duplex alignment, & prepress crop marks.
           </p>
         </div>
 
@@ -496,7 +502,7 @@ export default function DartBucksGenerator() {
             {config.billScale === "jumbo" ? "Size 3: Jumbo Oversized 1-Col Layout Active (3 Bills/Sheet)" : config.billScale === "standard" ? "Size 1: Standard Monopoly Active (8 Bills/Sheet)" : "Size 2: Large Full Coverage Active (8 Bills/Sheet)"} (${config.drawerAmount} Allotment)
           </span>
           <span className="text-muted-foreground">
-            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Total Sheets Required: {calculatedTotalPages} Sheet(s).
+            Current Breakdown: <strong>{config.drawerBreakdown.bill20} × $20s</strong> (${config.drawerBreakdown.bill20 * 20}), <strong>{config.drawerBreakdown.bill10} × $10s</strong> (${config.drawerBreakdown.bill10 * 10}), <strong>{config.drawerBreakdown.bill5} × $5s</strong> (${config.drawerBreakdown.bill5 * 5}), <strong>{config.drawerBreakdown.bill1} × $1s</strong> (${config.drawerBreakdown.bill1}). Generated PDFs are stored in the database ledger until removed or destroyed.
           </span>
         </div>
       </div>

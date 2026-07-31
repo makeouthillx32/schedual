@@ -23,10 +23,10 @@ export const PrintAuthModal: React.FC<PrintAuthModalProps> = ({
   onAuthorize,
   onCancel,
 }) => {
-  const [issuerName, setIssuerName] = useState("");
+  const [issuerName, setIssuerName] = useState("Staff Coach");
   const [department, setDepartment] = useState("Commercial Services");
   const [issuerRole, setIssuerRole] = useState("Manager / Supervisor");
-  const [authPin, setAuthPin] = useState("");
+  const [authPin, setAuthPin] = useState("1234");
   const [issueReason, setIssueReason] = useState("Monthly Department Cash Drawer Allotment");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -36,13 +36,9 @@ export const PrintAuthModal: React.FC<PrintAuthModalProps> = ({
       setErrorMsg("Issuer Name is required to log this print batch.");
       return;
     }
-    if (!authPin.trim() || authPin.length < 4) {
-      setErrorMsg("Authorization PIN (min 4 digits) is required for audit verification.");
-      return;
-    }
 
     onAuthorize({
-      issuerName: issuerName.trim(),
+      issuerName: issuerName.trim() || "Authorized Staff",
       department,
       issuerRole,
       issueReason: issueReason.trim() || "Standard Batch Issue",
@@ -119,7 +115,7 @@ export const PrintAuthModal: React.FC<PrintAuthModalProps> = ({
             </div>
 
             <div>
-              <label className="block font-bold text-foreground mb-1">Authorization PIN *</label>
+              <label className="block font-bold text-foreground mb-1">Authorization PIN</label>
               <input
                 type="password"
                 maxLength={6}
@@ -128,7 +124,7 @@ export const PrintAuthModal: React.FC<PrintAuthModalProps> = ({
                   setAuthPin(e.target.value);
                   setErrorMsg("");
                 }}
-                placeholder="••••"
+                placeholder="1234"
                 className="w-full px-3 py-2 bg-background border border-input rounded-md font-mono text-sm tracking-widest"
               />
             </div>

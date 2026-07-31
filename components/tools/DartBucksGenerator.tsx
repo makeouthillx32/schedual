@@ -255,21 +255,19 @@ export default function DartBucksGenerator() {
     let currentSerial = config.startSerial;
 
     if (config.mode === "drawer") {
-      for (let i = 0; i < config.drawerBreakdown.bill20; i++) {
-        queue.push({ denom: "20", serial: currentSerial++ });
-      }
-      for (let i = 0; i < config.drawerBreakdown.bill10; i++) {
-        queue.push({ denom: "10", serial: currentSerial++ });
-      }
-      for (let i = 0; i < config.drawerBreakdown.bill5; i++) {
-        queue.push({ denom: "5", serial: currentSerial++ });
-      }
-      for (let i = 0; i < config.drawerBreakdown.bill1; i++) {
-        queue.push({ denom: "1", serial: currentSerial++ });
-      }
+      const b20 = Math.max(0, config.drawerBreakdown.bill20 || 0);
+      const b10 = Math.max(0, config.drawerBreakdown.bill10 || 0);
+      const b5 = Math.max(0, config.drawerBreakdown.bill5 || 0);
+      const b1 = Math.max(0, config.drawerBreakdown.bill1 || 0);
+
+      for (let i = 0; i < b20; i++) queue.push({ denom: "20", serial: currentSerial++ });
+      for (let i = 0; i < b10; i++) queue.push({ denom: "10", serial: currentSerial++ });
+      for (let i = 0; i < b5; i++) queue.push({ denom: "5", serial: currentSerial++ });
+      for (let i = 0; i < b1; i++) queue.push({ denom: "1", serial: currentSerial++ });
     } else {
-      for (let i = 0; i < config.cardCount; i++) {
-        queue.push({ denom: config.denomination, serial: currentSerial++ });
+      const count = Math.max(1, config.cardCount || 1);
+      for (let i = 0; i < count; i++) {
+        queue.push({ denom: config.denomination || "20", serial: currentSerial++ });
       }
     }
     return queue;
@@ -299,13 +297,17 @@ export default function DartBucksGenerator() {
     setIsGenerating(true);
 
     try {
-      const totalBills = config.mode === "drawer"
-        ? (config.drawerBreakdown.bill20 + config.drawerBreakdown.bill10 + config.drawerBreakdown.bill5 + config.drawerBreakdown.bill1)
-        : config.cardCount;
+      const billQueue = getDrawerBillQueue();
+      if (billQueue.length === 0) {
+        alert("Cannot export PDF: No bills found in queue. Please select at least 1 bill or set a drawer amount.");
+        setIsGenerating(false);
+        return;
+      }
 
+      const totalBills = billQueue.length;
       const totalVal = config.mode === "drawer"
         ? config.drawerAmount
-        : config.cardCount * (parseFloat(config.denomination) || 1);
+        : totalBills * (parseFloat(config.denomination) || 1);
 
       const startStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial, config.digits, config.includeChecksum);
       const endStr = getSerialString(config.stationPrefix, config.batchId, config.startSerial + totalBills - 1, config.digits, config.includeChecksum);
@@ -352,8 +354,6 @@ export default function DartBucksGenerator() {
           doc.addImage(auditBackImg, "PNG", 0, 0, paperSpec.widthMm, paperSpec.heightMm);
         }
       }
-
-      const billQueue = getDrawerBillQueue();
 
       const frontCanvas = document.createElement("canvas");
       frontCanvas.width = 1200;
